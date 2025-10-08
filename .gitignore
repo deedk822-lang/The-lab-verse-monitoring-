@@ -284,3 +284,6 @@ charts/
 .vscode-server/
 # Jupyter notebooks
 .ipynb_checkpoints/
+
+# Secrets directory for Docker
+secrets/

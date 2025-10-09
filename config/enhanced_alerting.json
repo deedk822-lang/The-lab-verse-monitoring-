@@ -1,0 +1,35 @@
+{
+    "channels": {
+        "slack": {"enabled": true, "webhook_url": "${SLACK_WEBHOOK_URL}"},
+        "email": {"enabled": true, "smtp_config": "${EMAIL_SMTP_CONFIG}"},
+        "sms": {"enabled": true, "twilio_config": "${TWILIO_CONFIG}"},
+        "mobile_push": {"enabled": true, "firebase_config": "${FIREBASE_CONFIG}"},
+        "pagerduty": {"enabled": true, "integration_key": "${PAGERDUTY_KEY}"},
+        "teams": {"enabled": true, "webhook_url": "${TEAMS_WEBHOOK_URL}"},
+        "telegram": {"enabled": true, "bot_token": "${TELEGRAM_BOT_TOKEN}"},
+        "discord": {"enabled": true, "webhook_url": "${DISCORD_WEBHOOK_URL}"}
+    },
+    "escalation_rules": {
+        "low": {"channels": ["slack"], "timeout_minutes": 60},
+        "medium": {"channels": ["slack", "email"], "timeout_minutes": 30},
+        "high": {"channels": ["slack", "email", "sms"], "timeout_minutes": 15},
+        "critical": {"channels": ["slack", "email", "sms", "mobile_push", "pagerduty"], "timeout_minutes": 5}
+    },
+    "auto_remediation": {
+        "enabled": true,
+        "max_auto_actions_per_hour": 10,
+        "approval_required_for": ["database_changes", "network_changes", "cost_changes > $1000"]
+    },
+    "mobile_features": {
+        "push_notifications": true,
+        "in_app_alerts": true,
+        "mobile_dashboard": true,
+        "offline_sync": true,
+        "biometric_auth": true
+    },
+    "rate_limiting": {
+        "max_alerts_per_hour": 20,
+        "cooldown_minutes": 5,
+        "burst_allowance": 5
+    }
+}

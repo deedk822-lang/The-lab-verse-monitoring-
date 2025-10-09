@@ -1,28 +1,3 @@
- feature/ml-anomaly-detection
-aiohttp
-prometheus-client
-PyYAML
-pydantic
-python-dotenv
-structlog
-typer
-rich
-openai
-anthropic
-tiktoken
-aiofiles
-asyncio-mqtt
-httpx
-colorlog
-pytest
-pytest-asyncio
-pytest-cov
-pytest-mock
-black
-mypy
-isort
-pytest-aiohttp
-=======
 # Core dependencies
 aiohttp==3.9.1
 aiofiles==23.2.1
@@ -54,9 +29,9 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 pytest-mock==3.12.0
+pytest-aiohttp
 
 # Development
 black==23.11.0
 mypy==1.7.1
 isort==5.13.2
- main

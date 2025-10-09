@@ -278,7 +278,6 @@ services:
     networks:
       - backend
       - public          # needed for Traefik to discover it
-      - monitoring
     depends_on:
       - postgres
       - redis
@@ -328,7 +327,6 @@ services:
     command: ["celery", "-A", "myapp.celery", "worker", "--loglevel=info"]
     networks:
       - backend
-      - monitoring
     depends_on:
       - postgres
       - redis
@@ -346,6 +344,21 @@ services:
         reservations:
           cpus: "0.25"
           memory: 256M
+
+  # ------------------------------------------------------------
+  # 11️⃣ Cardinality Guardian - Prevents metric explosions
+  # ------------------------------------------------------------
+  cardinality-guardian:
+    build: ./src/cardinality-guardian
+    container_name: labverse_cardinality_guardian
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 # -----------------------------------------------------------------
 # End of file

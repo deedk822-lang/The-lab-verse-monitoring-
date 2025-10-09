@@ -1,25 +1,60 @@
-# Makefile for the Cost Optimizer Service
+# Makefile for The LabVerse Monitoring Stack
 
-# Install Python dependencies
-install:
-	pip install -r requirements.txt
+# ==============================================================================
+# Main Stack Commands
+# ==============================================================================
 
-# Run tests (a placeholder for now)
+# Start all services in the stack
+up:
+	docker-compose up -d
+
+# Stop all services
+down:
+	docker-compose down
+
+# View the status of all services
+status:
+	docker-compose ps
+
+# View logs for all services
+logs:
+	docker-compose logs -f
+
+# ==============================================================================
+# Kimi Instruct AI Project Manager Commands
+# ==============================================================================
+
+# Install Kimi by running the installation script
+install-kimi:
+	@chmod +x scripts/install-kimi.sh
+	@./scripts/install-kimi.sh
+
+# Start the Kimi service
+kimi-up:
+	docker-compose up -d kimi-project-manager
+
+# Stop the Kimi service
+kimi-down:
+	docker-compose stop kimi-project-manager
+
+# View the logs for the Kimi service
+kimi-logs:
+	docker-compose logs -f kimi-project-manager
+
+# Get the status of the Kimi service via its CLI
+kimi-status:
+	docker-compose exec kimi-project-manager python -m src.kimi_instruct.cli status
+
+# ==============================================================================
+# Development and Testing
+# ==============================================================================
+
+# Install Python dependencies for Kimi
+install-deps:
+	pip install -r requirements.kimi.txt
+
+# Run integration tests for Kimi
 test:
-	@echo "Running tests..."
-	# Replace this with your actual test command, e.g., pytest
-	python -m unittest discover -s tests
+	PYTHONPATH=. pytest tests/test_kimi_integration.py
 
-# Build the Docker image for the cost optimizer
-build:
-	docker build -t labverse/cost-optimizer:latest -f Dockerfile.cost-optimizer .
-
-# Run the cost optimizer service using Docker Compose
-run:
-	docker-compose -f docker-compose.cost-optimizer.yml up
-
-# Stop the service
-stop:
-	docker-compose -f docker-compose.cost-optimizer.yml down
-
-.PHONY: install test build run stop
+.PHONY: up down status logs install-kimi kimi-up kimi-down kimi-logs kimi-status install-deps test

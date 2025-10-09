@@ -274,7 +274,7 @@ out/
 crash.log
 # Docker
 .docker/
-Dockerfile*
+Dockerfile.*
 docker-compose.override.yml
 # Kubernetes / Helm
 helm/

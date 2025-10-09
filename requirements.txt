@@ -1,4 +1,0 @@
-aiohttp
-prometheus_client
-numpy
-scipy

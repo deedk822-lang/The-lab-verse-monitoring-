@@ -26,7 +26,15 @@ async function main() {
   console.log(`  • Competitive Intelligence: ${cfg.competitive_intelligence.benchmarking_enabled ? 'Enabled' : 'Disabled'}`);
 
   // Initialize orchestrator with enterprise config
-  const watcher = new CardinalityWatcher();
+  const watcher = new CardinalityWatcher({
+    warnRatio: cfg.risk_thresholds.high,
+  });
+
+  // Periodically clean up stale series
+  setInterval(() => {
+    console.log('Running periodic cleanup of stale series...');
+    watcher.cleanup();
+  }, 60 * 60 * 1000); // Every hour
 
   // Initialize competitive intelligence
   if (cfg.competitive_intelligence.benchmarking_enabled) {

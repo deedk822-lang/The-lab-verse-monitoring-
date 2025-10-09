@@ -1,0 +1,55 @@
+{
+    "version": "1.0.0",
+    "human_oversight_mode": "collaborative",
+    "auto_execution_threshold": 0.75,
+    "human_checkin_interval_hours": 24,
+    "max_concurrent_tasks": 3,
+    "communication_channels": {
+        "slack_webhook": "${SLACK_WEBHOOK_URL}",
+        "email_notifications": true,
+        "dashboard_updates": true
+    },
+    "risk_thresholds": {
+        "low": 0.2,
+        "medium": 0.5,
+        "high": 0.8,
+        "critical": 0.95
+    },
+    "escalation_rules": {
+        "budget_exceeded": "immediate",
+        "timeline_at_risk": "within_4_hours", 
+        "technical_blocker": "within_1_hour",
+        "security_issue": "immediate"
+    },
+    "decision_authority": {
+        "auto_deploy_staging": true,
+        "auto_deploy_production": false,
+        "auto_cost_optimization": true,
+        "auto_scaling": true,
+        "auto_backup": true,
+        "auto_security_updates": true,
+        "auto_billing_changes": false
+    },
+    "project_objectives": [
+        "Deploy production monitoring stack within 90 days",
+        "Achieve 99.9% uptime SLA",
+        "Optimize monitoring costs by 70%",
+        "Support $50K MRR revenue tracking",
+        "Maintain POPIA compliance",
+        "Scale to 1M+ metrics/second"
+    ],
+    "constraints": [
+        "Budget: Target $50K MRR",
+        "Timeline: 90-day delivery",
+        "Region: Africa-focused",
+        "Compliance: POPIA compliant",
+        "Technology: Open source preferred"
+    ],
+    "success_metrics": {
+        "uptime_target": 99.9,
+        "cost_reduction_target": 70.0,
+        "deployment_time_target": 90,
+        "revenue_tracking_accuracy": 99.5,
+        "human_intervention_max": 10
+    }
+}

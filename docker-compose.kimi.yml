@@ -1,0 +1,72 @@
+version: '3.8'
+
+ feature/ml-anomaly-detection
+networks:
+  monitoring:
+    external: true
+
+ main
+services:
+  kimi-project-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.kimi
+ feature/ml-anomaly-detection
+    container_name: labverse_kimi_pm
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - ./logs:/app/logs
+
+    container_name: labverse_kimi_manager
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+      - COST_OPTIMIZER_URL=http://cost-optimizer:8083
+      - PROJECT_ID=the-lab-verse-monitoring
+      - INITIAL_BUDGET=50000
+      - ESTIMATED_DAYS=90
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - HUMAN_APPROVAL_CHANNEL=#project-approvals
+      - KIMI_HOST=0.0.0.0
+      - KIMI_PORT=8084
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    depends_on:
+      - prometheus
+      - grafana
+    volumes:
+      - ./kimi_workspace:/app/workspace
+      - ./logs:/app/logs
+      - ./config/kimi_instruct.json:/app/config/kimi_instruct.json:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kimi.rule=Host(`kimi.localhost`)"
+      - "traefik.http.routers.kimi.entrypoints=web"
+      - "traefik.http.services.kimi.loadbalancer.server.port=8084"
+      - "com.docker.compose.service=kimi-project-manager"
+
+  # Add Kimi to existing monitoring network
+networks:
+  monitoring:
+    external: true
+ main

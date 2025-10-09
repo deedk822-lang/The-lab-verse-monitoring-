@@ -1,10 +1,24 @@
- feature/ml-anomaly-detection
+"""
+Kimi Instruct Web Service
+HTTP API for the Kimi Instruct project manager
+"""
 import asyncio
-from aiohttp import web
 import json
 from datetime import datetime, date
 from enum import Enum
-from .core import KimiInstruct, TaskPriority
+from typing import Dict, Any, List
+
+import aiohttp
+from aiohttp import web
+from aiohttp_cors import setup as cors_setup
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+from .core import KimiInstruct, TaskPriority, TaskStatus
+
+# Prometheus metrics
+REQUEST_COUNT = Counter('kimi_requests_total', 'Total requests to Kimi API', ['method', 'endpoint', 'status'])
+REQUEST_DURATION = Histogram('kimi_request_duration_seconds', 'Request duration in seconds')
+TASK_COUNT = Counter('kimi_tasks_total', 'Total tasks created', ['priority', 'status'])
 
 def default_serializer(o):
     if isinstance(o, (datetime, date)):
@@ -46,43 +60,6 @@ async def handle_health(request):
     """
     return web.json_response({"status": "healthy"})
 
-def main():
-    app = web.Application()
-    app['kimi'] = KimiInstruct()
-
-    app.router.add_get("/status", handle_status)
-    app.router.add_post("/tasks", handle_create_task)
-    app.router.add_get("/health", handle_health)
-
-    print("Starting Kimi Instruct service on port 8084...")
-    web.run_app(app, port=8084)
-
-if __name__ == "__main__":
-    from datetime import datetime, date
-    from enum import Enum
-    main()
-
-"""
-Kimi Instruct Web Service
-HTTP API for the Kimi Instruct project manager
-"""
-import asyncio
-import json
-from datetime import datetime
-from typing import Dict, Any, List
-
-import aiohttp
-from aiohttp import web, ClientSession
-from aiohttp.web_middlewares import cors_handler
-from aiohttp_cors import setup as cors_setup
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-
-from .core import KimiInstruct, TaskPriority, TaskStatus
-
-# Prometheus metrics
-REQUEST_COUNT = Counter('kimi_requests_total', 'Total requests to Kimi API', ['method', 'endpoint', 'status'])
-REQUEST_DURATION = Histogram('kimi_request_duration_seconds', 'Request duration in seconds')
-TASK_COUNT = Counter('kimi_tasks_total', 'Total tasks created', ['priority', 'status'])
 
 class KimiService:
     """Web service for Kimi Instruct"""
@@ -122,19 +99,20 @@ class KimiService:
     
     def setup_cors(self):
         """Setup CORS for web dashboard"""
-        cors = cors_setup(self.app)
+        import aiohttp_cors
+        cors = cors_setup(self.app, defaults={
+            "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*"
+            )
+        })
         
         # Configure CORS for all routes
         for route in list(self.app.router.routes()):
-            cors.add(route, {
-                "*": aiohttp_cors.ResourceOptions(
-                    allow_credentials=True,
-                    expose_headers="*",
-                    allow_headers="*",
-                    allow_methods="*"
-                )
-            })
-    
+            cors.add(route)
+
     async def index(self, request):
         """Main index page"""
         return web.json_response({
@@ -174,7 +152,7 @@ class KimiService:
             try:
                 status = await self.kimi.get_status_report()
                 REQUEST_COUNT.labels(method='GET', endpoint='/status', status='200').inc()
-                return web.json_response(status)
+                return web.json_response(status, dumps=lambda x: json.dumps(x, default=default_serializer))
             except Exception as e:
                 REQUEST_COUNT.labels(method='GET', endpoint='/status', status='500').inc()
                 return web.json_response(
@@ -584,4 +562,3 @@ def main():
 
 if __name__ == '__main__':
     main()
- main

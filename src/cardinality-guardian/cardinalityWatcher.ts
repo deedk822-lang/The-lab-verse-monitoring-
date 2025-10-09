@@ -1,7 +1,3 @@
-import * as http from 'http';
-
-// The CardinalityWatcher class remains the same, but we will now use it
-// within a running server.
 export class CardinalityWatcher {
   private seriesTracker = new Map<string, number>();
   private readonly MAX_SERIES = 100000;
@@ -39,19 +35,3 @@ export class CardinalityWatcher {
     console.log(`High cardinality warning for metric ${metric}: ${count} series`);
   }
 }
-
-// Create a simple HTTP server to make the service runnable.
-const server = http.createServer((req, res) => {
-  if (req.url === '/healthz' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('OK');
-  } else {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
-  }
-});
-
-const PORT = 8080;
-server.listen(PORT, () => {
-  console.log(`Cardinality Guardian server running on port ${PORT}`);
-});

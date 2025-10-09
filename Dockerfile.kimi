@@ -1,0 +1,42 @@
+FROM python:3.11-slim
+
+# Security hardening
+RUN groupadd -g 1000 kimi && \
+    useradd -u 1000 -g kimi -s /bin/bash kimi
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.kimi.txt /app/
+RUN pip install --no-cache-dir -r requirements.kimi.txt
+
+# Copy Kimi code
+COPY src/kimi_instruct /app/src/kimi_instruct
+COPY config/kimi_instruct.json /app/config/
+
+# Create directories
+RUN mkdir -p /app/workspace /app/logs && \
+    chown -R kimi:kimi /app
+
+# Switch to non-root user
+USER kimi
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8084/health || exit 1
+
+# Expose port
+EXPOSE 8084
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run the service
+CMD ["python", "-m", "src.kimi_instruct.service"]

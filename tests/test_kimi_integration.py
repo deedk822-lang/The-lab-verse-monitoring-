@@ -1,9 +1,18 @@
- feature/ml-anomaly-detection
 import pytest
 from aiohttp import web
 from src.kimi_instruct.core import KimiInstruct
 from src.kimi_instruct.service import handle_status, handle_create_task, handle_health, default_serializer
 import json
+from datetime import datetime, timedelta
+from unittest.mock import patch, AsyncMock
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
+from src.kimi_instruct.service import KimiService
+
 
 # This fixture sets up the test client for the Kimi service
 @pytest.fixture
@@ -63,23 +72,6 @@ async def test_create_task_invalid_payload(kimi_client):
     data = await resp.json()
     assert "error" in data
     assert "title" in data["error"].lower()
-
-"""
-Integration tests for Kimi Instruct
-Tests the complete project lifecycle with the AI project manager
-"""
-import pytest
-import asyncio
-import json
-from datetime import datetime, timedelta
-from unittest.mock import patch, AsyncMock
-
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
-from src.kimi_instruct.service import KimiService
 
 @pytest.mark.asyncio
 class TestKimiIntegration:
@@ -205,7 +197,7 @@ class TestKimiIntegration:
         
         # Create a critical task
         critical_task = await kimi.create_task(
-            title="Critical system check",
+            title="Critical system monitoring check",
             description="Check critical monitoring systems",
             priority=TaskPriority.CRITICAL
         )
@@ -249,6 +241,9 @@ class TestKimiIntegration:
         # Complete parent task
         parent_task.status = TaskStatus.COMPLETED
         
+        # Reset dependent task status to re-evaluate
+        dependent_task.status = TaskStatus.PENDING
+
         # Now dependent task should execute
         success = await kimi.execute_task(dependent_task.id)
         assert success
@@ -342,7 +337,7 @@ class TestKimiIntegration:
             'priority': 'high'
         }
         
-        request = make_mocked_request('POST', '/tasks', json=task_data)
+        request = make_mocked_request('POST', '/tasks')
         request.json = AsyncMock(return_value=task_data)
         
         response = await kimi_service.create_task(request)
@@ -426,4 +421,3 @@ def mock_grafana_response():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
- main

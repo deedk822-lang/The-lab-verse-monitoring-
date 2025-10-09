@@ -1,0 +1,14 @@
+{
+  "name": "cardinality-guardian",
+  "version": "1.0.0",
+  "description": "A service to monitor and prevent metric cardinality explosions.",
+  "main": "dist/cardinalityWatcher.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cardinalityWatcher.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

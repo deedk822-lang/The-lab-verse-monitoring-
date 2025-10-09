@@ -188,7 +188,7 @@ help: ## Show this help message
 	@echo -e "$(BLUE)LabVerse Monitoring Stack with Kimi Instruct$(NC)"
 	@echo -e "$(BLUE)==============================================$(NC)"
 	@echo -e "$(YELLOW)Available targets:$(NC)"
-	@awk 'BEGIN {FS = ":.*##"; printf "\033[36m\033[0m\n"} /^[$$()% a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"} /^[$$()% a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 	@echo -e "\n$(BLUE)Examples:$(NC)"
 	@echo -e "  make install-kimi     # Install Kimi AI project manager"
 	@echo -e "  make up               # Start the complete stack"

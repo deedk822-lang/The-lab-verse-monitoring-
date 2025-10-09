@@ -82,6 +82,51 @@ services:
       retries: 3
 
   # ------------------------------------------------------------
+  # 13. Anomaly Detection Service
+  # ------------------------------------------------------------
+  anomaly-detection:
+    build:
+      context: .
+      dockerfile: src/anomaly_detection/Dockerfile
+    container_name: labverse_anomaly_detection
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    networks:
+      - monitoring
+      - backend
+    volumes:
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ------------------------------------------------------------
+  # 12️⃣ Kimi Instruct - AI Project Manager
+  # ------------------------------------------------------------
+  kimi-project-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.kimi
+    container_name: labverse_kimi_pm
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - ./logs:/app/logs
+
+  # ------------------------------------------------------------
   # 2️⃣ Grafana – dashboards & alerting UI
   # ------------------------------------------------------------
   grafana:

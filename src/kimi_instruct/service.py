@@ -4,7 +4,8 @@ HTTP API for the Kimi Instruct project manager
 """
 import asyncio
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from pathlib import Path
 from enum import Enum
 from typing import Dict, Any, List
 
@@ -94,8 +95,12 @@ class KimiService:
         # Dashboard
         self.app.router.add_get('/dashboard', self.dashboard)
         
-        # Static files for dashboard
-        self.app.router.add_static('/', path='static', name='static')
+        # Static files for dashboard (optional during tests)
+        # Only register if the directory exists to avoid startup errors
+        static_dir = Path(__file__).parent / 'static'
+        if static_dir.exists() and static_dir.is_dir():
+            # Serve under /static to avoid conflicting with index route
+            self.app.router.add_static('/static/', path=str(static_dir), name='static')
     
     def setup_cors(self):
         """Setup CORS for web dashboard"""

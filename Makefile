@@ -63,7 +63,7 @@ install:
 	@pip install -r $(REQ) -r $(REQ_KIMI) -r src/anomaly_detection/requirements.txt --no-cache-dir
 	$(call echogreen,"✅ Dependencies installed")
 
-build:
+build: scout-build
 	$(call echoblue,"🏗️  Building Docker images...")
 	@docker build -t labverse/cost-optimizer:latest -f Dockerfile.cost-optimizer . --no-cache
 	@docker build -t labverse/kimi-manager:latest -f Dockerfile.kimi . --no-cache
@@ -231,6 +231,21 @@ enterprise-test:
 	@$(MAKE) --no-print-directory enterprise-config-validate
 	@$(MAKE) --no-print-directory enterprise-features
 	$(call echogreen,"✅ Enterprise system verified")
+
+# === Scout Monetization Service ===
+scout-build: ## 🛠️  Build the scout-monetization TypeScript project
+	$(call echoblue,"🛠️ Building scout-monetization...")
+	@(cd src/scout-monetization && npm run build)
+	$(call echogreen,"✅ scout-monetization built successfully.")
+
+scout-run: scout-build ## 🚀 Run the scout-monetization service
+	$(call echoblue,"🚀 Launching Scout Monetization Service...")
+	@node src/scout-monetization/dist/main.js
+
+scout-test: scout-build ## 🧪 Run tests for the scout-monetization service
+	$(call echoblue,"🧪 Running Scout Monetization tests...")
+	@(cd src/scout-monetization && npx jest)
+	$(call echogreen,"✅ Scout Monetization tests passed.")
 
 # === Help & Info ===
 help:

@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: The-Lap-Verse Core API
+  version: 2.0.0
+paths:
+  /tasks:
+    post:
+      summary: Submit task (idempotent, cost-gated, SLO-gated)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, priority, description, tenant]
+              properties:
+                type:
+                  type: string
+                  enum: [ANALYSIS, FORECAST, OTHER]
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                description:
+                  type: string
+                  maxLength: 10000
+                tenant:
+                  type: string
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                costCenter:
+                  type: string
+                  default: lapverse-core
+      responses:
+        '202':
+          description: Accepted
+          headers:
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-LapVerse-Cost-USD:
+              schema:
+                type: number
+        '402':
+          description: Margin guardrail exceeded
+        '503':
+          description: Error budget exhausted
+
+  /self-compete:
+    post:
+      summary: Self-compete evolution loop
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, platforms, priority]
+              properties:
+                content:
+                  type: string
+                  maxLength: 10000
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                costCenter:
+                  type: string
+                  default: lapverse-core
+                competitors:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '202':
+          description: Accepted
+          headers:
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-LapVerse-Cost-USD:
+              schema:
+                type: number
+        '402':
+          description: Margin guardrail exceeded
+        '503':
+          description: Error budget exhausted

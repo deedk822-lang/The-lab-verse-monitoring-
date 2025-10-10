@@ -5,6 +5,12 @@ export class FinOpsTagger {
     return base * complexity[task.requirements?.complexity||'simple'];
   }
 
+  async estimateCompetition(payload: any): Promise<number>{
+    const competitors: string[] = payload?.competitors || ['aggressive','conservative','balanced','experimental'];
+    const perVariant = await this.estimate({ requirements: { complexity: payload?.requirements?.complexity || 'intermediate' } });
+    return competitors.length * perVariant;
+  }
+
   async wouldBustMargin(tenant: string, forecast: number): Promise<boolean>{
     // Replace with actual DB call; simulate conservative mrr
     const mrr = await Promise.resolve(100); 
@@ -27,5 +33,9 @@ export class FinOpsTagger {
   }
 
   calculate(task: any){ return this.estimate(task); }
+  async calculateCompetition(results: PromiseSettledResult<any>[]){
+    const completed = results.filter(r=>r.status==='fulfilled').length;
+    return completed * 0.02; // simple per-variant cost model
+  }
   getAllocation(){ /* per-tenant cost */ return {}; }
 }

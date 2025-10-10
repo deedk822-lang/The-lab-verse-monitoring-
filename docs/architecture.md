@@ -1,5 +1,6 @@
-# LabVerse Monitoring & AI Project Manager - Architecture
+# LabVerse Monitoring & AI Project Manager — Comprehensive Architecture
 
+## Runtime Architecture
 ```mermaid
 flowchart LR
     %% Networks
@@ -57,6 +58,52 @@ flowchart LR
     Cardinality -->|policies| Prometheus
 ```
 
-## Notes
-- Derived from `docker-compose.yml`, `docker-compose.kimi.yml`, and the Makefile.
-- Shows networks (public, backend, monitoring), core infra (Prometheus, Grafana, Alertmanager), app stack (Web, Worker, Postgres, Redis, RabbitMQ), and AI/ML services (Kimi Instruct, Anomaly Detection, Cardinality Guardian).
+## Repository Map (Monorepo)
+```mermaid
+flowchart TB
+  repo[[The-lab-verse-monitoring-]]
+
+  subgraph root[Root]
+    Makefile(Makefile)
+    DC1(docker-compose.yml)
+    DC2(docker-compose.kimi.yml)
+    README(README.md)
+    Scripts[scripts/]
+    Config[config/]
+    Tests[tests/]
+    Docs[docs/]
+  end
+
+  subgraph python[Python Services]
+    KimiSvc["src/kimi_instruct/*"]
+    AnomSvc["src/anomaly_detection/*"]
+    AnomDeploy["src/anomaly_deployment/multi_cloud_orchestrator.py"]
+  end
+
+  subgraph ts[TypeScript Services & Libraries]
+    LapCore["lapverse-core/*"]
+    CardGuard["src/cardinality-guardian/*"]
+    ScoutRoot["scout-monetization/*"]
+    ScoutSrc["src/scout-monetization/*"]
+  end
+
+  repo --> root
+  repo --> python
+  repo --> ts
+
+  %% Cross-links / responsibilities
+  LapCore --> LapOpenAPI["openapi/lapverse.yaml"]
+  CardGuard -. policies .-> Prometheus
+  AnomSvc -. exposes 8085 .-> DC1
+  KimiSvc -. composes .-> DC2
+  Tests --> KimiSvc
+  Tests --> AnomSvc
+  Config --> KimiSvc
+  Config --> AnomSvc
+```
+
+### Notes
+- Runtime diagram derived from `docker-compose.yml` and `docker-compose.kimi.yml` plus Makefile targets.
+- Repo map shows major modules, not every file. Both `scout-monetization/` (root) and `src/scout-monetization/` exist and are shown.
+- `lapverse-core/openapi/lapverse.yaml` documents core API contracts; `Cardinality Guardian` enforces metrics hygiene for Prometheus.
+- Tests focus on Kimi integration and anomaly detection service.

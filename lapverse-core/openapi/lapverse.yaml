@@ -10,11 +10,22 @@ paths:
         - in: header
           name: Idempotency-Key
           required: true
+cursor/the-lap-verse-core-service-polish-ae35
           schema: { type: string, format: uuid }
         - in: header
           name: X-Tenant-ID
           required: true
           schema: { type: string }
+
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema:
+            type: string
+ main
       requestBody:
         required: true
         content:
@@ -23,20 +34,54 @@ paths:
               type: object
               required: [type, priority, description, tenant]
               properties:
+ cursor/the-lap-verse-core-service-polish-ae35
                 type:        { enum: [ANALYSIS, FORECAST, OTHER] }
                 priority:    { enum: [low, medium, high, urgent] }
                 description: { type: string, maxLength: 10000 }
                 tenant:      { type: string }
                 platforms:   { type: array, items: { type: string } }
                 costCenter:  { type: string, default: "lapverse-core" }
+
+                type:
+                  type: string
+                  enum: [ANALYSIS, FORECAST, OTHER]
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                description:
+                  type: string
+                  maxLength: 10000
+                tenant:
+                  type: string
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                costCenter:
+                  type: string
+                  default: lapverse-core
+ main
       responses:
         '202':
           description: Accepted
           headers:
+ cursor/the-lap-verse-core-service-polish-ae35
             X-RateLimit-Remaining: { schema: { type: integer } }
             X-LapVerse-Cost-USD:   { schema: { type: number } }
         '402': { description: Margin guardrail exceeded }
         '503': { description: Error budget exhausted }
+
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-LapVerse-Cost-USD:
+              schema:
+                type: number
+        '402':
+          description: Margin guardrail exceeded
+        '503':
+          description: Error budget exhausted
+ main
 
   /self-compete:
     post:
@@ -45,11 +90,22 @@ paths:
         - in: header
           name: Idempotency-Key
           required: true
+ cursor/the-lap-verse-core-service-polish-ae35
           schema: { type: string, format: uuid }
         - in: header
           name: X-Tenant-ID
           required: true
           schema: { type: string }
+
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema:
+            type: string
+ main
       requestBody:
         required: true
         content:
@@ -58,16 +114,49 @@ paths:
               type: object
               required: [content, platforms, priority]
               properties:
+ cursor/the-lap-verse-core-service-polish-ae35
                 content:     { type: string, maxLength: 10000 }
                 platforms:   { type: array, items: { type: string } }
                 priority:    { enum: [low, medium, high, urgent] }
                 costCenter:  { type: string, default: "lapverse-core" }
                 competitors: { type: array, items: { type: string } }
+
+                content:
+                  type: string
+                  maxLength: 10000
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                costCenter:
+                  type: string
+                  default: lapverse-core
+                competitors:
+                  type: array
+                  items:
+                    type: string
+ main
       responses:
         '202':
           description: Accepted
           headers:
+ cursor/the-lap-verse-core-service-polish-ae35
             X-RateLimit-Remaining: { schema: { type: integer } }
             X-LapVerse-Cost-USD:   { schema: { type: number } }
         '402': { description: Margin guardrail exceeded }
         '503': { description: Error budget exhausted }
+
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-LapVerse-Cost-USD:
+              schema:
+                type: number
+        '402':
+          description: Margin guardrail exceeded
+        '503':
+          description: Error budget exhausted
+ main

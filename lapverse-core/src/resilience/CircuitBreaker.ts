@@ -5,7 +5,7 @@ export class CircuitBreaker<TResult> {
   private state: 'closed'|'open'|'half-open' = 'closed';
   private openedAt = 0;
 
-  constructor(private fn: () => Promise<TResult>, private opts: BreakerOptions){ }
+  constructor(private fn: (...args: any[]) => Promise<TResult>, private opts: BreakerOptions){ }
 
   async execute(invocation?: () => Promise<TResult>): Promise<TResult> {
     const now = Date.now();

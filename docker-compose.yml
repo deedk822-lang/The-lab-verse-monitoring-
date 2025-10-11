@@ -1,410 +1,113 @@
-# --------------------------------------------------------------
-# docker-compose.yml – Foundation for a $50K MRR SaaS platform
-# --------------------------------------------------------------
-# Version 3.8 is the highest that supports secrets & healthchecks
-# on Docker Compose (non‑Swarm) and works with Docker Engine ≥ 20.10.
-# --------------------------------------------------------------
 version: '3.8'
 
-# -----------------------------------------------------------------
-# Networks – isolate traffic and give monitoring a dedicated plane
-# -----------------------------------------------------------------
-networks:
-  # Public-facing traffic (Traefik, API, static assets)
-  public:
-    driver: bridge
-
-  # Internal back‑end traffic (DB, cache, queue, workers)
-  backend:
-    driver: bridge
-
-  # Monitoring stack (Prometheus scrapes metrics from all services)
-  monitoring:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-
-# -----------------------------------------------------------------
-# Volumes – persistent storage for stateful services
-# -----------------------------------------------------------------
-volumes:
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  rabbitmq_data:
-    driver: local
-
-# -----------------------------------------------------------------
-# Secrets – keep credentials out of the repo
-# -----------------------------------------------------------------
-secrets:
-  # Place the secret files under ./secrets/ (git‑ignored!)
-  grafana_admin_password:
-    file: ./secrets/grafana_admin_password.txt
-  postgres_password:
-    file: ./secrets/postgres_password.txt
-  rabbitmq_password:
-    file: ./secrets/rabbitmq_password.txt
-  # (Optional) add more secrets as you need, e.g. JWT signing key, API keys…
-
 services:
-  # ------------------------------------------------------------
-  # 1️⃣ Prometheus – core metrics collection
-  # ------------------------------------------------------------
-  prometheus:
-    image: prom/prometheus:v2.45.0
-    container_name: labverse_prometheus
+  app:
+    build: .
+    container_name: lapverse-app
+    image: lapverse-monitoring:2.0.0
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=redis://redis:6379
+      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - COST_CENTER=lapverse-core
     ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus:/etc/prometheus          # config & rules
-      - prometheus_data:/prometheus           # TSDB data
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    networks:
-      - monitoring
-      - backend        # so it can scrape back‑end services directly
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # ------------------------------------------------------------
-  # 13. Anomaly Detection Service
-  # ------------------------------------------------------------
-  anomaly-detection:
-    build:
-      context: .
-      dockerfile: src/anomaly_detection/Dockerfile
-    container_name: labverse_anomaly_detection
-    restart: unless-stopped
-    ports:
-      - "8085:8085"
     networks:
-      - monitoring
-      - backend
-    volumes:
-      - ./config:/app/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-  # ------------------------------------------------------------
-  # 12️⃣ Kimi Instruct - AI Project Manager
-  # ------------------------------------------------------------
-  kimi-project-manager:
-    build:
-      context: .
-      dockerfile: Dockerfile.kimi
-    container_name: labverse_kimi_pm
-    restart: unless-stopped
-    ports:
-      - "8084:8084"
-    networks:
-      - monitoring
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8084/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+      - lapverse-network
+    user: "lapverse"
     volumes:
       - ./logs:/app/logs
 
-  # ------------------------------------------------------------
-  # 2️⃣ Grafana – dashboards & alerting UI
-  # ------------------------------------------------------------
-  grafana:
-    image: grafana/grafana:10.0.0
-    container_name: labverse_grafana
+  redis:
+    image: redis:7-alpine
+    container_name: lapverse-redis
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-redis123}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    healthcheck:
+      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning   # dashboards, datasources
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SECURITY_COOKIE_SECURE=true
-      - GF_ANALYTICS_REPORTING_ENABLED=false
-      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
-    secrets:
-      - grafana_admin_password
+      - redis_data:/data
     networks:
-      - monitoring
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - lapverse-network
 
-  # ------------------------------------------------------------
-  # 3️⃣ Alertmanager – centralized alerts for Prometheus
-  # ------------------------------------------------------------
-  alertmanager:
-    image: prom/alertmanager:v0.25.0
-    container_name: labverse_alertmanager
-    restart: unless-stopped
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./alertmanager:/etc/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
-    networks:
-      - monitoring
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ------------------------------------------------------------
-  # 4️⃣ Node Exporter – host‑level metrics (CPU, RAM, FS, …)
-  # ------------------------------------------------------------
-  node_exporter:
-    image: quay.io/prometheus/node-exporter:latest
-    container_name: labverse_node_exporter
-    restart: unless-stopped
-    pid: host
-    network_mode: host                # needed for host metrics
-    command:
-      - '--path.rootfs=/host'         # mount host FS to /host
-    volumes:
-      - /:/host:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ------------------------------------------------------------
-  # 5️⃣ Traefik – dynamic reverse‑proxy & Let's Encrypt TLS
-  # ------------------------------------------------------------
-  traefik:
-    image: traefik:v2.10
-    container_name: labverse_traefik
-    restart: unless-stopped
-    command:
-      # Enable the dashboard (insecure; disable in prod or protect with auth)
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      # Let's Encrypt – you can switch to staging for testing
-      - "--certificatesresolvers.myresolver.acme.email=you@example.com"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  nginx:
+    image: nginx:alpine
+    container_name: lapverse-nginx
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"          # Traefik dashboard (remove or secure before prod)
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/acme.json:/letsencrypt/acme.json
-    networks:
-      - public
-      - backend
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ------------------------------------------------------------
-  # 6️⃣ PostgreSQL – primary relational datastore
-  # ------------------------------------------------------------
-  postgres:
-    image: postgres:15-alpine
-    container_name: labverse_postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=app_user
-      - POSTGRES_DB=app_db
-      # Read password from Docker secret file
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-    secrets:
-      - postgres_password
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "app_user", "-d", "app_db"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  # ------------------------------------------------------------
-  # 7️⃣ Redis – fast in‑memory cache / session store
-  # ------------------------------------------------------------
-  redis:
-    image: redis:7-alpine
-    container_name: labverse_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  # ------------------------------------------------------------
-  # 8️⃣ RabbitMQ – reliable message broker (for async jobs)
-  # ------------------------------------------------------------
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: labverse_rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI (remove or protect in prod)
-    environment:
-      - RABBITMQ_DEFAULT_USER=app_user
-      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/rabbitmq_password
-    secrets:
-      - rabbitmq_password
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-
-  # ------------------------------------------------------------
-  # 9️⃣ Web/API – replace with your actual application image
-  # ------------------------------------------------------------
-  web:
-    image: mycompany/app:latest                # <‑‑ replace with your image
-    container_name: labverse_web
-    restart: unless-stopped
-    # If you use a Dockerfile that reads .env files, you can mount them.
-    env_file: .env
-    environment:
-      - DATABASE_URL=postgresql://app_user:${POSTGRES_PASSWORD}@postgres:5432/app_db
-      - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://app_user:${RABBITMQ_PASSWORD}@rabbitmq:5672//
-    secrets:
-      - postgres_password
-      - rabbitmq_password
-    ports:
-      - "8000:8000"    # optional: expose for debugging; production traffic goes via Traefik
-    networks:
-      - backend
-      - public          # needed for Traefik to discover it
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    # --------------------------------------------------------
-    # Optional: resource limits – crucial once you start paying for
-    #   larger hosts or need to autoscale.
-    # --------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
-    # --------------------------------------------------------
-    # Traefik labels – expose the API via HTTPS on your domain.
-    # --------------------------------------------------------
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.entrypoints=websecure"
-      - "traefik.http.routers.web.rule=Host(`api.yourdomain.com`)"   # <‑‑ change
-      - "traefik.http.routers.web.tls.certresolver=myresolver"
-      - "traefik.http.services.web.loadbalancer.server.port=8000"
-
-  # ------------------------------------------------------------
-  # 🔟 Celery worker (or any background job processor)
-  # ------------------------------------------------------------
-  worker:
-    image: mycompany/app:latest                # same image, different entrypoint
-    container_name: labverse_worker
+      - app
     restart: unless-stopped
-    env_file: .env
+    networks:
+      - lapverse-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: lapverse-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - lapverse-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: lapverse-grafana
+    ports:
+      - "3001:3000"
     environment:
-      - DATABASE_URL=postgresql://app_user:${POSTGRES_PASSWORD}@postgres:5432/app_db
-      - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://app_user:${RABBITMQ_PASSWORD}@rabbitmq:5672//
-    secrets:
-      - postgres_password
-      - rabbitmq_password
-    command: ["celery", "-A", "myapp.celery", "worker", "--loglevel=info"]
-    networks:
-      - backend
-    depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-    healthcheck:
-      test: ["CMD", "celery", "-A", "myapp.celery", "inspect", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
-
-  # ------------------------------------------------------------
-  # 11️⃣ Cardinality Guardian - Prevents metric explosions
-  # ------------------------------------------------------------
-  cardinality-guardian:
-    build: ./src/cardinality-guardian
-    container_name: labverse_cardinality_guardian
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     restart: unless-stopped
     networks:
-      - monitoring
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - lapverse-network
 
-# -----------------------------------------------------------------
-# End of file
-# -----------------------------------------------------------------
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  lapverse-network:
+    driver: bridge
+

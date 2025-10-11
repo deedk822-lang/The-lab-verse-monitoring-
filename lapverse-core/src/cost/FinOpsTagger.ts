@@ -1,54 +1,60 @@
 export class FinOpsTagger {
-  async estimate(task: any): Promise<number>{
+  async estimate(task: any): Promise<number> {
     const base = 0.01;
-    const complexity: Record<string, number> = {simple:1, intermediate:2, advanced:4, expert:8};
-    return base * complexity[task.requirements?.complexity||'simple'];
+    const complexity: Record<string, number> = {
+      simple: 1,
+      intermediate: 2,
+      advanced: 4,
+      expert: 8
+    };
+    const level = task.requirements?.complexity || 'simple';
+    return base * (complexity[level] || 1);
   }
 
- cursor/the-lap-verse-core-service-polish-ae35
-  async estimateCompetition(_payload: any): Promise<number>{
-    // Simple heuristic: 4 variants at 1.5x single task
-    const perVariant = await this.estimate({ requirements: { complexity: 'intermediate' } });
-    return perVariant * 4 * 1.5;
-
-  async estimateCompetition(payload: any): Promise<number>{
-    const competitors: string[] = payload?.competitors || ['aggressive','conservative','balanced','experimental'];
-    const perVariant = await this.estimate({ requirements: { complexity: payload?.requirements?.complexity || 'intermediate' } });
+  async estimateCompetition(payload: any): Promise<number> {
+    const competitors: string[] = payload?.competitors || [
+      'aggressive',
+      'conservative',
+      'balanced',
+      'experimental'
+    ];
+    const perVariant = await this.estimate({
+      requirements: {
+        complexity: payload?.requirements?.complexity || 'intermediate'
+      }
+    });
     return competitors.length * perVariant;
- main
   }
 
-  async wouldBustMargin(tenant: string, forecast: number): Promise<boolean>{
-    // Replace with actual DB call; simulate conservative mrr
-    const mrr = await Promise.resolve(100); 
-    return forecast / mrr > 0.70; // 70% guardrail
+  async wouldBustMargin(tenant: string, forecast: number): Promise<boolean> {
+    const mrr = await Promise.resolve(100);
+    return forecast / mrr > 0.70;
   }
 
-  emitUsage(meta: Record<string,any>){
-    // TODO: push to Prometheus or billing system
+  emitUsage(_meta: Record<string, any>): void {
   }
 
-  getFinOpsTags(task: any){
+  getFinOpsTags(task: any): Record<string, string> {
     return {
       application: 'lapverse-monitoring',
-      environment: process.env.NODE_ENV||'dev',
-      tenantId: task.tenant||'unknown',
-      costCenter: task.costCenter||'lapverse-core',
+      environment: process.env.NODE_ENV || 'dev',
+      tenantId: task.tenant || 'unknown',
+      costCenter: task.costCenter || 'lapverse-core',
       owner: 'data-team',
       version: '2.0.0'
     };
   }
 
-  calculate(task: any){ return this.estimate(task); }
- cursor/the-lap-verse-core-service-polish-ae35
-  async calculateCompetition(results: PromiseSettledResult<any>[]): Promise<number>{
-    const completed = results.filter(r=>r.status==='fulfilled').length || 1;
-    return completed * (await this.estimate({ requirements: { complexity: 'intermediate' } }));
-
-  async calculateCompetition(results: PromiseSettledResult<any>[]){
-    const completed = results.filter(r=>r.status==='fulfilled').length;
-    return completed * 0.02; // simple per-variant cost model
- main
+  calculate(task: any): Promise<number> {
+    return this.estimate(task);
   }
-  getAllocation(){ /* per-tenant cost */ return {}; }
+
+  async calculateCompetition(results: PromiseSettledResult<any>[]): Promise<number> {
+    const completed = results.filter(r => r.status === 'fulfilled').length;
+    return completed * 0.02;
+  }
+
+  getAllocation(): Record<string, any> {
+    return {};
+  }
 }

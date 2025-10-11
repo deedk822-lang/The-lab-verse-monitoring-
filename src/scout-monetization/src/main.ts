@@ -2,6 +2,7 @@ import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { OpenFeature } from '@openfeature/server-sdk';
 import { randomUUID } from 'crypto';
 import formBodyPlugin from '@fastify/formbody';
+import { EnhancedMonetizationEngine } from './monetization/EnhancedMonetizationEngine';
 
 // Import the plugins we created
 import idempotencyPlugin from './monetization/idempotency';
@@ -18,6 +19,10 @@ const buildServer = (logger = true): FastifyInstance => {
     server.register(idempotencyPlugin);
     server.register(featureFlagsPlugin);
     server.register(circuitBreakerPlugin);
+
+    // Start monetization engine as background loop
+    const monetization = new EnhancedMonetizationEngine();
+    monetization.start().catch(err => server.log.error({ err }, 'Monetization engine failed to start'));
 
     // Mock a downstream service call that can fail
     async function callMarketData(query: string): Promise<{ data: any; stale: boolean }> {

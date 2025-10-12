@@ -1,7 +1,7 @@
-import { hotShots } from 'hot-shots';
+import { StatsD } from 'hot-shots';
 
 export class FinOpsTagger {
-    private readonly client = new hotShots();
+    private readonly client = new StatsD();
 
     emitUsage(usage: { artifactId?: string; forecastCost: number; tenant?: string; source: string; }) {
         this.client.increment('finops.usage.emit', 1, {

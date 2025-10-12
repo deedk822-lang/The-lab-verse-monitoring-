@@ -1,52 +1,84 @@
-import { hotShots } from 'hot-shots';
+import { StatsD } from 'hot-shots';
 
 export class FinOpsTagger {
-    private readonly client = new hotShots();
-
-    emitUsage(usage: { artifactId?: string; forecastCost: number; tenant?: string; source: string; }) {
-        this.client.increment('finops.usage.emit', 1, {
-            source: usage.source,
-            tenant: usage.tenant || 'default'
-        });
+  private readonly client = new StatsD({
+    host: 'datadog-agent',
+    port: 8125,
+    prefix: 'lapverse.',
+    globalTags: {
+      env: process.env.NODE_ENV || 'development'
     }
+  });
 
-    getFinOpsTags(task: any) {
-        return {
-            'finops.cost_center': 'ai-inference',
-            'finops.tenant': task.tenantId || 'default',
-        };
+  trackLlmUsage(
+    tokens: number,
+    tags: {
+      artifact_id: string;
+      tenant: string;
+      model: string;
+      operation: string;
     }
+  ): void {
+    const tagArray = Object.entries(tags).map(([key, value]) => `${key}:${value}`);
+    this.client.distribution('llm.tokens.used', tokens, tagArray);
+  }
 
-    getAllocation() {
-        return {
-            'project-default': {
-                used: 100,
-                limit: 1000,
-            }
-        }
-    }
+  async estimate(task: any): Promise<number> {
+    const base = 0.01;
+    const complexity: Record<string, number> = {
+      simple: 1,
+      intermediate: 2,
+      advanced: 4,
+      expert: 8
+    };
+    const level = task.requirements?.complexity || 'simple';
+    return base * (complexity[level] || 1);
+  }
 
-    async estimate(body: any) {
-        return 0.001;
-    }
+  async estimateCompetition(payload: any): Promise<number> {
+    const competitors: string[] = payload?.competitors || [
+      'aggressive',
+      'conservative',
+      'balanced',
+      'experimental'
+    ];
+    const perVariant = await this.estimate({
+      requirements: {
+        complexity: payload?.requirements?.complexity || 'intermediate'
+      }
+    });
+    return competitors.length * perVariant;
+  }
 
-    async estimateCompetition(body: any) {
-        return 0.01;
-    }
+  async wouldBustMargin(tenant: string, forecast: number): Promise<boolean> {
+    const mrr = await Promise.resolve(100);
+    return forecast / mrr > 0.70;
+  }
 
-    async wouldBustMargin(tenant: string, forecast: number) {
-        return false;
-    }
+  emitUsage(_meta: Record<string, any>): void {
+  }
 
-    async calculate(task: any) {
-        return 0.002
-    }
+  getFinOpsTags(task: any): Record<string, string> {
+    return {
+      application: 'lapverse-monitoring',
+      environment: process.env.NODE_ENV || 'dev',
+      tenantId: task.tenant || 'unknown',
+      costCenter: task.costCenter || 'lapverse-core',
+      owner: 'data-team',
+      version: '2.0.0'
+    };
+  }
 
-    async calculateCompetition(results: any) {
-        return 0.02
-    }
+  calculate(task: any): Promise<number> {
+    return this.estimate(task);
+  }
 
-    trackLlmUsage(tokens: number, dimensions: any) {
-        this.client.histogram('finops.llm.tokens', tokens, dimensions);
-    }
+  async calculateCompetition(results: PromiseSettledResult<any>[]): Promise<number> {
+    const completed = results.filter(r => r.status === 'fulfilled').length;
+    return completed * 0.02;
+  }
+
+  getAllocation(): Record<string, any> {
+    return {};
+  }
 }

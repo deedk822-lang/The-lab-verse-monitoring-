@@ -43,7 +43,7 @@ define safety_check
 	@if [ "$(FORCE)" != "true" ]; then \
 		read -p "$1 Continue? [y/N] " -n 1 -r; \
 		echo; \
-		if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
+		if [[ ! $REPLY =~ ^[Yy]$$ ]]; then \
 			echo "Aborted."; \
 			exit 1; \
 		fi; \

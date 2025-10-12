@@ -1,3 +1,4 @@
+import './otel';
 import { Config } from './config/Config';
 import { TheLapVerseCore } from './TheLapVerseCore';
 

@@ -7,36 +7,51 @@ import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-node';
 import { Config } from './config/Config';
 
-Config.load();  // Validates DD_API_KEY
+Config.load();
+
+const parseHeaders = (headers: string | undefined): Record<string, string> => {
+  if (!headers) return {};
+  return Object.fromEntries(
+    headers.split(',').map(pair => {
+      const [key, ...valueParts] = pair.split('=');
+      return [key, valueParts.join('=')];
+    })
+  );
+};
+
+const resourceAttributes = {
+  [SemanticResourceAttributes.SERVICE_NAME]: Config.env.OTEL_SERVICE_NAME,
+  ...parseHeaders(Config.env.OTEL_RESOURCE_ATTRIBUTES),
+};
+
+const traceExporter = new OTLPTraceExporter({
+  url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
+  headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
+  timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+});
+
+const metricExporter = new OTLPMetricExporter({
+    url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/metrics`,
+    headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
+    timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+});
+
+const logExporter = new OTLPLogExporter({
+    url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/logs`,
+    headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
+    timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+});
 
 const sdk = new NodeSDK({
-  resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'lapverse-monitoring',
-    [SemanticResourceAttributes.SERVICE_VERSION]: '2.1',
-    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: 'prod'
-  }),
-  traceExporter: new OTLPTraceExporter({
-    url: `https://api.${Config.env.DD_SITE}/v1/traces`,
-    headers: { 'DD-API-KEY': Config.env.DD_API_KEY },
-    timeoutMillis: 5000
-  }),
-  metricReader: new PeriodicExportingMetricReader({
-    exporter: new OTLPMetricExporter({
-      url: `https://api.${Config.env.DD_SITE}/v1/metrics`,
-      headers: { 'DD-API-KEY': Config.env.DD_API_KEY },
-      timeoutMillis: 5000
-    })
-  }),
-  logRecordProcessor: new BatchLogRecordProcessor(
-    new OTLPLogExporter({
-      url: `https://http-intake.logs.${Config.env.DD_SITE}/v1/input`,
-      headers: { 'DD-API-KEY': Config.env.DD_API_KEY },
-      timeoutMillis: 5000
-    })
-  ),
-  instrumentations: [getNodeAutoInstrumentations()]
+  resource: new Resource(resourceAttributes),
+  traceExporter,
+  metricReader: new PeriodicExportingMetricReader({ exporter: metricExporter }),
+  logRecordProcessor: new BatchLogRecordProcessor(logExporter),
+  instrumentations: [getNodeAutoInstrumentations()],
+  sampler: new TraceIdRatioBasedSampler(parseFloat(Config.env.OTEL_TRACES_SAMPLER_ARG)),
 });
 
 sdk.start();

@@ -1,4 +1,28 @@
+import { StatsD } from 'hot-shots';
+
 export class FinOpsTagger {
+  private readonly client = new StatsD({
+    host: 'datadog-agent',
+    port: 8125,
+    prefix: 'lapverse.',
+    globalTags: {
+      env: process.env.NODE_ENV || 'development'
+    }
+  });
+
+  trackLlmUsage(
+    tokens: number,
+    tags: {
+      artifact_id: string;
+      tenant: string;
+      model: string;
+      operation: string;
+    }
+  ): void {
+    const tagArray = Object.entries(tags).map(([key, value]) => `${key}:${value}`);
+    this.client.distribution('llm.tokens.used', tokens, tagArray);
+  }
+
   async estimate(task: any): Promise<number> {
     const base = 0.01;
     const complexity: Record<string, number> = {

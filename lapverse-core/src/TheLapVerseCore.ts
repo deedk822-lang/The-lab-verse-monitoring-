@@ -12,6 +12,8 @@ import { SloErrorBudget } from './reliability/SloErrorBudget';
 import { OpenApiValidator } from './contracts/OpenApiValidator';
 import { OpenFeatureFlags } from './delivery/OpenFeatureFlags';
 import { TheLapVerseKagglePipe } from './kaggle/TheLapVerseKagglePipe';
+import { HealthChecker } from './monitoring/HealthChecker';
+import { MetricsCollector } from './metrics/MetricsCollector';
 
 export class TheLapVerseCore {
   private readonly tracer   = trace.getTracer('lapverse-core', '2.0.0');
@@ -23,6 +25,7 @@ export class TheLapVerseCore {
   private readonly validator= new OpenApiValidator();
   private readonly idempotency = new IdempotencyManager();
   private readonly kagglePipe: TheLapVerseKagglePipe;
+  private readonly healthChecker: HealthChecker;
 
   private readonly taskCounter   = this.meter.createCounter('lapverse_tasks_total');
   private readonly compCounter   = this.meter.createCounter('lapverse_competitions_total');
@@ -71,6 +74,7 @@ export class TheLapVerseCore {
       slo: this.slo,
       flags: this.flags
     });
+    this.healthChecker = new HealthChecker(this.slo, this.cost, new MetricsCollector());
   }
 
   async start(port = 3000): Promise<void> {
@@ -104,6 +108,8 @@ export class TheLapVerseCore {
     app.post('/api/v2/self-compete', (req, res, next) =>
       this.submitCompetition(req).then(r => res.status(202).json(r)).catch(next)
     );
+
+    app.get('/api/v2/health', (req, res) => this.healthChecker.handler(req, res));
 
     app.get('/api/v2/self-compete/:id', (req, res) => {
       res.json({

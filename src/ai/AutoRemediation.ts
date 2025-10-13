@@ -8,8 +8,11 @@ export interface SystemAnomaly {
 }
 
 export interface Action {
-    type: string;
+    type?: string;
+    target?: string;
     replicas?: number;
+    parameters?: { replicas: number };
+    confidence?: number;
 }
 
 export class AutoRemediation {
@@ -25,7 +28,8 @@ export class AutoRemediation {
             }
         } else {
             // Execute a specific action
-            console.log(`Executing action: ${action.type}`);
+            console.log(`Executing action: ${JSON.stringify(action)}`);
         }
     }
 }
+

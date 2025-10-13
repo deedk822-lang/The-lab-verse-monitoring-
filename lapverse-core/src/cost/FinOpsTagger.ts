@@ -1,3 +1,12 @@
+// Optional StatsD binding; avoids hard dependency
+let statsd: { gauge?: Function; increment?: Function } | undefined;
+try {
+  // Dynamically import if present in the workspace
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const HotShots = require('hot-shots');
+  statsd = new HotShots.StatsD({ prefix: 'lapverse.' });
+} catch {}
+
 export class FinOpsTagger {
   async estimate(task: any): Promise<number>{
     const base = 0.01;
@@ -25,7 +34,18 @@ export class FinOpsTagger {
   }
 
   emitUsage(meta: Record<string,any>){
-    // TODO: push to Prometheus or billing system
+    // Prometheus handled elsewhere; optionally emit StatsD if available
+    try {
+      statsd?.increment?.('usage.events', 1, 1, [
+        `tenant:${meta.tenant||'unknown'}`,
+        `source:${meta.source||'unknown'}`
+      ]);
+      if (typeof meta.forecastCost === 'number') {
+        statsd?.gauge?.('usage.forecast_cost_usd', meta.forecastCost, [
+          `tenant:${meta.tenant||'unknown'}`
+        ]);
+      }
+    } catch {/* no-op */}
   }
 
   getFinOpsTags(task: any){

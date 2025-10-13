@@ -16,7 +16,9 @@
     "bullmq": "^5.7.1",
     "express": "^4.19.2",
     "redis": "^4.6.13",
-    "prom-client": "^15.1.2"
+    "prom-client": "^15.1.2",
+    "axios": "^1.6.8",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

@@ -7,7 +7,7 @@ test('rejects missing fields', async ()=>{
   await v.loadSpec();
   const app = express();
   app.use(express.json());
-  app.use('/api', v.validate);
+  app.use('/api', v.validate.bind(v));
   app.post('/api/tasks', (_req,res)=>res.json({ ok: true }));
   const res = await request(app).post('/api/tasks').send({ type: 'X' });
   expect(res.status).toBe(400);

@@ -12,6 +12,7 @@ import { TheLapVerseKagglePipe } from './kaggle/TheLapVerseKagglePipe';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import { createClient, RedisClientType } from 'redis';
 import * as promClient from 'prom-client';
+import { FinOpsEngine } from './monetization/FinOpsEngine';
 
 export class TheLapVerseCore {
   private readonly tracer   = trace.getTracer('lapverse-core', '2.0.0');
@@ -51,6 +52,7 @@ export class TheLapVerseCore {
 
   /* ---------- Public API ---------- */
   async start(port = 3000): Promise<Express> {
+    FinOpsEngine.activate();
     await this.redisClient.connect();
     await this.validator.loadSpec('./openapi/lapverse.yaml');
     await this.slo.loadBudget();

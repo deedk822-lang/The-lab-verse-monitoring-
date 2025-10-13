@@ -2,21 +2,19 @@ openapi: 3.1.0
 info:
   title: The-Lap-Verse Core API
   version: 2.0.0
+  description: |
+    Rival-proof self-compete loop with idempotency, SLO-gated evolution,
+    FinOps chargeback, circuit breakers, and Kaggle-money pipe
+
 paths:
   /tasks:
     post:
       summary: Submit task (idempotent, cost-gated, SLO-gated)
+      description: Submit a task with full FinOps tracking and SLO enforcement
       parameters:
         - in: header
           name: Idempotency-Key
           required: true
-cursor/the-lap-verse-core-service-polish-ae35
-          schema: { type: string, format: uuid }
-        - in: header
-          name: X-Tenant-ID
-          required: true
-          schema: { type: string }
-
           schema:
             type: string
             format: uuid
@@ -25,7 +23,6 @@ cursor/the-lap-verse-core-service-polish-ae35
           required: true
           schema:
             type: string
- main
       requestBody:
         required: true
         content:
@@ -34,14 +31,6 @@ cursor/the-lap-verse-core-service-polish-ae35
               type: object
               required: [type, priority, description, tenant]
               properties:
- cursor/the-lap-verse-core-service-polish-ae35
-                type:        { enum: [ANALYSIS, FORECAST, OTHER] }
-                priority:    { enum: [low, medium, high, urgent] }
-                description: { type: string, maxLength: 10000 }
-                tenant:      { type: string }
-                platforms:   { type: array, items: { type: string } }
-                costCenter:  { type: string, default: "lapverse-core" }
-
                 type:
                   type: string
                   enum: [ANALYSIS, FORECAST, OTHER]
@@ -57,46 +46,54 @@ cursor/the-lap-verse-core-service-polish-ae35
                   type: array
                   items:
                     type: string
+                  default: ["twitter"]
                 costCenter:
                   type: string
                   default: lapverse-core
- main
+                requirements:
+                  type: object
+                  properties:
+                    complexity:
+                      type: string
+                      enum: [simple, intermediate, advanced, expert]
       responses:
         '202':
           description: Accepted
           headers:
- cursor/the-lap-verse-core-service-polish-ae35
-            X-RateLimit-Remaining: { schema: { type: integer } }
-            X-LapVerse-Cost-USD:   { schema: { type: number } }
-        '402': { description: Margin guardrail exceeded }
-        '503': { description: Error budget exhausted }
-
             X-RateLimit-Remaining:
               schema:
                 type: integer
             X-LapVerse-Cost-USD:
               schema:
                 type: number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taskId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [accepted]
+        '400':
+          description: Bad request - missing required fields
         '402':
           description: Margin guardrail exceeded
+        '404':
+          description: Feature not available for tenant
         '503':
           description: Error budget exhausted
- main
 
   /self-compete:
     post:
       summary: Self-compete evolution loop
+      description: Launch algorithmic coliseum with multiple variants
       parameters:
         - in: header
           name: Idempotency-Key
           required: true
- cursor/the-lap-verse-core-service-polish-ae35
-          schema: { type: string, format: uuid }
-        - in: header
-          name: X-Tenant-ID
-          required: true
-          schema: { type: string }
-
           schema:
             type: string
             format: uuid
@@ -105,7 +102,6 @@ cursor/the-lap-verse-core-service-polish-ae35
           required: true
           schema:
             type: string
- main
       requestBody:
         required: true
         content:
@@ -114,13 +110,6 @@ cursor/the-lap-verse-core-service-polish-ae35
               type: object
               required: [content, platforms, priority]
               properties:
- cursor/the-lap-verse-core-service-polish-ae35
-                content:     { type: string, maxLength: 10000 }
-                platforms:   { type: array, items: { type: string } }
-                priority:    { enum: [low, medium, high, urgent] }
-                costCenter:  { type: string, default: "lapverse-core" }
-                competitors: { type: array, items: { type: string } }
-
                 content:
                   type: string
                   maxLength: 10000
@@ -128,6 +117,7 @@ cursor/the-lap-verse-core-service-polish-ae35
                   type: array
                   items:
                     type: string
+                  minItems: 1
                 priority:
                   type: string
                   enum: [low, medium, high, urgent]
@@ -138,25 +128,98 @@ cursor/the-lap-verse-core-service-polish-ae35
                   type: array
                   items:
                     type: string
- main
+                  default: [aggressive, conservative, balanced, experimental]
+                tenant:
+                  type: string
       responses:
         '202':
           description: Accepted
           headers:
- cursor/the-lap-verse-core-service-polish-ae35
-            X-RateLimit-Remaining: { schema: { type: integer } }
-            X-LapVerse-Cost-USD:   { schema: { type: number } }
-        '402': { description: Margin guardrail exceeded }
-        '503': { description: Error budget exhausted }
-
             X-RateLimit-Remaining:
               schema:
                 type: integer
             X-LapVerse-Cost-USD:
               schema:
                 type: number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  competitionId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [accepted]
+        '400':
+          description: Bad request - missing required fields
         '402':
           description: Margin guardrail exceeded
+        '404':
+          description: Feature not available for tenant
         '503':
           description: Error budget exhausted
- main
+
+  /self-compete/{id}:
+    get:
+      summary: Get competition status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Tenant-ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Competition status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                  champion:
+                    type: string
+                  cost:
+                    type: number
+                  tags:
+                    type: object
+
+  /status:
+    get:
+      summary: System status
+      responses:
+        '200':
+          description: System health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slo:
+                    type: number
+                    description: Current SLO burn rate
+                  cost:
+                    type: object
+                    description: Cost allocation by tenant
+
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string

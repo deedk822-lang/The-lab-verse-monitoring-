@@ -1,0 +1,4 @@
+- Keep all AI-provider code inside src/ai/providers/
+- Never log real API keys
+- Use existing logger & metrics helpers
+- ColiseumManager is a singleton – import, don’t instantiate

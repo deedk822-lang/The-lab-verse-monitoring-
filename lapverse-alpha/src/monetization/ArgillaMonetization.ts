@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { argillaClient } from '../integrations/ArgillaClient';
 import { config } from '../lib/config/Config';
-import * as fs from 'fs';
+import fs from 'fs';
 
 interface DatasetSale {
   id: string;
@@ -79,9 +79,8 @@ export class ArgillaMonetization extends EventEmitter {
     sale.revenue += sale.price;
 
     // Track metrics
-    metrics.counter('argilla_dataset_sales', 'Argilla dataset sales', ['packId', 'category']).inc({
-      packId,
-      category: sale.category
+    metrics.argillaDatasetSales.inc({
+      pack_id: packId
     });
 
     // Generate download link
@@ -102,8 +101,8 @@ export class ArgillaMonetization extends EventEmitter {
     this.annotationRevenue += revenue;
 
     // Track metrics
-    metrics.counter('argilla_annotation_revenue', 'Argilla annotation revenue', ['reviewerId']).inc({
-      reviewerId
+    metrics.a2aRevenueEarned.inc({
+      type: 'annotation'
     }, revenue);
 
     logger.info('Annotation hours processed', {
@@ -120,8 +119,8 @@ export class ArgillaMonetization extends EventEmitter {
     this.tuningRevenue += revenue;
 
     // Track metrics
-    metrics.counter('argilla_tuning_jobs', 'Argilla tuning jobs', ['customerId']).inc({
-      customerId
+    metrics.a2aRevenueEarned.inc({
+      type: 'tuning'
     });
 
     logger.info('Tuning job processed', {

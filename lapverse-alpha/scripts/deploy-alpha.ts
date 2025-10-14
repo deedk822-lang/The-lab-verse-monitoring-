@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { logger } from '../src/lib/logger';
+import { logger } from '../src/lib/logger/Logger';
 import { viralLoopEngine } from '../src/monetization/ViralLoopEngine';
 import { sponsorshipEngine } from '../src/coliseum/SponsorshipEngine';
 import { revenuePredictor } from '../src/analytics/RevenuePredictor';

@@ -1,34 +1,29 @@
 import { z } from 'zod';
 
-const envSchema = z.object({
-  LOCALAI_BASE_URL: z.string().url(),
-  LOCALAI_API_KEY: z.string().optional(),
-  LOCALAI_QUOTA_USD: z.coerce.number().positive().default(20),
-  ARGILLA_BASE_URL: z.string().url(),
-  ARGILLA_API_KEY: z.string(),
+const ConfigSchema = z.object({
+  PORT: z.coerce.number().default(3000),
+  LOG_LEVEL: z.string().default('INFO'),
+  LOCALAI_BASE_URL: z.string().default('http://localhost:8000'),
+  ARGILLA_BASE_URL: z.string().default('http://localhost:6900'),
+  ARGILLA_API_KEY: z.string().default('lapverse-internal'),
   ARGILLA_WORKSPACE: z.string().default('lapverse'),
-  ARGILLA_QUOTA_ROWS: z.coerce.number().positive().default(10000),
+  BLOCKCHAIN_RPC_URL: z.string().default('https://mainnet.base.org'),
+  BLOCKCHAIN_PRIVATE_KEY: z.string().optional(),
+  ALPHA_TOKEN_ADDRESS: z.string().optional(),
+  ESCROW_CONTRACT_ADDRESS: z.string().optional(),
   BASE_URL: z.string().url().default('http://localhost:3000'),
 });
 
-class Config {
-  private static instance: Config;
-  private env: z.infer<typeof envSchema>;
+export class ConfigManager {
+  private config: z.infer<typeof ConfigSchema>;
 
-  private constructor() {
-    this.env = envSchema.parse(process.env);
+  constructor() {
+    this.config = ConfigSchema.parse(process.env);
   }
 
-  public static getInstance(): Config {
-    if (!Config.instance) {
-      Config.instance = new Config();
-    }
-    return Config.instance;
-  }
-
-  public get() {
-    return this.env;
+  get() {
+    return this.config;
   }
 }
 
-export const config = Config.getInstance();
+export const config = new ConfigManager();

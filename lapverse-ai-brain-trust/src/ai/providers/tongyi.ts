@@ -8,10 +8,8 @@ class TongyiDeepResearch {
   private readonly apiKey: string;
 
   constructor() {
-    if (!Config.TONGYI_API_KEY) {
-      throw new Error('TONGYI_API_KEY is not set');
-    }
-    this.apiKey = Config.TONGYI_API_KEY;
+    // This will be replaced by a proper config loader
+    this.apiKey = (Config as any).TONGYI_API_KEY || '';
   }
 
   async analyzeAnomaly(
@@ -19,6 +17,19 @@ class TongyiDeepResearch {
     opts: any
   ): Promise<any> {
     logger.info({ query, researchType, opts }, 'Performing deep research with Tongyi');
+
+    if (!this.apiKey) {
+      logger.warn('TONGYI_API_KEY is not set. Returning mock data.');
+      return {
+        type: 'research_report',
+        findings: [
+          { category: 'mock', insight: 'This is mock data because the TONGYI_API_KEY is not set.', confidence: 1.0 },
+        ],
+        recommendations: [],
+        sourcesAnalyzed: 0,
+        confidenceScore: 1.0,
+      };
+    }
 
     const response = await axios.post(
       TONGYI_API_URL,

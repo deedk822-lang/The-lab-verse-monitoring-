@@ -1,5 +1,5 @@
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { viralLoopEngine } from '../monetization/ViralLoopEngine';
 import { sponsorshipEngine } from '../coliseum/SponsorshipEngine';
 import { localAIOSSProvider } from '../agents/LocalAIOSSProvider';
@@ -35,7 +35,7 @@ export class RevenuePredictor {
     const predictedRevenue = basePrediction * viralMultiplier * sponsorshipMultiplier + organicGrowth;
 
     // Update metrics
-    metrics.gauge('predicted_revenue', 'Predicted revenue').set(predictedRevenue, { days: days.toString() });
+    metrics.a2aRevenueEarned.inc({ type: 'prediction' }, predictedRevenue);
 
     logger.info('Revenue prediction updated', {
       days,

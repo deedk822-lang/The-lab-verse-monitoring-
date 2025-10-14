@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { config } from '../lib/config/Config';
 
 export interface FeedbackRecord {
@@ -125,9 +125,8 @@ export class ArgillaClient {
       this.quotaUsed++;
 
       // Track metrics
-      metrics.counter('argilla_records_logged', 'Number of records logged to Argilla', ['category', 'severity']).inc({
-        category: battle.category,
-        severity: battle.severity
+      metrics.argillaRecordsLogged.inc({
+        dataset: 'battle_results'
       });
 
       logger.info('Battle result logged to Argilla', {

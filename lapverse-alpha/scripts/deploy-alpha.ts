@@ -10,7 +10,7 @@ async function deployAlpha(): Promise<void> {
   try {
     // Step 1: Build and deploy infrastructure
     logger.info('Step 1: Deploying infrastructure...');
-    execSync('docker-compose -f ../docker-compose.alpha.yml up -d', { stdio: 'inherit' });
+    execSync('docker-compose -f docker-compose.alpha.yml up -d', { stdio: 'inherit' });
 
     // Step 2: Initialize viral loops
     logger.info('Step 2: Initializing viral loops...');

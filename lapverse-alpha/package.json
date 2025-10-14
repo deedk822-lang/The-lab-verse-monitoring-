@@ -1,0 +1,23 @@
+{
+  "name": "lapverse-alpha",
+  "version": "1.0.0",
+  "description": "The $100K 14-Day Challenge",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "deploy:alpha": "ts-node scripts/deploy-alpha.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "zod": "^3.22.4",
+    "pino": "^8.16.0",
+    "pino-pretty": "^10.2.3",
+    "prom-client": "^15.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1",
+    "@types/node": "^20.8.9"
+  }
+}

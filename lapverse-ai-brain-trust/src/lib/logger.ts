@@ -1,6 +1,13 @@
-// Placeholder for logger
-export const logger = {
-  info: console.log,
-  warn: console.warn,
-  error: console.error,
-};
+import pino from 'pino';
+
+export const logger = pino({
+  level: 'info',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      ignore: 'pid,hostname',
+      translateTime: 'SYS:standard',
+    },
+  },
+});

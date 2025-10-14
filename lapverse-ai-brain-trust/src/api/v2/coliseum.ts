@@ -1,8 +1,5 @@
-import { Router } from 'express';
 import { coliseumManager } from '../../coliseum/ColiseumManager';
 import { z } from 'zod';
-
-const router = Router();
 
 const createChallengeSchema = z.object({
   action: z.literal('create-challenge'),
@@ -16,33 +13,33 @@ const getLeaderboardSchema = z.object({
   challengeId: z.string(),
 });
 
-router.post('/', async (req, res) => {
-  const parseResult = createChallengeSchema.safeParse(req.query);
-  if (!parseResult.success) {
-    return res.status(400).json(parseResult.error);
-  }
+export const coliseumApi = {
+  async post(query: unknown) {
+    const parseResult = createChallengeSchema.safeParse(query);
+    if (!parseResult.success) {
+      return { status: 400, body: parseResult.error };
+    }
 
-  const { prompt, priority, type } = parseResult.data;
-  const challengeId = await coliseumManager.createChallenge(
-    `AI Battle: ${prompt.slice(0, 50)}…`,
-    prompt,
-    { prompt, query: req.query },
-    priority,
-    type
-  );
-  await coliseumManager.startBattle(challengeId);
-  res.json({ challengeId });
-});
+    const { prompt, priority, type } = parseResult.data;
+    const challengeId = await coliseumManager.createChallenge(
+      `AI Battle: ${prompt.slice(0, 50)}…`,
+      prompt,
+      { prompt, query },
+      priority,
+      type
+    );
+    await coliseumManager.startBattle(challengeId);
+    return { status: 200, body: { challengeId } };
+  },
 
-router.get('/', (req, res) => {
-  const parseResult = getLeaderboardSchema.safeParse(req.query);
-  if (!parseResult.success) {
-    return res.status(400).json(parseResult.error);
-  }
+  async get(query: unknown) {
+    const parseResult = getLeaderboardSchema.safeParse(query);
+    if (!parseResult.success) {
+      return { status: 400, body: parseResult.error };
+    }
 
-  const { challengeId } = parseResult.data;
-  const history = coliseumManager.getBattleHistory(challengeId);
-  res.json(history);
-});
-
-export default router;
+    const { challengeId } = parseResult.data;
+    const history = coliseumManager.getBattleHistory(challengeId);
+    return { status: 200, body: history };
+  },
+};

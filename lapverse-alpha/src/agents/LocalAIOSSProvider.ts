@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { z } from 'zod';
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { config } from '../lib/config/Config';
 
 const LocalAIResponseSchema = z.object({
@@ -72,13 +72,13 @@ export class LocalAIOSSProvider {
       this.updateQuota(tenantId, text.length);
 
       // Update metrics
-      metrics.counter('localai_oss_requests_total', 'Total LocalAI OSS requests', ['provider', 'tenant', 'model', 'status']).inc({
+      metrics.httpRequestsTotal.inc({
         ...labels,
         status: 'success'
       });
 
       const duration = Number((process.hrtime.bigint() - start) / 1_000_000n);
-      metrics.histogram('localai_oss_latency_ms', 'LocalAI OSS latency in ms', ['provider', 'tenant', 'model']).observe(labels, duration);
+      metrics.httpRequestDuration.observe(labels, duration);
 
       // Reset circuit breaker on success
       this.resetCircuitBreaker(tenantId);

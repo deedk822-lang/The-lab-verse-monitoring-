@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { viralLoopEngine } from '../monetization/ViralLoopEngine';
 import { localAIOSSProvider } from '../agents/LocalAIOSSProvider';
 
@@ -55,9 +55,8 @@ export class SponsorshipEngine {
     this.activeSponsorships.set(sponsorship.id, sponsorship);
 
     // Track sponsorship creation
-    metrics.counter('sponsorships_created', 'Sponsorships created', ['tier', 'sponsor']).inc({
-      tier: sponsorship.tier,
-      sponsor: sponsorship.sponsorName
+    metrics.a2aRevenueEarned.inc({
+      type: 'sponsorship'
     });
 
     // Activate sponsorship
@@ -152,13 +151,13 @@ export class SponsorshipEngine {
     sponsorship.metrics.engagement = (clicks / impressions) * 100;
 
     // Update metrics
-    metrics.gauge('sponsorship_impressions', 'Sponsorship impressions').set(sponsorship.metrics.impressions, {
-      sponsorship_id: sponsorshipId
-    });
+    metrics.argillaRecordsLogged.inc({
+      dataset: 'sponsorship_impressions'
+    }, sponsorship.metrics.impressions);
 
-    metrics.gauge('sponsorship_ctr', 'Sponsorship click-through rate').set(sponsorship.metrics.engagement, {
-      sponsorship_id: sponsorshipId
-    });
+    metrics.argillaRecordsLogged.inc({
+        dataset: 'sponsorship_clicks'
+    }, sponsorship.metrics.clicks);
   }
 
   private expireSponsorship(sponsorshipId: string): void {

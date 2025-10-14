@@ -4,6 +4,11 @@ const envSchema = z.object({
   LOCALAI_BASE_URL: z.string().url(),
   LOCALAI_API_KEY: z.string().optional(),
   LOCALAI_QUOTA_USD: z.coerce.number().positive().default(20),
+  ARGILLA_BASE_URL: z.string().url(),
+  ARGILLA_API_KEY: z.string(),
+  ARGILLA_WORKSPACE: z.string().default('lapverse'),
+  ARGILLA_QUOTA_ROWS: z.coerce.number().positive().default(10000),
+  BASE_URL: z.string().url().default('http://localhost:3000'),
 });
 
 class Config {

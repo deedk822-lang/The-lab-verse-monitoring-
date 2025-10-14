@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
-import { logger } from '../lib/logger';
-import { metrics } from '../lib/metrics';
+import { logger } from '../lib/logger/Logger';
+import { metrics } from '../lib/metrics/Metrics';
 import { localAIOSSProvider } from '../agents/LocalAIOSSProvider';
 import { coliseumManager } from '../coliseum/ColiseumManager';
 
@@ -29,7 +29,7 @@ export class ViralLoopEngine extends EventEmitter {
     this.referralCodes.set(userId, code);
 
     // Track referral generation
-    metrics.counter('referral_codes_generated', 'Number of referral codes generated', ['user_id']).inc({ user_id: userId });
+    metrics.a2aTasksCreated.inc({ category: 'referral' });
 
     return code;
   }
@@ -88,10 +88,7 @@ export class ViralLoopEngine extends EventEmitter {
     await this.distributeViralContent(viralContent, userId);
 
     // Track cascade
-    metrics.counter('viral_cascades_triggered', 'Number of viral cascades triggered', ['user_id', 'initial_action']).inc({
-      user_id: userId,
-      initial_action: initialAction
-    });
+    metrics.a2aTasksCreated.inc({ category: 'viral_cascade' });
 
     logger.info('Viral cascade triggered', {
       userId,
@@ -125,10 +122,7 @@ export class ViralLoopEngine extends EventEmitter {
     for (const platform of platforms) {
       if (content[platform]) {
         // Track distribution
-        metrics.counter('viral_content_distributed', 'Number of viral content distributed', ['platform', 'user_id']).inc({
-          platform,
-          user_id: userId
-        });
+        metrics.a2aTasksCreated.inc({ category: 'viral_distribution' });
 
         // Simulate viral spread
         setTimeout(() => {
@@ -141,7 +135,7 @@ export class ViralLoopEngine extends EventEmitter {
   private simulateViralSpread(platform: string, userId: string): void {
     const spread = Math.random() * 100 + 50; // 50-150 people reached
 
-    metrics.counter('viral_spread', 'Viral spread reach', ['platform', 'user_id']).inc({ platform, user_id: userId }, spread);
+    metrics.a2aTasksCreated.inc({ category: 'viral_spread' });
 
     // Trigger secondary actions
     if (Math.random() > 0.7) { // 30% chance

@@ -12,5 +12,18 @@
         "budget_exceeded": "immediate",
         "timeline_at_risk": "within_4_hours",
         "technical_blocker": "within_1_hour"
+    },
+    "providers": {
+      "local-vl": {
+        "type": "ollama",
+        "model": "moondream",
+        "host": "http://localhost:11434"
+      },
+      "grok": {
+        "type": "api",
+        "model": "grok-4",
+        "baseUrl": "https://api.x.ai/v1/chat/completions",
+        "apiKey": "${GROK_API_KEY}"
+      }
     }
 }

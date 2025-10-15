@@ -1,2 +1,2 @@
-# This file is required by the Makefile's 'install' target.
-# It can be populated with general dependencies if needed.
+aiohttp
+tenacity

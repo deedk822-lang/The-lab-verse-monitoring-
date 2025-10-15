@@ -12,5 +12,11 @@
         "budget_exceeded": "immediate",
         "timeline_at_risk": "within_4_hours",
         "technical_blocker": "within_1_hour"
-    }
+    },
+    "usaa": {
+        "outer_loop_interval": 3600,
+        "inner_loop_threshold": 0.75,
+        "ethical_risk_max": 0.2
+    },
+    "key": "value"
 }

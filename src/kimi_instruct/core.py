@@ -11,7 +11,6 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import aiohttp
 from pathlib import Path
-from .usaa import USAA
 
 class TaskPriority(Enum):
     CRITICAL = "critical"
@@ -72,46 +71,6 @@ class KimiInstruct:
         self.decision_history = []
         self.human_oversight_mode = self.config.get("human_oversight_mode", "collaborative")
         self.setup_logging()
-        self.usaa = USAA(self)
-
-    async def run_usaa_goal(self, goal: str, context: Dict = {}) -> Dict:
-        """Run USAA for persistent goal."""
-        return await self.usaa.outer_loop(goal, context)
-
-    async def _call_grok(self, prompt: str) -> Dict[str, Any]:
-        """Placeholder for calling Grok API."""
-        self.logger.info(f"Calling Grok with prompt: {prompt}")
-        # In a real implementation, this would make an HTTP call to the Grok API.
-        # For testing, we return a mock response.
-        mock_response = {
-            "choices": [
-                {
-                    "message": {
-                        "content": json.dumps({
-                            "issues": ["sample issue"],
-                            "priorities": [1],
-                            "plans": [{"name": "sample plan", "steps": ["step 1"], "risks": ["risk 1"]}],
-                            "success": True,
-                            "metrics": {"originality": 0.5, "impact": 0.5},
-                            "feedback": "sample feedback",
-                            "lessons": ["sample lesson"],
-                            "model_updates": {"param": "value"},
-                            "predictions": ["sample prediction"],
-                            "mitigations": ["sample mitigation"],
-                            "custom_plans": ["sample custom plan"],
-                            "evolutions": {"key": "value"}
-                        })
-                    }
-                }
-            ]
-        }
-        return mock_response
-
-    async def generate_and_run_tasks(self, goal: str, step: str) -> Dict[str, Any]:
-        """Placeholder for generating and running tasks."""
-        self.logger.info(f"Generating and running tasks for goal '{goal}', step: {step}")
-        # This would create and execute tasks based on the step.
-        return {"status": "completed", "step": step}
 
     def setup_logging(self):
         """Setup structured logging for Kimi Instruct"""

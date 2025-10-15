@@ -1,7 +1,0 @@
-aiohttp
-aiohttp_cors
-prometheus_client
-click
-pytest
-pytest-aiohttp
-pytest-asyncio

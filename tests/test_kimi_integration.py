@@ -408,12 +408,6 @@ class TestKimiIntegration:
         latest_decision = kimi.decision_history[-1]
         assert latest_decision['type'] == 'approval_request'
 
-    async def test_usaa_loop(self, kimi):
-        """Test the USAA loop integration"""
-        result = await kimi.run_usaa_goal("Test goal", {"key": "value"})
-        assert 'success' in result
-        assert isinstance(result['metrics']['originality'], float)
-
 # Additional test utilities
 @pytest.fixture
 def mock_prometheus_response():

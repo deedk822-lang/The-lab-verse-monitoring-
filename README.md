@@ -37,10 +37,8 @@ A comprehensive, production-ready monitoring infrastructure with **AI-powered pr
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Universal Strategic Agent Architecture (USAA)
-USAA enhances Kimi with dual loops for goal-oriented autonomy. Run via CLI: `./kimi-cli usaa --goal "Maximize health outcomes" --context '{"patient": "data"}'`.
-- Outer Loop: Diagnose → Strategize → Execute → Validate
-- Inner Loop: Learn → Anticipate → Personalize → Evolve
+## Cognition Layer (MeaningSynth)
+The MeaningSynth component provides a cognitive overlay for the orchestrator, enabling it to understand and evolve based on the outcomes of swarm operations. It maintains a knowledge graph of concepts and their relationships, which is used to enrich prompts and mutate the system's configuration over time.
 
 ## 🚀 Quick Start
 

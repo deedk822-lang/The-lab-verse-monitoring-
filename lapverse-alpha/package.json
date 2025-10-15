@@ -8,7 +8,9 @@
     "build": "tsc",
     "deploy:alpha": "ts-node scripts/deploy-alpha.ts",
     "test": "vitest run",
-    "test:phase1": "vitest run --testNamePattern=Phase1"
+    "test:phase1": "vitest run --testNamePattern=Phase1",
+    "test:phase2": "vitest run --testNamePattern=Phase2",
+    "test:integration": "vitest run --testNamePattern=Integration"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -20,7 +22,7 @@
     "pino": "^8.16.0",
     "pino-pretty": "^10.2.3",
     "prom-client": "^15.0.0",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.15",

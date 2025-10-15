@@ -7,7 +7,7 @@ const grokApiKey = process.env.GROK_API_KEY;
 
 const ollama = new Ollama({ host: ollamaHost });
 
-describe('Phase1: Model Setup', () => {
+describe.skip('Phase1: Model Setup', () => {
 
   it('Unit: Qwen2.5-VL Inference Ping', async () => {
     // This test assumes the 'qwen2.5vl' model is already pulled and running

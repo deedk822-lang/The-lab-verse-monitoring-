@@ -37,6 +37,11 @@ A comprehensive, production-ready monitoring infrastructure with **AI-powered pr
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Universal Strategic Agent Architecture (USAA)
+USAA enhances Kimi with dual loops for goal-oriented autonomy. Run via CLI: `./kimi-cli usaa --goal "Maximize health outcomes" --context '{"patient": "data"}'`.
+- Outer Loop: Diagnose → Strategize → Execute → Validate
+- Inner Loop: Learn → Anticipate → Personalize → Evolve
+
 ## 🚀 Quick Start
 
 ### Prerequisites

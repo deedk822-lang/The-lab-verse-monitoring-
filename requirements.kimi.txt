@@ -35,3 +35,5 @@ pytest-aiohttp
 black==23.11.0
 mypy==1.7.1
 isort==5.13.2
+click
+aiohttp

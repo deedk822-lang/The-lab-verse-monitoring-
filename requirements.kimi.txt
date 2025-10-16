@@ -1,5 +1,4 @@
 # Core dependencies
-click
 aiohttp==3.9.1
 aiofiles==23.2.1
 aiohttp-cors==0.7.0

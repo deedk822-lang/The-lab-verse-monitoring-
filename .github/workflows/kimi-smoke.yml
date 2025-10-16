@@ -1,0 +1,17 @@
+name: Kimi Smoke Test
+
+on: [push]
+
+jobs:
+  alignment-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce free-tier models
+        run: |
+          ! grep -E 'gpt-|claude-|pay-|$[1-9]' .alignment.yml \
+            || (echo "❌ Paid model detected in alignment file"; exit 1)
+      - name: Ping Grafana health
+        run: |
+          curl -f -H "Authorization: Bearer ${{ secrets.GRAFANA_API_KEY }}" \
+            https://dimakatsomoleli.grafana.net/api/health

@@ -1,0 +1,24 @@
+# .alignment.yml – single source of truth for dev / CI / prod
+# All URLs & models are **free-tier only**
+alignment:
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    models:
+      cognition:  tongyi/tongyi-deepresearch-30b   # $0 – deep research
+      reasoning:  glm-4-flash                     # $0 – long ctx
+      a2a_negotiate: glm-4-flash                 # $0 – short calls
+    headers:
+      Authorization: "Bearer ${OPENROUTER_KEY}"
+      HTTP-Referer: https://github.com/${GITHUB_REPOSITORY}
+      X-Title: lab-verse
+
+  grafana:
+    host: https://dimakatsomoleli.grafana.net
+    profile: https://dimakatsomoleli.grafana.net/profile
+    api_key: ${GRAFANA_API_KEY}   # store in GitHub secret
+    dashboard_uid: lab-verse-cognition   # create once, reuse everywhere
+
+  health_gate:
+    max_ethics_risk: 0.2
+    max_cost_per_1m_tokens: 0.00   # hard lock – free tier only
+    kill_switch_endpoint: http://localhost:8084/kimi/kill

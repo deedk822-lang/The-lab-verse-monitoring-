@@ -1,0 +1,51 @@
+groups:
+- name: labverse-alerts
+  rules:
+  - alert: HighTaskFailureRate
+    expr: rate(kimi_tasks_total{status="failed"}[5m]) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High task failure rate detected"
+      description: "Task failure rate is {{ $value }} per second"
+      
+  - alert: KimiServiceDown
+    expr: up{job="kimi-instruct"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Kimi Instruct service is down"
+      
+  - alert: HighRiskScore
+    expr: kimi_project_risk_score > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Project risk score is high: {{ $value }}"
+      
+  - alert: RevenueTargetAtRisk
+    expr: kimi_mrr_projection < 0.8 * 75000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MRR projection below 80% of target"
+      
+  - alert: HighMemoryUsage
+    expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage: {{ $value }}%"
+      
+  - alert: HighCPUUsage
+    expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage: {{ $value }}%"

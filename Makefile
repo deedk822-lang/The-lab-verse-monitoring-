@@ -255,3 +255,50 @@ help:
 info:
 	$(call echoblue,"ℹ️ System Info")
 	@$(COMPOSE) $(COMPOSE_FILES) ps
+
+
+# === Security Automation (Moonshot AI Integration) ===
+secure: ## 🔒 Harden a single file (usage: make secure FILE=path/to/file)
+	$(call echoblue,"🔒 Security hardening with Moonshot AI...")
+	@if [ -z "$(FILE)" ]; then $(call echoerror,"FILE parameter required"); exit 1; fi
+	@python3 scripts/security/secure_file.py "$(FILE)"
+	$(call echogreen,"✅ File hardened")
+
+secure-bulk: ## 🔒 Harden all security-critical files in repository
+	$(call echoblue,"🔒 Bulk security hardening...")
+	@python3 scripts/security/bulk_harden.py . --workers 8
+	$(call echogreen,"✅ Bulk hardening complete")
+
+secure-bulk-dry: ## 🔍 Dry-run bulk hardening (see what would be changed)
+	$(call echoblue,"🔍 Dry-run bulk hardening...")
+	@python3 scripts/security/bulk_harden.py . --dry-run
+
+secure-pr: ## 🔒 Harden changed files in current branch (for PR)
+	$(call echoblue,"🔒 PR security hardening...")
+	@bash scripts/security/harden_pr.sh
+	$(call echogreen,"✅ PR hardening complete")
+
+generate-artifact: ## 🔧 Generate security artifact (usage: make generate-artifact TYPE=trivy-scan)
+	$(call echoblue,"🔧 Generating security artifact...")
+	@if [ -z "$(TYPE)" ]; then $(call echoerror,"TYPE parameter required"); exit 1; fi
+	@python3 scripts/security/generate_artifact.py "$(TYPE)"
+	$(call echogreen,"✅ Artifact generated")
+
+generate-all-artifacts: ## 🔧 Generate all security artifacts
+	$(call echoblue,"🔧 Generating all security artifacts...")
+	@python3 scripts/security/generate_artifact.py --all
+	$(call echogreen,"✅ All artifacts generated")
+
+list-artifacts: ## 📋 List available security artifacts
+	$(call echoblue,"📋 Available security artifacts:")
+	@python3 scripts/security/generate_artifact.py --list
+
+security-setup: ## 🛡️ Complete security setup (generate artifacts + harden files)
+	$(call echoblue,"🛡️ Running complete security setup...")
+	@$(MAKE) generate-all-artifacts
+	@$(MAKE) secure-bulk-dry
+	$(call echogreen,"✅ Security setup complete")
+	$(call echoyellow,"Review the changes and run 'make secure-bulk' to apply hardening")
+
+.PHONY: secure secure-bulk secure-bulk-dry secure-pr generate-artifact generate-all-artifacts list-artifacts security-setup
+

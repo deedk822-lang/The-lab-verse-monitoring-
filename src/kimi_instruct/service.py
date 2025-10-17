@@ -17,6 +17,7 @@ import aiohttp
 from aiohttp import web, ClientSession, ClientTimeout
 from pathlib import Path
 import uuid
+import yaml
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -141,11 +142,23 @@ class AIEngine:
         self.config = config
         self.providers = {}
         self.session = None
+        self.provider_config = self._load_provider_config()
         
         # Initialize providers based on available API keys
         self._initialize_providers()
         logger.info(f"AI Engine initialized with providers: {list(self.providers.keys())}")
     
+    def _load_provider_config(self) -> Dict[str, Any]:
+        """Load AI provider configuration from YAML file"""
+        config_path = Path("config/ai_providers.yaml")
+        if config_path.exists():
+            try:
+                with open(config_path) as f:
+                    return yaml.safe_load(f)
+            except Exception as e:
+                logger.error(f"Failed to load AI provider config: {e}")
+        return {}
+
     def _initialize_providers(self):
         """Initialize available AI providers"""
         
@@ -184,6 +197,14 @@ class AIEngine:
                 "model": "moonshot-v1-8k"
             }
             logger.info("Moonshot AI provider initialized")
+
+        # OpenRouter
+        if os.getenv("OPENROUTER_API_KEY"):
+            self.providers["openrouter"] = {
+                "api_key": os.getenv("OPENROUTER_API_KEY"),
+                "base_url": "https://openrouter.ai/api/v1/chat/completions",
+            }
+            logger.info("OpenRouter provider initialized")
     
     async def get_session(self):
         """Get or create aiohttp session"""
@@ -199,7 +220,7 @@ class AIEngine:
             self.session = None
 
     async def analyze_task(self, task: Task) -> Dict[str, Any]:
-        """AI-powered task analysis with retry logic"""
+        """AI-powered task analysis with sophisticated routing"""
         if not self.providers:
             logger.warning("No AI providers available, using heuristic analysis")
             return self._heuristic_analysis(task)
@@ -229,25 +250,49 @@ Provide analysis in JSON format:
 """
         
         try:
-            # Try providers in order of preference
-            for provider_name in ["dashscope", "openai", "anthropic", "moonshot"]:
+            # OpenRouter routing logic
+            if "openrouter" in self.providers and self.provider_config.get("openrouter"):
+                openrouter_conf = self.provider_config["openrouter"]
+
+                # Try primary
+                try:
+                    model = openrouter_conf.get("primary")
+                    logger.info(f"Attempting OpenRouter primary: {model}")
+                    response = await self._call_openrouter(model, prompt)
+                    return self._parse_ai_response(response)
+                except Exception as e:
+                    logger.warning(f"OpenRouter primary failed: {e}")
+
+                # Try fallbacks
+                for model in openrouter_conf.get("fallbacks", []):
+                    try:
+                        logger.info(f"Attempting OpenRouter fallback: {model}")
+                        response = await self._call_openrouter(model, prompt)
+                        return self._parse_ai_response(response)
+                    except Exception as e:
+                        logger.warning(f"OpenRouter fallback {model} failed: {e}")
+                        continue
+
+            # Direct provider routing as a final fallback
+            direct_providers = self.provider_config.get("direct_providers", ["dashscope", "openai"])
+            for provider_name in direct_providers:
                 if provider_name in self.providers:
                     try:
                         response = await self._call_provider(provider_name, prompt)
                         return self._parse_ai_response(response)
                     except Exception as e:
-                        logger.warning(f"Provider {provider_name} failed: {e}")
+                        logger.warning(f"Direct provider {provider_name} failed: {e}")
                         continue
             
             # If all providers fail, use heuristic
-            logger.warning("All AI providers failed, using heuristic analysis")
+            logger.error("All AI providers failed, using heuristic analysis")
             return self._heuristic_analysis(task)
             
         except Exception as e:
-            logger.error(f"AI analysis failed: {e}")
+            logger.error(f"AI analysis failed entirely: {e}")
             return self._heuristic_analysis(task)
 
-    async def _call_provider(self, provider_name: str, prompt: str) -> str:
+    async def _call_provider(self, provider_name: str, prompt: str, model: Optional[str] = None) -> str:
         """Call specific AI provider"""
         provider = self.providers[provider_name]
         session = await self.get_session()
@@ -260,6 +305,8 @@ Provide analysis in JSON format:
             return await self._call_anthropic(session, provider, prompt)
         elif provider_name == "moonshot":
             return await self._call_moonshot(session, provider, prompt)
+        elif provider_name == "openrouter":
+            return await self._call_openrouter(model, prompt)
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -349,6 +396,29 @@ Provide analysis in JSON format:
             else:
                 error_text = await response.text()
                 raise Exception(f"Moonshot API error: {response.status} - {error_text}")
+
+    async def _call_openrouter(self, model: str, prompt: str) -> str:
+        """Call OpenRouter API"""
+        provider = self.providers["openrouter"]
+        session = await self.get_session()
+
+        headers = {
+            "Authorization": f"Bearer {provider['api_key']}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+
+        async with session.post(provider["base_url"], headers=headers, json=payload) as response:
+            if response.status == 200:
+                result = await response.json()
+                return result["choices"][0]["message"]["content"]
+            else:
+                error_text = await response.text()
+                raise Exception(f"OpenRouter API error: {response.status} - {error_text}")
 
     def _parse_ai_response(self, response: str) -> Dict[str, Any]:
         """Parse AI response with fallback handling"""

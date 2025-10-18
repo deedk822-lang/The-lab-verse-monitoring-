@@ -4,7 +4,9 @@ const Redis = require('ioredis');
 const pino = require('pino');
 
 const logger = pino({ level: 'info' });
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null
+});
 const slackQueue = new Queue('slack-alerts', { connection: redis });
 
 new Worker('slack-alerts', async job => {

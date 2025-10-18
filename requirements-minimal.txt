@@ -1,0 +1,43 @@
+# Minimal requirements for LabVerse Monitoring Stack
+# Core dependencies only
+
+# Web Framework
+aiohttp>=3.8.0
+aiofiles>=23.0.0
+aiohttp-cors>=0.7.0
+
+# AI Providers
+openai>=1.0.0
+anthropic>=0.7.0
+tiktoken>=0.5.0
+
+# Data Processing
+pydantic>=2.0.0
+PyYAML>=6.0.0
+python-dateutil>=2.8.0
+python-dotenv>=1.0.0
+
+# Monitoring
+prometheus-client>=0.19.0
+
+# HTTP Clients
+httpx>=0.25.0
+requests>=2.31.0
+
+# Logging
+structlog>=23.0.0
+
+# Security
+cryptography>=41.0.0
+PyJWT>=2.8.0
+
+# Configuration
+click>=8.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Development
+black>=23.0.0
+isort>=5.13.0

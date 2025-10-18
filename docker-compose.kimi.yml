@@ -9,7 +9,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.kimi
+ cursor/debug-and-fix-main-branch-f40d
+    container_name: labverse_kimi_pm
+
     container_name: labverse_kimi_manager
+ main
     restart: unless-stopped
     ports:
       - "8084:8084"
@@ -48,4 +52,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.kimi.rule=Host(`kimi.localhost`)"
       - "traefik.http.services.kimi.loadbalancer.server.port=8084"
+ cursor/debug-and-fix-main-branch-f40d
       - "com.docker.compose.service=kimi-project-manager"
+
+      - "com.docker.compose.service=kimi-project-manager"
+ main

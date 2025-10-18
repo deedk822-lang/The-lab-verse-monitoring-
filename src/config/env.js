@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const assert = (v, m) => { if (!v) throw new Error(`ENV missing: ${m}`); };
 
 assert(process.env.JWT_SECRET, 'JWT_SECRET');

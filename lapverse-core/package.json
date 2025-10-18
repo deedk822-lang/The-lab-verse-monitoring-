@@ -39,7 +39,11 @@
     "pino": "^10.0.0",
     "prom-client": "^15.1.3",
     "supertest": "^7.1.4",
+ cursor/debug-and-fix-main-branch-f40d
     "zod": "^3.23.8"
+
+    "zod": "^4.1.12"
+ main
   },
   "jest": {
     "preset": "ts-jest",

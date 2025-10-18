@@ -60,7 +60,7 @@ endef
 install:
 	$(call echoblue,"📦 Installing dependencies...")
 	@pip install --upgrade pip
-	@pip install -r $(REQ) -r $(REQ_KIMI) -r src/anomaly_detection/requirements.txt --no-cache-dir
+	@pip install -r $(REQ) -r $(REQ_KIMI) -r src/anomaly_detection/requirements.txt -r cognitive-swarm/requirements.txt --no-cache-dir
 	$(call echogreen,"✅ Dependencies installed")
 
 build: scout-build

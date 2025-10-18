@@ -47,7 +47,7 @@ aioredis==2.0.1
 celery==5.3.4
 
 # Security & Authentication
-cryptography==41.0.8
+cryptography>=41.0.0,<42.0.0
 PyJWT==2.8.0
 bcrypt==4.1.2
 

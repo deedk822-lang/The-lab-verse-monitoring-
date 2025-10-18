@@ -1,0 +1,7 @@
+# Core libraries for orchestration and communication
+redis
+aiohttp
+pyyaml
+
+# AI provider SDK (OpenAI's SDK is the standard for OpenRouter)
+openai

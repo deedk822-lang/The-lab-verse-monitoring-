@@ -25,6 +25,21 @@ BACKUP_RETENTION_DAYS := 30
 
 # === Helper Macros ===
 define echoblue
+ cursor/debug-and-fix-main-branch-f40d
+	@echo "$(BLUE)$1$(NC)"
+endef
+define echogreen
+	@echo "$(GREEN)$1$(NC)"
+endef
+define echoyellow
+	@echo "$(YELLOW)$1$(NC)"
+endef
+define echopurple
+	@echo "$(PURPLE)$1$(NC)"
+endef
+define echoerror
+	@echo "$(RED)$1$(NC)"
+
 	@printf "$(BLUE)%s$(NC)\n" "$(1)"
 endef
 define echogreen
@@ -38,6 +53,7 @@ define echopurple
 endef
 define echoerror
 	@printf "$(RED)%s$(NC)\n" "$(1)"
+ main
 endef
 define safety_check
 	@if [ "$(FORCE)" != "true" ]; then \
@@ -249,9 +265,15 @@ scout-test: scout-build ## 🧪 Run tests for the scout-monetization service
 
 # === Help & Info ===
 help:
+ cursor/debug-and-fix-main-branch-f40d
+	$(call echoblue,"LabVerse Monitoring Stack + Kimi Instruct \(Enterprise Edition\)")
+	@awk 'BEGIN{FS=":.*##"} /^[-A-Za-z0-9_]+:.*?##/ {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	$(call echogreen,"Use \`make enterprise-deploy\` to launch full rival-proof stack.")
+
 	$(call echoblue,LabVerse Monitoring Stack + Kimi Instruct (Enterprise Edition))
 	@awk 'BEGIN{FS=":.*##"} /^[-A-Za-z0-9_]+:.*?##/ {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	$(call echogreen,Use 'make enterprise-deploy' to launch full rival-proof stack.)
+ main
 info:
 	$(call echoblue,ℹ️ System Info)
 	@$(COMPOSE) $(COMPOSE_FILES) ps

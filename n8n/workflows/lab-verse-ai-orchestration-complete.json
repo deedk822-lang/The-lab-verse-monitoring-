@@ -1,0 +1,411 @@
+{
+  "meta": {
+    "instanceId": "lab-verse-ai-orchestration-complete"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-orchestration",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "AI Orchestration Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ai-orchestration"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prompt = $input.first().json.prompt;\nconst useLocal = $env.USE_LOCAL === 'true' || $env.USE_LOCAL === true;\nconst fallbackToLocal = $input.first().json.fallbackToLocal || false;\nconst preferredProvider = $input.first().json.preferred_provider || null;\n\n// Enhanced model list with LocalAI focus\nconst models = [\n  // LocalAI models (free, private, fast)\n  { name: 'phi-3', provider: 'localai', cost: 0, privacy: 'high', speed: 'fast' },\n  { name: 'llama-3.2-1b-instruct', provider: 'localai', cost: 0, privacy: 'high', speed: 'very-fast' },\n  { name: 'mistral-7b-instruct', provider: 'localai', cost: 0, privacy: 'high', speed: 'fast' },\n  \n  // Hugging Face models (low cost, good performance)\n  { name: 'mistralai/Mistral-7B-Instruct-v0.3', provider: 'huggingface', cost: 0.0002, privacy: 'medium', speed: 'medium' },\n  { name: 'microsoft/DialoGPT-medium', provider: 'huggingface', cost: 0.0001, privacy: 'medium', speed: 'fast' },\n  \n  // OpenRouter models (premium, higher cost)\n  { name: 'openai/gpt-4o', provider: 'openrouter', cost: 0.005, privacy: 'low', speed: 'medium' },\n  { name: 'google/gemini-pro', provider: 'openrouter', cost: 0.0015, privacy: 'low', speed: 'fast' },\n  { name: 'meta/llama-3-70b-instruct', provider: 'openrouter', cost: 0.0004, privacy: 'low', speed: 'slow' }\n];\n\n// Enhanced regret calculation favoring LocalAI\nlet regrets = $getWorkflowStaticData('global').regrets || models.map(() => [0]);\nconst newRegrets = models.map((m, i) => {\n  let baseRegret = Math.random() * 0.3;\n  \n  // Strong bias toward LocalAI for cost and privacy\n  if (m.provider === 'localai') {\n    baseRegret *= 0.05; // Very strong preference for local\n  } else if (m.provider === 'huggingface') {\n    baseRegret *= 0.2; // Good preference for HuggingFace\n  } else if (m.provider === 'openrouter') {\n    baseRegret *= 1.0; // Neutral, higher regret possible\n  }\n  \n  // Cost factor (higher cost = higher regret)\n  baseRegret += m.cost * 200;\n  \n  // Speed factor (slower = slight regret increase)\n  if (m.speed === 'slow') baseRegret += 0.1;\n  \n  return baseRegret;\n});\n\nregrets = regrets.map((r, i) => [...r.slice(-9), newRegrets[i]]);\nconst maxRegrets = regrets.map(r => Math.max(...r, 0));\nconst minMaxRegret = Math.min(...maxRegrets);\nlet selectedIndex = maxRegrets.indexOf(minMaxRegret);\n\n// Override logic: Use local if preferred or on fallback\nif (useLocal || fallbackToLocal) {\n  const localIndex = models.findIndex(m => m.provider === 'localai');\n  if (localIndex !== -1) {\n    selectedIndex = localIndex;\n  }\n}\n\n// Preferred provider override\nif (preferredProvider) {\n  const preferredIndex = models.findIndex(m => m.provider === preferredProvider);\n  if (preferredIndex !== -1) {\n    selectedIndex = preferredIndex;\n  }\n}\n\nconst selectedModel = models[selectedIndex];\n$setWorkflowStaticData('global', { regrets });\n\nreturn [{\n  json: {\n    model: selectedModel.name,\n    provider: selectedModel.provider,\n    prompt,\n    cost: selectedModel.cost,\n    privacy: selectedModel.privacy,\n    speed: selectedModel.speed,\n    timestamp: new Date().toISOString(),\n    selection_reason: fallbackToLocal ? 'fallback' : useLocal ? 'local_preference' : preferredProvider ? 'user_preference' : 'algorithm'\n  }\n}];"
+      },
+      "id": "model-picker",
+      "name": "Enhanced Model Picker",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "provider-localai",
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "localai",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "provider-huggingface",
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "huggingface",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "provider-openrouter",
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "openrouter",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "provider-router",
+      "name": "Provider Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.LOCALAI_BASE_URL || 'http://localhost:8080' }}/v1/chat/completions",
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": false,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "model",
+              "value": "={{ $json.model }}"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.prompt }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            },
+            {
+              "name": "max_tokens",
+              "value": "={{ $json.max_tokens || 1000 }}"
+            }
+          ]
+        }
+      },
+      "id": "localai-request",
+      "name": "LocalAI Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://api-inference.huggingface.co/models/{{ $json.model }}",
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.huggingface_api.api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "inputs",
+              "value": "{{ $json.prompt }}"
+            },
+            {
+              "name": "parameters",
+              "value": "{\"max_new_tokens\": {{ $json.max_tokens || 1000 }}, \"temperature\": 0.7}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "huggingface-request",
+      "name": "Hugging Face Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.openrouter_api.api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "{{ $env.OPENROUTER_SITE_URL || 'https://lab-verse.local' }}"
+            }
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "model",
+              "value": "={{ $json.model }}"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.prompt }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            },
+            {
+              "name": "max_tokens",
+              "value": "={{ $json.max_tokens || 1000 }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "openrouter-request",
+      "name": "OpenRouter Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 600],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json;\nconst provider = input.provider;\nconst model = input.model;\nconst originalPrompt = input.prompt;\n\n// Handle different response formats from different providers\nlet aiResponse = '';\nlet error = null;\nlet processingTimeMs = 0;\n\nconst startTime = Date.now();\n\ntry {\n  if (provider === 'localai') {\n    // LocalAI OpenAI-compatible format\n    const response = $input.first().json;\n    if (response.choices && response.choices[0]) {\n      aiResponse = response.choices[0].message?.content || response.choices[0].text;\n    } else if (response.error) {\n      error = response.error.message || 'LocalAI error';\n    } else {\n      aiResponse = response.response || 'No response from LocalAI';\n    }\n  } else if (provider === 'huggingface') {\n    // Hugging Face format - can be array or object\n    const response = $input.first().json;\n    if (Array.isArray(response) && response[0]) {\n      aiResponse = response[0].generated_text || response[0].text;\n    } else if (response.generated_text) {\n      aiResponse = response.generated_text;\n    } else if (response.error) {\n      error = response.error;\n    } else {\n      aiResponse = JSON.stringify(response);\n    }\n  } else if (provider === 'openrouter') {\n    // OpenRouter OpenAI-compatible format\n    const response = $input.first().json;\n    if (response.choices && response.choices[0]) {\n      aiResponse = response.choices[0].message?.content;\n    } else if (response.error) {\n      error = response.error.message;\n    }\n  }\n  \n  processingTimeMs = Date.now() - startTime;\n  \n} catch (e) {\n  error = e.message;\n}\n\n// If error occurred, trigger fallback\nif (error) {\n  return [{\n    json: {\n      ...input,\n      error,\n      fallbackToLocal: true,\n      attempt: (input.attempt || 0) + 1\n    }\n  }];\n}\n\n// Success response\nreturn [{\n  json: {\n    response: aiResponse,\n    provider: provider,\n    model: model,\n    prompt: originalPrompt,\n    cost: input.cost || 0,\n    privacy: input.privacy || 'unknown',\n    speed: input.speed || 'unknown',\n    selection_reason: input.selection_reason || 'algorithm',\n    processing_time_ms: processingTimeMs,\n    timestamp: new Date().toISOString(),\n    tokens_used: $input.first().json.usage?.total_tokens || 0,\n    success: true\n  }\n}];"
+      },
+      "id": "response-formatter",
+      "name": "Response Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "attempt-limit",
+              "leftValue": "={{ $json.attempt || 0 }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "smaller"
+              }
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "error-handler",
+      "name": "Error Handler & Fallback",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Final response with metrics\nconst input = $input.first().json;\n\n// Log metrics (can be extended to send to Prometheus)\nconst metrics = {\n  provider: input.provider,\n  model: input.model,\n  cost: input.cost || 0,\n  processing_time_ms: input.processing_time_ms || 0,\n  tokens_used: input.tokens_used || 0,\n  success: input.success || false,\n  timestamp: input.timestamp\n};\n\nconsole.log('AI_METRICS:', JSON.stringify(metrics));\n\nreturn [{\n  json: {\n    // User-facing response\n    response: input.response || 'No response generated',\n    provider: input.provider,\n    model: input.model,\n    timestamp: input.timestamp,\n    \n    // Metadata\n    cost: input.cost,\n    privacy_level: input.privacy,\n    processing_time_ms: input.processing_time_ms,\n    selection_reason: input.selection_reason,\n    tokens_used: input.tokens_used,\n    \n    // Status\n    success: input.success || false,\n    error: input.error || null\n  }\n}];"
+      },
+      "id": "final-response",
+      "name": "Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "AI Orchestration Webhook": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Model Picker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Model Picker": {
+      "main": [
+        [
+          {
+            "node": "Provider Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Provider Router": {
+      "main": [
+        [
+          {
+            "node": "LocalAI Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hugging Face Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenRouter Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LocalAI Request": {
+      "main": [
+        [
+          {
+            "node": "Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hugging Face Request": {
+      "main": [
+        [
+          {
+            "node": "Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Request": {
+      "main": [
+        [
+          {
+            "node": "Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Formatter": {
+      "main": [
+        [
+          {
+            "node": "Error Handler & Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Handler & Fallback": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Model Picker",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

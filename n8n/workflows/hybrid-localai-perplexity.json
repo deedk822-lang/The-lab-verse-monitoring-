@@ -1,0 +1,416 @@
+{
+  "meta": {
+    "instanceId": "hybrid-localai-perplexity"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hybrid-ai",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "hybrid-webhook",
+      "name": "Hybrid AI Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "hybrid-ai"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prompt = $input.first().json.prompt;\nconst userContext = $input.first().json.context || {};\nconst preferredProvider = $input.first().json.preferred_provider;\n\n// Advanced query classification\nfunction classifyQuery(query) {\n  const indicators = {\n    realTime: ['news', 'latest', 'current', 'today', 'recent', 'price', 'stock', 'weather', 'events'],\n    research: ['research', 'compare', 'analysis', 'market', 'trends', 'study', 'survey', 'report'],\n    coding: ['code', 'debug', 'function', 'algorithm', 'api', 'error', 'programming', 'script'],\n    internal: ['status', 'health', 'metrics', 'lab-verse', 'system', 'monitoring'],\n    creative: ['create', 'generate', 'write', 'draft', 'compose', 'story', 'poem']\n  };\n  \n  const queryLower = query.toLowerCase();\n  \n  // Score each category\n  const scores = {};\n  Object.keys(indicators).forEach(category => {\n    scores[category] = indicators[category].filter(word => \n      queryLower.includes(word)\n    ).length;\n  });\n  \n  // Find highest scoring category\n  const topCategory = Object.keys(scores).reduce((a, b) => \n    scores[a] > scores[b] ? a : b\n  );\n  \n  return scores[topCategory] > 0 ? topCategory : 'general';\n}\n\n// Smart routing with cost optimization\nfunction smartRoute(query, queryType, userContext) {\n  const providers = {\n    localai: { cost: 0, privacy: 'high', speed: 'fast', reliability: 0.95 },\n    perplexity: { cost: 0.2, privacy: 'medium', speed: 'medium', reliability: 0.98 },\n    gemini: { cost: 0.075, privacy: 'low', speed: 'fast', reliability: 0.99 },\n    openrouter: { cost: 1.0, privacy: 'low', speed: 'medium', reliability: 0.97 }\n  };\n  \n  // Routing logic\n  const routing = {\n    'realTime': 'perplexity',    // Need current info\n    'research': 'perplexity',    // Need sources and analysis\n    'coding': 'localai',         // Private code, no external data needed\n    'internal': 'localai',       // System queries, keep private\n    'creative': 'localai',       // Creative tasks, no external data needed\n    'general': 'localai'         // Default to local for cost/privacy\n  };\n  \n  let selectedProvider = routing[queryType] || 'localai';\n  \n  // Override with user preference\n  if (preferredProvider && providers[preferredProvider]) {\n    selectedProvider = preferredProvider;\n  }\n  \n  // Cost-conscious fallback: if query is simple, always use LocalAI\n  if (query.length < 50 && !queryType.includes('realTime')) {\n    selectedProvider = 'localai';\n  }\n  \n  return selectedProvider;\n}\n\nconst queryType = classifyQuery(prompt);\nconst selectedProvider = smartRoute(prompt, queryType, userContext);\nconst confidence = Math.min(0.95, 0.7 + (prompt.length / 1000));\n\nreturn [{\n  json: {\n    prompt,\n    queryType,\n    provider: selectedProvider,\n    confidence,\n    cost_estimate: selectedProvider === 'localai' ? 0 : selectedProvider === 'perplexity' ? 0.0002 : 0.001,\n    timestamp: new Date().toISOString(),\n    userContext\n  }\n}];"
+      },
+      "id": "smart-classifier",
+      "name": "Smart Query Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "route-localai",
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "localai",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "route-perplexity", 
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "perplexity",
+              "operator": {
+                "type": "string", 
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "route-gemini",
+              "leftValue": "={{ $json.provider }}",
+              "rightValue": "gemini", 
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "provider-router",
+      "name": "Provider Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.LOCALAI_BASE_URL || 'http://localhost:8080' }}/v1/chat/completions",
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "model",
+              "value": "llama-3.2-1b-instruct"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.prompt }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            },
+            {
+              "name": "max_tokens",
+              "value": "={{ $json.max_tokens || 1000 }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "localai-node",
+      "name": "LocalAI Request",
+      "type": "n8n-nodes-base.httpRequest", 
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://api.perplexity.ai/chat/completions",
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.perplexity_api.api_key }}"
+            },
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "model",
+              "value": "llama-3.1-sonar-small-128k-online"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.prompt }}\"}]"
+            },
+            {
+              "name": "return_citations",
+              "value": true
+            },
+            {
+              "name": "return_images", 
+              "value": false
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            },
+            {
+              "name": "max_tokens",
+              "value": "={{ $json.max_tokens || 1000 }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "perplexity-node",
+      "name": "Perplexity Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, 
+      "position": [900, 400],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "{{ $credentials.google_gemini_api.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "contents",
+              "value": "=[{\"parts\": [{\"text\": \"{{ $json.prompt }}\"}]}]"
+            },
+            {
+              "name": "generationConfig",
+              "value": "{\"temperature\": 0.7, \"maxOutputTokens\": {{ $json.max_tokens || 1000 }}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "gemini-node",
+      "name": "Gemini Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 600],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json;\nconst provider = input.provider;\nconst originalPrompt = input.prompt;\nconst startTime = Date.now();\n\nlet response = '';\nlet sources = [];\nlet error = null;\nlet actualCost = 0;\nlet tokensUsed = 0;\n\ntry {\n  if (provider === 'localai') {\n    // LocalAI OpenAI-compatible response\n    if (input.choices && input.choices[0]) {\n      response = input.choices[0].message?.content || input.choices[0].text;\n      tokensUsed = input.usage?.total_tokens || 0;\n      actualCost = 0; // LocalAI is free\n    } else if (input.error) {\n      error = input.error.message || 'LocalAI error';\n    } else {\n      response = input.response || 'No response from LocalAI';\n    }\n  } else if (provider === 'perplexity') {\n    // Perplexity response with citations\n    if (input.choices && input.choices[0]) {\n      response = input.choices[0].message?.content;\n      tokensUsed = input.usage?.total_tokens || 0;\n      actualCost = (tokensUsed / 1000000) * 0.2; // $0.20 per 1M tokens\n      \n      // Extract citations if available\n      if (input.citations) {\n        sources = input.citations.map(c => ({\n          title: c.title || 'Unknown',\n          url: c.url || '#',\n          snippet: c.text || ''\n        }));\n      }\n    } else if (input.error) {\n      error = input.error.message || 'Perplexity error';\n    }\n  } else if (provider === 'gemini') {\n    // Gemini response\n    if (input.candidates && input.candidates[0]) {\n      response = input.candidates[0].content?.parts?.[0]?.text;\n      tokensUsed = input.usageMetadata?.totalTokenCount || 0;\n      actualCost = (tokensUsed / 1000000) * 0.075; // $0.075 per 1M tokens\n    } else if (input.error) {\n      error = input.error.message || 'Gemini error';\n    }\n  }\n  \n  const processingTime = Date.now() - startTime;\n  \n  // If error occurred, try fallback\n  if (error && !input.fallback_attempt) {\n    return [{\n      json: {\n        ...input,\n        fallback_attempt: true,\n        provider: 'localai', // Fallback to free local\n        error: error\n      }\n    }];\n  }\n  \n  // Success response with hybrid metadata\n  return [{\n    json: {\n      response: response,\n      provider: provider,\n      queryType: input.queryType,\n      prompt: originalPrompt,\n      sources: sources,\n      cost: actualCost,\n      tokens_used: tokensUsed,\n      processing_time_ms: processingTime,\n      confidence: input.confidence,\n      timestamp: new Date().toISOString(),\n      success: !error,\n      error: error || null,\n      \n      // Hybrid system metadata\n      hybrid_stats: {\n        cost_saved_vs_openai: Math.max(0, (tokensUsed / 1000000 * 5) - actualCost),\n        privacy_score: provider === 'localai' ? 100 : provider === 'perplexity' ? 60 : 40,\n        source_count: sources.length\n      }\n    }\n  }];\n}"
+      },
+      "id": "response-processor",
+      "name": "Hybrid Response Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-error-and-no-fallback",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "fallback-not-attempted",
+              "leftValue": "={{ $json.fallback_attempt }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "fallback-handler",
+      "name": "Fallback Handler", 
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Final metrics and logging\nconst result = $input.first().json;\n\n// Log hybrid system metrics\nconst metrics = {\n  provider: result.provider,\n  queryType: result.queryType,\n  cost: result.cost || 0,\n  tokens: result.tokens_used || 0,\n  latency: result.processing_time_ms || 0,\n  sources: result.sources?.length || 0,\n  success: result.success,\n  timestamp: result.timestamp\n};\n\nconsole.log('HYBRID_AI_METRICS:', JSON.stringify(metrics));\n\n// Enhanced response for user\nreturn [{\n  json: {\n    // Main response\n    content: result.response,\n    \n    // Metadata \n    provider_used: result.provider,\n    query_type: result.queryType,\n    sources: result.sources || [],\n    \n    // Performance metrics\n    cost_usd: result.cost,\n    processing_time_ms: result.processing_time_ms,\n    tokens_used: result.tokens_used,\n    \n    // Hybrid intelligence insights\n    cost_savings: result.hybrid_stats?.cost_saved_vs_openai || 0,\n    privacy_score: result.hybrid_stats?.privacy_score || 100,\n    \n    // System metadata\n    timestamp: result.timestamp,\n    success: result.success,\n    confidence: result.confidence\n  }\n}];"
+      },
+      "id": "final-formatter",
+      "name": "Final Response Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Hybrid AI Webhook": {
+      "main": [
+        [
+          {
+            "node": "Smart Query Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart Query Classifier": {
+      "main": [
+        [
+          {
+            "node": "Provider Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Provider Router": {
+      "main": [
+        [
+          {
+            "node": "LocalAI Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Perplexity Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gemini Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LocalAI Request": {
+      "main": [
+        [
+          {
+            "node": "Hybrid Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity Request": {
+      "main": [
+        [
+          {
+            "node": "Hybrid Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Request": {
+      "main": [
+        [
+          {
+            "node": "Hybrid Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hybrid Response Processor": {
+      "main": [
+        [
+          {
+            "node": "Fallback Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback Handler": {
+      "main": [
+        [
+          {
+            "node": "Smart Query Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Final Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,26 +1,62 @@
 version: '3.8'
+
 services:
   app:
     build: .
-    restart: unless-stopped
-    ports: ["3000:3000"]
+    ports:
+      - "3000:3000"
     environment:
       - NODE_ENV=production
+      - PORT=3000
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET}
-      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY}
-      - ELEVEN_LABS_API_KEY=${ELEVEN_LABS_API_KEY}
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - LOCALAI_URL=http://localai:8080
+      - API_KEY=${API_KEY:-your-secure-api-key}
+    depends_on:
+      - redis
+      - localai
     volumes:
-      - ./generated-videos:/app/generated-videos
-      - ./generated-audio:/app/generated-audio
-    depends_on: [redis]
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
     command: redis-server --appendonly yes
-    volumes: [redis-data:/data]
+
+  localai:
+    image: localai/localai:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - MODELS_PATH=/models
+      - THREADS=4
+      - CONTEXT_SIZE=512
+      - DEBUG=true
+    volumes:
+      - localai_models:/models
+    restart: unless-stopped
+    command: local-ai run --models-path /models --threads 4 --context-size 512
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    restart: unless-stopped
 
 volumes:
-  redis-data:
+  redis_data:
+  localai_models:

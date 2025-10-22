@@ -1,113 +1,26 @@
 version: '3.8'
-
 services:
   app:
     build: .
-    container_name: lapverse-app
-    image: lapverse-monitoring:2.0.0
     restart: unless-stopped
+    ports: ["3000:3000"]
     environment:
       - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
       - REDIS_URL=redis://redis:6379
-      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - COST_CENTER=lapverse-core
-    ports:
-      - "3000:3000"
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - lapverse-network
-    user: "lapverse"
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY}
+      - ELEVEN_LABS_API_KEY=${ELEVEN_LABS_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
     volumes:
-      - ./logs:/app/logs
+      - ./generated-videos:/app/generated-videos
+      - ./generated-audio:/app/generated-audio
+    depends_on: [redis]
 
   redis:
     image: redis:7-alpine
-    container_name: lapverse-redis
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-redis123}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - redis_data:/data
-    networks:
-      - lapverse-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: lapverse-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
-    restart: unless-stopped
-    networks:
-      - lapverse-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: lapverse-prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    restart: unless-stopped
-    networks:
-      - lapverse-network
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: lapverse-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    restart: unless-stopped
-    networks:
-      - lapverse-network
+    command: redis-server --appendonly yes
+    volumes: [redis-data:/data]
 
 volumes:
-  redis_data:
-  prometheus_data:
-  grafana_data:
-
-networks:
-  lapverse-network:
-    driver: bridge
-
+  redis-data:

@@ -1,189 +1,134 @@
-# =============================================================================
-#   The Lab Verse Monitoring Stack - Git Ignore Configuration
-# =============================================================================
-
-# ======================================================================
-#   🔐  Sensitive Data - NEVER commit credentials
-# ======================================================================
-
-# Generic secret files
-*.key
-*.pem
-*.p12
-*.crt
-*.cer
-*.pub
-*.jks
-*.pfx
-*.asc
-*.enc
-*.gpg
-*.pgp
-
-# Environment variables (dotenv)
-.env
-.env.*
-.env.*.local
-.env.local
-.envrc
-
-# Keep example for newcomers (explicitly allow)
-!.env.example
-
-# Cloud provider credentials
-.aws/
-.gcloud/
-.kube/
-.terraform/
-
-# NPM / Yarn / PNPM auth tokens
-.npmrc
-.yarnrc
-.yarnrc.yml
-.pnpmrc
-
-# ======================================================================
-#   📦  Dependencies / Packages
-# ======================================================================
-
+# Dependencies
 node_modules/
-vendor/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Python virtual environments
-venv/
-ENV/
-env/
-.venv/
-__pypackages__/
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Ruby gems
-/.bundle
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Go module cache
-/pkg/
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Rust build folder
-/target/
-
-# Java / Gradle / Maven artifacts
-/gradle
-/build/
-out/
-target/
-*.class
-*.jar
-*.war
-*.ear
-
-# Composer / PHP vendor folder
-/vendor/
-
-# .NET / C# binaries
-/bin/
-/obj/
-
-# Elixir / Erlang
-/_build/
-/deps/
-
-# ======================================================================
-#   🛠️  Build Artifacts
-# ======================================================================
-
-dist/
-build/
-*.tar.gz
-*.zip
-*.7z
-*.rar
-*.egg
-*.whl
-*.exe
-*.dll
-*.so
-*.dylib
-*.o
-*.obj
-*.a
-*.lib
-
-# ======================================================================
-#   📊  Test & Coverage Artifacts
-# ======================================================================
-
+# Coverage directory used by tools like istanbul
 coverage/
-.nyc_output/
 *.lcov
-htmlcov/
-.coverage
-.coverage.*
-pytest_cache/
-.jest/
-.jest-cache/
 
-# ======================================================================
-#   📦  Editor / IDE / OS Files
-# ======================================================================
+# nyc test coverage
+.nyc_output
 
-# OS generated
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
 .DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+.DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-$RECYCLE.BIN/
+ehthumbs.db
+Thumbs.db
 
-# IDEs / Editors
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-*.swp
-*.swo
-*.iml
-
-# ======================================================================
-#   🐳  Docker & Kubernetes
-# ======================================================================
+# Application specific
+uploads/
+localai/
+*.pid
 
 # Docker
-.docker/
-docker-compose.override.yml
+.dockerignore
 
-# Kubernetes / Helm
-helm/
-*.tgz
-charts/
+# Redis
+dump.rdb
 
-# ======================================================================
-#   📝  Logs & Temporary Files
-# ======================================================================
-
-*.log
-*.tmp
-*.temp
-*.bak
-*.old
-*.orig
-logs/
-*.pid
-*.seed
-
-# ======================================================================
-#   🔒  Secrets Directory
-# ======================================================================
-
-secrets/
-
-# ======================================================================
-#   💾  Backup Files
-# ======================================================================
-
-*.backup.*
-backup/
+# Local development
+.env.development
+.env.production

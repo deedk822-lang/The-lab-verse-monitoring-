@@ -1,0 +1,449 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Background Agents Zapier Integration",
+    "tags": ["background-agents", "zapier", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Background Agent Requests to Zapier",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(background_agent_zapier_requests_total[5m])",
+            "legendFormat": "{{agent_id}} - {{action}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Background Agent Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(background_agent_zapier_response_time_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(background_agent_zapier_response_time_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile",
+            "refId": "B"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Background Agent Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(background_agent_zapier_errors_total[5m])",
+            "legendFormat": "{{agent_id}} - {{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Background Agents",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "sum(background_agents_active)",
+            "legendFormat": "Total Active Agents",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "short",
+        "thresholds": "1,5",
+        "colorBackground": true,
+        "colorValue": false,
+        "colors": ["red", "yellow", "green"],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Zapier Webhook Success Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "avg(zapier_webhook_success_rate)",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percentunit",
+        "thresholds": "0.8,0.95",
+        "colorBackground": true,
+        "colorValue": false,
+        "colors": ["red", "yellow", "green"],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Background Agent Queue Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "background_agent_queue_size",
+            "legendFormat": "{{agent_id}} - {{priority}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Queue Size",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 7,
+        "title": "Background Agent Processing Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(background_agent_processing_time_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile - {{agent_id}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Processing Time (seconds)",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 8,
+        "title": "Background Agent Health Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "background_agent_health_status",
+            "legendFormat": "{{agent_id}} - {{component}}",
+            "refId": "A"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Agent ID",
+            "value": "agent_id"
+          },
+          {
+            "text": "Component",
+            "value": "component"
+          },
+          {
+            "text": "Health Status",
+            "value": "Value"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 9,
+        "title": "Zapier Webhook Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(zapier_webhook_latency_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile - {{webhook_type}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Latency (seconds)",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      },
+      {
+        "id": 10,
+        "title": "Background Agent Throughput",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "background_agent_throughput_per_second",
+            "legendFormat": "{{agent_id}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Tasks/sec",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 11,
+        "title": "Background Agent Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "background_agent_error_rate",
+            "legendFormat": "{{agent_id}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 32
+        }
+      },
+      {
+        "id": 12,
+        "title": "Background Agent Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "background_agent_memory_usage_bytes / 1024 / 1024",
+            "legendFormat": "{{agent_id}} (MB)",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Memory Usage (MB)",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 40
+        }
+      },
+      {
+        "id": 13,
+        "title": "Background Agent CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "background_agent_cpu_usage_percent",
+            "legendFormat": "{{agent_id}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "CPU Usage (%)",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 40
+        }
+      },
+      {
+        "id": 14,
+        "title": "Background Agent Efficiency",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "avg(background_agent_efficiency_ratio)",
+            "legendFormat": "Average Efficiency",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percentunit",
+        "thresholds": "0.8,0.95",
+        "colorBackground": true,
+        "colorValue": false,
+        "colors": ["red", "yellow", "green"],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 48
+        }
+      },
+      {
+        "id": 15,
+        "title": "Background Agent Utilization",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "avg(background_agent_utilization_percent)",
+            "legendFormat": "Average Utilization",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "50,80",
+        "colorBackground": true,
+        "colorValue": false,
+        "colors": ["green", "yellow", "red"],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 48
+        }
+      },
+      {
+        "id": 16,
+        "title": "Zapier Webhook Retries",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(zapier_webhook_retries_total[5m])",
+            "legendFormat": "{{agent_id}} - {{action}} - Attempt {{retry_attempt}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Retries/sec",
+            "show": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 48
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": []
+  }
+}

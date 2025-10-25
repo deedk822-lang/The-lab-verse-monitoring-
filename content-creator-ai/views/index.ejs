@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Creator AI - Multi-Provider AI Content Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <i class="fas fa-magic"></i> Content Creator AI
+      </a>
+      <span class="navbar-text text-white">
+        Multi-Provider AI Platform
+      </span>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <!-- Header -->
+    <div class="text-center mb-5">
+      <h1 class="display-4">AI-Powered Content Creation</h1>
+      <p class="lead">Generate text, images, videos, and audio with multiple AI providers</p>
+      <div class="badge-container mt-3">
+        <span class="badge bg-success"><i class="fab fa-google"></i> Google Gemini</span>
+        <span class="badge bg-info"><i class="fas fa-robot"></i> LocalAI</span>
+        <span class="badge bg-warning text-dark"><i class="fas fa-brain"></i> Z.AI GLM-4.6</span>
+        <span class="badge bg-primary"><i class="fas fa-bolt"></i> OpenAI</span>
+      </div>
+    </div>
+
+    <!-- Main Form -->
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-edit"></i> Create Content</h5>
+          </div>
+          <div class="card-body">
+            <form id="contentForm">
+              <!-- Topic -->
+              <div class="mb-3">
+                <label for="topic" class="form-label">Topic *</label>
+                <input type="text" class="form-control" id="topic" name="topic" 
+                       placeholder="E.g., The future of artificial intelligence" required>
+              </div>
+
+              <!-- Media Type -->
+              <div class="mb-3">
+                <label for="media_type" class="form-label">Media Type *</label>
+                <select class="form-select" id="media_type" name="media_type" required>
+                  <option value="text" selected>Text Article</option>
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                  <option value="audio">Audio</option>
+                  <option value="multimodal">Multimodal (Text + Image)</option>
+                </select>
+              </div>
+
+              <!-- Provider -->
+              <div class="mb-3">
+                <label for="provider" class="form-label">AI Provider</label>
+                <select class="form-select" id="provider" name="provider">
+                  <option value="auto" selected>Auto-select (Default)</option>
+                  <option value="google">Google Gemini</option>
+                  <option value="localai">LocalAI (Self-hosted)</option>
+                  <option value="zai">Z.AI GLM-4.6</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+                <small class="text-muted">Auto-select will use your configured default provider</small>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="audience" class="form-label">Target Audience</label>
+                    <input type="text" class="form-control" id="audience" name="audience" 
+                           placeholder="E.g., Tech enthusiasts" value="general audience">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="tone" class="form-label">Tone</label>
+                    <select class="form-select" id="tone" name="tone">
+                      <option value="professional" selected>Professional</option>
+                      <option value="casual">Casual</option>
+                      <option value="friendly">Friendly</option>
+                      <option value="formal">Formal</option>
+                      <option value="humorous">Humorous</option>
+                      <option value="technical">Technical</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Text-specific options -->
+              <div id="textOptions" class="mb-3">
+                <div class="row">
+                  <div class="col-md-6">
+                    <label for="length" class="form-label">Article Length</label>
+                    <select class="form-select" id="length" name="length">
+                      <option value="short">Short (200-400 words)</option>
+                      <option value="medium" selected>Medium (600-1000 words)</option>
+                      <option value="long">Long (1500-2500 words)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="format" class="form-label">Output Format</label>
+                    <select class="form-select" id="format" name="format">
+                      <option value="markdown" selected>Markdown</option>
+                      <option value="html">HTML</option>
+                      <option value="plain">Plain Text</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image/Video options -->
+              <div id="mediaOptions" class="mb-3" style="display: none;">
+                <div class="row">
+                  <div class="col-md-6">
+                    <label for="aspect_ratio" class="form-label">Aspect Ratio</label>
+                    <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                      <option value="16:9" selected>16:9 (Landscape)</option>
+                      <option value="1:1">1:1 (Square)</option>
+                      <option value="9:16">9:16 (Portrait)</option>
+                      <option value="4:3">4:3 (Classic)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6" id="styleOption">
+                    <label for="style" class="form-label">Style</label>
+                    <input type="text" class="form-control" id="style" name="style" 
+                           placeholder="E.g., photorealistic" value="photorealistic">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Advanced Options -->
+              <div class="accordion mb-3" id="advancedOptions">
+                <div class="accordion-item">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#advancedCollapse">
+                      <i class="fas fa-cog"></i> Advanced Options
+                    </button>
+                  </h2>
+                  <div id="advancedCollapse" class="accordion-collapse collapse" 
+                       data-bs-parent="#advancedOptions">
+                    <div class="accordion-body">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="enable_research" 
+                               name="enable_research" checked>
+                        <label class="form-check-label" for="enable_research">
+                          Enable AI Research (fetch real-time data)
+                        </label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="include_seo" 
+                               name="include_seo" checked>
+                        <label class="form-check-label" for="include_seo">
+                          Generate SEO Metadata
+                        </label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="include_social" 
+                               name="include_social" checked>
+                        <label class="form-check-label" for="include_social">
+                          Generate Social Media Posts
+                        </label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="thinking_mode" 
+                               name="thinking_mode">
+                        <label class="form-check-label" for="thinking_mode">
+                          Thinking Mode (Z.AI only - advanced reasoning)
+                        </label>
+                      </div>
+                      <div class="mb-2">
+                        <label for="temperature" class="form-label">
+                          Temperature (Creativity): <span id="tempValue">0.7</span>
+                        </label>
+                        <input type="range" class="form-range" id="temperature" 
+                               name="temperature" min="0" max="2" step="0.1" value="0.7">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                  <i class="fas fa-rocket"></i> Generate Content
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress and Info -->
+      <div class="col-lg-4">
+        <div class="card shadow mb-3">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Status</h6>
+          </div>
+          <div class="card-body">
+            <div id="progressContainer" style="display: none;">
+              <div class="progress mb-3">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%"></div>
+              </div>
+              <p id="progressMessage" class="text-muted mb-0">Initializing...</p>
+            </div>
+            <div id="idleMessage">
+              <p class="text-muted">Ready to generate content. Fill out the form and click Generate!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow">
+          <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips</h6>
+          </div>
+          <div class="card-body">
+            <ul class="small mb-0">
+              <li>Be specific with your topic for better results</li>
+              <li>Use Google provider for real-time search data</li>
+              <li>LocalAI is free but requires local setup</li>
+              <li>Z.AI GLM-4.6 is cost-efficient for long content</li>
+              <li>Enable thinking mode for complex topics</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsContainer" class="mt-5" style="display: none;">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-check-circle"></i> Generated Content</h5>
+        </div>
+        <div class="card-body">
+          <div id="resultsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-light py-4 mt-5">
+    <div class="container text-center text-muted">
+      <p class="mb-0">Content Creator AI - Multi-Provider AI Platform</p>
+      <small>Powered by Google Gemini, LocalAI, Z.AI GLM-4.6, and OpenAI</small>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

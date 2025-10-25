@@ -47,7 +47,7 @@ jobs:
 
       - name: Trigger Zapier Workflow
         env:
-          WEBHOOK_URL: "https://hooks.zapier.com/hooks/catch/24571038/uio32zw/"
+          WEBHOOK_URL: "${{ secrets.ZAPIER_CATCH_HOOK_URL }}"
         run: |
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \

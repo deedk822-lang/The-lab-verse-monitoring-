@@ -1,0 +1,18 @@
+# Dockerfile for MCP Orchestrator
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.mcp.txt .
+RUN pip install --no-cache-dir -r requirements.mcp.txt
+
+# Copy the application code
+COPY the-lab-verse-monitoring/src/kimi_instruct/mcp/mcp_api.py ./mcp_api.py
+
+# Expose the port
+EXPOSE 8080
+
+# Run the application
+CMD ["uvicorn", "mcp_api:app", "--host", "0.0.0.0", "--port", "8080"]
+

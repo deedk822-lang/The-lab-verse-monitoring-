@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-orchestrator
+  namespace: pcp-prod
+  labels:
+    app: mcp-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-orchestrator
+  template:
+    metadata:
+      labels:
+        app: mcp-orchestrator
+    spec:
+      containers:
+      - name: mcp-orchestrator
+        image: mcp-orchestrator:latest # Placeholder for built image
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MCP_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pcp-secrets
+              key: MCP_PRIVATE_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-orchestrator
+  namespace: pcp-prod
+spec:
+  selector:
+    app: mcp-orchestrator
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+

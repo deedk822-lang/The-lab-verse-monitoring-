@@ -154,4 +154,9 @@ export class OpenAIProvider extends BaseProvider {
       throw error;
     }
   }
+
+  async getQuote(model) {
+    // OpenAI does not have a public pricing API, so we use the configured value
+    return (this.costPerToken || 0) * 1000000;
+  }
 }

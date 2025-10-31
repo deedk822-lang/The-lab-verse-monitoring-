@@ -2,6 +2,12 @@ import { ProviderFactory } from './ProviderFactory.js';
 import { PROVIDERS } from '../config/providers.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { maxCostPer1M } from '../utils/priceLock.js';
+
+async function getProviderQuote(provider) {
+  const aiProvider = ProviderFactory.getProvider(provider);
+  return aiProvider.getQuote();
+}
 
 export class ContentGenerator {
   constructor() {
@@ -26,6 +32,11 @@ export class ContentGenerator {
     logger.info(`Starting content generation: ${requestId}`, { topic, mediaType, provider });
 
     try {
+      const ceiling = maxCostPer1M(provider);
+      const actual = await getProviderQuote(provider); // quick /models call
+      if (actual > ceiling) {
+        throw new Error(`Price lock violated: ${provider} quoted ${actual} > ${ceiling}`);
+      }
       const aiProvider = ProviderFactory.getProvider(provider);
       
       // Generate research and insights

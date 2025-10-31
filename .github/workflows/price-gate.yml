@@ -1,0 +1,36 @@
+# .github/workflows/price-gate.yml
+name: Price-Lock Gate
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'src/config/providers.js'
+      - 'docker-compose.yml'
+      - '.env.example'
+jobs:
+  price-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - name: Ensure prices ≤ baseline
+        run: |
+          node --input-type=module -e "
+          import { createRequire } from 'module';
+          const require = createRequire(import.meta.url);
+          const baseline = require('./config/price-baseline.json');
+          import { PROVIDER_CONFIGS } from './src/config/providers.js';
+          const violations = [];
+          for (const [k,v] of Object.entries(PROVIDER_CONFIGS||{})) {
+            const costPer1M = (v.costPerToken || 0) * 1000000;
+            if (costPer1M > baseline.baseline.providers[k]?.costPer1M) {
+              violations.push(\`\${k} \${costPer1M} > \${baseline.baseline.providers[k].costPer1M}\`);
+            }
+          }
+          if (violations.length) {
+            console.error('❌ Price lock violated:', violations);
+            process.exit(1);
+          }
+          console.log('✅ All prices ≤ baseline');
+          "

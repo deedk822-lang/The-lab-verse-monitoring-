@@ -70,4 +70,8 @@ export class BaseProvider {
   async analyzeContent(content, options = {}) {
     throw new Error('analyzeContent method must be implemented by subclass');
   }
+
+  async getQuote(model) {
+    throw new Error('getQuote method must be implemented by subclass');
+  }
 }

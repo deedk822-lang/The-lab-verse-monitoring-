@@ -175,4 +175,9 @@ export class LocalAIProvider extends BaseProvider {
       return { status: 'unknown' };
     }
   }
+
+  async getQuote(model) {
+    // LocalAI is free
+    return 0;
+  }
 }

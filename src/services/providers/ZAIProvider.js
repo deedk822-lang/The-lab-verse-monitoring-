@@ -267,4 +267,9 @@ export class ZAIProvider extends BaseProvider {
       throw error;
     }
   }
+
+  async getQuote(model) {
+    // Z.AI does not have a public pricing API, so we use the configured value
+    return (this.costPerToken || 0) * 1000000;
+  }
 }

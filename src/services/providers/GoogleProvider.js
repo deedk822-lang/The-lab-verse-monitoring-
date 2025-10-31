@@ -251,4 +251,9 @@ export class GoogleProvider extends BaseProvider {
       throw error;
     }
   }
+
+  async getQuote(model) {
+    // Google Gemini does not have a public pricing API, so we use the configured value
+    return (this.costPerToken || 0) * 1000000;
+  }
 }

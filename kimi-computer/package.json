@@ -1,0 +1,13 @@
+{
+  "name": "kimi-computer-groq",
+  "version": "1.0.0",
+  "description": "Kimi Computer with Groq and Vercel Edge Functions",
+  "main": "api/groq-mistral.js",
+  "scripts": {
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@vercel/edge": "^1.1.0",
+    "groq-sdk": "^0.3.2"
+  }
+}

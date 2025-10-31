@@ -1,0 +1,51 @@
+# Core FastAPI and ASGI server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# HTTP client and async support
+httpx==0.25.2
+aiohttp==3.9.1
+
+# AI/ML dependencies
+ollama==0.1.7
+chromadb==0.4.18
+sentence-transformers==2.2.2
+
+# Environment and configuration
+python-dotenv==1.0.0
+python-multipart==0.0.6
+
+# Data processing and validation
+pandas==2.1.4
+numpy==1.25.2
+
+# Logging and monitoring
+structlog==23.2.0
+rich==13.7.0
+
+# Security and authentication
+cryptography==41.0.8
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Rate limiting and caching
+redis==5.0.1
+slowapi==0.1.9
+
+# Background tasks and scheduling
+celery==5.3.4
+apscheduler==3.10.4
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Production utilities
+gunicorn==21.2.0
+supervisor==4.2.5

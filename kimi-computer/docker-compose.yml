@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # Ollama service for Mistral-7B model hosting
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - kimi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ChromaDB for vector storage and retrieval
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - CHROMA_LOG_LEVEL=INFO
+    networks:
+      - kimi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # FastAPI application service
+  kimi-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kimi-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+      - AYR_KEY=${AYR_KEY}
+      - MAKE_WEBHOOK=${MAKE_WEBHOOK}
+      - BRAVE_VERIFICATION_TOKEN=${BRAVE_VERIFICATION_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - kimi-network
+    depends_on:
+      ollama:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  ollama_data:
+    driver: local
+  chromadb_data:
+    driver: local
+
+networks:
+  kimi-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

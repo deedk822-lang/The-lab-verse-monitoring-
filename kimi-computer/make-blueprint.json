@@ -1,0 +1,375 @@
+{
+  "name": "Kimi Computer - Social Media Automation",
+  "description": "Complete workflow for AI-powered social media automation with BAT monetization",
+  "version": "1.0.0",
+  "modules": [
+    {
+      "id": "webhook_trigger",
+      "type": "webhook",
+      "name": "Conversion Webhook",
+      "description": "Receives conversion data from FastAPI endpoint",
+      "config": {
+        "webhook": {
+          "url": "https://your-app.fly.dev/catch",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "utm_source": "{{body.utm_source}}",
+            "utm_campaign": "{{body.utm_campaign}}",
+            "utm_content": "{{body.utm_content}}",
+            "utm_medium": "{{body.utm_medium}}",
+            "email": "{{body.email}}",
+            "name": "{{body.name}}",
+            "phone": "{{body.phone}}",
+            "conversion_id": "{{body.conversion_id}}",
+            "timestamp": "{{body.timestamp}}"
+          }
+        }
+      },
+      "output": {
+        "conversion_data": "{{body}}"
+      }
+    },
+    {
+      "id": "router",
+      "type": "router",
+      "name": "Source Router",
+      "description": "Route based on UTM source",
+      "config": {
+        "routes": [
+          {
+            "condition": "{{webhook_trigger.conversion_data.utm_source}} = &quot;brave&quot;",
+            "flow": ["brave_ads_flow"]
+          },
+          {
+            "condition": "{{webhook_trigger.conversion_data.utm_source}} = &quot;google&quot;",
+            "flow": ["google_ads_flow"]
+          },
+          {
+            "condition": "{{webhook_trigger.conversion_data.utm_source}} = &quot;facebook&quot;",
+            "flow": ["facebook_ads_flow"]
+          },
+          {
+            "condition": "true",
+            "flow": ["default_flow"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "google_customer_match",
+      "type": "google-ads",
+      "name": "Google Customer Match",
+      "description": "Update Google Ads Customer Match audience",
+      "config": {
+        "connection": {
+          "developer_token": "{{env.GOOGLE_ADS_DEVELOPER_TOKEN}}",
+          "client_id": "{{env.GOOGLE_ADS_CLIENT_ID}}",
+          "client_secret": "{{env.GOOGLE_ADS_CLIENT_SECRET}}",
+          "refresh_token": "{{env.GOOGLE_ADS_REFRESH_TOKEN}}",
+          "customer_id": "{{env.GOOGLE_ADS_CUSTOMER_ID}}"
+        },
+        "operation": "create_customer_match_user_list",
+        "user_list": {
+          "name": "Kimi Computer Conversions",
+          "description": "Users who converted via Kimi Computer landing page",
+          "membership_life_span": 30,
+          "upload_key_type": "CONTACT_INFO"
+        },
+        "members": [
+          {
+            "hashed_email": "{{hash(webhook_trigger.conversion_data.email)}}",
+            "phone_number": "{{hash(webhook_trigger.conversion_data.phone)}}",
+            "first_name": "{{hash(webhook_trigger.conversion_data.name)}}",
+            "country_code": "US"
+          }
+        ]
+      },
+      "dependencies": ["webhook_trigger"]
+    },
+    {
+      "id": "mailchimp_update",
+      "type": "mailchimp",
+      "name": "Mailchimp Contact Update",
+      "description": "Add or update contact in Mailchimp with conversion tags",
+      "config": {
+        "connection": {
+          "api_key": "{{env.MAILCHIMP_API_KEY}}",
+          "data_center": "{{env.MAILCHIMP_DC}}"
+        },
+        "operation": "upsert_member",
+        "list_id": "{{env.MAILCHIMP_LIST_ID}}",
+        "email": "{{webhook_trigger.conversion_data.email}}",
+        "merge_fields": {
+          "FNAME": "{{webhook_trigger.conversion_data.name}}",
+          "PHONE": "{{webhook_trigger.conversion_data.phone}}"
+        },
+        "tags": [
+          "kimi-computer-conversion",
+          "utm-source-{{webhook_trigger.conversion_data.utm_source}}",
+          "utm-campaign-{{webhook_trigger.conversion_data.utm_campaign}}"
+        ],
+        "interests": {
+          "ai-automation": true,
+          "privacy-first": true
+        }
+      },
+      "dependencies": ["webhook_trigger"]
+    },
+    {
+      "id": "slack_notification",
+      "type": "slack",
+      "name": "Slack Conversion Alert",
+      "description": "Send notification to Slack about new conversion",
+      "config": {
+        "webhook_url": "{{env.SLACK_WEBHOOK_URL}}",
+        "message": {
+          "text": "🚀 New Kimi Computer Conversion!",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*🚀 New Kimi Computer Conversion!*"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Source:*\n{{webhook_trigger.conversion_data.utm_source}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Campaign:*\n{{webhook_trigger.conversion_data.utm_campaign}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Email:*\n{{webhook_trigger.conversion_data.email}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Conversion ID:*\n{{webhook_trigger.conversion_data.conversion_id}}"
+                }
+              ]
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View Details"
+                  },
+                  "url": "https://your-analytics-dashboard.com/conversions/{{webhook_trigger.conversion_data.conversion_id}}"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "dependencies": ["webhook_trigger"]
+    },
+    {
+      "id": "mistral_content_generation",
+      "type": "http",
+      "name": "Generate AI Content",
+      "description": "Generate social media content using Mistral AI",
+      "config": {
+        "url": "http://localhost:8080/generate-content",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "prompt": "Create a compelling social media post about AI automation and privacy. User came from {{webhook_trigger.conversion_data.utm_source}} campaign '{{webhook_trigger.conversion_data.utm_campaign}}'. Include relevant hashtags and keep it under 280 characters.",
+          "model": "mistral",
+          "max_tokens": 1000,
+          "temperature": 0.7
+        },
+        "timeout": 60
+      },
+      "dependencies": ["webhook_trigger"],
+      "output": {
+        "generated_content": "{{body.content}}"
+      }
+    },
+    {
+      "id": "ayrshare_publish",
+      "type": "http",
+      "name": "Publish to Social Platforms",
+      "description": "Publish generated content to multiple social platforms",
+      "config": {
+        "url": "https://api.ayrshare.com/api/post",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{env.AYR_KEY}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "post": "{{mistral_content_generation.generated_content}}",
+          "platforms": [
+            "twitter",
+            "facebook",
+            "linkedin",
+            "instagram",
+            "reddit",
+            "telegram"
+          ],
+          "mediaUrls": [],
+          "schedule": null
+        },
+        "timeout": 30
+      },
+      "dependencies": ["mistral_content_generation"],
+      "output": {
+        "post_id": "{{body.id}}",
+        "post_urls": "{{body.postUrls}}"
+      }
+    },
+    {
+      "id": "conversion_tracking",
+      "type": "http",
+      "name": "Log Conversion Analytics",
+      "description": "Store conversion data for analytics",
+      "config": {
+        "url": "https://your-analytics-api.com/conversions",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{env.ANALYTICS_API_KEY}}"
+        },
+        "body": {
+          "conversion_id": "{{webhook_trigger.conversion_data.conversion_id}}",
+          "utm_source": "{{webhook_trigger.conversion_data.utm_source}}",
+          "utm_campaign": "{{webhook_trigger.conversion_data.utm_campaign}}",
+          "utm_medium": "{{webhook_trigger.conversion_data.utm_medium}}",
+          "email": "{{webhook_trigger.conversion_data.email}}",
+          "timestamp": "{{webhook_trigger.conversion_data.timestamp}}",
+          "content_generated": "{{mistral_content_generation.generated_content}}",
+          "social_posts": "{{ayrshare_publish.post_urls}}",
+          "revenue_impact": {
+            "bat_earned": 0.05,
+            "affiliate_potential": 2.50,
+            "cpa_cost": 0.00
+          }
+        }
+      },
+      "dependencies": ["webhook_trigger", "mistral_content_generation", "ayrshare_publish"]
+    },
+    {
+      "id": "error_handler",
+      "type": "error-handler",
+      "name": "Error Handler",
+      "description": "Handle errors and send alerts",
+      "config": {
+        "error_actions": [
+          {
+            "condition": "any_module_fails",
+            "action": "send_slack_alert",
+            "config": {
+              "webhook_url": "{{env.SLACK_WEBHOOK_URL}}",
+              "message": {
+                "text": "🚨 Kimi Computer Workflow Error",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*🚨 Workflow Error in Kimi Computer*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Failed Module:*\n{{failed_module}}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Error:*\n{{error_message}}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Conversion ID:*\n{{webhook_trigger.conversion_data.conversion_id}}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Timestamp:*\n{{timestamp}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "condition": "google_customer_match_fails",
+            "action": "retry_with_backoff",
+            "config": {
+              "max_retries": 3,
+              "backoff_seconds": [60, 300, 900]
+            }
+          },
+          {
+            "condition": "ayrshare_publish_fails",
+            "action": "fallback_to_direct_apis",
+            "config": {
+              "retry_twitter": true,
+              "retry_linkedin": true,
+              "skip_instagram": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "flows": {
+    "brave_ads_flow": [
+      "google_customer_match",
+      "mailchimp_update",
+      "slack_notification",
+      "mistral_content_generation",
+      "ayrshare_publish",
+      "conversion_tracking"
+    ],
+    "google_ads_flow": [
+      "mailchimp_update",
+      "slack_notification",
+      "mistral_content_generation",
+      "ayrshare_publish",
+      "conversion_tracking"
+    ],
+    "facebook_ads_flow": [
+      "mailchimp_update",
+      "slack_notification",
+      "mistral_content_generation",
+      "ayrshare_publish",
+      "conversion_tracking"
+    ],
+    "default_flow": [
+      "mailchimp_update",
+      "slack_notification",
+      "mistral_content_generation",
+      "ayrshare_publish",
+      "conversion_tracking"
+    ]
+  },
+  "schedules": [
+    {
+      "name": "hourly_health_check",
+      "cron": "0 * * * *",
+      "action": "check_system_health"
+    },
+    {
+      "name": "daily_content_generation",
+      "cron": "0 9 * * *",
+      "action": "generate_daily_content"
+    }
+  ]
+}

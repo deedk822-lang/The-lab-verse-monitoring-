@@ -1,0 +1,188 @@
+{
+  "campaign": {
+    "name": "Kimi Computer - AI Automation",
+    "status": "ACTIVE",
+    "type": "SEARCH_AND_DISPLAY",
+    "budget": {
+      "daily": 5.00,
+      "monthly": 150.00,
+      "currency": "USD"
+    },
+    "targeting": {
+      "geography": {
+        "countries": ["US", "GB", "CA", "AU"],
+        "regions": [],
+        "cities": [],
+        "exclude": []
+      },
+      "demographics": {
+        "age_range": {
+          "min": 25,
+          "max": 65
+        },
+        "gender": "ALL",
+        "income": "MEDIUM_TO_HIGH"
+      },
+      "interests": [
+        "Artificial Intelligence",
+        "Machine Learning",
+        "Automation",
+        "Privacy Technology",
+        "Open Source Software",
+        "Developer Tools",
+        "Edge Computing",
+        "Social Media Marketing",
+        "Digital Privacy",
+        "Self-Hosting"
+      ],
+      "keywords": [
+        "AI automation",
+        "Mistral AI",
+        "privacy-first AI",
+        "local AI inference",
+        "social media automation",
+        "BAT cryptocurrency",
+        "self-hosted AI",
+        "open source AI",
+        "AI content generation",
+        "privacy computing"
+      ],
+      "platform": {
+        "desktop": true,
+        "mobile": true,
+        "tablet": true
+      },
+      "time_targeting": {
+        "hours": "ALL",
+        "days": "ALL"
+      }
+    },
+    "creatives": [
+      {
+        "id": "creative_1",
+        "type": "TEXT_AD",
+        "headline": "AI Privacy Automation",
+        "description": "Run Mistral AI locally. Zero API costs. Complete privacy control.",
+        "display_url": "kimi-computer.fly.dev",
+        "destination_url": "https://kimi-computer.fly.dev/landing?utm_source=brave&utm_campaign=ai-privacy&utm_content=text-ad-1",
+        "call_to_action": "LEARN_MORE"
+      },
+      {
+        "id": "creative_2", 
+        "type": "TEXT_AD",
+        "headline": "Self-Hosted AI Power",
+        "description": "Your private social media automation system. No subscriptions, no data leaks.",
+        "display_url": "kimi-computer.fly.dev",
+        "destination_url": "https://kimi-computer.fly.dev/landing?utm_source=brave&utm_campaign=self-hosted&utm_content=text-ad-2",
+        "call_to_action": "GET_STARTED"
+      },
+      {
+        "id": "creative_3",
+        "type": "TEXT_AD",
+        "headline": "BAT-Funded AI System",
+        "description": "Monetize your AI automation with Brave Ads. Complete setup under $600.",
+        "display_url": "kimi-computer.fly.dev",
+        "destination_url": "https://kimi-computer.fly.dev/landing?utm_source=brave&utm_campaign=bat-funded&utm_content=text-ad-3",
+        "call_to_action": "START_EARNING"
+      }
+    ],
+    "bidding": {
+      "strategy": "MAXIMIZE_CONVERSIONS",
+      "target_cpa": 2.50,
+      "max_cpc": 0.50,
+      "budget_optimization": true
+    },
+    "conversion_tracking": {
+      "conversion_name": "Kimi_Computer_Signup",
+      "conversion_type": "PAGE_VIEW",
+      "conversion_url_pattern": "/landing",
+      "conversion_window": 30,
+      "attribution_model": "LAST_CLICK",
+      "verification_method": "META_TAG",
+      "verification_token": "{{BRAVE_VERIFICATION_TOKEN}}",
+      "value": 0.05,
+      "currency": "USD"
+    },
+    "ad_extensions": {
+      "sitelinks": [
+        {
+          "text": "Documentation",
+          "url": "https://kimi-computer.fly.dev/docs",
+          "description": "Complete setup guide and API documentation"
+        },
+        {
+          "text": "GitHub Source",
+          "url": "https://github.com/deedk822-lang/The-lab-verse-monitoring-",
+          "description": "Open source code and contributions"
+        },
+        {
+          "text": "Live Demo",
+          "url": "https://kimi-computer.fly.dev/landing",
+          "description": "See Kimi Computer in action"
+        }
+      ],
+      "call_extensions": [],
+      "location_extensions": [],
+      "affiliate_extensions": [
+        {
+          "text": "Get Hardware",
+          "url": "https://amzn.to/3XYZ123",
+          "description": "Recommended hardware for optimal performance"
+        }
+      ]
+    },
+    "exclusions": {
+      "keywords": [
+        "free AI",
+        "AI art generator",
+        "chatgpt alternative",
+        "cheap AI"
+      ],
+      "categories": [
+        "gambling",
+        "adult content",
+        "illegal content"
+      ],
+      "placements": []
+    },
+    "schedule": {
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-31",
+      "delivery_method": "STANDARD",
+      "ad_rotation": "OPTIMIZE"
+    },
+    "optimization": {
+      "auto_optimization": true,
+      "learning_period": 7,
+      "frequency_capping": {
+        "impressions": 5,
+        "time_period": "DAY"
+      }
+    }
+  },
+  "tracking_templates": {
+    "click_tracking": "https://kimi-computer.fly.dev/track/click?campaign_id={campaignid}&adgroup_id={adgroupid}&creative_id={creativeid}&device={device}",
+    "impression_tracking": "https://kimi-computer.fly.dev/track/impression?campaign_id={campaignid}&adgroup_id={adgroupid}&creative_id={creative_id}",
+    "conversion_tracking": "https://kimi-computer.fly.dev/catch"
+  },
+  "custom_parameters": {
+    "source": "brave",
+    "medium": "cpc",
+    "campaign": "kimi-computer-{{campaign.id}}",
+    "ad_group": "{{adgroup.name}}",
+    "creative": "{{creative.id}}",
+    "device": "{device}",
+    "position": "{position}"
+  },
+  "budget_allocation": {
+    "search": 60,
+    "display": 40,
+    "remarketing": 0
+  },
+  "performance_targets": {
+    "ctr_target": 2.5,
+    "conversion_rate_target": 5.0,
+    "roas_target": 200,
+    "cpa_target": 2.50
+  }
+}

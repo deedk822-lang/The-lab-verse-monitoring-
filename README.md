@@ -1,3 +1,5 @@
+![Price Locked](https://img.shields.io/badge/price-locked-green)
+
 # AI Content Creation Suite
 
 A comprehensive fullstack JavaScript application that replicates n8n content creation workflows with support for multiple AI providers including OpenAI, Google Gemini, LocalAI, and Z.AI GLM-4.6.

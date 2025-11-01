@@ -5,7 +5,7 @@
     "providers": {
       "localai": { "costPer1M": 0.00, "currency": "USD" },
       "groq": { "costPer1M": 0.07, "currency": "USD" },
-      "openai": { "costPer1M": 0.50, "currency": "USD" },
+      "openai": { "costPer1M": 30.00, "currency": "USD" },
       "anthropic": { "costPer1M": 0.80, "currency": "USD" }
     },
     "infra": {

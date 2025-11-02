@@ -18,6 +18,12 @@ router.post('/ayr', [
   body('platforms').notEmpty().withMessage('Platforms are required')
 ], async (req, res) => {
   try {
+    // Log incoming request for debugging
+    logger.info('Zapier webhook received:', {
+      body: req.body,
+      headers: req.headers
+    });
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

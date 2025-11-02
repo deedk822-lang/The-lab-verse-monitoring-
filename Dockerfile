@@ -1,5 +1,5 @@
 # Use Node.js 18 LTS as base image
-FROM node:18-alpine
+FROM public.ecr.aws/docker/library/node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ RUN apk add --no-cache \
 COPY package*.json ./
 
 # Install Node.js dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy application code
 COPY . .

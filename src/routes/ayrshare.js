@@ -2,7 +2,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import ayrshareService from '../services/ayrshareService.js';
 import mailchimpService from '../services/mailchimpService.js';
-import { ContentGenerator } from '../services/contentGenerator.js';
+import { ContentGenerator } from '../services/ContentGenerator.js';
 import { logger } from '../utils/logger.js';
 import { io } from '../server.js';
 

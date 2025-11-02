@@ -12,6 +12,7 @@ import 'express-async-errors';
 // Import routes and middleware
 import contentRoutes from './routes/content.js';
 import testRoutes from './routes/test.js';
+import ayrshareRoutes from './routes/ayrshare.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { connectRedis } from './utils/redis.js';
@@ -84,6 +85,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/content', validateApiKey, contentRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/ayrshare', validateApiKey, ayrshareRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
@@ -112,6 +114,7 @@ server.listen(PORT, () => {
   logger.info(`📊 Health check: http://localhost:${PORT}/health`);
   logger.info(`🔧 Test endpoint: http://localhost:${PORT}/api/test`);
   logger.info(`📝 Content API: http://localhost:${PORT}/api/content`);
+  logger.info(`📢 Ayrshare API: http://localhost:${PORT}/api/ayrshare`);
 });
 
 // Graceful shutdown

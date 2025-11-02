@@ -1,59 +1,74 @@
 // src/services/contentGenerator.js
 import { streamText } from 'ai';
-import { getActiveProvider } from '../config/providers.js';
-import { logger } from '../utils/logger.js';
+import { getActiveProvider, getProviderByName } from '../config/providers.js';
 
+/**
+ * Generate content using AI
+ * @param {string} prompt - The prompt for content generation
+ * @param {Object} options - Generation options
+ * @param {number} options.maxTokens - Maximum tokens to generate
+ * @param {number} options.temperature - Temperature for generation
+ * @param {number} options.timeout - Request timeout in milliseconds
+ * @param {string} options.provider - Specific provider name (optional)
+ * @returns {Promise<string>} Generated content
+ */
 export async function generateContent(prompt, options = {}) {
-  const model = getActiveProvider();
+  // Get the AI model
+  let model;
+  if (options.provider) {
+    model = getProviderByName(options.provider);
+    if (!model) {
+      throw new Error(`Provider ${options.provider} not available`);
+    }
+  } else {
+    model = getActiveProvider();
+  }
 
   if (!model) {
-    throw new Error('No AI provider available. Check your .env configuration.');
+    throw new Error('No AI provider available. Please configure at least one provider.');
   }
 
   try {
-    logger.info('Generating content with AI provider:', {
-      promptLength: prompt.length,
-      maxTokens: options.maxTokens || 500
-    });
-
-    const { text: textPromise } = streamText({
+    // streamText returns an object with promises
+    const result = streamText({
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
       temperature: options.temperature || 0.7,
     });
 
+    // Create timeout promise
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('AI generation timed out')), options.timeout || 30000)
+      setTimeout(() => reject(new Error('Request timed out')), options.timeout || 30000)
     );
 
-    const result = await Promise.race([textPromise, timeoutPromise]);
+    // Race between content generation and timeout
+    const text = await Promise.race([result.text, timeoutPromise]);
 
-    logger.info('Content generation completed:', {
-      resultLength: result.length
-    });
-
-    return result;
+    return text;
 
   } catch (error) {
-    logger.error('Content generation failed:', {
-      error: error.message,
-      provider: 'mistral-local'
-    });
-    throw new Error(`AI generation failed: ${error.message}`);
+    console.error('❌ Content generation failed:', error.message);
+    throw new Error(`Content generation failed: ${error.message}`);
   }
 }
 
+/**
+ * Stream content generation for real-time responses
+ * @param {string} prompt - The prompt for content generation
+ * @param {Object} options - Generation options
+ * @returns {AsyncGenerator} Stream of content chunks
+ */
 export async function* streamContent(prompt, options = {}) {
-  const model = getActiveProvider();
+  const model = options.provider ?
+    getProviderByName(options.provider) :
+    getActiveProvider();
 
   if (!model) {
-    throw new Error('No AI provider available. Check your .env configuration.');
+    throw new Error('No AI provider available');
   }
 
   try {
-    logger.info('Starting streaming content generation');
-
     const { textStream } = streamText({
       model,
       prompt,
@@ -65,10 +80,13 @@ export async function* streamContent(prompt, options = {}) {
       yield chunk;
     }
 
-    logger.info('Streaming content generation completed');
-
   } catch (error) {
-    logger.error('Streaming generation failed:', error.message);
+    console.error('❌ Streaming failed:', error.message);
     throw new Error(`Streaming failed: ${error.message}`);
   }
 }
+
+export default {
+  generateContent,
+  streamContent
+};

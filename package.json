@@ -28,7 +28,11 @@
   "author": "AI Content Creation Suite",
   "license": "MIT",
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.40",
+    "@ai-sdk/openai": "^2.0.59",
+    "@anthropic-ai/sdk": "^0.68.0",
     "@google/generative-ai": "^0.2.1",
+    "ai": "^5.0.86",
     "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",
     "compression": "^1.7.4",

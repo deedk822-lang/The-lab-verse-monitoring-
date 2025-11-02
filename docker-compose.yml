@@ -18,6 +18,7 @@ services:
       - redis
       - localai
     volumes:
+      - ./src:/app/src
       - ./logs:/app/logs
       - ./uploads:/app/uploads
     restart: unless-stopped

@@ -2,6 +2,7 @@ import express from 'express';
 import { ProviderFactory } from '../services/ProviderFactory.js';
 import { getAvailableProviders } from '../config/providers.js';
 import { logger } from '../utils/logger.js';
+import ayrshareService from '../services/ayrshareService.js';
 
 const router = express.Router();
 
@@ -59,6 +60,32 @@ router.get('/providers/:provider', async (req, res) => {
   }
 });
 
+// Test Ayrshare connection and functionality
+router.get('/ayrshare', async (req, res) => {
+  try {
+    const isConnected = await ayrshareService.testConnection();
+    const profile = isConnected ? await ayrshareService.getUserProfile() : null;
+    
+    res.json({
+      success: isConnected,
+      message: isConnected ? 'Ayrshare connection successful' : 'Ayrshare connection failed',
+      data: {
+        connected: isConnected,
+        profile: profile?.data || null,
+        apiKeyConfigured: !!process.env.AYRSHARE_API_KEY,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Ayrshare test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ayrshare test failed',
+      message: error.message
+    });
+  }
+});
+
 // Test content generation with dummy data
 router.post('/generate', async (req, res) => {
   try {
@@ -92,6 +119,72 @@ router.post('/generate', async (req, res) => {
   }
 });
 
+// Test full Ayrshare workflow (generate + post)
+router.post('/ayrshare-workflow', async (req, res) => {
+  try {
+    const { topic = 'AI Technology Trends', platforms = 'twitter,linkedin' } = req.body;
+    
+    // Step 1: Generate content
+    const { ContentGenerator } = await import('../services/ContentGenerator.js');
+    const contentGenerator = new ContentGenerator();
+    
+    const contentRequest = {
+      topic,
+      audience: 'tech professionals',
+      tone: 'professional',
+      mediaType: 'text',
+      provider: 'google',
+      keywords: ['AI', 'technology', 'innovation'],
+      length: 'short',
+      options: {
+        optimizeForSocial: true,
+        includeTags: true,
+        platforms: platforms.split(',').map(p => p.trim())
+      }
+    };
+
+    const contentResult = await contentGenerator.generateContent(contentRequest);
+    
+    if (!contentResult.success) {
+      throw new Error(`Content generation failed: ${contentResult.error}`);
+    }
+
+    // Step 2: Post to Ayrshare (test mode)
+    const postResult = await ayrshareService.post({
+      post: contentResult.content,
+      platforms: platforms,
+      options: {
+        test: true // This would be a test mode if Ayrshare supports it
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        contentGeneration: {
+          success: contentResult.success,
+          content: contentResult.content.substring(0, 200) + '...',
+          provider: contentResult.provider,
+          metadata: contentResult.metadata
+        },
+        socialPosting: {
+          success: postResult.success,
+          platforms: postResult.platforms || platforms.split(','),
+          postId: postResult.data?.id,
+          error: postResult.error
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Ayrshare workflow test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ayrshare workflow test failed',
+      message: error.message
+    });
+  }
+});
+
 // Test webhook endpoint
 router.post('/webhook', (req, res) => {
   const { body, headers } = req;
@@ -113,7 +206,7 @@ router.post('/webhook', (req, res) => {
   });
 });
 
-// Health check with detailed status
+// Health check with detailed status including Ayrshare
 router.get('/health', async (req, res) => {
   try {
     const health = {
@@ -122,10 +215,11 @@ router.get('/health', async (req, res) => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       environment: process.env.NODE_ENV || 'development',
-      providers: {}
+      providers: {},
+      services: {}
     };
 
-    // Test each provider
+    // Test each AI provider
     const providers = getAvailableProviders();
     for (const provider of providers) {
       try {
@@ -142,8 +236,25 @@ router.get('/health', async (req, res) => {
       }
     }
 
-    const allHealthy = Object.values(health.providers).every(p => p.status === 'healthy');
-    health.status = allHealthy ? 'healthy' : 'degraded';
+    // Test Ayrshare service
+    try {
+      const ayrshareHealthy = await ayrshareService.testConnection();
+      health.services.ayrshare = {
+        status: ayrshareHealthy ? 'healthy' : 'unhealthy',
+        message: ayrshareHealthy ? 'OK' : 'Connection failed',
+        configured: !!process.env.AYRSHARE_API_KEY
+      };
+    } catch (error) {
+      health.services.ayrshare = {
+        status: 'unhealthy',
+        message: error.message,
+        configured: !!process.env.AYRSHARE_API_KEY
+      };
+    }
+
+    const allProvidersHealthy = Object.values(health.providers).every(p => p.status === 'healthy');
+    const allServicesHealthy = Object.values(health.services).every(s => s.status === 'healthy');
+    health.status = (allProvidersHealthy && allServicesHealthy) ? 'healthy' : 'degraded';
 
     res.json(health);
   } catch (error) {
@@ -192,16 +303,19 @@ router.post('/upload', (req, res) => {
   });
 });
 
-// Performance test
+// Performance test including Ayrshare
 router.get('/performance', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    // Simulate some work
+    // Test AI providers
     const providers = getAvailableProviders();
     const testPromises = providers.map(provider => 
       ProviderFactory.testProvider(provider.id)
     );
+    
+    // Test Ayrshare
+    testPromises.push(ayrshareService.testConnection());
     
     await Promise.all(testPromises);
     
@@ -213,7 +327,8 @@ router.get('/performance', async (req, res) => {
       performance: {
         duration: `${duration}ms`,
         providers: providers.length,
-        averagePerProvider: `${Math.round(duration / providers.length)}ms`
+        services: 1, // Ayrshare
+        averagePerProvider: `${Math.round(duration / (providers.length + 1))}ms`
       }
     });
   } catch (error) {

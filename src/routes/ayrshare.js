@@ -1,4 +1,3 @@
-// src/routes/ayrshare.js
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import ayrshareService from '../services/ayrshareService.js';
@@ -17,7 +16,6 @@ router.post('/ayr', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation failed:', errors.array());
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -30,7 +28,7 @@ router.post('/ayr', [
       platforms, 
       audience = 'general audience',
       tone = 'professional',
-      provider = 'mistral',
+      provider = 'mistral-local',
       keywords = [],
       length = 'medium',
       includeEmail = false,
@@ -39,29 +37,20 @@ router.post('/ayr', [
     
     const startTime = Date.now();
     
-    logger.info('Zapier webhook triggered:', {
-      topic,
-      platforms,
-      includeEmail
-    });
+    logger.info('Webhook received:', { topic, platforms, audience, tone });
 
     io.emit('ayrshare_progress', {
       status: 'started',
-      message: 'Processing webhook request',
+      message: 'Content generation started',
       timestamp: new Date().toISOString()
     });
 
     // Generate content
-    io.emit('ayrshare_progress', {
-      status: 'generating',
-      message: 'Generating AI content',
-      timestamp: new Date().toISOString()
-    });
-
-    const contentResult = await contentGenerator.generateContent({
+    const contentRequest = {
       topic,
       audience,
       tone,
+      provider,
       keywords,
       length,
       options: {
@@ -69,7 +58,17 @@ router.post('/ayr', [
         optimizeForEmail: includeEmail,
         platforms: platforms.split(',').map(p => p.trim())
       }
+    };
+
+    logger.info('Generating content...');
+    
+    io.emit('ayrshare_progress', {
+      status: 'generating',
+      message: 'Generating content with AI',
+      timestamp: new Date().toISOString()
     });
+
+    const contentResult = await contentGenerator.generateContent(contentRequest);
     
     if (!contentResult.success) {
       throw new Error(`Content generation failed: ${contentResult.error}`);
@@ -77,10 +76,7 @@ router.post('/ayr', [
 
     const { content } = contentResult;
     
-    logger.info('Content generated:', {
-      length: content.length,
-      processingTime: Date.now() - startTime
-    });
+    logger.info('Content generated:', { length: content.length });
 
     const results = {
       social: null,
@@ -96,9 +92,12 @@ router.post('/ayr', [
 
     const postResult = await ayrshareService.post({
       post: content,
-      platforms: platforms
+      platforms: platforms,
+      options: {
+        shortenLinks: true
+      }
     });
-
+    
     results.social = postResult;
 
     // Send email if requested
@@ -110,11 +109,13 @@ router.post('/ayr', [
       });
 
       const emailResult = await mailchimpService.createAndSendCampaign({
-        subject: emailSubject || `${topic} - Update`,
+        subject: emailSubject || `${topic} - Latest Update`,
         content: content,
+        fromName: process.env.EMAIL_FROM_NAME || 'AI Content Suite',
+        replyTo: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
         sendNow: true
       });
-
+      
       results.email = emailResult;
     }
     
@@ -124,16 +125,22 @@ router.post('/ayr', [
     const overallSuccess = socialSuccess && emailSuccess;
 
     if (overallSuccess) {
+      logger.info('Distribution completed:', {
+        social: postResult.data?.id,
+        email: results.email?.data?.campaignId,
+        time: `${totalTime}ms`
+      });
+
       io.emit('ayrshare_progress', {
         status: 'completed',
-        message: 'Distribution completed successfully',
+        message: 'Content distributed successfully',
         totalTime,
         timestamp: new Date().toISOString()
       });
 
       res.json({
         success: true,
-        message: 'Content distributed successfully',
+        message: 'Content generated and distributed successfully',
         data: {
           content: content.substring(0, 200) + '...',
           contentLength: content.length,
@@ -159,10 +166,7 @@ router.post('/ayr', [
     }
 
   } catch (error) {
-    logger.error('Webhook processing failed:', {
-      error: error.message,
-      stack: error.stack
-    });
+    logger.error('Webhook failed:', error);
 
     io.emit('ayrshare_progress', {
       status: 'error',
@@ -178,16 +182,19 @@ router.post('/ayr', [
   }
 });
 
-// Keep all other routes (test, status, etc.) as they were
 router.get('/test', async (req, res) => {
   try {
     const isConnected = await ayrshareService.testConnection();
+    const profile = isConnected ? await ayrshareService.getUserProfile() : null;
+    
     res.json({
       success: isConnected,
-      message: isConnected ? 'Ayrshare connected' : 'Ayrshare not configured',
+      message: isConnected ? 'Ayrshare connected' : 'Ayrshare not connected',
+      profile: profile?.data || null,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    logger.error('Test failed:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -198,9 +205,17 @@ router.get('/test', async (req, res) => {
 router.get('/test/mailchimp', async (req, res) => {
   try {
     const isConnected = await mailchimpService.testConnection();
+    const listInfo = isConnected ? await mailchimpService.getListInfo() : null;
+    
     res.json({
       success: isConnected,
-      message: isConnected ? 'MailChimp connected' : 'MailChimp not configured',
+      message: isConnected ? 'MailChimp connected' : 'MailChimp not connected',
+      listInfo: listInfo?.data || null,
+      configured: {
+        apiKey: !!process.env.MAILCHIMP_API_KEY,
+        serverPrefix: !!process.env.MAILCHIMP_SERVER_PREFIX,
+        listId: !!process.env.MAILCHIMP_LIST_ID
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -213,19 +228,30 @@ router.get('/test/mailchimp', async (req, res) => {
 
 router.get('/test/workflow', async (req, res) => {
   try {
-    const ayrshareOk = await ayrshareService.testConnection();
-    const mailchimpOk = await mailchimpService.testConnection();
+    const ayrshareConnected = await ayrshareService.testConnection();
+    const mailchimpConnected = await mailchimpService.testConnection();
     
     res.json({
-      success: ayrshareOk || mailchimpOk,
+      success: ayrshareConnected || mailchimpConnected,
+      message: 'Service status checked',
       services: {
-        ayrshare: ayrshareOk,
-        mailchimp: mailchimpOk
+        ayrshare: {
+          connected: ayrshareConnected,
+          configured: !!process.env.AYRSHARE_API_KEY
+        },
+        mailchimp: {
+          connected: mailchimpConnected,
+          configured: {
+            apiKey: !!process.env.MAILCHIMP_API_KEY,
+            serverPrefix: !!process.env.MAILCHIMP_SERVER_PREFIX,
+            listId: !!process.env.MAILCHIMP_LIST_ID
+          }
+        }
       },
-      message: ayrshareOk && mailchimpOk ? 'All systems ready' : 'Some services not configured',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    logger.error('Workflow test failed:', error);
     res.status(500).json({
       success: false,
       error: error.message

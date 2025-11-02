@@ -1,7 +1,7 @@
 {
   "name": "ai-content-creation-suite",
   "version": "1.0.0",
-  "description": "Fullstack AI content creation app with multiple providers (OpenAI, Google Gemini, LocalAI, Z.AI)",
+  "description": "Fullstack AI content creation app with multiple providers (OpenAI, Google Gemini, LocalAI, Z.AI) and Ayrshare social media posting",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -20,7 +20,10 @@
     "localai",
     "zai",
     "webhook",
-    "api"
+    "api",
+    "ayrshare",
+    "social-media",
+    "zapier"
   ],
   "author": "AI Content Creation Suite",
   "license": "MIT",

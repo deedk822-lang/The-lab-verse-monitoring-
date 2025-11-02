@@ -1,6 +1,16 @@
+ main
 # fly.toml
 app = "the-lab-verse-monitoring"
 primary_region = "iad"
+
+# fly.toml app configuration file generated for the-lab-verse-monitoring on 2025-11-02T19:23:14Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'the-lab-verse-monitoring'
+primary_region = 'ams'
+ flyio-new-files
 
 [build]
 
@@ -9,6 +19,7 @@ PORT = "3000"
 NODE_ENV = "production"
 
 [http_service]
+ main
 internal_port = 3000
 force_https = true
 auto_stop_machines = true
@@ -49,3 +60,17 @@ restart_limit = 0
 method = "get"
 path = "/health"
 protocol = "http"
+
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
+ flyio-new-files

@@ -1,0 +1,31 @@
+{
+  "name": "scout-monetization",
+  "version": "1.0.0",
+  "description": "Rival-Proof, Revenue-Ready Architecture",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openfeature/server-sdk": "^1.11.0",
+    "fastify": "^4.26.2",
+    "fastify-plugin": "^4.5.1",
+    "opossum": "^8.1.3",
+    "prom-client": "^15.1.2",
+    "tiny-lru": "^11.2.2",
+    "@fastify/formbody": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "@types/opossum": "^8.1.9",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}

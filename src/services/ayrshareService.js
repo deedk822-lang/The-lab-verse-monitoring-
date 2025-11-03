@@ -7,38 +7,30 @@ class AyrshareService {
     this.baseURL = 'https://app.ayrshare.com/api';
     
     if (!this.apiKey) {
-      logger.warn('AYRSHARE_API_KEY not found in environment variables');
+      logger.warn('AYRSHARE_API_KEY not configured');
     }
   }
 
-  /**
-   * Post content to multiple social media platforms
-   * @param {Object} params - Posting parameters
-   * @param {string} params.post - The content to post
-   * @param {string|Array} params.platforms - Comma-separated string or array of platforms
-   * @param {string} params.mediaUrl - Optional media URL
-   * @param {Object} params.options - Additional posting options
-   * @returns {Promise<Object>} - API response
-   */
   async post(params) {
     try {
       if (!this.apiKey) {
-        throw new Error('Ayrshare API key not configured');
+        return {
+          success: false,
+          error: 'Ayrshare API key not configured'
+        };
       }
 
-      const { post, platforms, mediaUrl, options = {} } = params;
+      const { post, platforms, options = {} } = params;
       
-      // Normalize platforms to array
       let platformArray;
       if (typeof platforms === 'string') {
         platformArray = platforms.split(',').map(p => p.trim().toLowerCase());
       } else if (Array.isArray(platforms)) {
         platformArray = platforms.map(p => p.toLowerCase());
       } else {
-        throw new Error('Platforms must be a string or array');
+        throw new Error('Platforms must be string or array');
       }
 
-      // Map platform names to Ayrshare format
       const platformMap = {
         'twitter': 'twitter',
         'facebook': 'facebook',
@@ -64,15 +56,9 @@ class AyrshareService {
         ...options
       };
 
-      // Add media if provided
-      if (mediaUrl) {
-        payload.mediaUrls = [mediaUrl];
-      }
-
       logger.info('Posting to Ayrshare:', {
         platforms: mappedPlatforms,
-        postLength: post.length,
-        hasMedia: !!mediaUrl
+        postLength: post.length
       });
 
       const response = await axios.post(`${this.baseURL}/post`, payload, {
@@ -80,14 +66,10 @@ class AyrshareService {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000 // 30 second timeout
+        timeout: 30000
       });
 
-      logger.info('Ayrshare post successful:', {
-        id: response.data.id,
-        status: response.data.status,
-        platforms: response.data.platforms
-      });
+      logger.info('Ayrshare post successful:', response.data.id);
 
       return {
         success: true,
@@ -97,11 +79,7 @@ class AyrshareService {
       };
 
     } catch (error) {
-      logger.error('Ayrshare posting failed:', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      logger.error('Ayrshare posting failed:', error.response?.data || error.message);
 
       return {
         success: false,
@@ -112,49 +90,10 @@ class AyrshareService {
     }
   }
 
-  /**
-   * Get post status and analytics
-   * @param {string} postId - The post ID returned from the post method
-   * @returns {Promise<Object>} - Post status and analytics
-   */
-  async getPostStatus(postId) {
-    try {
-      if (!this.apiKey) {
-        throw new Error('Ayrshare API key not configured');
-      }
-
-      const response = await axios.get(`${this.baseURL}/post/${postId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
-      });
-
-      return {
-        success: true,
-        data: response.data
-      };
-
-    } catch (error) {
-      logger.error('Failed to get post status:', {
-        postId,
-        error: error.message
-      });
-
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Get user profile information
-   * @returns {Promise<Object>} - User profile data
-   */
   async getUserProfile() {
     try {
       if (!this.apiKey) {
-        throw new Error('Ayrshare API key not configured');
+        throw new Error('API key not configured');
       }
 
       const response = await axios.get(`${this.baseURL}/user`, {
@@ -169,10 +108,6 @@ class AyrshareService {
       };
 
     } catch (error) {
-      logger.error('Failed to get user profile:', {
-        error: error.message
-      });
-
       return {
         success: false,
         error: error.message
@@ -180,20 +115,14 @@ class AyrshareService {
     }
   }
 
-  /**
-   * Test the API connection
-   * @returns {Promise<boolean>} - Connection status
-   */
   async testConnection() {
     try {
       const result = await this.getUserProfile();
       return result.success;
     } catch (error) {
-      logger.error('Ayrshare connection test failed:', error.message);
       return false;
     }
   }
 }
 
-// Export singleton instance
 export default new AyrshareService();

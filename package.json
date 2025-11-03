@@ -8,9 +8,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "npx jest",
-    "test:ai-sdk": "npx jest test/ai-sdk.test.js",
-    "test:watch": "npx jest --watch"
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
+    "test:ai-sdk": "NODE_OPTIONS=--experimental-vm-modules npx jest test/ai-sdk.test.js",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules npx jest --watch"
   },
   "dependencies": {
     "ai": "^4.0.0",

@@ -46,10 +46,10 @@ jobs:
 
           // Check each provider in the baseline
           for (const [provider, config] of Object.entries(baseline.baseline.providers)) {
-            if (!config.costPer1M && config.costPer1M !== 0 && !config.costPer1000Chars) {
-              violations.push(`${provider}: Missing cost`);
+            if (!config.costPer1M && config.costPer1M !== 0) {
+              violations.push(\`\${provider}: Missing costPer1M\`);
             }
-            if ((config.costPer1M && config.costPer1M < 0) || (config.costPer1000Chars && config.costPer1000Chars < 0)) {
+            if (config.costPer1M < 0) {
               violations.push(\`\${provider}: Negative cost not allowed\`);
             }
           }

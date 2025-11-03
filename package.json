@@ -1,70 +1,29 @@
 {
-  "name": "ai-content-creation-suite",
+  "name": "lab-verse-monitoring",
   "version": "1.0.0",
-  "description": "Fullstack AI content creation app with multiple providers (OpenAI, Google Gemini, LocalAI, Z.AI) and Ayrshare social media posting",
-  "main": "src/server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "node src/test.js",
-    "setup": "node scripts/setup.js",
-    "docker:build": "docker build -t ai-content-suite .",
-    "docker:run": "docker run -p 3000:3000 ai-content-suite"
+    "dev": "nodemon src/server.js"
   },
-  "keywords": [
-    "ai",
-    "content-creation",
-    "openai",
-    "gemini",
-    "localai",
-    "zai",
-    "webhook",
-    "api",
-    "ayrshare",
-    "social-media",
-    "zapier"
-  ],
-  "author": "AI Content Creation Suite",
-  "license": "MIT",
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.40",
-    "@ai-sdk/openai": "^2.0.59",
-    "@anthropic-ai/sdk": "^0.68.0",
-    "@google/generative-ai": "^0.2.1",
-    "ai": "^5.0.86",
-    "axios": "^1.6.2",
-    "cheerio": "^1.0.0-rc.12",
-    "compression": "^1.7.4",
+    "ai": "^4.0.0",
+    "@ai-sdk/openai": "^1.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "axios": "^1.7.0",
+    "express": "^4.21.2",
+    "express-validator": "^7.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-async-errors": "^3.1.1",
-    "express-rate-limit": "^7.1.5",
-    "express-validator": "^7.0.1",
-    "ffmpeg-static": "^5.2.0",
-    "fluent-ffmpeg": "^2.1.2",
-    "googleapis": "^128.0.0",
-    "helmet": "^7.1.0",
-    "joi": "^17.11.0",
-    "marked": "^9.1.6",
-    "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
-    "openai": "^4.20.1",
-    "pino": "^8.1.0",
-    "redis": "^4.6.10",
-    "sanitize-html": "^2.11.0",
-    "sharp": "^0.33.0",
-    "socket.io": "^4.7.4",
-    "uuid": "^9.0.1",
-    "winston": "^3.11.0"
+    "helmet": "^7.2.0",
+    "morgan": "^1.10.1",
+    "winston": "^3.18.3",
+    "dotenv": "^16.6.1",
+    "socket.io": "^4.7.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.2",
-    "supertest": "^6.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "nodemon": "^3.1.10"
   }
 }

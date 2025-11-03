@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # The Lab Verse Monitoring Stack - Production Requirements
 # Real AI integration and production-ready dependencies
 
@@ -102,3 +103,7 @@ shortuuid==1.0.11
 dateutils==0.6.12
 jsonschema==4.20.0
 psutil==5.9.6
+=======
+# This file is required by the Makefile's 'install' target.
+# It can be populated with general dependencies if needed.
+>>>>>>> origin/feat/ai-connectivity-layer

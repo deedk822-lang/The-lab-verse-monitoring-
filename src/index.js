@@ -1,6 +1,6 @@
-require('./config/env');
-const { createApp } = require('./gateway');
-const pino = require('pino');
+import './config/env.js';
+import { createApp } from './gateway/index.js';
+import pino from 'pino';
 const logger = pino({ level: 'info' });
 
 const app = createApp();

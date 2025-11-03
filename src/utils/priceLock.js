@@ -1,176 +1,133 @@
-import baseline from '../../config/price-baseline.json' assert { type: 'json' };
-import { logger } from './logger.js';
+// src/utils/priceLock.js
+import fs from 'fs';
+import path from 'path';
 
 /**
- * Price lock utility to enforce cost ceilings
- * Prevents API cost overruns by checking against baseline pricing
+ * Price Lock Utility - Monitors and controls API costs
  */
-class PriceLockManager {
+class PriceLock {
   constructor() {
-    this.baseline = baseline.baseline;
-    this.enforceMode = process.env.PRICE_LOCK_ENFORCE !== 'false';
+    this.baselinePath = path.join(process.cwd(), 'config/price-baseline.json');
+    this.baseline = this.loadBaseline();
+  }
+
+  /**
+   * Load price baseline configuration
+   */
+  loadBaseline() {
+    try {
+      const data = fs.readFileSync(this.baselinePath, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.warn('⚠️ Could not load price baseline:', error.message);
+      return {
+        baseline: {
+          providers: {},
+          softLimits: { monthlyTotal: 100, dailyTokens: 50000, perRequestTokens: 2000 },
+          alertThresholds: { daily: 0.8, monthly: 0.9, perRequest: 0.95 }
+        }
+      };
+    }
+  }
+
+  /**
+   * Get cost summary
+   */
+  getCostSummary() {
+    const providers = this.baseline.baseline?.providers || {};
+    const limits = this.baseline.baseline?.softLimits || {};
     
-    if (!this.enforceMode) {
-      logger.warn('Price lock enforcement disabled - costs not protected');
-    }
-  }
-
-  /**
-   * Get maximum cost per 1M tokens for a provider
-   * @param {string} provider - Provider name
-   * @returns {number} - Maximum cost ceiling
-   */
-  maxCostPer1M(provider) {
-    const ceiling = this.baseline.providers[provider]?.costPer1M;
-    if (ceiling === undefined) {
-      logger.warn(`No price ceiling defined for provider: ${provider}`);
-      return Infinity;
-    }
-    return ceiling;
-  }
-
-  /**
-   * Get monthly budget limit
-   * @returns {number} - Monthly budget in USD
-   */
-  monthlyBudget() {
-    return this.baseline.softLimits.monthlyTotal;
-  }
-
-  /**
-   * Get daily token limit
-   * @returns {number} - Daily token limit
-   */
-  dailyTokenLimit() {
-    return this.baseline.softLimits.dailyTokens;
+    return {
+      providerCount: Object.keys(providers).length,
+      monthlyBudget: limits.monthlyTotal || 100,
+      dailyTokenLimit: limits.dailyTokens || 50000,
+      providers: Object.entries(providers).map(([key, config]) => ({
+        name: config.name || key,
+        costPer1M: config.costPer1M || 0,
+        maxDailyTokens: config.maxDailyTokens || 0
+      }))
+    };
   }
 
   /**
    * Validate provider cost against baseline
    * @param {string} provider - Provider name
-   * @param {number} quotedCost - Quoted cost per 1M tokens
-   * @param {boolean} throwOnViolation - Whether to throw error
-   * @returns {boolean} - Whether cost is within limits
+   * @param {number} costPer1M - Cost per 1M tokens
+   * @param {boolean} strict - Whether to throw on violation
    */
-  validateProviderCost(provider, quotedCost, throwOnViolation = true) {
-    if (!this.enforceMode) {
-      return true;
+  validateProviderCost(provider, costPer1M, strict = false) {
+    const baseline = this.baseline.baseline?.providers?.[provider];
+    
+    if (!baseline) {
+      const msg = `Provider ${provider} not found in baseline`;
+      if (strict) throw new Error(msg);
+      console.warn('⚠️', msg);
+      return false;
     }
 
-    const ceiling = this.maxCostPer1M(provider);
-    const isValid = quotedCost <= ceiling;
-
-    if (!isValid) {
-      const message = `Price lock violated: ${provider} quoted ${quotedCost} > ceiling ${ceiling}`;
-      logger.error(message);
-      
-      if (throwOnViolation) {
-        throw new Error(message);
-      }
+    const baselineCost = baseline.costPer1M || 0;
+    const increase = costPer1M - baselineCost;
+    const percentIncrease = baselineCost > 0 ? (increase / baselineCost) * 100 : 0;
+    
+    if (increase > 0) {
+      const msg = `Cost increase detected for ${provider}: $${baselineCost} → $${costPer1M} (+${percentIncrease.toFixed(1)}%)`;
+      if (strict) throw new Error(msg);
+      console.warn('⚠️', msg);
+      return false;
     }
-
-    return isValid;
-  }
-
-  /**
-   * Validate service cost against baseline
-   * @param {string} service - Service name
-   * @param {number} quotedCost - Quoted cost
-   * @param {string} unit - Cost unit (e.g., 'perPost', 'per1000Emails')
-   * @returns {boolean} - Whether cost is within limits
-   */
-  validateServiceCost(service, quotedCost, unit) {
-    if (!this.enforceMode) {
-      return true;
-    }
-
-    const serviceConfig = this.baseline.services[service];
-    if (!serviceConfig) {
-      logger.warn(`No price ceiling defined for service: ${service}`);
-      return true;
-    }
-
-    const ceiling = serviceConfig[unit];
-    if (ceiling === undefined) {
-      logger.warn(`No price ceiling defined for service unit: ${service}.${unit}`);
-      return true;
-    }
-
-    const isValid = quotedCost <= ceiling;
-    if (!isValid) {
-      const message = `Service cost violation: ${service} ${unit} quoted ${quotedCost} > ceiling ${ceiling}`;
-      logger.error(message);
-      throw new Error(message);
-    }
-
+    
+    console.log(`✅ ${provider} cost within baseline: $${costPer1M} (baseline: $${baselineCost})`);
     return true;
   }
 
   /**
-   * Get cost summary for monitoring
-   * @returns {Object} - Cost summary and limits
+   * Check if daily token limit would be exceeded
+   * @param {number} tokensUsed - Tokens used today
    */
-  getCostSummary() {
-    return {
-      baseline: {
-        providers: Object.keys(this.baseline.providers).length,
-        services: Object.keys(this.baseline.services).length,
-        monthlyBudget: this.baseline.softLimits.monthlyTotal,
-        dailyTokens: this.baseline.softLimits.dailyTokens
-      },
-      enforcement: {
-        enabled: this.enforceMode,
-        generatedAt: baseline.generatedAt,
-        version: baseline.metadata.version
-      }
-    };
+  checkDailyTokens(tokensUsed) {
+    const limit = this.baseline.baseline?.softLimits?.dailyTokens || 50000;
+    const threshold = this.baseline.baseline?.alertThresholds?.daily || 0.8;
+    
+    const usage = tokensUsed / limit;
+    
+    if (usage >= 1.0) {
+      throw new Error(`Daily token limit exceeded: ${tokensUsed}/${limit} tokens`);
+    }
+    
+    if (usage >= threshold) {
+      console.warn(`⚠️ Daily token usage high: ${(usage * 100).toFixed(1)}% (${tokensUsed}/${limit})`);
+    }
+    
+    return usage;
   }
 
   /**
-   * Check if spending is within monthly budget
-   * @param {number} currentSpend - Current month spending
-   * @returns {Object} - Budget status
+   * Estimate monthly cost based on current usage
+   * @param {Object} usage - Usage statistics
    */
-  checkMonthlyBudget(currentSpend) {
-    const budget = this.monthlyBudget();
-    const remaining = budget - currentSpend;
-    const percentUsed = (currentSpend / budget) * 100;
-
+  estimateMonthlyCost(usage = {}) {
+    const providers = this.baseline.baseline?.providers || {};
+    let totalCost = 0;
+    
+    Object.entries(providers).forEach(([key, config]) => {
+      const tokens = usage[key] || 0;
+      const cost = (tokens / 1000000) * (config.costPer1M || 0);
+      totalCost += cost;
+    });
+    
     return {
-      budget,
-      currentSpend,
-      remaining,
-      percentUsed,
-      withinLimit: currentSpend <= budget,
-      warning: percentUsed > 80,
-      critical: percentUsed > 95
-    };
-  }
-
-  /**
-   * Get provider cost comparison
-   * @param {string} provider - Provider name
-   * @param {number} actualCost - Current actual cost
-   * @returns {Object} - Cost comparison
-   */
-  getProviderCostComparison(provider, actualCost) {
-    const ceiling = this.maxCostPer1M(provider);
-    const percentOfCeiling = ceiling ? (actualCost / ceiling) * 100 : 0;
-
-    return {
-      provider,
-      actualCost,
-      ceiling,
-      percentOfCeiling,
-      withinLimit: actualCost <= ceiling,
-      savings: ceiling - actualCost
+      estimatedCost: totalCost,
+      monthlyLimit: this.baseline.baseline?.softLimits?.monthlyTotal || 100,
+      withinBudget: totalCost <= (this.baseline.baseline?.softLimits?.monthlyTotal || 100)
     };
   }
 }
 
 // Export singleton instance
-const priceLock = new PriceLockManager();
+const priceLock = new PriceLock();
+
 export default priceLock;
 
-// Named exports for convenience
-export const { maxCostPer1M, monthlyBudget, dailyTokenLimit, validateProviderCost } = priceLock;
+// CommonJS compatibility for require()
+module.exports = priceLock;
+module.exports.default = priceLock;

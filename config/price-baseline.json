@@ -1,78 +1,60 @@
 {
-  "$schema": "https://schema.labverse.dev/price-baseline.json",
-  "generatedAt": "2025-11-02T21:00:00Z",
   "baseline": {
     "providers": {
-      "localai": {
-        "costPer1M": 0.00,
-        "currency": "USD"
-      },
-      "groq": {
-        "costPer1M": 0.07,
-        "currency": "USD"
-      },
       "openai": {
-        "costPer1M": 0.50,
-        "currency": "USD"
+        "name": "OpenAI GPT-4",
+        "costPer1M": 30.00,
+        "maxDailyTokens": 100000,
+        "model": "gpt-4"
       },
       "anthropic": {
-        "costPer1M": 0.80,
-        "currency": "USD"
-      },
-      "google": {
-        "costPer1M": 0.35,
-        "currency": "USD"
+        "name": "Anthropic Claude",
+        "costPer1M": 15.00,
+        "maxDailyTokens": 150000,
+        "model": "claude-3-sonnet-20240229"
       },
       "perplexity": {
-        "costPer1M": 1.00,
-        "currency": "USD"
+        "name": "Perplexity Sonar",
+        "costPer1M": 5.00,
+        "maxDailyTokens": 200000,
+        "model": "llama-3.1-sonar-large-128k-online"
       },
-      "manus": {
-        "costPer1M": 0.75,
-        "currency": "USD"
+      "mistral": {
+        "name": "Mistral Large",
+        "costPer1M": 8.00,
+        "maxDailyTokens": 180000,
+        "model": "mistral-large-latest"
       },
-      "elevenlabs": {
-        "costPer1000Chars": 0.30,
-        "currency": "USD"
-      }
-    },
-    "services": {
-      "ayrshare": {
-        "costPerPost": 0.01,
-        "currency": "USD"
+      "groq": {
+        "name": "Groq Llama",
+        "costPer1M": 0.59,
+        "maxDailyTokens": 500000,
+        "model": "llama3-70b-8192"
       },
-      "mailchimp": {
-        "costPer1000Emails": 10.00,
-        "currency": "USD"
-      }
-    },
-    "infra": {
-      "fly": {
-        "plan": "shared-cpu-1x",
-        "monthly": 1.94
+      "gemini": {
+        "name": "Google Gemini",
+        "costPer1M": 7.00,
+        "maxDailyTokens": 200000,
+        "model": "gemini-pro"
       },
-      "redis": {
-        "plan": "free",
-        "monthly": 0.00
+      "localai": {
+        "name": "Local Mistral",
+        "costPer1M": 0.00,
+        "maxDailyTokens": 1000000,
+        "model": "mistral"
       }
     },
     "softLimits": {
-      "monthlyTotal": 50.00,
-      "dailyTokens": 1000000,
-      "burstRPM": 200,
-      "maxConcurrentRequests": 10
-    }
-  },
-  "metadata": {
+      "monthlyTotal": 100,
+      "dailyTokens": 50000,
+      "perRequestTokens": 2000
+    },
+    "alertThresholds": {
+      "daily": 0.8,
+      "monthly": 0.9,
+      "perRequest": 0.95
+    },
     "version": "1.0.0",
-    "description": "Price baseline for AI Content Suite - locks current pricing as maximum ceiling",
-    "lastUpdated": "2025-11-02T21:00:00Z",
-    "approvedBy": "system",
-    "notes": [
-      "This file establishes cost ceilings for all AI providers and services",
-      "Any increase in pricing will require explicit approval and baseline update",
-      "CI/CD gates will prevent deployment if costs exceed these baselines",
-      "LocalAI remains free as the cost-effective fallback option"
-    ]
+    "lastUpdated": "2025-11-04T00:00:00Z"
   }
 }

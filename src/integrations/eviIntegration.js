@@ -150,13 +150,16 @@ export class EviIntegration {
     const enhancements = [];
     
     if (options.context) {
-      enhancements.push(`Context: ${options.context}`);\n    }
+      enhancements.push(`Context: ${options.context}`);
+    }
     
     if (options.tone) {
-      enhancements.push(`Tone: ${options.tone}`);\n    }
+      enhancements.push(`Tone: ${options.tone}`);
+    }
     
     if (options.format) {
-      enhancements.push(`Format: ${options.format}`);\n    }
+      enhancements.push(`Format: ${options.format}`);
+    }
 
     const enhancedPrompt = enhancements.length > 0 
       ? `${enhancements.join('\\n')}\\n\\nUser Request: ${prompt}`

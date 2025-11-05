@@ -61,7 +61,8 @@ This guide will help you set up and use the comprehensive Asana task completion 
 ✅ The workflow files have been created in your repository:
 
 - **Main Workflow**: [`.github/workflows/complete-asana-tasks.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/complete-asana-tasks.yml)
-- **Scheduled Workflow**: [`.github/workflows/scheduled-asana-completion.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/scheduled-asana-completion.yml)
+- **Scheduled Workflow**: [`.github/workflows/scheduled-asana-cleanup.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/scheduled-asana-cleanup.yml)
+- **Analytics Dashboard**: [`.github/workflows/asana-analytics-dashboard.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/asana-analytics-dashboard.yml)
 
 ## Basic Usage Guide
 
@@ -74,7 +75,7 @@ This guide will help you set up and use the comprehensive Asana task completion 
    - Click "Run workflow"
    - Select "project_tasks" from the dropdown
    - Enter your Project ID
-   - **Recommended**: Set "Dry Run" to "true" for first test
+   - **Recommended**: Test with a single task first
    - Click "Run workflow"
 
 ### 📱 All Workflow Options
@@ -83,84 +84,75 @@ This guide will help you set up and use the comprehensive Asana task completion 
 ```
 Action Type: single_task
 Task ID: [Your task ID]
-Dry Run: false (or true for testing)
-Check Dependencies: false (or true for safety)
 ```
 
 #### Option 2: Complete All Tasks in Project
 ```
 Action Type: project_tasks
 Project ID: [Your project ID]
-Dry Run: false (or true for testing)
 ```
 
 #### Option 3: Complete Tasks by Tag
 ```
 Action Type: tagged_tasks
 Tag: [Your tag name]
-Dry Run: false (or true for testing)
 ```
 
-#### Option 4: Bulk Complete All Your Tasks (⚠️ Use with Extreme Caution)
+#### Option 4: Bulk Complete All Your Tasks (⚠️ Use with Caution)
 ```
 Action Type: bulk_complete
-Dry Run: true (HIGHLY recommended for first run)
 ```
 
 ## Advanced Features
 
-### 🧪 Dry Run Mode
+### 🗓️ Scheduled Automation
 
-**Always test first with dry run mode!**
+**Automatic daily task cleanup** runs at 9 AM UTC (11 AM SAST):
 
-- Set "Dry Run" to "true" in any workflow
-- Shows exactly what would be completed without actually completing tasks
-- Perfect for validation and testing
-- No risk of accidentally completing wrong tasks
+**Available criteria**:
+- **overdue**: Complete tasks past their due date
+- **ready_tag**: Complete tasks tagged "ready-for-completion"
+- **old_completed_subtasks**: Complete parent tasks when all subtasks are done
 
-**Example dry run output:**
+**Manual scheduling**:
+1. Go to Actions → "Scheduled Asana Cleanup"
+2. Click "Run workflow"
+3. Choose your criteria
+4. **Always use dry run first!**
+
+### 🧔 Dry Run Mode
+
+**Test any operation safely without making changes:**
+
+- Shows exactly what would be completed
+- No actual task modifications
+- Perfect for validation
+- Available in all workflows
+
+**Example output:**
 ```
-🧪 WOULD COMPLETE: Design new login page - Overdue task
-🧪 WOULD COMPLETE: Update API documentation - Tagged as ready for completion
-✅ Would complete: 15 tasks
-⏭️ Skipped: 3 tasks
+🔍 WOULD COMPLETE: Design new homepage - Overdue task  
+🔍 WOULD COMPLETE: Update documentation - Has ready tag
+✅ Would complete: 12 tasks
+⏭️  Skipped: 5 tasks
 ```
 
-### ⏰ Scheduled Automation
+### 📈 Analytics Dashboard
 
-**Automatic daily completion** at 9 AM UTC:
+**Comprehensive productivity insights:**
 
-1. **Configure criteria** in the scheduled workflow
-2. **Available criteria**:
-   - `overdue_tasks`: Complete overdue tasks
-   - `tagged_ready`: Complete tasks tagged as "ready-for-completion"
-   - `low_priority`: Complete old, low-priority tasks
-   - `old_completed_projects`: Complete tasks in finished projects
+- **Completion rates** by project and time period
+- **Average time to completion** analysis
+- **Trend analysis** with visual charts
+- **Project performance** comparisons
+- **Exportable reports** (CSV, HTML, JSON)
+- **GitHub Pages integration** for live dashboards
 
-3. **Run manually for testing**:
-   - Go to Actions → "Scheduled Asana Completion"
-   - Set "Dry Run" to "true"
-   - Choose your criteria
-   - Test before enabling automatic runs
-
-### 🔗 Task Dependencies
-
-**Prevent completing tasks with incomplete dependencies:**
-
-- Enable "Check Dependencies" in any workflow
-- System automatically skips tasks with incomplete prerequisites
-- Ensures logical task completion order
-- Prevents breaking project workflows
-
-### 💾 Automatic Backups
-
-**Every completed task is automatically backed up:**
-
-- Task information saved before completion
-- Includes: name, notes, assignee, projects, tags, dates
-- Stored as artifacts in workflow runs
-- 30-day retention for recovery
-- Access via Actions → [Workflow Run] → Artifacts
+**Run analytics manually**:
+1. Go to Actions → "Asana Analytics Dashboard"
+2. Select analysis period (7, 14, 30, or 90 days)
+3. Enable chart generation
+4. View results in artifacts and GitHub Pages
 
 ### 🔄 Automatic PR Integration
 
@@ -177,6 +169,27 @@ Task ID: 1234567890
 ## Or direct URL
 https://app.asana.com/0/project_id/task_id
 ```
+
+### 📦 Automatic Backups
+
+**Every operation creates backups:**
+- Task information saved before changes
+- 30-day artifact retention
+- Includes: name, notes, assignee, projects, tags, dates
+- Access via Actions → [Workflow Run] → Artifacts
+
+### 🚨 Error Handling & Notifications
+
+**Automated issue creation** for errors:
+- Failed workflow runs
+- API connectivity problems
+- Authentication issues
+- Automatic labeling and assignment
+
+**Slack/Teams notifications** (optional):
+- Completion summaries
+- Error alerts
+- Daily/weekly reports
 
 ## Finding Asana IDs
 
@@ -195,11 +208,11 @@ export ASANA_PAT="your_personal_access_token"
 python scripts/asana-id-finder.py
 ```
 
-**The script will show:**
-- All your workspaces and projects with IDs
+**The script shows:**
+- All workspaces and projects with IDs
 - Recent tasks with IDs
 - Available tags
-- Direct links to everything
+- Direct Asana links
 
 ### 🎯 Manual Method: Finding Project ID
 
@@ -207,179 +220,252 @@ python scripts/asana-id-finder.py
 2. **Look at the URL**: `https://app.asana.com/0/PROJECT_ID/list`
 3. **Copy the PROJECT_ID number**
 
+**Example**:
+- URL: `https://app.asana.com/0/1234567890/list`
+- Project ID: `1234567890`
+
 ### 🎯 Manual Method: Finding Task ID
 
 1. **Open any task in Asana**
 2. **Look at the URL**: `https://app.asana.com/0/PROJECT_ID/TASK_ID`
 3. **Copy the TASK_ID number**
 
+**Example**:
+- URL: `https://app.asana.com/0/1234567890/9876543210`
+- Task ID: `9876543210`
+
+### 🎯 Finding Tag Names
+
+1. **Go to your Asana project**
+2. **Look for colored tags on tasks**
+3. **Use the exact tag name** (case-insensitive)
+
 ## Workflow Options
+
+### Available Workflows
+
+1. **Complete Asana Tasks**: Manual completion with multiple options
+2. **Scheduled Asana Cleanup**: Automated daily cleanup
+3. **Asana Analytics Dashboard**: Productivity insights and reporting
 
 ### Manual Triggers
 
-**Two main workflows available:**
+All workflows support manual execution:
 
-1. **Complete Asana Tasks**: Manual/PR-triggered completion
-2. **Scheduled Asana Completion**: Automated daily completion
-
-**Both support:**
-- Dry run mode for testing
-- Multiple completion criteria
-- Comprehensive reporting
-- Backup creation
+1. Go to [Actions](https://github.com/deedk822-lang/The-lab-verse-monitoring-/actions)
+2. Select the desired workflow
+3. Click "Run workflow"
+4. Configure parameters
+5. Execute
 
 ### Automatic Triggers
 
-- **Daily Schedule**: 9 AM UTC (customizable)
+- **Daily Schedule**: Cleanup workflow at 9 AM UTC
+- **Weekly Schedule**: Analytics dashboard on Sundays
 - **Pull Request Merge**: Automatic task completion
-- **Manual Override**: Run anytime via Actions tab
+- **Error Events**: Issue creation for failed runs
 
 ## Analytics & Monitoring
 
-### 📊 Analytics Dashboard
+### 📈 Weekly Analytics Reports
 
-**Comprehensive productivity analytics:**
+**Automated insights every Sunday:**
+- Task completion trends
+- Project performance rankings
+- Productivity metrics
+- Time-to-completion analysis
+- Visual charts and graphs
 
-```bash
-# Install dependencies
-pip install -r scripts/requirements.txt
+**Access reports:**
+- **Live Dashboard**: GitHub Pages integration
+- **Artifacts**: Downloadable reports (CSV, JSON, HTML)
+- **Summary**: GitHub Actions summary page
 
-# Set your token
-export ASANA_PAT="your_personal_access_token"
+### 📊 Key Metrics Tracked
 
-# Run analytics for last 30 days
-python scripts/asana-analytics-dashboard.py --days 30
+- **Completion Rate**: Percentage of tasks completed
+- **Average Completion Time**: Days from creation to completion
+- **Project Performance**: Completion rates by project
+- **Tag Analysis**: Most frequently used tags
+- **Daily Trends**: Completion patterns over time
+- **Overdue Analysis**: Tasks past due date
 
-# Export as HTML report
-python scripts/asana-analytics-dashboard.py --days 30 --export html
+### 🌐 Live Dashboard
 
-# Analyze specific project
-python scripts/asana-analytics-dashboard.py --project PROJECT_ID --trend-analysis
-```
-
-**Analytics include:**
-- **Completion rates** by project and time period
-- **Productivity score** (0-100)
-- **Time analysis**: average completion times
-- **Trend analysis**: velocity and predictions
-- **Recommendations**: personalized improvement suggestions
-
-### 📈 Real-time Monitoring
-
-**Each workflow run provides:**
-
-- **Detailed completion logs**
-- **Summary reports** with metrics
-- **Error handling** with specific solutions
-- **Artifact storage** for backups and reports
-- **Notification integration** (Slack/Teams)
-
-### 🚨 Automated Alerts
-
-**System automatically creates GitHub issues for:**
-- Failed workflow runs
-- API connectivity issues
-- Authentication problems
-- Unexpected errors
+**Interactive web dashboard** (updated weekly):
+- **URL**: `https://[username].github.io/[repository]/latest/analytics_dashboard.html`
+- **Features**: Charts, metrics, insights, trend analysis
+- **Mobile responsive** for on-the-go monitoring
+- **Exportable data** for custom analysis
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### ❌ "ASANA_PAT secret not found"
-**Solution**: Add the `ASANA_PAT` secret to repository settings.
+**Solution**: Make sure you've added the `ASANA_PAT` secret to repository settings.
 
 #### ❌ "Task not found" or "Project not found"
 **Solutions**:
 - Use the ID finder script to verify IDs
-- Check access permissions in Asana
-- Ensure task/project still exists
+- Check Asana permissions for the task/project
+- Verify the task/project still exists
+- Try refreshing your Asana Personal Access Token
 
-#### ❌ "Task has incomplete dependencies"
-**This is normal when dependency checking is enabled**
-- Review task dependencies in Asana
-- Complete prerequisite tasks first
-- Or disable dependency checking
+#### ❌ "Permission denied"
+**Solutions**:
+- Regenerate your Asana Personal Access Token
+- Ensure token has necessary workspace permissions
+- Update the `ASANA_PAT` secret with new token
+- Check Asana workspace member permissions
 
-#### ❌ Workflow runs but nothing happens
+#### ❌ "No tasks found with tag"
+**Solutions**:
+- Verify tag name spelling (case-insensitive)
+- Check that tagged tasks exist in your workspace
+- Ensure you have access to tagged tasks
+- Use the ID finder script to list available tags
+
+#### ❌ Workflow runs but no tasks completed
 **Solutions**:
 - Check if tasks are already completed
-- Verify completion criteria
-- Use dry run mode to debug
-- Check workflow logs for details
+- Verify completion criteria settings
+- Use dry run mode to see what would be completed
+- Review workflow logs for detailed information
 
-### Debug Steps
+### Debug Information
 
-1. **Always start with dry run mode**
-2. **Check workflow logs** in Actions tab
-3. **Use the ID finder script** to verify IDs
-4. **Test with a single task** before bulk operations
-5. **Review the summary reports** for insights
+Each workflow provides detailed logging:
+
+1. **Go to Actions** → Select workflow run
+2. **Expand job logs** to see step-by-step execution
+3. **Check Summary Report** for overview
+4. **Download artifacts** for detailed data
+5. **Review error messages** for specific solutions
+
+### Performance Optimization
+
+**For large task volumes:**
+- Use project-specific completion instead of bulk
+- Implement staged completion with tags
+- Consider multiple smaller workflows
+- Monitor rate limits and adjust timing
 
 ## Security Best Practices
 
 ### 🔐 Token Management
-- **Rotate tokens** every 90 days
-- **Use repository secrets** only
-- **Never commit tokens** to code
-- **Monitor token usage** in Asana
 
-### 🛡️ Access Control
-- **Limit repository access** to trusted team members
-- **Use branch protection** for workflow files
-- **Monitor workflow runs** regularly
-- **Review completion logs** for accuracy
+1. **Regular Rotation**:
+   - Rotate Asana PAT every 90 days
+   - Update repository secret immediately
+   - Test workflows after rotation
 
-### 📋 Audit Trail
-- **All actions logged** in GitHub Actions
-- **Task backups** stored automatically
-- **Asana activity log** tracks changes
-- **Notification systems** for real-time alerts
+2. **Secure Storage**:
+   - Always use GitHub Secrets
+   - Never commit tokens to repository
+   - Avoid storing in workflow files
+
+3. **Access Monitoring**:
+   - Monitor token usage in Asana
+   - Review API calls regularly
+   - Watch for unauthorized access
+
+### 🚫 Access Control
+
+1. **Repository Security**:
+   - Limit admin access to trusted team members
+   - Use branch protection for workflow files
+   - Require code review for workflow changes
+
+2. **Workflow Security**:
+   - Monitor all workflow executions
+   - Review completion logs regularly
+   - Validate before bulk operations
+
+### 📝 Audit Trail
+
+1. **Complete Logging**:
+   - All actions logged in GitHub Actions
+   - Task backups stored automatically
+   - Asana maintains activity history
+
+2. **Monitoring**:
+   - Automated error reporting
+   - Notification systems for alerts
+   - Regular security reviews
+
+## 📞 Support
+
+If you encounter issues:
+
+1. **Check the troubleshooting section** above
+2. **Review workflow logs** in GitHub Actions
+3. **Use dry run mode** to test safely
+4. **Start with single tasks** before bulk operations
+5. **Check Asana API status** at [https://status.asana.com/](https://status.asana.com/)
 
 ## 🎉 Quick Success Test
 
-**Verify everything works:**
+To verify everything works:
 
 1. **Create a test task** in Asana
-2. **Run ID finder script** to get the task ID
-3. **Run workflow in dry run mode** first
-4. **Review the dry run results**
-5. **Run again with dry run = false**
-6. **Check task completion** in Asana
-7. **Review workflow logs** and summary
+2. **Use the ID finder script** to get the task ID
+3. **Run single task workflow** with the ID
+4. **Check completion** in Asana
+5. **Review workflow logs** for success confirmation
+6. **Try other workflow types** as needed
 
-## 💡 Pro Tips
-
-### Best Practices
-- **Always use dry run first** for new operations
-- **Start small** with single tasks before bulk operations
-- **Use dependency checking** for complex projects
-- **Regular analytics review** to optimize productivity
-- **Tag tasks strategically** for automated completion
+## 💪 Pro Tips
 
 ### Productivity Strategies
-- **Tag tasks "ready-for-completion"** for batch processing
-- **Use scheduled completion** for routine tasks
-- **Implement PR-based completion** for development workflows
-- **Monitor analytics weekly** for trend insights
-- **Set up notifications** for team coordination
+
+1. **Smart Tagging**:
+   - Tag tasks "ready-for-completion" for batch processing
+   - Use priority tags for scheduled automation
+   - Create project-specific tags for filtering
+
+2. **Scheduled Automation**:
+   - Start with dry run mode for new schedules
+   - Use different criteria for different project types
+   - Monitor completion patterns with analytics
+
+3. **PR Integration**:
+   - Include Asana task IDs in all development PRs
+   - Use consistent format for automatic recognition
+   - Link related tasks for comprehensive completion
+
+4. **Analytics Usage**:
+   - Review weekly reports for productivity insights
+   - Identify bottlenecks in task completion
+   - Use trends to optimize workflow timing
 
 ### Advanced Automation
-- **Create completion rules** based on project phases
-- **Use multiple tags** for different completion criteria
-- **Integrate with CI/CD** for deployment-triggered completion
-- **Set up custom schedules** for different project types
+
+1. **Custom Criteria**:
+   - Combine multiple completion criteria
+   - Create project-specific automation rules
+   - Implement stage-based completion workflows
+
+2. **Integration Patterns**:
+   - Link with CI/CD for deployment completion
+   - Connect to project management workflows
+   - Integrate with team notification systems
+
+3. **Monitoring & Optimization**:
+   - Set up custom dashboards for team metrics
+   - Create automated reports for stakeholders
+   - Implement continuous improvement processes
 
 ---
 
-**🚀 You're all set!** Your GitHub repository now has a production-ready, feature-rich Asana task completion system with analytics, automation, and safety features. Start with dry runs and small tests, then scale up to full automation as needed.
+**🚀 Congratulations!** Your repository now has a comprehensive, production-ready Asana integration system with advanced automation, analytics, and safety features. Start with small tests using dry run mode, then scale up to full automation as your confidence grows.
 
-## 📞 Support & Resources
+## 📁 Resource Links
 
-- **Integration Guide**: This document
-- **ID Finder**: `scripts/asana-id-finder.py`
-- **Analytics Dashboard**: `scripts/asana-analytics-dashboard.py`
-- **Main Workflow**: `.github/workflows/complete-asana-tasks.yml`
-- **Scheduled Workflow**: `.github/workflows/scheduled-asana-completion.yml`
+- **Main Integration Guide**: This document
+- **ID Finder Utility**: [`scripts/asana-id-finder.py`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/scripts/asana-id-finder.py)
+- **Primary Workflow**: [`.github/workflows/complete-asana-tasks.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/complete-asana-tasks.yml)
+- **Scheduled Cleanup**: [`.github/workflows/scheduled-asana-cleanup.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/scheduled-asana-cleanup.yml)
+- **Analytics Dashboard**: [`.github/workflows/asana-analytics-dashboard.yml`](https://github.com/deedk822-lang/The-lab-verse-monitoring-/blob/main/.github/workflows/asana-analytics-dashboard.yml)
 - **GitHub Actions**: [Repository Actions](https://github.com/deedk822-lang/The-lab-verse-monitoring-/actions)
 - **Asana API Status**: [status.asana.com](https://status.asana.com/)

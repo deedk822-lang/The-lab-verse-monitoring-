@@ -1,0 +1,383 @@
+# Complete Asana Tasks Workflow
+# This workflow provides comprehensive task completion capabilities for Asana integration
+
+name: Complete Asana Tasks
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Specific Asana Task ID to complete (optional)'
+        required: false
+        type: string
+      project_id:
+        description: 'Asana Project ID to complete all tasks (optional)'
+        required: false
+        type: string
+      task_tag:
+        description: 'Complete tasks with this tag (optional)'
+        required: false
+        type: string
+      action_type:
+        description: 'Choose completion action'
+        required: true
+        default: 'single_task'
+        type: choice
+        options:
+        - single_task
+        - project_tasks
+        - tagged_tasks
+        - bulk_complete
+  pull_request:
+    types: [closed]
+
+jobs:
+  # Job 1: Complete a specific task by ID
+  complete-single-task:
+    if: |
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.action_type == 'single_task' || github.event.inputs.task_id != '')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Task ID from PR Body (if PR event)
+        if: github.event_name == 'pull_request'
+        id: extract-task
+        run: |
+          TASK_ID=$(echo "${{ github.event.pull_request.body }}" | grep -oP 'asana-task-id: \K\d+' | head -1)
+          if [ -z "$TASK_ID" ]; then
+            TASK_ID=$(echo "${{ github.event.pull_request.body }}" | grep -oP 'Task ID: \K\d+' | head -1)
+          fi
+          if [ -z "$TASK_ID" ]; then
+            TASK_ID=$(echo "${{ github.event.pull_request.body }}" | grep -oP 'https://app\.asana\.com/\d+/\d+/\K\d+' | head -1)
+          fi
+          echo "task-id=$TASK_ID" >> $GITHUB_OUTPUT
+          echo "Extracted Task ID: $TASK_ID"
+
+      - name: Set Task ID
+        id: set-task-id
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            TASK_ID="${{ steps.extract-task.outputs.task-id }}"
+          else
+            TASK_ID="${{ github.event.inputs.task_id }}"
+          fi
+          echo "task-id=$TASK_ID" >> $GITHUB_OUTPUT
+          echo "Using Task ID: $TASK_ID"
+
+      - name: Complete Single Asana Task
+        if: steps.set-task-id.outputs.task-id != ''
+        run: |
+          pip install asana
+          cat > complete_task.py << 'EOF'
+          import asana
+          import sys
+          import os
+          
+          def complete_task(task_id, pat):
+              try:
+                  client = asana.Client.access_token(pat)
+                  
+                  # Get task details first
+                  task = client.tasks.find_by_id(task_id, {"opt_fields": "name,completed"})
+                  print(f"Task found: {task['name']}")
+                  
+                  if task['completed']:
+                      print(f"Task '{task['name']}' is already completed.")
+                      return True
+                  
+                  # Mark task as complete
+                  result = client.tasks.update(task_id, {'completed': True})
+                  print(f"✅ Successfully completed task: {task['name']}")
+                  return True
+                  
+              except Exception as e:
+                  print(f"❌ Error completing task {task_id}: {str(e)}")
+                  return False
+          
+          if __name__ == "__main__":
+              task_id = "${{ steps.set-task-id.outputs.task-id }}"
+              pat = "${{ secrets.ASANA_PAT }}"
+              
+              if not pat:
+                  print("❌ ASANA_PAT secret not found. Please add your Asana Personal Access Token to repository secrets.")
+                  sys.exit(1)
+              
+              success = complete_task(task_id, pat)
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python complete_task.py
+
+  # Job 2: Complete all tasks in a project
+  complete-project-tasks:
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      (github.event.inputs.action_type == 'project_tasks' || github.event.inputs.project_id != '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Complete All Tasks in Project
+        run: |
+          pip install asana
+          cat > complete_project_tasks.py << 'EOF'
+          import asana
+          import sys
+          
+          def complete_project_tasks(project_id, pat):
+              try:
+                  client = asana.Client.access_token(pat)
+                  
+                  # Get project details
+                  project = client.projects.find_by_id(project_id, {"opt_fields": "name"})
+                  print(f"Processing project: {project['name']}")
+                  
+                  # Get all tasks in project
+                  tasks = client.tasks.find_by_project(project_id, {"opt_fields": "name,completed"})
+                  
+                  completed_count = 0
+                  skipped_count = 0
+                  
+                  for task in tasks:
+                      if not task['completed']:
+                          print(f"Completing: {task['name']}")
+                          client.tasks.update(task['gid'], {'completed': True})
+                          completed_count += 1
+                      else:
+                          skipped_count += 1
+                  
+                  print(f"\n📊 Summary:")
+                  print(f"✅ Completed: {completed_count} tasks")
+                  print(f"⏭️  Skipped (already complete): {skipped_count} tasks")
+                  print(f"📁 Project: {project['name']}")
+                  
+                  return True
+                  
+              except Exception as e:
+                  print(f"❌ Error processing project {project_id}: {str(e)}")
+                  return False
+          
+          if __name__ == "__main__":
+              project_id = "${{ github.event.inputs.project_id }}"
+              pat = "${{ secrets.ASANA_PAT }}"
+              
+              if not pat:
+                  print("❌ ASANA_PAT secret not found. Please add your Asana Personal Access Token to repository secrets.")
+                  sys.exit(1)
+              
+              success = complete_project_tasks(project_id, pat)
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python complete_project_tasks.py
+
+  # Job 3: Complete tasks by tag
+  complete-tasks-by-tag:
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      (github.event.inputs.action_type == 'tagged_tasks' || github.event.inputs.task_tag != '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Complete Tasks by Tag
+        run: |
+          pip install asana
+          cat > complete_tagged_tasks.py << 'EOF'
+          import asana
+          import sys
+          
+          def complete_tagged_tasks(tag_name, pat):
+              try:
+                  client = asana.Client.access_token(pat)
+                  
+                  # Get workspace (use first available)
+                  workspaces = list(client.workspaces.find_all())
+                  if not workspaces:
+                      print("❌ No workspaces found")
+                      return False
+                      
+                  workspace_id = workspaces[0]['gid']
+                  print(f"Using workspace: {workspaces[0]['name']}")
+                  
+                  # Find the tag
+                  tags = list(client.tags.find_by_workspace(workspace_id, {"opt_fields": "name"}))
+                  target_tag = None
+                  
+                  for tag in tags:
+                      if tag['name'].lower() == tag_name.lower():
+                          target_tag = tag
+                          break
+                  
+                  if not target_tag:
+                      print(f"❌ Tag '{tag_name}' not found in workspace")
+                      return False
+                  
+                  print(f"Found tag: {target_tag['name']}")
+                  
+                  # Get tasks with this tag
+                  tasks = list(client.tasks.find_by_tag(target_tag['gid'], {"opt_fields": "name,completed"}))
+                  
+                  if not tasks:
+                      print(f"No tasks found with tag '{tag_name}'")
+                      return True
+                  
+                  completed_count = 0
+                  skipped_count = 0
+                  
+                  for task in tasks:
+                      if not task['completed']:
+                          print(f"Completing: {task['name']}")
+                          client.tasks.update(task['gid'], {'completed': True})
+                          completed_count += 1
+                      else:
+                          skipped_count += 1
+                  
+                  print(f"\n📊 Summary:")
+                  print(f"✅ Completed: {completed_count} tasks")
+                  print(f"⏭️  Skipped (already complete): {skipped_count} tasks")
+                  print(f"🏷️  Tag: {tag_name}")
+                  
+                  return True
+                  
+              except Exception as e:
+                  print(f"❌ Error processing tasks with tag '{tag_name}': {str(e)}")
+                  return False
+          
+          if __name__ == "__main__":
+              tag_name = "${{ github.event.inputs.task_tag }}"
+              pat = "${{ secrets.ASANA_PAT }}"
+              
+              if not pat:
+                  print("❌ ASANA_PAT secret not found. Please add your Asana Personal Access Token to repository secrets.")
+                  sys.exit(1)
+              
+              success = complete_tagged_tasks(tag_name, pat)
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python complete_tagged_tasks.py
+
+  # Job 4: Bulk complete all incomplete tasks (use with caution)
+  bulk-complete-all:
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.action_type == 'bulk_complete'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Bulk Complete All Tasks
+        run: |
+          pip install asana
+          cat > bulk_complete_all.py << 'EOF'
+          import asana
+          import sys
+          
+          def bulk_complete_all_tasks(pat):
+              try:
+                  client = asana.Client.access_token(pat)
+                  
+                  # Get workspace (use first available)
+                  workspaces = list(client.workspaces.find_all())
+                  if not workspaces:
+                      print("❌ No workspaces found")
+                      return False
+                      
+                  workspace_id = workspaces[0]['gid']
+                  print(f"Using workspace: {workspaces[0]['name']}")
+                  
+                  # Get user's tasks across all projects
+                  me = client.users.me()
+                  tasks = list(client.tasks.find_by_user(me['gid'], {
+                      "workspace": workspace_id,
+                      "opt_fields": "name,completed,projects.name",
+                      "completed_since": "now"
+                  }))
+                  
+                  if not tasks:
+                      print("No incomplete tasks found")
+                      return True
+                  
+                  print(f"Found {len(tasks)} incomplete tasks")
+                  
+                  completed_count = 0
+                  
+                  for task in tasks:
+                      if not task['completed']:
+                          project_names = [p['name'] for p in task.get('projects', [])]
+                          project_info = f" (Projects: {', '.join(project_names)})" if project_names else ""
+                          print(f"Completing: {task['name']}{project_info}")
+                          client.tasks.update(task['gid'], {'completed': True})
+                          completed_count += 1
+                  
+                  print(f"\n📊 Summary:")
+                  print(f"✅ Completed: {completed_count} tasks")
+                  print(f"🔄 Bulk completion finished")
+                  
+                  return True
+                  
+              except Exception as e:
+                  print(f"❌ Error in bulk completion: {str(e)}")
+                  return False
+          
+          if __name__ == "__main__":
+              pat = "${{ secrets.ASANA_PAT }}"
+              
+              if not pat:
+                  print("❌ ASANA_PAT secret not found. Please add your Asana Personal Access Token to repository secrets.")
+                  sys.exit(1)
+              
+              print("⚠️  WARNING: This will complete ALL your incomplete tasks!")
+              print("Make sure this is what you want to do.")
+              
+              success = bulk_complete_all_tasks(pat)
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python bulk_complete_all.py
+
+  # Job 5: Summary and notification
+  notify-completion:
+    needs: [complete-single-task, complete-project-tasks, complete-tasks-by-tag, bulk-complete-all]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary Report
+        run: |
+          echo "## 📋 Asana Task Completion Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "**Action Type:** ${{ github.event.inputs.action_type }}" >> $GITHUB_STEP_SUMMARY
+            
+            if [ -n "${{ github.event.inputs.task_id }}" ]; then
+              echo "**Task ID:** ${{ github.event.inputs.task_id }}" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ -n "${{ github.event.inputs.project_id }}" ]; then
+              echo "**Project ID:** ${{ github.event.inputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ -n "${{ github.event.inputs.task_tag }}" ]; then
+              echo "**Tag:** ${{ github.event.inputs.task_tag }}" >> $GITHUB_STEP_SUMMARY
+            fi
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "**Pull Request:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "**PR Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Workflow completed. Check individual job logs for detailed results." >> $GITHUB_STEP_SUMMARY

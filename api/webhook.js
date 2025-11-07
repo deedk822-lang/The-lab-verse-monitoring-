@@ -326,12 +326,6 @@ export default async function handler(req, res) {
   try {
     // Verify webhook signature
     const signature = req.headers['x-webhook-signature'];
-    // The raw body is needed for signature verification. Vercel's req.body is already parsed.
-    // In a real Vercel environment, you'd need the raw body, but here we'll use the parsed body
-    // and assume the environment handles the raw body access for verification correctly,
-    // or that the payload is simple enough that JSON.stringify(req.body) is sufficient.
-    // For a robust solution, the raw body should be passed to verifySignature.
-    // Since we don't have the raw body, we'll use the stringified body as a placeholder.
     const rawBody = JSON.stringify(req.body);
     
     if (!verifySignature(rawBody, signature, config.webhookSecret)) {

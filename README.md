@@ -1,685 +1,636 @@
-<<<<<<< HEAD
-# AI Content Creation Suite with Multi-Channel Distribution
+# 🚀 RankYak → GitHub → Unito Bridge
+## Production-Ready, Zero-Maintenance Content Sync
 
-A comprehensive fullstack JavaScript application that replicates n8n content creation workflows with support for multiple AI providers and automated multi-channel content distribution.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR-USERNAME/rankyak-github-bridge&env=GITHUB_TOKEN,GITHUB_OWNER,GITHUB_REPO,WEBHOOK_SECRET&project-name=rankyak-bridge)
 
-## 🚀 Features
+---
 
-### Multi-Provider AI Support
+## What This Does
 
-- **OpenAI**: GPT-4, DALL-E, Whisper, TTS
-- **Google Gemini**: Advanced reasoning, Imagen, Veo, Google Search/Maps integration
-- **LocalAI**: Privacy-focused local inference with various models
-- **Z.AI GLM-4.6**: Efficient reasoning, tool use, long context (200K tokens)
-- **Perplexity AI**: Web search and real-time research capabilities
-- **Manus AI**: Creative writing and content optimization
-- **Claude AI**: Advanced reasoning and analysis (via MCP)
-- **Mistral AI**: Multilingual content generation (via MCP)
-- **ElevenLabs**: AI voice synthesis and audio generation
+Every time you hit **"Publish"** in RankYak:
 
-### Multi-Channel Distribution
+1. ✅ Creates/updates a Markdown file in GitHub (`_posts/YYYY-MM-DD-article-slug.md`)
+2. ✅ Unito automatically syncs GitHub → Asana (your existing setup keeps working)
+3. ✅ Optional: Creates a PR for team review before merging
+4. ✅ Sends Slack notification (optional)
+5. ✅ One-click rollback via Git
 
-- **Social Media**: Automated posting via Ayrshare to Twitter, Facebook, LinkedIn, Instagram, YouTube, TikTok, Telegram, Reddit
-- **Email Marketing**: MailChimp campaign creation and sending
-- **Cross-Platform Communication**: A2A integration with Slack, Teams, Discord, Zapier, IFTTT, n8n, Make
-- **Voice Content**: Audio generation and podcast creation with ElevenLabs
-- **Webhook Integration**: Zapier-compatible for workflow automation
+**No n8n, no Make, no Zapier. Just RankYak → GitHub → Unito.**
 
-### Content Generation Capabilities
+---
 
-- **Text**: Articles, blog posts, social media content
-- **Images**: High-quality generation with aspect ratio control
-- **Videos**: Prompt-based video generation and animation
-- **Audio**: Text-to-speech, voice cloning, and audiobook creation
-- **Multimodal**: Combined content types with integrated workflows
+## Quick Start (< 10 Minutes)
 
-### Advanced Features
+### 1. Deploy to Vercel (1 Click)
 
-- Real-time progress tracking with WebSockets
-- SEO optimization and metadata generation
-- Multi-platform content optimization
-- Cost tracking and usage analytics
-- Caching with Redis for improved performance
-- Rate limiting and API key authentication
-- Docker support for easy deployment
-- MCP (Model Context Protocol) integration
-- A2A (Application-to-Application) communication
-
-## 🛠️ Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Redis (optional, for caching)
-- Docker & Docker Compose (for containerized deployment)
-
-### Installation
-
-1. **Clone and setup:**
+Click the button above or:
 
 ```bash
-git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
-cd The-lab-verse-monitoring-
-npm install
+git clone https://github.com/YOUR-USERNAME/rankyak-github-bridge
+cd rankyak-github-bridge
+vercel deploy
 ```
 
-2. **Configure API keys in `.env`:**
+### 2. Configure Environment Variables
+
+In Vercel Dashboard → Settings → Environment Variables:
+
+| Variable | Value | Where to Get It |
+|----------|-------|----------------|
+| `GITHUB_TOKEN` | `ghp_xxxxxxxxxxxxx` | [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) - Select scope: `repo` |
+| `GITHUB_OWNER` | `your-username` | Your GitHub username or org |
+| `GITHUB_REPO` | `content` | Repository name (no .git) |
+| `GITHUB_BRANCH` | `main` | Branch Unito watches (usually `main`) |
+| `WEBHOOK_SECRET` | `rankyak-2025-secure` | Any random string (you'll paste this in RankYak) |
+| `CREATE_PR` | `true` | (Optional) Set to `true` for PR mode, `false` for direct commit |
+| `SLACK_WEBHOOK_URL` | `https://hooks.slack.com/...` | (Optional) Slack incoming webhook URL |
+| `CONTENT_DIR` | `_posts` | (Optional) Directory for content files |
+
+### 3. Get Your Webhook URL
+
+After deployment, Vercel gives you:
+```
+https://your-project.vercel.app/api/webhook
+```
+
+### 4. Configure RankYak
+
+In RankYak:
+- Go to **Settings → Integrations → Webhooks**
+- Enable webhooks
+- **URL:** `https://your-project.vercel.app/api/webhook`
+- **Secret:** Same as `WEBHOOK_SECRET` from step 2
+- **Events:** Select `post.published` (and optionally `post.updated`)
+- Save
+
+### 5. Test It
+
+1. Publish a test article in RankYak
+2. Watch Vercel logs (or check GitHub commits)
+3. Verify Unito created the Asana task automatically
+4. 🎉 Done!
+
+---
+
+## How It Works
+
+```mermaid
+graph LR
+    A[RankYak: Hit Publish] --> B[Vercel Webhook]
+    B --> C{PR Mode?}
+    C -->|Yes| D[Create PR in GitHub]
+    C -->|No| E[Direct Commit to main]
+    D --> F[Unito Watches GitHub]
+    E --> F
+    F --> G[Asana Task Created/Updated]
+    B --> H[Slack Notification]
+
+    style A fill:#ff6b6b
+    style G fill:#51cf66
+    style F fill:#339af0
+```
+
+### Example Flow
+
+**You publish:** "Best Winter Hiking Gear 2025"
+
+**GitHub gets:**
+```markdown
+---
+title: "Best Winter Hiking Gear 2025"
+slug: best-winter-hiking-gear-2025
+date: 2025-11-07
+author: "Sarah Chen"
+tags: [hiking, winter, gear, equipment]
+categories: [Outdoor, Gear Reviews]
+rankyak_id: 623e1f84a1b2c
+status: published
+seo_title: "Top 10 Winter Hiking Gear for 2025 | Complete Guide"
+seo_description: "Discover the best winter hiking gear..."
+featured_image: "https://cdn.rankyak.com/images/winter-gear.jpg"
+---
+
+# Best Winter Hiking Gear 2025
+
+Winter hiking requires specialized equipment...
+
+## Essential Gear Checklist
+- Insulated boots
+- Layered clothing system
+...
+```
+
+**Unito sees:**
+- New commit in `main` (or new PR)
+- Creates Asana task: "Review: Best Winter Hiking Gear 2025"
+- Assigns to mapped team member
+- Links to GitHub commit/PR
+
+**You get:**
+- Slack notification: "📝 New content synced from RankYak"
+- Asana task ready for editorial review
+- Full Git history for rollbacks
+
+---
+
+## Operating Modes
+
+### Mode 1: Direct Commit (Fast Publishing)
+
+**Use when:** You want immediate publication without review.
+
+**Set:** `CREATE_PR=false`
+
+**Result:**
+- Content committed directly to `main`
+- Unito creates Asana task immediately
+- Faster workflow, suitable for solo publishers
+
+### Mode 2: Pull Request (Team Review)
+
+**Use when:** Multiple editors need to review before publishing.
+
+**Set:** `CREATE_PR=true`
+
+**Result:**
+- Creates branch: `rankyak/article-id-timestamp`
+- Opens PR with full metadata
+- Unito creates Asana task linked to PR
+- Team reviews, approves, merges
+- Unito auto-closes Asana task when PR merges
+
+---
+
+## File Structure Created
+
+```
+your-repo/
+├── _posts/
+│   ├── 2025-11-07-best-winter-hiking-gear.md
+│   ├── 2025-11-06-camping-essentials.md
+│   └── 2025-11-05-trail-running-tips.md
+├── .github/
+│   └── workflows/
+│       └── unito-sync.yml (your existing Unito config)
+└── README.md
+```
+
+Each file contains:
+- YAML frontmatter with full metadata
+- Markdown-converted content from RankYak HTML
+- SEO fields for your static site generator
+- RankYak ID for bi-directional sync
+
+---
+
+## Rollback & Recovery
+
+### Rollback a Publication
+
+**Option 1: GitHub UI**
+1. Go to the commit
+2. Click "Revert"
+3. Merge the revert PR
+4. Unito updates Asana accordingly
+
+**Option 2: Command Line**
+```bash
+git revert HEAD~1
+git push origin main
+```
+
+### Re-sync from RankYak
+
+Just re-publish the article in RankYak. The webhook:
+- Overwrites the existing file (same slug)
+- Updates the Asana task
+- Maintains full history in Git
+
+### Bulk Migration
+
+To migrate existing RankYak content:
 
 ```bash
-# Copy the example environment file
-cp .env.example .env
+# Export from RankYak API
+curl https://api.rankyak.com/posts?status=published \
+  -H "Authorization: Bearer $RANKYAK_API_KEY" \
+  > rankyak_export.json
 
-# Edit .env with your API keys
-# At minimum, configure:
-API_KEY=your_secure_api_key_here
-OPENAI_API_KEY=your_openai_key  # OR
-GOOGLE_API_KEY=your_google_key  # OR any other AI provider
-
-# For multi-channel distribution, also configure:
-AYRSHARE_API_KEY=your_ayrshare_key_here           # For social media
-MAILCHIMP_API_KEY=your_mailchimp_key_here        # For email
-ELEVENLABS_API_KEY=your_elevenlabs_key_here      # For voice
+# Replay through webhook
+node scripts/bulk-import.js rankyak_export.json
 ```
 
-3. **Start the application:**
+---
+
+## Monitoring & Alerts
+
+### Vercel Logs
+
+View real-time logs:
+```bash
+vercel logs your-project --follow
+```
+
+### Success Indicators
+
+✅ **200 Response:** Webhook processed successfully
+✅ **GitHub Commit:** File created/updated
+✅ **Unito Sync:** Asana task appears within 30s
+✅ **Slack Message:** Notification sent (if configured)
+
+### Error Handling
+
+The webhook automatically handles:
+- Duplicate posts (overwrites by slug)
+- Missing metadata (uses defaults)
+- GitHub API rate limits (retries)
+- Invalid HTML (graceful Markdown conversion)
+
+### Alert Setup
+
+Add to your Vercel dashboard:
+
+**Slack Alerts** (already built-in):
+- Set `SLACK_WEBHOOK_URL` environment variable
+- Get instant notifications on every publish
+
+**Email Alerts:**
+- Vercel → Settings → Integrations → Email Notifications
+- Enable "Deployment Errors"
+
+**Custom Monitoring:**
+```javascript
+// Add to webhook.js
+await fetch('https://your-monitoring-service.com/ping', {
+  method: 'POST',
+  body: JSON.stringify({
+    service: 'rankyak-bridge',
+    status: 'success',
+    article: article.title
+  })
+});
+```
+
+---
+
+## Advanced Configuration
+
+### Custom Content Directory
 
 ```bash
-npm start
+# Vercel environment variable
+CONTENT_DIR=content/blog
 ```
 
-4. **Open your browser:**
-
-```
-http://localhost:3000
-```
-
-### Docker Deployment
+### Custom Branch Strategy
 
 ```bash
-# Start all services
-docker-compose up -d
+# Use different branch for staging
+GITHUB_BRANCH=staging
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+# Unito should watch 'staging' branch
 ```
 
-## 🔧 Configuration
+### Multi-Site Support
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|----------|
-| `PORT` | Server port | 3000 |
-| `NODE_ENV` | Environment | development |
-| `API_KEY` | API authentication key | - |
-| `REDIS_URL` | Redis connection URL | redis://localhost:6379 |
-
-### AI Provider Configuration
-
-#### Required (at least one)
-- `OPENAI_API_KEY` - OpenAI API key
-- `GOOGLE_API_KEY` - Google AI API key  
-- `ZAI_API_KEY` - Z.AI API key
-- `LOCALAI_URL` - LocalAI server URL
-
-#### Optional Enhancement Services
-- `PERPLEXITY_API_KEY` - For web search and research
-- `MANUS_API_KEY` - For creative writing optimization
-- `CLAUDE_API_KEY` - For advanced reasoning (MCP)
-- `MISTRAL_API_KEY` - For multilingual content (MCP)
-- `ELEVENLABS_API_KEY` - For voice synthesis
-
-### Distribution Services
-
-#### Social Media (Ayrshare)
-- `AYRSHARE_API_KEY` - Required for social media posting
-
-#### Email Marketing (MailChimp)
-- `MAILCHIMP_API_KEY` - Required for email campaigns
-- `MAILCHIMP_SERVER_PREFIX` - Your MailChimp server (e.g., us1)
-- `MAILCHIMP_LIST_ID` - Your subscriber list ID
-
-#### Cross-Platform Communication (A2A)
-- `A2A_SLACK_WEBHOOK` - Slack webhook URL
-- `A2A_TEAMS_WEBHOOK` - Microsoft Teams webhook URL
-- `A2A_DISCORD_WEBHOOK` - Discord webhook URL
-
-## 📚 API Reference
-
-### Multi-Channel Distribution
-
+Deploy multiple instances:
 ```bash
-# Zapier webhook endpoint (primary integration point)
-POST /api/ayrshare/ayr
-Content-Type: application/json
-x-api-key: your-api-key
+# Production
+vercel --prod --env GITHUB_REPO=blog-prod
 
-{
-  "topic": "AI Technology Trends",
-  "platforms": "twitter,linkedin,facebook,instagram",
-  "audience": "tech professionals", 
-  "tone": "professional",
-  "provider": "perplexity",
-  "includeEmail": true,
-  "emailSubject": "Latest AI Trends",
-  "generateAudio": true,
-  "voiceType": "professional"
-}
+# Staging
+vercel --env GITHUB_REPO=blog-staging
 ```
 
-### Individual Service Endpoints
+### Metadata Customization
 
-```bash
-# Social media only
-POST /api/ayrshare/post
-
-# Email campaign only  
-POST /api/ayrshare/email
-
-# Voice generation only
-POST /api/elevenlabs/tts
-
-# Content generation only
-POST /api/content/generate
-
-# Test all services
-GET /api/test/health
-```
-
-### Test Endpoints
-
-```bash
-# Test individual services
-GET /api/test/ayrshare          # Social media
-GET /api/ayrshare/test/mailchimp # Email
-GET /api/test/workflow          # Full multi-channel test
-GET /api/test/providers         # AI providers
-```
-
-## 🏗️ Architecture
-
-```
-src/
-├── config/          # Provider configurations
-├── middleware/      # Authentication, caching, error handling
-├── routes/          # API endpoints
-│   ├── content.js   # Content generation
-│   ├── ayrshare.js  # Multi-channel distribution
-│   └── test.js      # Testing endpoints
-├── services/        # AI providers and integrations
-│   ├── ayrshareService.js     # Social media posting
-│   ├── mailchimpService.js    # Email campaigns
-│   ├── perplexityService.js   # Web search & research
-│   ├── manusService.js        # Creative optimization
-│   ├── mcpService.js          # Claude & Mistral integration
-│   ├── a2aService.js          # Cross-platform communication
-│   └── elevenLabsService.js   # Voice synthesis
-├── utils/           # Logging, Redis, utilities
-└── server.js        # Main application entry point
-```
-
-## 🔌 Integration Examples
-
-### Zapier Integration
-
-1. Create a Zapier webhook trigger
-2. Configure action to POST to `/api/ayrshare/ayr`
-3. Map webhook data to content parameters
-4. Enable automatic multi-channel distribution
-
-### Advanced Workflow Example
+Edit `createMarkdownContent()` in `api/webhook.js`:
 
 ```javascript
-// Research + Generate + Optimize + Distribute workflow
-const workflow = {
-  topic: "Sustainable AI Development",
-  
-  // Research phase (Perplexity)
-  research: {
-    provider: "perplexity",
-    useWebSearch: true,
-    focusArea: "recent"
-  },
-  
-  // Generation phase (Multiple providers)
-  generation: {
-    providers: ["google", "claude", "manus"],
-    tone: "authoritative",
-    audience: "business leaders"
-  },
-  
-  // Distribution phase
-  distribution: {
-    social: {
-      platforms: ["linkedin", "twitter", "facebook"],
-      optimizePerPlatform: true
-    },
-    email: {
-      subject: "Sustainable AI: Industry Report",
-      segment: "business_leaders"
-    },
-    audio: {
-      voiceType: "professional",
-      generatePodcast: true
-    },
-    notifications: {
-      slack: true,
-      teams: true
-    }
-  }
+const frontmatter = {
+  title: article.title,
+  slug: article.slug || generateSlug(article.title),
+  // Add custom fields
+  wordpress_id: article.custom_fields?.wordpress_id,
+  editorial_status: 'needs_review',
+  publish_date: article.scheduled_at || article.published_at,
+  // ... your fields
 };
 ```
 
-## 🧪 Testing
+---
 
+## Integration with Existing Unito Setup
+
+### Your Current Unito Flow (Unchanged)
+
+```
+GitHub (main branch) ↔ Asana (Editorial Project)
+```
+
+**Unito Rules:**
+- New commit → Create Asana task
+- Commit author → Asana assignee
+- Commit message → Task description
+- PR merged → Close task
+
+### This Bridge Adds
+
+```
+RankYak → Vercel → GitHub (commits) → [Unito keeps working] → Asana
+```
+
+**No Unito changes needed!** The bridge just:
+- Converts RankYak content to GitHub-friendly Markdown
+- Commits with proper formatting
+- Lets Unito do its existing job
+
+---
+
+## Cost & Performance
+
+### Vercel Free Tier
+
+✅ **100GB bandwidth/month** (plenty for webhooks)
+✅ **100 hours compute/month** (webhooks use ~1 second each)
+✅ **Unlimited API calls**
+
+**Typical usage:** 100 articles/month = <1% of free tier
+
+### GitHub API Limits
+
+✅ **5,000 requests/hour** (with PAT)
+✅ **1 commit per webhook** = 5,000 articles/hour capacity
+
+### Unito Limits
+
+✅ **Uses existing Unito plan**
+✅ **No additional sync tasks** (same as manual commits)
+
+---
+
+## Security Best Practices
+
+### Webhook Security
+
+✅ **HMAC signature verification** (SHA-256)
+✅ **Secret validation** on every request
+✅ **HTTPS-only** (Vercel enforces)
+
+### GitHub Token Security
+
+✅ **Minimal scope:** Only `repo` access
+✅ **Stored as environment variable** (encrypted)
+✅ **Rotate regularly** (recommended: every 90 days)
+
+### Production Checklist
+
+- [ ] Use strong `WEBHOOK_SECRET` (20+ random characters)
+- [ ] Enable Vercel's "Environment Variable Protection"
+- [ ] Restrict GitHub token to specific repository
+- [ ] Enable Vercel's "IP Allowlist" (if RankYak provides static IPs)
+- [ ] Set up Vercel's "Secure Headers"
+- [ ] Enable GitHub's branch protection rules
+- [ ] Review Vercel logs weekly
+
+---
+
+## Troubleshooting
+
+### Webhook Not Firing
+
+**Check:**
+1. RankYak webhook configuration (URL, secret)
+2. Vercel deployment status (active?)
+3. Vercel logs for incoming requests
+
+**Test manually:**
 ```bash
-# Test all providers and services
-npm test
-
-# Test specific functionality
-curl http://localhost:3000/api/test/health
-
-# Test multi-channel workflow
-curl -X POST http://localhost:3000/api/ayrshare/ayr \
+curl -X POST https://your-project.vercel.app/api/webhook \
   -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
-  -d '{"topic":"AI Test","platforms":"twitter,linkedin"}'
+  -H "X-Webhook-Signature: sha256=test" \
+  -d '{
+    "event": "post.published",
+    "article": {
+      "id": "test123",
+      "title": "Test Article",
+      "content": "<p>Test content</p>"
+    }
+  }'
 ```
 
-## 📊 Monitoring
+### GitHub Commits Not Appearing
 
-The application includes comprehensive logging and monitoring:
+**Check:**
+1. GitHub token validity (refresh if expired)
+2. Repository permissions (token has `repo` scope?)
+3. Branch exists (create `main` if missing)
 
-- **Winston** for structured logging
-- **Redis** for caching and session management  
-- **Health checks** for all providers and services
-- **Cost tracking** for API usage
-- **Real-time WebSocket** progress updates
-- **Performance metrics** and analytics
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Environment Setup:**
-
+**Verify token:**
 ```bash
-export NODE_ENV=production
-export API_KEY=your-secure-production-key
-export REDIS_URL=redis://your-redis-server:6379
+curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+  https://api.github.com/user
 ```
 
-2. **Docker Production:**
+### Unito Not Syncing
 
-```bash
-docker-compose -f docker-compose.prod.yml up -d
+**Check:**
+1. Unito flow is active
+2. Watching correct branch (`main`)
+3. File path matches Unito filters
+4. Unito sync logs in Asana
+
+**Unito requires:**
+- Commits to watched branch
+- File changes in watched directory
+- Proper Git author email
+
+### Markdown Conversion Issues
+
+**If content looks weird:**
+
+Edit `htmlToMarkdown()` function in `api/webhook.js`:
+
+```javascript
+// Add custom conversions
+.replace(/<your-custom-tag[^>]*>(.*?)<\/your-custom-tag>/gi, 'YOUR MARKDOWN')
 ```
 
-3. **Fly.io Deployment:** (Recommended)
+---
 
-```bash
-# Install Fly CLI
-fly auth login
-fly create your-app-name
-fly deploy
-=======
-# The Lab Verse Monitoring Stack 🚀
+## Extending the Bridge
 
-A comprehensive, production-ready monitoring infrastructure with **AI-powered project management** through Kimi Instruct - your hybrid AI project manager.
+### Add WordPress Publishing
 
-## 🤖 What is Kimi Instruct?
+```javascript
+// In api/webhook.js, after GitHub commit
 
-**Kimi Instruct** is a revolutionary hybrid AI project manager that combines artificial intelligence with human oversight to manage your entire monitoring infrastructure project. Think of it as having a senior technical PM who never sleeps, always remembers context, and can execute tasks autonomously while keeping you in the loop.
-
-### ✨ Key Features
-
-- **🧠 AI-Powered Task Management**: Automatically creates, prioritizes, and executes tasks
-- **👥 Human-AI Collaboration**: Smart approval workflows for critical decisions
-- **📊 Real-time Project Tracking**: Live progress monitoring and risk assessment
-- **💰 Budget Intelligence**: Automated cost tracking and optimization recommendations
-- **🚨 Smart Escalation**: Intelligent issue escalation based on severity and impact
-- **📈 Predictive Analytics**: ML-powered insights for project success
-- **🔄 Self-Healing Operations**: Automatic detection and resolution of common issues
-- **📱 Multi-Interface Access**: Web dashboard, CLI, and API interfaces
-
-## 🏗️ Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    🤖 Kimi Instruct                        │
-│                 AI Project Manager                         │
-│  ┌─────────────┐ ┌──────────────┐ ┌─────────────────────┐  │
-│  │   Web UI    │ │     CLI      │ │        API          │  │
-│  └─────────────┘ └──────────────┘ └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Monitoring Stack                            │
-│  ┌─────────────┐ ┌──────────────┐ ┌─────────────────────┐  │
-│  │ Prometheus  │ │   Grafana    │ │   AlertManager      │  │
-│  └─────────────┘ └──────────────┘ └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- OpenAI API Key (optional but recommended for AI features)
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
-cd The-lab-verse-monitoring-
-```
-
-### 2. Install Kimi Instruct
-```bash
-# Make the installation script executable
-chmod +x scripts/install-kimi.sh
-
-# Run the installation
-./scripts/install-kimi.sh
-```
-
-### 3. Set Environment Variables (Optional)
-```bash
-# For enhanced AI capabilities
-export OPENAI_API_KEY="your-openai-api-key"
-
-# For Slack notifications
-export SLACK_WEBHOOK_URL="your-slack-webhook-url"
-```
-
-### 4. Start the Stack
-```bash
-docker-compose up -d
-```
-
-### 5. Access Kimi Dashboard
-Open your browser and navigate to: **http://localhost:8084/dashboard**
-
-## 📱 Using Kimi Instruct
-
-### Web Dashboard
-Access the intuitive web interface at `http://localhost:8084/dashboard` to:
-- Monitor project progress in real-time
-- View task status and completion metrics
-- Review budget and timeline information
-- Approve or deny tasks requiring human input
-- Get AI-powered recommendations
-
-### Command Line Interface
-```bash
-# Check project status
-./kimi-cli status
-
-# Create a new task
-./kimi-cli task --title "Deploy new service" --priority high
-
-# List all tasks
-./kimi-cli list
-
-# Run optimization analysis
-./kimi-cli optimize
-
-# Perform human checkin
-./kimi-cli checkin
-
-# Generate comprehensive report
-./kimi-cli report
-```
-
-### HTTP API
-```bash
-# Get project status
-curl http://localhost:8084/status
-
-# Create a task
-curl -X POST http://localhost:8084/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Monitor deployment", "priority": "high"}'
-
-# Get next recommended actions
-curl http://localhost:8084/next-actions
-```
-
-## 🎯 What Kimi Can Do For You
-
-### Autonomous Operations
-- **Deployment Management**: Automatically deploy services to staging/production
-- **Cost Optimization**: Continuously analyze and optimize infrastructure costs
-- **Health Monitoring**: Perform regular health checks across all services
-- **Backup Management**: Ensure data backup procedures are followed
-- **Security Updates**: Apply security patches and updates automatically
-
-### Human-AI Collaboration
-- **Production Deployments**: Requests approval for production changes
-- **Budget Decisions**: Seeks approval for expenditures over $1,000
-- **Architecture Changes**: Involves humans in major technical decisions
-- **Risk Mitigation**: Escalates high-risk situations immediately
-
-### Intelligence & Insights
-- **Predictive Analytics**: Forecasts project completion and potential issues
-- **Resource Optimization**: Recommends optimal resource allocation
-- **Performance Trends**: Identifies performance patterns and anomalies
-- **Cost Intelligence**: Provides detailed cost analysis and savings opportunities
-
-## 📊 Monitoring Stack Components
-
-| Component | Port | Purpose | Managed by Kimi |
-|-----------|------|---------|------------------|
-| **Kimi Dashboard** | 8084 | AI Project Manager Interface | ✅ Self-managed |
-| **Prometheus** | 9090 | Metrics Collection | ✅ Auto-configured |
-| **Grafana** | 3000 | Visualization & Dashboards | ✅ Auto-configured |
-| **AlertManager** | 9093 | Alert Management | ✅ Auto-configured |
-| **Node Exporter** | 9100 | System Metrics | ✅ Auto-monitored |
-
-## 🔧 Configuration
-
-### Kimi Configuration
-Edit `config/kimi_instruct.json` to customize:
-- Human oversight mode (collaborative/autonomous)
-- Risk thresholds and escalation rules
-- Project objectives and constraints
-- Budget and timeline settings
-- Decision authority levels
-
-### Example Configuration
-```json
-{
-  "human_oversight_mode": "collaborative",
-  "auto_execution_threshold": 0.75,
-  "risk_thresholds": {
-    "low": 0.2,
-    "medium": 0.5,
-    "high": 0.8
+// Publish to WordPress
+const wpResponse = await fetch(`https://yoursite.wordpress.com/wp-json/wp/v2/posts`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Basic ${Buffer.from(`${process.env.WP_USER}:${process.env.WP_PASSWORD}`).toString('base64')}`,
+    'Content-Type': 'application/json'
   },
-  "decision_authority": {
-    "auto_deploy_staging": true,
-    "auto_deploy_production": false,
-    "auto_cost_optimization": true
-  }
+  body: JSON.stringify({
+    title: article.title,
+    content: content,
+    status: 'publish'
+  })
+});
+```
+
+### Add Bria AI Images
+
+```javascript
+// Before GitHub commit, generate featured image
+
+if (!article.featured_image_url) {
+  const briaResponse = await fetch('https://api.bria.ai/v1/images/generate', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.BRIA_AI_API_KEY}`
+    },
+    body: JSON.stringify({
+      prompt: `Professional featured image for: ${article.title}`,
+      style: 'photorealistic'
+    })
+  });
+
+  const imageData = await briaResponse.json();
+  article.featured_image_url = imageData.url;
 }
 ```
 
-## 📈 Project Metrics
+### Add Analytics
 
-Kimi tracks comprehensive project metrics:
+```javascript
+// Track publish metrics
 
-- **Progress**: Task completion percentage
-- **Budget**: Remaining budget and burn rate
-- **Timeline**: Days remaining and milestone tracking
-- **Risk**: Real-time risk assessment and mitigation
-- **Quality**: Code quality and deployment success rates
-- **Team**: Human intervention frequency and efficiency
-
-## 🚨 Alerts & Notifications
-
-Kimi provides intelligent alerting:
-- **Budget Alerts**: When 75%, 90%, 95% of budget is consumed
-- **Timeline Alerts**: When project is at risk of missing deadlines
-- **Technical Alerts**: When critical systems are down or degraded
-- **Human Approval**: When decisions require human oversight
-- **Progress Updates**: Daily/weekly progress summaries
-
-## 🔄 Workflow Examples
-
-### Typical Day with Kimi
-1. **Morning**: Kimi provides daily status report
-2. **Continuous**: Monitors all systems and metrics
-3. **Proactive**: Identifies and resolves issues automatically
-4. **Collaborative**: Requests approval for critical decisions
-5. **Evening**: Summarizes progress and plans tomorrow's tasks
-
-### Deployment Workflow
-1. Kimi detects code changes requiring deployment
-2. Automatically deploys to staging environment
-3. Runs automated tests and quality checks
-4. Requests human approval for production deployment
-5. Deploys to production upon approval
-6. Monitors deployment health and performance
-7. Reports success metrics and any issues
-
-## 🛠️ Development
-
-### Running Tests
-```bash
-# Run Kimi integration tests
-python -m pytest tests/test_kimi_integration.py -v
-
-# Run all tests
-python -m pytest tests/ -v
+await fetch('https://your-analytics.com/event', {
+  method: 'POST',
+  body: JSON.stringify({
+    event: 'article_published',
+    properties: {
+      title: article.title,
+      author: article.author?.name,
+      tags: article.tags,
+      timestamp: new Date().toISOString()
+    }
+  })
+});
 ```
-
-### Local Development
-```bash
-# Install dependencies
-pip install -r requirements.kimi.txt
-
-# Run Kimi service locally
-python -m src.kimi_instruct.service
-
-# Use CLI directly
-python -m src.kimi_instruct.cli status
->>>>>>> origin/feat/ai-connectivity-layer
-```
-
-## 🤝 Contributing
-
-<<<<<<< HEAD
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🆘 Support
-
-- **Documentation**: Check the `/docs` directory
-- **Issues**: Create a GitHub issue
-- **Discussions**: Use GitHub Discussions for questions
-- **Setup Guide**: See `ZAPIER_AYRSHARE_SETUP.md` for detailed configuration
-
-## 🔄 Recent Updates
-
-### Latest Features
-
-- ✅ **Multi-Channel Distribution**: Ayrshare + MailChimp + A2A integration
-- ✅ **Advanced AI Providers**: Perplexity, Manus, Claude, Mistral via MCP
-- ✅ **Voice Synthesis**: ElevenLabs integration for audio content
-- ✅ **Real-time Monitoring**: WebSocket progress updates
-- ✅ **Cross-Platform Communication**: A2A service for team notifications
-- ✅ **Enhanced Research**: Web search with Perplexity AI
-- ✅ **Creative Optimization**: Content enhancement with Manus AI
-
-### Roadmap
-
-- 🔄 Advanced analytics dashboard
-- 🔄 Custom model fine-tuning
-- 🔄 Batch processing capabilities
-- 🔄 Advanced workflow automation
-- 🔄 Multi-language UI support
-- 🔄 Video content generation
-- 🔄 Advanced A/B testing for content
-
-## About
-
-A comprehensive Node.js server that runs multiple AI agents and integrates with various platforms for automated content creation and distribution across social media, email, voice, and team communication channels.
 
 ---
 
-**🎯 Perfect for**: Content creators, marketing teams, businesses, and developers who want to automate their content distribution across multiple channels with AI-powered generation and optimization.
-=======
-We welcome contributions! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+## Migration from n8n/Make/Zapier
 
-## 📚 Documentation
+### Before (Complex)
 
-- **API Documentation**: http://localhost:8084/docs (when running)
-- **Configuration Guide**: See `config/kimi_instruct.json`
-- **CLI Reference**: `./kimi-cli --help`
-- **Architecture Deep Dive**: See `docs/` directory
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-**Kimi not responding?**
-```bash
-# Check service status
-./check-kimi
-
-# View logs
-docker-compose logs kimi-project-manager
-
-# Restart service
-docker-compose restart kimi-project-manager
+```
+RankYak → n8n/Make → LocalAI → Bria AI → GitHub → WordPress → Asana
 ```
 
-**Tasks not executing?**
-- Check if OpenAI API key is set (for AI features)
-- Verify network connectivity between services
-- Review task dependencies and approval requirements
+**Problems:**
+- Multiple failure points
+- Complex debugging
+- Webhook chaining delays
+- Monthly automation costs
 
-**Dashboard not loading?**
-- Ensure port 8084 is not blocked
-- Check Docker container health status
-- Verify browser allows localhost connections
+### After (Simple)
 
-## 📄 License
+```
+RankYak → Vercel → GitHub → [Unito] → Asana
+```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Benefits:**
+✅ Single webhook endpoint
+✅ No automation platform fees
+✅ Faster (no intermediary hops)
+✅ Git-based rollback
+✅ Unito keeps working as-is
 
-## 🙏 Acknowledgments
+### Migration Steps
 
-- Built with love for the developer community
-- Powered by cutting-edge AI technology
-- Inspired by the need for intelligent infrastructure management
+1. **Deploy this bridge** (10 minutes)
+2. **Test with 1 article** (confirm GitHub + Asana sync)
+3. **Disable n8n/Make/Zapier workflows** (pause, don't delete yet)
+4. **Monitor for 1 week** (ensure no issues)
+5. **Delete old automations** (once confident)
 
 ---
 
-**🎯 Ready to revolutionize your monitoring infrastructure?**
+## FAQ
 
-Kimi Instruct represents the future of infrastructure management - where AI and human intelligence work together to build, monitor, and optimize your systems. Start your journey today!
+### Q: What happens if RankYak sends duplicate webhooks?
 
-```bash
-./scripts/install-kimi.sh
-docker-compose up -d
-# Visit http://localhost:8084/dashboard
+**A:** The bridge is idempotent. Same slug = overwrites existing file with updated content. Git maintains full history.
+
+### Q: Can I use this with multiple RankYak accounts?
+
+**A:** Yes. Deploy separate Vercel instances with different `GITHUB_REPO` values, or use `CONTENT_DIR` to separate content:
+```
+CONTENT_DIR=_posts/account1  # First account
+CONTENT_DIR=_posts/account2  # Second account
 ```
 
-**Your monitoring stack now has an AI project manager! 🚀**
->>>>>>> origin/feat/ai-connectivity-layer
+### Q: Does this work with GitHub Enterprise?
+
+**A:** Yes. Set `GITHUB_API_URL` environment variable:
+```bash
+GITHUB_API_URL=https://github.your-company.com/api/v3
+```
+
+### Q: What if Unito is down?
+
+**A:** Content still commits to GitHub. Unito syncs retroactively when it recovers. No data loss.
+
+### Q: Can I customize the PR template?
+
+**A:** Yes. Edit the `prBody` variable in `createPullRequest()` function.
+
+### Q: What about images in the article content?
+
+**A:** Images remain as URLs in Markdown. If you need to download and upload to your CDN, add custom logic:
+
+```javascript
+// Find all image URLs
+const images = content.match(/!\[.*?\]\((.*?)\)/g);
+
+// Download and upload each
+for (const img of images) {
+  const url = img.match(/\((.*?)\)/)[1];
+  // Your upload logic here
+}
+```
+
+---
+
+## Support & Contributing
+
+### Documentation
+- [RankYak API Docs](https://docs.rankyak.com)
+- [GitHub API Reference](https://docs.github.com/en/rest)
+- [Unito Help Center](https://support.unito.io)
+- [Vercel Documentation](https://vercel.com/docs)
+
+### Repository
+- **GitHub:** [rankyak-github-bridge](https://github.com/YOUR-USERNAME/rankyak-github-bridge)
+- **Issues:** Report bugs and request features
+- **Pull Requests:** Contributions welcome!
+
+### Quick Links
+- [Deploy to Vercel](#quick-start)
+- [Configure Webhook](#4-configure-rankyak)
+- [View Logs](https://vercel.com/dashboard)
+- [Manage Unito](https://app.unito.io)
+
+---
+
+## License
+
+MIT License - Use freely in commercial and personal projects.
+
+---
+
+**Built for Lab-Verse by the community • Last updated: 2025-11-07**

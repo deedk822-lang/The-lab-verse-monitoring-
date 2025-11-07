@@ -2,31 +2,39 @@
 // RankYak → GitHub → Unito (→ Asana) Bridge
 
 import { Octokit } from '@octokit/rest';
-import utils from './util.js';
+import crypto from 'crypto';
+import fetch from 'node-fetch'; // Added fetch for Slack notification
 
 // Initialize GitHub client
-let octokit = new Octokit({
+const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN
 });
 
-// For testing purposes only, allow replacing the octokit instance.
-export function _setOctokitForTest(mockOctokit) {
-  if (process.env.NODE_ENV !== 'test') {
-    throw new Error('This function is only available in test environment');
-  }
-  octokit = mockOctokit;
-}
-
-// Configuration object with getters to ensure process.env is read at runtime.
-const appConfig = {
-  get owner() { return process.env.GITHUB_OWNER },
-  get repo() { return process.env.GITHUB_REPO },
-  get branch() { return process.env.GITHUB_BRANCH || 'main' },
-  get webhookSecret() { return process.env.WEBHOOK_SECRET },
-  get createPR() { return process.env.CREATE_PR === 'true' },
-  get slackWebhook() { return process.env.SLACK_WEBHOOK_URL },
-  get contentDir() { return process.env.CONTENT_DIR || '_posts' }
+// Configuration
+const config = {
+  owner: process.env.GITHUB_OWNER,
+  repo: process.env.GITHUB_REPO,
+  branch: process.env.GITHUB_BRANCH || 'main',
+  webhookSecret: process.env.WEBHOOK_SECRET,
+  createPR: process.env.CREATE_PR === 'true',
+  slackWebhook: process.env.SLACK_WEBHOOK_URL,
+  contentDir: process.env.CONTENT_DIR || '_posts'
 };
+
+/**
+ * Verify webhook signature from RankYak
+ */
+function verifySignature(payload, signature, secret) {
+  if (!signature || !secret) return false;
+
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = 'sha256=' + hmac.update(payload).digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(digest)
+  );
+}
 
 /**
  * Convert RankYak HTML to Markdown
@@ -35,20 +43,29 @@ function htmlToMarkdown(html) {
   if (!html) return '';
   
   return html
+    // Headers
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
     .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
     .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+    // Paragraphs
     .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+    // Links
     .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+    // Bold/Italic
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+    // Lists
     .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
     .replace(/<ul[^>]*>/gi, '\n')
     .replace(/<\/ul>/gi, '\n')
+    // Images
     .replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/gi, '![$2]($1)')
+    // Code
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
     .replace(/<pre[^>]*>(.*?)<\/pre>/gi, '```\n$1\n```\n')
+    // Clean up HTML tags
     .replace(/<[^>]*>/g, '')
+    // Clean up extra whitespace
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -108,7 +125,7 @@ ${body}
 function getFilePath(article) {
   const date = (article.published_at || new Date().toISOString()).split('T')[0];
   const slug = article.slug || generateSlug(article.title);
-  return `${appConfig.contentDir}/${date}-${slug}.md`;
+  return `${config.contentDir}/${date}-${slug}.md`;
 }
 
 /**
@@ -116,27 +133,30 @@ function getFilePath(article) {
  */
 async function commitToGitHub(filePath, content, commitMessage, article) {
   try {
+    // Get current file (if exists)
     let sha;
     try {
       const { data } = await octokit.repos.getContent({
-        owner: appConfig.owner,
-        repo: appConfig.repo,
+        owner: config.owner,
+        repo: config.repo,
         path: filePath,
-        ref: appConfig.branch
+        ref: config.branch
       });
       sha = data.sha;
     } catch (error) {
+      // File doesn't exist, that's okay
       sha = null;
     }
 
+    // Create or update file
     const { data } = await octokit.repos.createOrUpdateFileContents({
-      owner: appConfig.owner,
-      repo: appConfig.repo,
+      owner: config.owner,
+      repo: config.repo,
       path: filePath,
       message: commitMessage,
       content: Buffer.from(content).toString('base64'),
       sha: sha,
-      branch: appConfig.branch
+      branch: config.branch
     });
 
     return {
@@ -179,19 +199,22 @@ ${article.excerpt || 'No excerpt available'}
 `;
 
   try {
+    // Get base branch reference
     const { data: baseRef } = await octokit.git.getRef({
-      owner: appConfig.owner,
-      repo: appConfig.repo,
-      ref: `heads/${appConfig.branch}`
+      owner: config.owner,
+      repo: config.repo,
+      ref: `heads/${config.branch}`
     });
 
+    // Create new branch
     await octokit.git.createRef({
-      owner: appConfig.owner,
-      repo: appConfig.repo,
+      owner: config.owner,
+      repo: config.repo,
       ref: `refs/heads/${branchName}`,
       sha: baseRef.object.sha
     });
 
+    // Commit to new branch
     await commitToGitHub(
       filePath,
       content,
@@ -199,18 +222,20 @@ ${article.excerpt || 'No excerpt available'}
       article
     );
 
+    // Create pull request
     const { data: pr } = await octokit.pulls.create({
-      owner: appConfig.owner,
-      repo: appConfig.repo,
+      owner: config.owner,
+      repo: config.repo,
       title: prTitle,
       body: prBody,
       head: branchName,
-      base: appConfig.branch
+      base: config.branch
     });
 
+    // Add labels
     await octokit.issues.addLabels({
-      owner: appConfig.owner,
-      repo: appConfig.repo,
+      owner: config.owner,
+      repo: config.repo,
       issue_number: pr.number,
       labels: ['rankyak', 'content', 'needs-review']
     });
@@ -230,32 +255,47 @@ ${article.excerpt || 'No excerpt available'}
  * Send Slack notification
  */
 async function notifySlack(article, result) {
-  if (!appConfig.slackWebhook) return;
+  if (!config.slackWebhook) return;
 
   const message = {
     text: `📝 New content synced from RankYak`,
     blocks: [
       {
         type: 'header',
-        text: { type: 'plain_text', text: article.title }
+        text: {
+          type: 'plain_text',
+          text: article.title
+        }
       },
       {
         type: 'section',
         fields: [
-          { type: 'mrkdwn', text: `*Author:*\n${article.author?.name || 'Unknown'}` },
-          { type: 'mrkdwn', text: `*Status:*\n${result.pr ? 'PR Created' : 'Committed'}` }
+          {
+            type: 'mrkdwn',
+            text: `*Author:*\n${article.author?.name || 'Unknown'}`
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Status:*\n${result.pr ? 'PR Created' : 'Committed'}`
+          }
         ]
       },
       {
         type: 'section',
-        text: { type: 'mrkdwn', text: `*Tags:* ${(article.tags || []).join(', ') || 'None'}` }
+        text: {
+          type: 'mrkdwn',
+          text: `*Tags:* ${(article.tags || []).join(', ') || 'None'}`
+        }
       },
       {
         type: 'actions',
         elements: [
           {
             type: 'button',
-            text: { type: 'plain_text', text: result.pr ? 'View PR' : 'View Commit' },
+            text: {
+              type: 'plain_text',
+              text: result.pr ? 'View PR' : 'View Commit'
+            },
             url: result.url
           }
         ]
@@ -264,7 +304,7 @@ async function notifySlack(article, result) {
   };
 
   try {
-    await fetch(appConfig.slackWebhook, {
+    await fetch(config.slackWebhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message)
@@ -278,21 +318,25 @@ async function notifySlack(article, result) {
  * Main webhook handler
  */
 export default async function handler(req, res) {
+  // Only accept POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // Verify webhook signature
     const signature = req.headers['x-webhook-signature'];
     const rawBody = JSON.stringify(req.body);
     
-    if (!utils.verifySignature(rawBody, signature, appConfig.webhookSecret)) {
+    if (!verifySignature(rawBody, signature, config.webhookSecret)) {
       console.error('Invalid webhook signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
+    // Parse RankYak payload
     const { event, article } = req.body;
 
+    // Only handle publish events
     if (!event || !event.includes('published')) {
       return res.status(200).json({ 
         message: 'Event ignored',
@@ -300,17 +344,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validate article data
     if (!article || !article.title) {
       return res.status(400).json({ error: 'Invalid article data' });
     }
 
     console.log(`Processing article: ${article.title}`);
 
+    // Generate markdown content
     const content = createMarkdownContent(article);
     const filePath = getFilePath(article);
 
+    // Commit or create PR
     let result;
-    if (appConfig.createPR) {
+    if (config.createPR) {
       result = await createPullRequest(article, filePath, content);
       console.log(`PR created: ${result.url}`);
     } else {
@@ -323,11 +370,13 @@ export default async function handler(req, res) {
       console.log(`Committed: ${result.url}`);
     }
 
+    // Send notification
     await notifySlack(article, result);
 
+    // Return success
     return res.status(200).json({
       success: true,
-      message: appConfig.createPR ? 'Pull request created' : 'Content committed',
+      message: config.createPR ? 'Pull request created' : 'Content committed',
       file: filePath,
       url: result.url,
       unito_sync: 'Unito will sync this to Asana automatically'
@@ -337,16 +386,8 @@ export default async function handler(req, res) {
     console.error('Webhook processing error:', error);
     
     return res.status(500).json({
-      error: 'Processing failed',
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      success: false,
+      error: error.message
     });
   }
 }
-
-// Export config for Vercel
-export const config = {
-  api: {
-    bodyParser: true
-  }
-};

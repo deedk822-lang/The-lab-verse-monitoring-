@@ -1,4 +1,11 @@
-*.pyc
-__pycache__
+
+# Ignore node_modules, as they will be installed in the container
+node_modules
+
+# Ignore version control files
 .git
-.github
+.gitignore
+
+# Ignore local development files
+.env
+npm-debug.log

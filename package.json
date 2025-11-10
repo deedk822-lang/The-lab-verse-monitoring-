@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest --testPathIgnorePatterns=\\"test/ai-sdk.test.js|kimi-computer/test/ai-sdk.test.js\\"",
     "test:ai-sdk": "NODE_OPTIONS=--experimental-vm-modules npx jest test/ai-sdk.test.js",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules npx jest --watch"
   },

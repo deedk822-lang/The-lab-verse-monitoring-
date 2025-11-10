@@ -1,6 +1,11 @@
 export default {
   testEnvironment: 'node',
-  transform: {},
+  transform: {
+    '^.+\\.js$': 'babel-jest',
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!@automattic/mcp-wpcom-remote).+\\.js$',
+  ],
   globals: {
     'ts-jest': {
       useESM: true

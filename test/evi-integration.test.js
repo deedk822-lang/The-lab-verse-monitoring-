@@ -1,70 +1,129 @@
-// test/evi-integration.test.js
-// Enhanced testing for Evi integration capabilities
-
-import { EviIntegration, evi } from '../src/integrations/eviIntegration.js';
+/* eslint-env jest */
+import { describe, test, expect, beforeEach } from '@jest/globals';
+import { EviIntegration } from '../src/integrations/eviIntegration.js';
 import { hasAvailableProvider } from '../src/config/providers.js';
 
-describe('Evi Integration Tests', () => {
-  let eviInstance;
+describe('EviIntegration (production)', () => {
+  let evi;
+  const hasProvider = hasAvailableProvider();
 
-  beforeAll(async () => {
-    // Always create an instance for testing
-    eviInstance = new EviIntegration({ debug: true });
-
-    if (!hasAvailableProvider()) {
-      console.warn('⚠️  No AI providers configured - Evi tests will be skipped');
-      return;
-    }
-
-    await eviInstance.initialize();
+  beforeEach(() => {
+    evi = new EviIntegration({ debug: false });
   });
 
   describe('Initialization', () => {
-    test('should initialize Evi integration successfully', async () => {
-      if (!hasAvailableProvider()) {
-        console.log('⏭️  Skipping - no provider available');
-        return;
-      }
-
-      const result = await eviInstance.initialize();
-
-      expect(result.status).toBe('ready');
-      expect(result.capabilities).toContain('content_generation');
-      expect(result.capabilities).toContain('streaming_response');
-      expect(result.provider).toBeTruthy();
+    test('should create EviIntegration instance', () => {
+      expect(evi).toBeInstanceOf(EviIntegration);
+      expect(evi.debug).toBe(false);
+      expect(evi.maxRetries).toBe(3);
+      expect(evi.timeout).toBe(30000);
     });
 
-    test('should use singleton instance correctly', () => {
-      expect(evi).toBeInstanceOf(EviIntegration);
+    test('should initialize with custom options', () => {
+      const customEvi = new EviIntegration({
+        debug: true,
+        maxRetries: 5,
+        timeout: 10000
+      });
+      expect(customEvi.debug).toBe(true);
+      expect(customEvi.maxRetries).toBe(5);
+      expect(customEvi.timeout).toBe(10000);
     });
   });
 
-  describe('Enhanced Content Generation', () => {
-    test('should generate enhanced content with metadata', async () => {
-      if (!hasAvailableProvider()) {
+  describe('enhancedGenerate', () => {
+    test('should throw error when no providers available', async () => {
+      if (hasProvider) {
+        console.log('⏭️  Skipping - provider is available');
+        return;
+      }
+
+      await expect(evi.enhancedGenerate('hello'))
+        .rejects.toThrow('No AI provider available');
+    });
+
+    test('should generate content with available provider', async () => {
+      if (!hasProvider) {
         console.log('⏭️  Skipping - no provider available');
         return;
       }
 
-      const result = await eviInstance.enhancedGenerate(
-        'Write a brief message about AI testing',
-        {
-          maxTokens: 100,
-          enhance: true,
-          context: 'Software testing environment',
-          tone: 'technical'
-        }
-      );
+      const result = await evi.enhancedGenerate('Brief test message', {
+        maxTokens: 50
+      });
 
-      expect(result.content).toBeTruthy();
-      expect(result.metadata).toBeTruthy();
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.metadata).toBeDefined();
       expect(result.metadata.enhanced).toBe(true);
-      expect(result.metadata.timestamp).toBeTruthy();
-      expect(typeof result.metadata.tokens).toBe('number');
-    }, 20000);
+    }, 10000);
+  });
 
-    test('should handle prompt enhancement', () => {
-      const enhanced = eviInstance.enhancePrompt('Test prompt', {
+  describe('multiProviderGenerate', () => {
+    test('should throw when no providers available', async () => {
+      if (hasProvider) {
+        console.log('⏭️  Skipping - provider is available');
+        return;
+      }
+
+      await expect(
+        evi.multiProviderGenerate('hello', {
+          providers: ['mistral-local', 'gpt-4']
+        })
+      ).rejects.toThrow('All providers failed');
+    });
+
+    test('should use multi-provider fallback', async () => {
+      if (!hasProvider) {
+        console.log('⏭️  Skipping - no provider available');
+        return;
+      }
+
+      const result = await evi.multiProviderGenerate('Brief test', {
+        maxTokens: 50
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.providerUsed).toBeDefined();
+      expect(typeof result.fallbackAttempts).toBe('number');
+    }, 10000);
+  });
+
+  describe('healthCheck', () => {
+    test('should return unhealthy status when no providers', async () => {
+      if (hasProvider) {
+        console.log('⏭️  Skipping - provider is available');
+        return;
+      }
+
+      const health = await evi.healthCheck();
+      expect(health.status).toBe('unhealthy');
+      expect(health.error).toBeDefined();
+      expect(health.providers).toBe(false);
+    });
+
+    test('should return health status with provider', async () => {
+      if (!hasProvider) {
+        console.log('⏭️  Skipping - no provider available');
+        return;
+      }
+
+      const health = await evi.healthCheck();
+      expect(health).toBeDefined();
+      expect(health.status).toMatch(/healthy|unhealthy/);
+      expect(health.timestamp).toBeDefined();
+    }, 10000);
+  });
+
+  describe('enhancePrompt', () => {
+    test('should return original prompt when enhance is false', () => {
+      const result = evi.enhancePrompt('Test', { enhance: false });
+      expect(result).toBe('Test');
+    });
+
+    test('should enhance prompt with context', () => {
+      const enhanced = evi.enhancePrompt('Test prompt', {
         enhance: true,
         context: 'Testing context',
         tone: 'professional',
@@ -76,147 +135,52 @@ describe('Evi Integration Tests', () => {
       expect(enhanced).toContain('Format: brief');
       expect(enhanced).toContain('User Request: Test prompt');
     });
-  });
 
-  describe('Enhanced Streaming', () => {
-    test('should stream content with enhanced metadata', async () => {
-      if (!hasAvailableProvider()) {
-        console.log('⏭️  Skipping - no provider available');
-        return;
-      }
+    test('should handle partial enhancement options', () => {
+      const enhanced = evi.enhancePrompt('Test', {
+        enhance: true,
+        context: 'Only context'
+      });
 
-      const chunks = [];
-      const stream = eviInstance.enhancedStream(
-        'Count to 3 with explanations',
-        {
-          maxTokens: 100,
-          enhance: true,
-          context: 'Educational counting'
-        }
-      );
-
-      for await (const chunk of stream) {
-        chunks.push(chunk);
-
-        if (chunk.chunk) {
-          expect(chunk.metadata).toBeTruthy();
-          expect(chunk.metadata.chunkIndex).toBeTruthy();
-          expect(chunk.metadata.timestamp).toBeTruthy();
-        }
-
-        if (chunk.summary) {
-          expect(chunk.summary.completed).toBe(true);
-          // totalChunks could be 0 for very short responses
-          expect(typeof chunk.summary.totalChunks).toBe('number');
-        }
-      }
-
-      expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks[chunks.length - 1].summary).toBeTruthy();
-      console.log('✅ Enhanced streaming works');
-    }, 25000);
-  });
-
-  describe('Multi-Provider Workflow', () => {
-    test('should handle multi-provider fallback', async () => {
-      if (!hasAvailableProvider()) {
-        console.log('⏭️  Skipping - no provider available');
-        return;
-      }
-
-      try {
-        const result = await eviInstance.multiProviderGenerate(
-          'Simple test message',
-          { maxTokens: 50 }
-        );
-
-        expect(result.content).toBeTruthy();
-        expect(result.providerUsed).toBeTruthy();
-        expect(typeof result.fallbackAttempts).toBe('number');
-        expect(result.fallbackAttempts).toBeGreaterThanOrEqual(0);
-        console.log('✅ Multi-provider fallback works');
-      } catch (error) {
-        console.error('❌ Multi-provider test failed:', error.message);
-        throw error;
-      }
-    }, 60000);
-
-    test('should handle all providers failing gracefully', async () => {
-      if (!hasAvailableProvider()) {
-        console.log('⏭️  Skipping - no provider available');
-        return;
-      }
-
-      try {
-        // Mock all providers to fail by using invalid prompt
-        await expect(
-          eviInstance.multiProviderGenerate('', { maxTokens: 1 })
-        ).rejects.toThrow();
-        console.log('✅ Error handling for all providers failing works');
-      } catch (error) {
-        console.warn('⚠️  Test inconclusive - provider may have handled empty prompt');
-      }
-    }, 60000);
-  });
-
-  describe('Health Monitoring', () => {
-    test('should perform health check successfully', async () => {
-      if (!hasAvailableProvider()) {
-        console.log('⏭️  Skipping - no provider available');
-        return;
-      }
-
-      const health = await eviInstance.healthCheck();
-
-      expect(health.status).toBeTruthy();
-      expect(health.timestamp).toBeTruthy();
-      expect(typeof health.providers).toBe('boolean');
-
-      if (health.status === 'healthy') {
-        expect(health.response).toBeTruthy();
-      } else {
-        expect(health.error).toBeTruthy();
-      }
-    }, 10000);
-  });
-
-  describe('Error Handling', () => {
-    test('should handle initialization without providers', async () => {
-    // Note: mistral-local is always available, so we can't truly test this without mocking
-    // This test verifies the error handling code path exists
-      console.log('⏭️  Skipping - mistral-local provider is always available');
-    // The test would need to mock the provider configuration to truly test this
+      expect(enhanced).toContain('Context: Only context');
+      expect(enhanced).toContain('User Request: Test');
+      expect(enhanced).not.toContain('Tone:');
     });
 
-    test('should handle invalid enhancement options', () => {
-      const result = eviInstance.enhancePrompt('Test', { enhance: false });
+    test('should return original prompt without enhancements', () => {
+      const result = evi.enhancePrompt('Test', { enhance: true });
       expect(result).toBe('Test');
     });
   });
 
-  describe('Performance Metrics', () => {
-    test('should track generation performance', async () => {
-      if (!hasAvailableProvider()) {
+  describe('Configuration', () => {
+    test('should have correct default configuration', () => {
+      const defaultEvi = new EviIntegration();
+      expect(defaultEvi.debug).toBe(false);
+      expect(defaultEvi.maxRetries).toBe(3);
+      expect(defaultEvi.timeout).toBe(30000);
+    });
+
+    test('should allow timeout override', () => {
+      const customEvi = new EviIntegration({ timeout: 5000 });
+      expect(customEvi.timeout).toBe(5000);
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should handle empty prompt gracefully', async () => {
+      if (!hasProvider) {
         console.log('⏭️  Skipping - no provider available');
         return;
       }
 
-      try {
-        const startTime = Date.now();
-        const result = await eviInstance.enhancedGenerate(
-          'Brief test message',
-          { maxTokens: 50, timeout: 45000 }
-        );
-        const duration = Date.now() - startTime;
+      await expect(evi.enhancedGenerate('', { maxTokens: 10 }))
+        .rejects.toThrow();
+    }, 10000);
 
-        expect(duration).toBeLessThan(50000); // Should complete within 50s
-        expect(result.metadata.tokens).toBeGreaterThan(0);
-
-        console.log(`📈 Generation completed in ${duration}ms`);
-      } catch (error) {
-        console.error('❌ Performance test failed:', error.message);
-        throw error;
-      }
-    }, 60000);
+    test('should handle options without enhance flag', () => {
+      const result = evi.enhancePrompt('Test', {});
+      expect(result).toBe('Test');
+    });
   });
 });

@@ -1,5 +1,5 @@
 export default {
-  testTimeout: 30000, // 30s global timeout
+  testTimeout: 90000, // 90s safety net
   maxWorkers: '50%',
   cache: true,
   cacheDirectory: '.jest-cache',

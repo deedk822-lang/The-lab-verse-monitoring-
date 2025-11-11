@@ -22,7 +22,7 @@ router.get('/providers', async (req, res) => {
   try {
     const providers = getAvailableProviders();
     const testResults = await ProviderFactory.testAllProviders();
-    
+
     res.json({
       success: true,
       data: {
@@ -45,7 +45,7 @@ router.get('/providers/:provider', async (req, res) => {
   try {
     const { provider } = req.params;
     const result = await ProviderFactory.testProvider(provider);
-    
+
     res.json({
       success: true,
       data: result
@@ -65,7 +65,7 @@ router.get('/ayrshare', async (req, res) => {
   try {
     const isConnected = await ayrshareService.testConnection();
     const profile = isConnected ? await ayrshareService.getUserProfile() : null;
-    
+
     res.json({
       success: isConnected,
       message: isConnected ? 'Ayrshare connection successful' : 'Ayrshare connection failed',
@@ -91,7 +91,7 @@ router.post('/generate', async (req, res) => {
   try {
     const { ContentGenerator } = await import('../services/ContentGenerator.js');
     const contentGenerator = new ContentGenerator();
-    
+
     const testRequest = {
       topic: 'Artificial Intelligence in Content Creation',
       audience: 'marketing professionals',
@@ -104,7 +104,7 @@ router.post('/generate', async (req, res) => {
     };
 
     const result = await contentGenerator.generateContent(testRequest);
-    
+
     res.json({
       success: true,
       data: result
@@ -123,11 +123,11 @@ router.post('/generate', async (req, res) => {
 router.post('/ayrshare-workflow', async (req, res) => {
   try {
     const { topic = 'AI Technology Trends', platforms = 'twitter,linkedin' } = req.body;
-    
+
     // Step 1: Generate content
     const { ContentGenerator } = await import('../services/ContentGenerator.js');
     const contentGenerator = new ContentGenerator();
-    
+
     const contentRequest = {
       topic,
       audience: 'tech professionals',
@@ -144,7 +144,7 @@ router.post('/ayrshare-workflow', async (req, res) => {
     };
 
     const contentResult = await contentGenerator.generateContent(contentRequest);
-    
+
     if (!contentResult.success) {
       throw new Error(`Content generation failed: ${contentResult.error}`);
     }
@@ -188,7 +188,7 @@ router.post('/ayrshare-workflow', async (req, res) => {
 // Test webhook endpoint
 router.post('/webhook', (req, res) => {
   const { body, headers } = req;
-  
+
   logger.info('Webhook test received:', {
     headers: headers,
     body: body,
@@ -272,12 +272,12 @@ router.get('/redis', async (req, res) => {
   try {
     const { connectRedis } = await import('../utils/redis.js');
     const redis = await connectRedis();
-    
+
     // Test basic operations
     await redis.set('test:key', 'test:value', 'EX', 10);
     const value = await redis.get('test:key');
     await redis.del('test:key');
-    
+
     res.json({
       success: true,
       message: 'Redis connection successful',
@@ -306,22 +306,22 @@ router.post('/upload', (req, res) => {
 // Performance test including Ayrshare
 router.get('/performance', async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     // Test AI providers
     const providers = getAvailableProviders();
-    const testPromises = providers.map(provider => 
+    const testPromises = providers.map(provider =>
       ProviderFactory.testProvider(provider.id)
     );
-    
+
     // Test Ayrshare
     testPromises.push(ayrshareService.testConnection());
-    
+
     await Promise.all(testPromises);
-    
+
     const endTime = Date.now();
     const duration = endTime - startTime;
-    
+
     res.json({
       success: true,
       performance: {

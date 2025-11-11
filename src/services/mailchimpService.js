@@ -6,9 +6,9 @@ class MailChimpService {
     this.apiKey = process.env.MAILCHIMP_API_KEY;
     this.serverPrefix = process.env.MAILCHIMP_SERVER_PREFIX;
     this.listId = process.env.MAILCHIMP_LIST_ID;
-    this.baseURL = this.serverPrefix ? 
+    this.baseURL = this.serverPrefix ?
       `https://${this.serverPrefix}.api.mailchimp.com/3.0` : null;
-    
+
     if (!this.apiKey || !this.serverPrefix || !this.listId) {
       logger.warn('MailChimp not fully configured');
     }
@@ -24,7 +24,7 @@ class MailChimpService {
       }
 
       const { subject, content, fromName, replyTo, sendNow = true } = params;
-      
+
       // Create campaign
       const campaign = await axios.post(
         `${this.baseURL}/campaigns`,

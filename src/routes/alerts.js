@@ -1,5 +1,5 @@
-const express = require('express');
-const AlertService = require('../services/alertService');
+import express from 'express';
+import AlertService from '../services/alertService.js';
 
 const router = express.Router();
 const alerts = new AlertService();
@@ -14,4 +14,4 @@ router.post('/slack', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

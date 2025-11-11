@@ -23,9 +23,9 @@ router.post('/ayr', [
       });
     }
 
-    const { 
-      topic, 
-      platforms, 
+    const {
+      topic,
+      platforms,
       audience = 'general audience',
       tone = 'professional',
       provider = 'mistral-local',
@@ -34,9 +34,9 @@ router.post('/ayr', [
       includeEmail = false,
       emailSubject
     } = req.body;
-    
+
     const startTime = Date.now();
-    
+
     logger.info('Webhook received:', { topic, platforms, audience, tone });
 
     io.emit('ayrshare_progress', {
@@ -61,7 +61,7 @@ router.post('/ayr', [
     };
 
     logger.info('Generating content...');
-    
+
     io.emit('ayrshare_progress', {
       status: 'generating',
       message: 'Generating content with AI',
@@ -69,13 +69,13 @@ router.post('/ayr', [
     });
 
     const contentResult = await contentGenerator.generateContent(contentRequest);
-    
+
     if (!contentResult.success) {
       throw new Error(`Content generation failed: ${contentResult.error}`);
     }
 
     const { content } = contentResult;
-    
+
     logger.info('Content generated:', { length: content.length });
 
     const results = {
@@ -97,7 +97,7 @@ router.post('/ayr', [
         shortenLinks: true
       }
     });
-    
+
     results.social = postResult;
 
     // Send email if requested
@@ -115,10 +115,10 @@ router.post('/ayr', [
         replyTo: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
         sendNow: true
       });
-      
+
       results.email = emailResult;
     }
-    
+
     const totalTime = Date.now() - startTime;
     const socialSuccess = postResult.success;
     const emailSuccess = !includeEmail || results.email?.success;
@@ -160,8 +160,12 @@ router.post('/ayr', [
       });
     } else {
       const errors = [];
-      if (!socialSuccess) errors.push(`Social: ${postResult.error}`);
-      if (includeEmail && !emailSuccess) errors.push(`Email: ${results.email?.error}`);
+      if (!socialSuccess) {
+        errors.push(`Social: ${postResult.error}`);
+      }
+      if (includeEmail && !emailSuccess) {
+        errors.push(`Email: ${results.email?.error}`);
+      }
       throw new Error(`Distribution failed - ${errors.join(', ')}`);
     }
 
@@ -186,7 +190,7 @@ router.get('/test', async (req, res) => {
   try {
     const isConnected = await ayrshareService.testConnection();
     const profile = isConnected ? await ayrshareService.getUserProfile() : null;
-    
+
     res.json({
       success: isConnected,
       message: isConnected ? 'Ayrshare connected' : 'Ayrshare not connected',
@@ -206,7 +210,7 @@ router.get('/test/mailchimp', async (req, res) => {
   try {
     const isConnected = await mailchimpService.testConnection();
     const listInfo = isConnected ? await mailchimpService.getListInfo() : null;
-    
+
     res.json({
       success: isConnected,
       message: isConnected ? 'MailChimp connected' : 'MailChimp not connected',
@@ -230,7 +234,7 @@ router.get('/test/workflow', async (req, res) => {
   try {
     const ayrshareConnected = await ayrshareService.testConnection();
     const mailchimpConnected = await mailchimpService.testConnection();
-    
+
     res.json({
       success: ayrshareConnected || mailchimpConnected,
       message: 'Service status checked',

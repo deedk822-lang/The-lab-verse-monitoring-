@@ -17,7 +17,8 @@
     "lint": "eslint src test --ext .js",
     "lint:fix": "eslint src test --ext .js --fix",
     "prepare": "husky install || true",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "clean:test": "rm -rf .jest-cache coverage test-results"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
@@ -51,17 +52,15 @@
     "@babel/preset-env": "^7.28.5",
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
+    "@jest/globals": "^30.2.0",
     "babel-jest": "^29.7.0",
     "eslint": "^8.57.0",
     "husky": "^8.0.3",
     "jest": "^29.0.0",
- cursor/create-ci-performance-dashboard-8ca4
     "jest-html-reporter": "^3.10.2",
     "jest-junit": "^16.0.0",
     "lint-staged": "^15.2.0",
-
     "nock": "^14.0.10",
- main
     "nodemon": "^3.1.10",
     "supertest": "^6.3.3"
   },

@@ -113,7 +113,7 @@ export function getActiveProvider(preferredCategory = null) {
     );
 
     if (primaryProvider) {
-      const [name, config] = primaryProvider;
+      const [_name, config] = primaryProvider;
       console.log(`✅ Using preferred ${config.name} (${preferredCategory})`);
       return config.model;
     }
@@ -125,14 +125,14 @@ export function getActiveProvider(preferredCategory = null) {
     );
 
     if (fallbackProvider) {
-      const [name, config] = fallbackProvider;
+      const [_name, config] = fallbackProvider;
       console.log(`🔄 Falling back to ${config.name} (${config.category})`);
       return config.model;
     }
   }
 
   // Default: use highest priority available provider
-  const [name, config] = availableProviders[0];
+  const [_name, config] = availableProviders[0];
   console.log(`🎯 Using best available provider: ${config.name} (priority: ${config.priority})`);
   return config.model;
 }

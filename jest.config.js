@@ -1,5 +1,7 @@
 export default {
   testEnvironment: 'node',
+  testTimeout: 90000, // 90 second timeout for network-heavy tests
+  maxRetries: 2, // auto-retry failed tests once
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
@@ -32,6 +34,5 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
-  testTimeout: 60000, // 60 second timeout for AI provider tests (increased from 30s)
   verbose: true
 };

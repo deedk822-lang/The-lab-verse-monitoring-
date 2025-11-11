@@ -3,7 +3,7 @@ import axios from 'axios';
 import Redis from 'ioredis';
 import pino from 'pino';
 
-const logger = pino({ level: 'info' });
+const _logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: null
 });

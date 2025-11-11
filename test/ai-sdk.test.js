@@ -1,119 +1,109 @@
-// test/ai-sdk.test.js
-import { generateContent, streamContent } from '../src/services/contentGenerator.js';
-import { getActiveProvider, hasAvailableProvider } from '../src/config/providers.js';
+/* eslint-env jest */
+import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
-describe('Vercel AI SDK Integration', () => {
+/* --------------  mocks -------------- */
+const mockStreamText = jest.fn();
 
-  beforeAll(() => {
-    // Check if we have any provider available
-    if (!hasAvailableProvider()) {
-      console.warn('⚠️  No AI providers configured - tests will be skipped');
+// Mock the providers module
+jest.unstable_mockModule('../src/config/providers.js', () => ({
+  getActiveProvider: jest.fn(() => ({ id: 'mock-model' })),
+  getProviderByName: jest.fn((name) => {
+    if (name === 'not-found') {
+      return null;
     }
-  });
+    return { id: 'mock-model' };
+  }),
+  hasAvailableProvider: jest.fn(() => true)
+}));
 
-  test('provider availability check', () => {
-    const hasProvider = hasAvailableProvider();
-    console.log(`Provider available: ${hasProvider}`);
+// Mock the ai module
+jest.unstable_mockModule('ai', () => ({
+  streamText: mockStreamText
+}));
 
-    if (hasProvider) {
-      const provider = getActiveProvider();
-      expect(provider).toBeTruthy();
-    } else {
-      // If no provider, test passes but logs warning
-      expect(hasProvider).toBe(false);
-    }
+// Import AFTER mocking
+const { generateContent, streamContent } = await import('../src/services/contentGenerator.js');
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+/* ------------------------------------ */
+
+describe('Vercel AI SDK Integration (mocked)', () => {
+  test('provider availability check', async () => {
+    mockStreamText.mockReturnValue({
+      text: Promise.resolve('ok'),
+      textStream: (async function* () {
+        yield 'ok';
+      })()
+    });
+
+    const res = await generateContent('ping');
+    expect(res).toContain('ok');
   });
 
   test('generate content with available provider', async () => {
-    if (!hasAvailableProvider()) {
-      console.log('⏭️  Skipping - no provider available');
-      return;
-    }
+    mockStreamText.mockReturnValue({
+      text: Promise.resolve('Generated text'),
+      textStream: (async function* () {
+        yield 'Generated text';
+      })()
+    });
 
-    try {
-      const content = await generateContent('Write a short test message about AI', {
-        maxTokens: 100,
-        timeout: 30000
-      });
-
-      expect(content).toBeTruthy();
-      expect(typeof content).toBe('string');
-      expect(content.length).toBeGreaterThan(0);
-      console.log('✅ Generated content length:', content.length);
-    } catch (error) {
-      console.error('❌ Test failed:', error.message);
-      throw error;
-    }
-  }, 45000); // 45 second timeout
+    const res = await generateContent('Write a sentence');
+    expect(res).toBe('Generated text');
+  }, 10000);
 
   test('streaming content generation', async () => {
-    if (!hasAvailableProvider()) {
-      console.log('⏭️  Skipping - no provider available');
-      return;
+    async function* mockStreamGen() {
+      yield 'Hello ';
+      yield 'world';
     }
+
+    mockStreamText.mockReturnValue({
+      text: Promise.resolve('Hello world'),
+      textStream: mockStreamGen()
+    });
 
     const chunks = [];
-    try {
-      for await (const chunk of streamContent('Test streaming: count to 5', {
-        maxTokens: 50
-      })) {
-        chunks.push(chunk);
-      }
-
-      // Only assert if we actually got chunks
-      if (chunks.length === 0) {
-        console.warn('⚠️  No chunks received from streaming');
-        // Don't fail the test, just log a warning
-        return;
-      }
-
-      expect(chunks.length).toBeGreaterThan(0);
-
-      const fullContent = chunks.join('');
-      expect(fullContent.length).toBeGreaterThan(0);
-      console.log('✅ Streamed chunks:', chunks.length);
-    } catch (error) {
-      console.error('❌ Streaming error:', error.message);
-      throw error;
+    for await (const chunk of streamContent('Hello')) {
+      chunks.push(chunk);
     }
-  }, 45000);
-
-  test('error handling for invalid provider', async () => {
-    await expect(
-      generateContent('Test prompt', { provider: 'invalid-provider' })
-    ).rejects.toThrow();
-    console.log('✅ Invalid provider error handling works');
-  }, 60000);
-
-  test('error handling for missing prompt', async () => {
-    if (!hasAvailableProvider()) {
-      console.log('⏭️  Skipping - no provider available');
-      return;
-    }
-
-    await expect(
-      generateContent('')
-    ).rejects.toThrow();
+    expect(chunks.join('')).toBe('Hello world');
   });
 
-  test('timeout handling', async () => {
-    if (!hasAvailableProvider()) {
-      console.log('⏭️  Skipping - no provider available');
-      return;
-    }
+  test('error handling for invalid provider', async () => {
+    const { getProviderByName } = await import('../src/config/providers.js');
+    getProviderByName.mockReturnValueOnce(null);
 
-    try {
-      await expect(
-        generateContent('Write a very long essay about AI', {
-          maxTokens: 10000,
-          timeout: 100 // Very short timeout
-        })
-      ).rejects.toThrow();
-      console.log('✅ Timeout handling works correctly');
-    } catch (error) {
-      // If the test fails because the provider returned quickly,
-      // that's actually fine - just log it
-      console.log('⚠️  Timeout test inconclusive - provider may have been too fast');
-    }
+    await expect(generateContent('test', { provider: 'not-found' }))
+      .rejects.toThrow(/not.*available/i);
   }, 10000);
+
+  test('error handling for missing prompt', async () => {
+    mockStreamText.mockImplementation(() => {
+      throw new Error('Prompt is required');
+    });
+
+    await expect(generateContent(''))
+      .rejects.toThrow(/required|failed/i);
+  }, 10000);
+
+  test('timeout handling', async () => {
+    // Mock a slow response that will timeout
+    mockStreamText.mockReturnValue({
+      text: new Promise((resolve) => setTimeout(() => resolve('too slow'), 5000)),
+      textStream: (async function* () {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        yield 'too slow';
+      })()
+    });
+
+    await expect(generateContent('trigger timeout', { timeout: 50 }))
+      .rejects.toThrow(/timed out/i);
+  });
 });

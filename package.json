@@ -16,6 +16,10 @@
     "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/google": "^2.0.27",
     "@ai-sdk/openai": "^1.0.0",
+    "@automattic/mcp-wpcom-remote": "0.2.16",
+    "@octokit/rest": "^20.0.2",
+    "@octokit/core": "^5.0.2",
+    "@octokit/auth-app": "^6.0.1",
     "ai": "^4.0.0",
     "axios": "^1.7.0",
     "cluster": "^0.7.7",
@@ -33,8 +37,7 @@
     "prom-client": "^15.1.3",
     "rate-limit-redis": "^4.2.3",
     "socket.io": "^4.7.0",
-    "winston": "^3.18.3",
-    "@automattic/mcp-wpcom-remote": "0.2.16"
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.25.0",

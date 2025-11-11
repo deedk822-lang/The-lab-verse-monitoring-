@@ -60,7 +60,7 @@ app.post('/catch', async (req, res) => {
     if (!req.body.prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
-    
+
     const content = await generateContent(req.body.prompt);
     res.json({
       content,
@@ -95,14 +95,14 @@ io.on('connection', (socket) => {
   });
 });
 
-app.use((req, res) => {
+app.use((req, res, _next) => {
   res.status(404).json({
     error: 'Not Found',
     path: req.path
   });
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   logger.error('Server error:', err);
   res.status(500).json({
     error: 'Internal Server Error',

@@ -34,18 +34,24 @@ export async function generateContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7,
+      temperature: options.temperature || 0.7
     });
 
-    // Create timeout promise
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), options.timeout || 30000)
-    );
+    // Create timeout promise with cleanup
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Request timed out')), options.timeout || 30000);
+    });
 
     // Race between content generation and timeout
-    const text = await Promise.race([result.text, timeoutPromise]);
-
-    return text;
+    try {
+      const text = await Promise.race([result.text, timeoutPromise]);
+      clearTimeout(timeoutId);
+      return text;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
 
   } catch (error) {
     console.error('❌ Content generation failed:', error.message);
@@ -73,7 +79,7 @@ export async function* streamContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7,
+      temperature: options.temperature || 0.7
     });
 
     for await (const chunk of textStream) {

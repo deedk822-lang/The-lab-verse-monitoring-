@@ -1,45 +1,34 @@
-# Use Node.js 18 LTS as base image
-FROM public.ecr.aws/docker/library/node:20-alpine
+# Use a slim Node.js image
+FROM node:18-slim
 
-# Set working directory
+# Set working directory FIRST
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    ffmpeg \
-    imagemagick \
-    redis
+# Create runtime directory explicitly
+RUN mkdir -p /app/runtime
 
-# Copy package files
+# Copy package files first (for better layer caching)
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm install --omit=dev
+# Install dependencies
+RUN npm install --production
 
-# Copy application code
-COPY . .
+# Copy the rest of the application code (with trailing slash)
+COPY . /app/
 
-# Create logs directory
-RUN mkdir -p logs
-
-# Create uploads directory
-RUN mkdir -p uploads
-
-# Set permissions
-RUN chown -R node:node /app
+# Create non-root user after copying files
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
 
 # Switch to non-root user
-USER node
+USER appuser
 
-# Expose port
+# Expose the port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node healthcheck.js
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["npm", "start"]
+# Start the server
+CMD ["node", "app.js"]

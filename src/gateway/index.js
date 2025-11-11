@@ -1,14 +1,14 @@
-const express = require('express');
-const helmet = require('helmet');
-const cors = require('cors');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const Redis = require('ioredis');
-const promClient = require('prom-client');
-const cluster = require('cluster');
-const os = require('os');
-const pino = require('pino');
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import Redis from 'ioredis';
+import * as promClient from 'prom-client';
+import cluster from 'cluster';
+import os from 'os';
+import pino from 'pino';
 
 const logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -37,7 +37,7 @@ const createRateLimiter = (win, max) => rateLimit({
   standardHeaders: true
 });
 
-function createApp() {
+async function createApp() {
   const app = express();
   app.use(helmet());
   app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
@@ -62,10 +62,10 @@ function createApp() {
   const strict  = createRateLimiter(15 * 60 * 1000, 100);
   app.use(general);
 
-  const auth = require('../middleware/auth');
-  app.use('/api/video',      strict, auth, require('../routes/video'));
-  app.use('/api/text-to-speech', strict, auth, require('../routes/tts'));
-  app.use('/api/alerts',     require('../routes/alerts'));
+  const auth = (await import('../middleware/auth.js')).default;
+  app.use('/api/video',      strict, auth, (await import('../routes/video.js')).default);
+  app.use('/api/text-to-speech', strict, auth, (await import('../routes/tts.js')).default);
+  app.use('/api/alerts',     (await import('../routes/alerts.js')).default);
 
   app.use((err, _req, res, _next) => {
     logger.error(err);
@@ -74,14 +74,19 @@ function createApp() {
   return app;
 }
 
-if (cluster.isMaster) {
+if (cluster.isPrimary) {
   const cpus = os.cpus().length;
   logger.info(`Master ${process.pid} forking ${cpus}`);
-  for (let i = 0; i < cpus; i++) cluster.fork();
-  cluster.on('exit', (w) => { logger.warn(`Worker ${w.process.pid} died`); cluster.fork(); });
+  for (let i = 0; i < cpus; i++) {
+    cluster.fork();
+  }
+  cluster.on('exit', (w) => {
+    logger.warn(`Worker ${w.process.pid} died`);
+    cluster.fork();
+  });
 } else {
   const app = createApp();
   app.listen(process.env.PORT, () => logger.info(`Worker ${process.pid} started`));
 }
 
-module.exports = { createApp, redis };
+export { createApp, redis };

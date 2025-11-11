@@ -1,6 +1,7 @@
 export default {
-  testTimeout: 30000,          // 30s reasonable timeout
-  maxWorkers: '50%',           // Parallel execution
+  testEnvironment: 'node',
+  testTimeout: 30000,
+  maxWorkers: '50%',
   cache: true,
   cacheDirectory: '.jest-cache',
   
@@ -11,19 +12,23 @@ export default {
   modulePathIgnorePatterns: [
     '<rootDir>/scout-monetization/',
     '<rootDir>/.jest-cache/',
-    '<rootDir>/node_modules/'
+    '<rootDir>/node_modules/',
+    '<rootDir>/dist/',
+    '<rootDir>/build/'
   ],
   
   // Test match patterns
   testMatch: [
-    '**/test/**/*.test.js'
+    '**/test/**/*.test.js',
+    '!**/test/**/*.integration.test.js'
   ],
   
   // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',
-    '!src/**/__tests__/**'
+    '!src/**/__tests__/**',
+    '!src/**/*.config.js'
   ],
   
   coverageThreshold: {
@@ -38,5 +43,16 @@ export default {
   // Better error reporting
   verbose: true,
   detectOpenHandles: true,
-  forceExit: true // Prevent hanging tests
+  forceExit: true,
+  
+  // Transform configuration
+  transform: {},
+  
+  // Coverage reporters
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json-summary'
+  ]
 };

@@ -69,4 +69,30 @@ describe('Vercel AI SDK Integration (mocked)', () => {
     expect(provider).toBeTruthy();
     expect(provider).toBeDefined();
   });
+
+  test('timeout handling', async () => {
+    // Mock a slow response that will timeout
+    const timeouts = [];
+    mockStreamText.mockReturnValue({
+      text: new Promise((resolve) => {
+        const id = setTimeout(() => resolve('too slow'), 5000);
+        timeouts.push(id);
+      }),
+      textStream: (async function* () {
+        await new Promise(resolve => {
+          const id = setTimeout(resolve, 5000);
+          timeouts.push(id);
+        });
+        yield 'too slow';
+      })()
+    });
+
+    try {
+      await expect(generateContent('test', { timeout: 100 }))
+        .rejects.toThrow(/timed out/i);
+    } finally {
+      // Clean up any pending timeouts
+      timeouts.forEach(id => clearTimeout(id));
+    }
+  });
 });

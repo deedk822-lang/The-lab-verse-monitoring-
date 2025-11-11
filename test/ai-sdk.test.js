@@ -1,39 +1,32 @@
 /* eslint-env jest */
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-
-/* --------------  mocks -------------- */
-const mockStreamText = jest.fn();
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 
 // Mock the providers module
 jest.unstable_mockModule('../src/config/providers.js', () => ({
-  getActiveProvider: jest.fn(() => ({ id: 'mock-model' })),
+  getActiveProvider: jest.fn(() => ({ id: 'mock-model', provider: 'openai' })),
   getProviderByName: jest.fn((name) => {
     if (name === 'not-found') {
       return null;
     }
-    return { id: 'mock-model' };
+    return { id: 'mock-model', provider: 'openai' };
   }),
   hasAvailableProvider: jest.fn(() => true)
 }));
 
-// Mock the ai module
+// Mock the AI SDK
+const mockStreamText = jest.fn();
 jest.unstable_mockModule('ai', () => ({
   streamText: mockStreamText
 }));
 
-// Import AFTER mocking
+// Import after mocking
 const { generateContent, streamContent } = await import('../src/services/contentGenerator.js');
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-
-afterEach(() => {
-  jest.restoreAllMocks();
-});
-/* ------------------------------------ */
-
 describe('Vercel AI SDK Integration (mocked)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('provider availability check', async () => {
     mockStreamText.mockReturnValue({
       text: Promise.resolve('ok'),
@@ -43,6 +36,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
     });
 
     const res = await generateContent('ping');
+    expect(res).toBeDefined();
     expect(res).toContain('ok');
   });
 
@@ -84,14 +78,14 @@ describe('Vercel AI SDK Integration (mocked)', () => {
       .rejects.toThrow(/not.*available/i);
   }, 10000);
 
-  test('error handling for missing prompt', async () => {
+  test('error handling for API failure', async () => {
     mockStreamText.mockImplementation(() => {
-      throw new Error('Prompt is required');
+      throw new Error('API Error: Server Error');
     });
 
-    await expect(generateContent(''))
-      .rejects.toThrow(/required|failed/i);
-  }, 10000);
+    await expect(generateContent('test'))
+      .rejects.toThrow(/failed|error/i);
+  });
 
   test('timeout handling', async () => {
     // Mock a slow response that will timeout
@@ -103,7 +97,25 @@ describe('Vercel AI SDK Integration (mocked)', () => {
       })()
     });
 
-    await expect(generateContent('trigger timeout', { timeout: 50 }))
+    await expect(generateContent('test', { timeout: 100 }))
       .rejects.toThrow(/timed out/i);
+  });
+
+  test('respects maxTokens and temperature options', async () => {
+    mockStreamText.mockReturnValue({
+      text: Promise.resolve('response'),
+      textStream: (async function* () {
+        yield 'response';
+      })()
+    });
+
+    await generateContent('test', { maxTokens: 100, temperature: 0.9 });
+
+    expect(mockStreamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxTokens: 100,
+        temperature: 0.9
+      })
+    );
   });
 });

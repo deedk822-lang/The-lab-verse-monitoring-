@@ -9,6 +9,7 @@ import { logger } from './utils/logger.js';
 import { generateContent, streamContent } from './services/contentGenerator.js';
 import { getActiveProvider } from './config/providers.js';
 import ayrshareRoutes from './routes/ayrshare.js';
+import researchHandler from '../api/research.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use(express.json());
 
 // Mount routes
 app.use('/api/ayrshare', ayrshareRoutes);
+app.post('/api/research', researchHandler);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -38,6 +40,7 @@ app.get('/', (req, res) => {
     status: 'running',
     endpoints: {
       health: '/health',
+      research: '/api/research',
       zapierWebhook: '/api/ayrshare/ayr',
       testWorkflow: '/api/ayrshare/test/workflow',
       contentGeneration: '/catch',

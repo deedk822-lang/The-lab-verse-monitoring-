@@ -2,12 +2,20 @@
 // Multi-provider fallback chain with native SDK support
 
 import { generateGroq, promptToMessages } from './groqProvider.js';
+import { generateWithParallelSearch } from './parallelProvider.js';
 import { generateContent } from '../services/contentGenerator.js';
 
 /**
  * Provider configurations for fallback chain
+ * Groq+Parallel is prioritized for real-time web research
  */
 const providers = [
+  { 
+    name: 'Groq+Parallel', 
+    fn: generateWithParallelSearch,
+    env: 'PARALLEL_API_KEY',
+    requiresMultiple: ['GROQ_API_KEY', 'PARALLEL_API_KEY']
+  },
   { 
     name: 'OpenAI', 
     fn: async ({ messages, temperature, max_tokens }) => {
@@ -76,6 +84,15 @@ export async function multiProviderGenerate(input, options = {}) {
     if (!process.env[p.env]) {
       console.log(`⚠️  ${p.name} skipped: ${p.env} not configured`);
       continue;
+    }
+    
+    // Check for providers requiring multiple API keys
+    if (p.requiresMultiple) {
+      const missingKeys = p.requiresMultiple.filter(key => !process.env[key]);
+      if (missingKeys.length > 0) {
+        console.log(`⚠️  ${p.name} skipped: missing ${missingKeys.join(', ')}`);
+        continue;
+      }
     }
     
     try {

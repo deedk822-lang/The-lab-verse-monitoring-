@@ -1,21 +1,47 @@
 export default {
-  testEnvironment: 'node',
-  testTimeout: 90000, // 90 second timeout for network-heavy tests
+  testTimeout: 30000, // 30s global timeout
+  maxWorkers: '50%',
+  cache: true,
+  cacheDirectory: '.jest-cache',
+  
+  // ESM support
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
   transformIgnorePatterns: [
     '/node_modules/(?!@automattic/mcp-wpcom-remote).+\\.js$',
   ],
-  globals: {
-    'ts-jest': {
-      useESM: true
+  
+  // Test patterns
+  testMatch: [
+    '**/test/**/*.test.js'
+  ],
+  
+  // Coverage
+  collectCoverageFrom: [
+    'src/**/*.js',
+    '!src/**/*.test.js',
+    '!src/**/__tests__/**',
+    '!src/index.js',
+    '!src/server.js'
+  ],
+  
+  coverageThreshold: {
+    global: {
+      branches: 60,
+      functions: 65,
+      lines: 70,
+      statements: 70
     }
   },
-  testMatch: ['**/test/**/*.test.js'],
+  
+  // Module ignores
   modulePathIgnorePatterns: [
-    '<rootDir>/scout-monetization/'
+    '<rootDir>/scout-monetization/',
+    '<rootDir>/.jest-cache/',
+    '<rootDir>/node_modules/'
   ],
+  
   testPathIgnorePatterns: [
     '/node_modules/',
     '/content-creator-ai/',
@@ -27,14 +53,10 @@ export default {
     '/dist/',
     '/build/'
   ],
+  
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/**/*.test.js',
-    '!src/index.js',
-    '!src/server.js'
-  ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
-  verbose: true
+  verbose: true,
+  testEnvironment: 'node'
 };

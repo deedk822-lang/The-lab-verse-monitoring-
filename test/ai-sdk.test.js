@@ -1,7 +1,7 @@
 /* eslint-env jest */
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { jest } from '@jest/globals';
 
-// Mock the providers module
+// Mock the providers module BEFORE any imports
 jest.unstable_mockModule('../src/config/providers.js', () => ({
   getActiveProvider: jest.fn(() => ({ id: 'mock-model', provider: 'openai' })),
   getProviderByName: jest.fn((name) => {
@@ -14,13 +14,14 @@ jest.unstable_mockModule('../src/config/providers.js', () => ({
 }));
 
 // Mock the AI SDK
-const mockStreamText = jest.fn();
 jest.unstable_mockModule('ai', () => ({
-  streamText: mockStreamText
+  streamText: jest.fn()
 }));
 
 // Import after mocking
 const { generateContent, streamContent } = await import('../src/services/contentGenerator.js');
+const { streamText } = await import('ai');
+const { getProviderByName } = await import('../src/config/providers.js');
 
 describe('Vercel AI SDK Integration (mocked)', () => {
   beforeEach(() => {
@@ -28,7 +29,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   });
 
   test('provider availability check', async () => {
-    mockStreamText.mockReturnValue({
+    streamText.mockReturnValue({
       text: Promise.resolve('ok'),
       textStream: (async function* () {
         yield 'ok';
@@ -41,7 +42,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   });
 
   test('generate content with available provider', async () => {
-    mockStreamText.mockReturnValue({
+    streamText.mockReturnValue({
       text: Promise.resolve('Generated text'),
       textStream: (async function* () {
         yield 'Generated text';
@@ -58,7 +59,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
       yield 'world';
     }
 
-    mockStreamText.mockReturnValue({
+    streamText.mockReturnValue({
       text: Promise.resolve('Hello world'),
       textStream: mockStreamGen()
     });
@@ -71,7 +72,6 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   });
 
   test('error handling for invalid provider', async () => {
-    const { getProviderByName } = await import('../src/config/providers.js');
     getProviderByName.mockReturnValueOnce(null);
 
     await expect(generateContent('test', { provider: 'not-found' }))
@@ -79,7 +79,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   }, 10000);
 
   test('error handling for API failure', async () => {
-    mockStreamText.mockImplementation(() => {
+    streamText.mockImplementation(() => {
       throw new Error('API Error: Server Error');
     });
 
@@ -90,7 +90,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   test('timeout handling', async () => {
     // Mock a slow response that will timeout
     const timeouts = [];
-    mockStreamText.mockReturnValue({
+    streamText.mockReturnValue({
       text: new Promise((resolve) => {
         const id = setTimeout(() => resolve('too slow'), 5000);
         timeouts.push(id);
@@ -114,7 +114,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   });
 
   test('respects maxTokens and temperature options', async () => {
-    mockStreamText.mockReturnValue({
+    streamText.mockReturnValue({
       text: Promise.resolve('response'),
       textStream: (async function* () {
         yield 'response';
@@ -123,7 +123,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
 
     await generateContent('test', { maxTokens: 100, temperature: 0.9 });
 
-    expect(mockStreamText).toHaveBeenCalledWith(
+    expect(streamText).toHaveBeenCalledWith(
       expect.objectContaining({
         maxTokens: 100,
         temperature: 0.9

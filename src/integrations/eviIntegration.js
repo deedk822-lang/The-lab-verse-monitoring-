@@ -3,6 +3,7 @@
 
 import { generateContent, streamContent } from '../services/contentGenerator.js';
 import { getActiveProvider, hasAvailableProvider } from '../config/providers.js';
+import { httpReq, tokenCounter, errorCounter } from '../metrics.js';
 
 /**
  * Evi Integration Class
@@ -116,6 +117,7 @@ export class EviIntegration {
     let lastError = null;
 
     for (const provider of providers) {
+      const end = httpReq.startTimer({ provider: provider, model: 'default' });
       try {
         console.log(`🔄 Attempting with provider: ${provider}`);
 
@@ -124,6 +126,8 @@ export class EviIntegration {
           provider
         });
 
+        end({ status: 'success' });
+        tokenCounter.inc({ provider: provider, model: 'default' }, Math.ceil(result.content.length / 4));
         console.log(`✅ Success with provider: ${provider}`);
         return {
           ...result,
@@ -132,6 +136,8 @@ export class EviIntegration {
         };
 
       } catch (error) {
+        end({ status: 'error' });
+        errorCounter.inc({ provider: provider, code: error.status || 500 });
         console.warn(`⚠️  Provider ${provider} failed: ${error.message}`);
         lastError = error;
         continue;

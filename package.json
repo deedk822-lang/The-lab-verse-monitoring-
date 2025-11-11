@@ -30,7 +30,7 @@
     "@octokit/core": "^5.0.2",
     "@octokit/rest": "^20.0.2",
     "ai": "^4.0.0",
-    "axios": "^1.7.0",
+    "axios": "^1.7.2",
     "cluster": "^0.7.7",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

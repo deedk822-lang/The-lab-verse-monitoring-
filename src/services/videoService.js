@@ -10,7 +10,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const logger = pino({ level: 'info' });
+const _logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_API_KEY);
 

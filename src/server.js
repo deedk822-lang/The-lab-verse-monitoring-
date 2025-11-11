@@ -9,6 +9,8 @@ import { logger } from './utils/logger.js';
 import { generateContent, streamContent } from './services/contentGenerator.js';
 import { getActiveProvider } from './config/providers.js';
 import ayrshareRoutes from './routes/ayrshare.js';
+import './pushToGrafana.js';
+import promClient from 'prom-client';
 
 dotenv.config();
 
@@ -44,6 +46,15 @@ app.get('/', (req, res) => {
       streaming: '/stream'
     }
   });
+});
+
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(await promClient.register.metrics());
+  } catch (ex) {
+    res.status(500).end(ex);
+  }
 });
 
 app.get('/health', async (req, res) => {

@@ -28,7 +28,7 @@ describe('EviIntegration (mocked)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     evi = new EviIntegration();
-    
+
     // Default mock response
     mockStreamText.mockReturnValue({
       text: Promise.resolve('AI answer'),
@@ -60,12 +60,12 @@ describe('EviIntegration (mocked)', () => {
 
   test('multiProviderGenerate falls back on failure', async () => {
     const { getProviderByName } = await import('../src/config/providers.js');
-    
+
     // First provider fails
     getProviderByName.mockReturnValueOnce(null);
     // Second provider succeeds
     getProviderByName.mockReturnValueOnce({ id: 'mock-anthropic', provider: 'anthropic' });
-    
+
     mockStreamText.mockReturnValue({
       text: Promise.resolve('Fallback answer'),
       textStream: (async function* () {
@@ -76,7 +76,7 @@ describe('EviIntegration (mocked)', () => {
     const res = await evi.multiProviderGenerate('hello', {
       providers: ['mistral-local', 'gpt-4']
     });
-    
+
     expect(res).toBeDefined();
     expect(res.providerUsed).toBeDefined();
   });
@@ -96,7 +96,7 @@ describe('EviIntegration (mocked)', () => {
 
   test('handles all providers failing', async () => {
     const { getProviderByName } = await import('../src/config/providers.js');
-    
+
     // All providers fail
     getProviderByName.mockReturnValue(null);
 
@@ -114,7 +114,7 @@ describe('EviIntegration (mocked)', () => {
       tone: 'professional',
       format: 'markdown'
     });
-    
+
     expect(enhanced).toContain('Context: test context');
     expect(enhanced).toContain('Tone: professional');
     expect(enhanced).toContain('Format: markdown');
@@ -126,7 +126,7 @@ describe('EviIntegration (mocked)', () => {
       enhance: false,
       context: 'should not appear'
     });
-    
+
     expect(result).toBe('test prompt');
   });
 });

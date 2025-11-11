@@ -1,5 +1,6 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals';
+
+// Global test setup
 
 // Only silence logs in CI environment
 if (process.env.CI === 'true') {
@@ -11,6 +12,3 @@ if (process.env.CI === 'true') {
     // Keep warn and error for debugging
   };
 }
-
-// Set reasonable timeout (30s, not 90s)
-jest.setTimeout(30000);

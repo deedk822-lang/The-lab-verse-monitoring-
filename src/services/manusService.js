@@ -6,7 +6,7 @@ class ManusService {
     this.apiKey = process.env.MANUS_API_KEY;
     this.baseURL = process.env.MANUS_BASE_URL || 'https://api.manus.ai/v1';
     this.model = process.env.MANUS_MODEL || 'manus-creative-v1';
-    
+
     if (!this.apiKey) {
       logger.warn('MANUS_API_KEY not found in environment variables');
     }
@@ -73,7 +73,7 @@ class ManusService {
 
       const result = response.data;
       const generatedContent = result.content || result.text || result.output;
-      
+
       logger.info('Manus AI content generated successfully:', {
         contentLength: generatedContent.length,
         contentType,
@@ -166,7 +166,7 @@ class ManusService {
 
       const result = response.data;
       const optimizedContent = result.optimized_content || result.content;
-      
+
       logger.info('Manus AI content optimized successfully:', {
         originalLength: content.length,
         optimizedLength: optimizedContent.length,
@@ -230,11 +230,17 @@ class ManusService {
       prompt += `Target platforms: ${platforms.join(', ')}\n`;
       prompt += `Brand voice: ${brandVoice}\n\n`;
       prompt += 'Requirements:\n';
-      
-      if (includeHashtags) prompt += '- Include relevant and trending hashtags\n';
-      if (includeEmojis) prompt += '- Use appropriate emojis to enhance engagement\n';
-      if (callToAction) prompt += '- Include a compelling call-to-action\n';
-      
+
+      if (includeHashtags) {
+        prompt += '- Include relevant and trending hashtags\n';
+      }
+      if (includeEmojis) {
+        prompt += '- Use appropriate emojis to enhance engagement\n';
+      }
+      if (callToAction) {
+        prompt += '- Include a compelling call-to-action\n';
+      }
+
       prompt += '- Optimize for each platform\'s best practices\n';
       prompt += '- Make it shareable and engaging\n';
       prompt += '- Ensure brand consistency';
@@ -254,7 +260,7 @@ class ManusService {
         const variants = [];
         for (let i = 0; i < 2; i++) {
           const variant = await this.generateContent({
-            prompt: prompt + `\n\nCreate a different variation with a fresh approach.`,
+            prompt: prompt + '\n\nCreate a different variation with a fresh approach.',
             contentType: 'social_media',
             style: brandVoice,
             creativity: 0.9,
@@ -312,7 +318,9 @@ class ManusService {
       } = params;
 
       let prompt = `Create compelling email content for: ${purpose}\n\n`;
-      if (subject) prompt += `Subject: ${subject}\n`;
+      if (subject) {
+        prompt += `Subject: ${subject}\n`;
+      }
       prompt += `Target audience: ${audience}\n`;
       prompt += `Tone: ${tone}\n\n`;
       prompt += 'Requirements:\n';
@@ -320,11 +328,11 @@ class ManusService {
       prompt += '- Write compelling opening that hooks the reader\n';
       prompt += '- Structure content with clear sections\n';
       prompt += '- Include clear call-to-action\n';
-      
+
       if (includePersonalization) {
         prompt += '- Add personalization elements\n';
       }
-      
+
       prompt += '- Optimize for email deliverability\n';
       prompt += '- Make it mobile-friendly';
 
@@ -440,7 +448,7 @@ class ManusService {
       'long': 3000,
       'very_long': 5000
     };
-    
+
     return lengthMap[length] || lengthMap['medium'];
   }
 }

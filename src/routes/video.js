@@ -1,7 +1,7 @@
-const express = require('express');
-const Joi = require('joi');
-const validate = require('../middleware/validate');
-const VideoService = require('../services/videoService');
+import express from 'express';
+import Joi from 'joi';
+import validate from '../middleware/validate.js';
+import VideoService from '../services/videoService.js';
 
 const router = express.Router();
 const service = new VideoService();
@@ -22,4 +22,4 @@ router.post('/generate', validate(schema), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

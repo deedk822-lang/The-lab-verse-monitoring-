@@ -5,7 +5,7 @@ class AyrshareService {
   constructor() {
     this.apiKey = process.env.AYRSHARE_API_KEY;
     this.baseURL = 'https://app.ayrshare.com/api';
-    
+
     if (!this.apiKey) {
       logger.warn('AYRSHARE_API_KEY not configured');
     }
@@ -21,7 +21,7 @@ class AyrshareService {
       }
 
       const { post, platforms, options = {} } = params;
-      
+
       let platformArray;
       if (typeof platforms === 'string') {
         platformArray = platforms.split(',').map(p => p.trim().toLowerCase());

@@ -20,14 +20,14 @@ export class EviIntegration {
    */
   async initialize() {
     console.log('🤖 Initializing Evi Integration...');
-    
+
     if (!hasAvailableProvider()) {
       throw new Error('No AI providers available for Evi integration');
     }
 
     const provider = getActiveProvider();
     console.log('✅ Evi Integration ready with provider:', provider);
-    
+
     return {
       status: 'ready',
       provider: provider,
@@ -45,7 +45,7 @@ export class EviIntegration {
    */
   async enhancedGenerate(prompt, options = {}) {
     const enhancedPrompt = this.enhancePrompt(prompt, options);
-    
+
     try {
       const result = await generateContent(enhancedPrompt, {
         maxTokens: options.maxTokens || 1000,
@@ -82,7 +82,7 @@ export class EviIntegration {
       for await (const chunk of streamContent(enhancedPrompt, options)) {
         chunkCount++;
         totalContent += chunk;
-        
+
         yield {
           chunk,
           metadata: {
@@ -118,7 +118,7 @@ export class EviIntegration {
     for (const provider of providers) {
       try {
         console.log(`🔄 Attempting with provider: ${provider}`);
-        
+
         const result = await this.enhancedGenerate(prompt, {
           ...options,
           provider
@@ -145,21 +145,26 @@ export class EviIntegration {
    * Enhance prompts with Evi context and capabilities
    */
   enhancePrompt(prompt, options = {}) {
-    if (!options.enhance) return prompt;
+    if (!options.enhance) {
+      return prompt;
+    }
 
     const enhancements = [];
-    
-    if (options.context) {
-      enhancements.push(`Context: ${options.context}`);\n    }
-    
-    if (options.tone) {
-      enhancements.push(`Tone: ${options.tone}`);\n    }
-    
-    if (options.format) {
-      enhancements.push(`Format: ${options.format}`);\n    }
 
-    const enhancedPrompt = enhancements.length > 0 
-      ? `${enhancements.join('\\n')}\\n\\nUser Request: ${prompt}`
+    if (options.context) {
+      enhancements.push(`Context: ${options.context}`);
+    }
+
+    if (options.tone) {
+      enhancements.push(`Tone: ${options.tone}`);
+    }
+
+    if (options.format) {
+      enhancements.push(`Format: ${options.format}`);
+    }
+
+    const enhancedPrompt = enhancements.length > 0
+      ? `${enhancements.join('\n')}\n\nUser Request: ${prompt}`
       : prompt;
 
     if (this.debug) {

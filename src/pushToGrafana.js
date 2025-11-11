@@ -5,7 +5,7 @@ import promClient from 'prom-client';
 const { GRAFANA_CLOUD_PROM_URL, GRAFANA_CLOUD_PROM_USER, GRAFANA_CLOUD_API_KEY } = process.env;
 
 export async function pushMetrics() {
-  if (!GRAFANA_CLOUD_PROM_URL) return;   // local dev-safe
+  if (!GRAFANA_CLOUD_PROM_URL) { return; }   // local dev-safe
 
   const metrics = await promClient.register.metrics();
   try {

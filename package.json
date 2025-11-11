@@ -11,8 +11,13 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
     "test:ai-sdk": "NODE_OPTIONS=--experimental-vm-modules npx jest test/ai-sdk.test.js",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules npx jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
+    "test:analyze": "NODE_OPTIONS=--experimental-vm-modules npx jest --listTests && node scripts/analyze-tests.js",
+    "test:performance": "NODE_OPTIONS=--experimental-vm-modules npx jest --detectOpenHandles --logHeapUsage",
     "lint": "eslint src test --ext .js",
-    "lint:fix": "eslint src test --ext .js --fix"
+    "lint:fix": "eslint src test --ext .js --fix",
+    "prepare": "husky install || true",
+    "precommit": "lint-staged"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
@@ -44,11 +49,26 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.5",
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
     "babel-jest": "^29.7.0",
     "eslint": "^8.57.0",
+    "husky": "^8.0.3",
     "jest": "^29.0.0",
+ cursor/create-ci-performance-dashboard-8ca4
+    "jest-html-reporter": "^3.10.2",
+    "jest-junit": "^16.0.0",
+    "lint-staged": "^15.2.0",
+
     "nock": "^14.0.10",
+ main
     "nodemon": "^3.1.10",
     "supertest": "^6.3.3"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "jest --bail --findRelatedTests"
+    ]
   }
 }

@@ -1,7 +1,7 @@
-const { Queue, Worker } = require('bullmq');
-const axios = require('axios');
-const Redis = require('ioredis');
-const pino = require('pino');
+import { Queue, Worker } from 'bullmq';
+import axios from 'axios';
+import Redis from 'ioredis';
+import pino from 'pino';
 
 const logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
@@ -25,4 +25,4 @@ class AlertService {
     return { queued: true };
   }
 }
-module.exports = AlertService;
+export default AlertService;

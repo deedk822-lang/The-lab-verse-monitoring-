@@ -60,7 +60,7 @@ app.post('/catch', async (req, res) => {
     if (!req.body.prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
-    
+
     const content = await generateContent(req.body.prompt);
     res.json({
       content,

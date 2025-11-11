@@ -51,18 +51,18 @@ export class ContentGenerator {
     let prompt = `Write ${length || 'medium'} length content about: ${topic}\n`;
     prompt += `Target audience: ${audience}\n`;
     prompt += `Tone: ${tone}\n`;
-    
+
     if (keywords.length > 0) {
       prompt += `Keywords: ${keywords.join(', ')}\n`;
     }
-    
+
     if (optimizeForSocial && platforms) {
       prompt += `Optimize for: ${platforms.join(', ')}\n`;
-      prompt += `Make it engaging with hooks and calls-to-action.\n`;
+      prompt += 'Make it engaging with hooks and calls-to-action.\n';
     }
-    
-    prompt += `\nGenerate the content now:`;
-    
+
+    prompt += '\nGenerate the content now:';
+
     return prompt;
   }
 

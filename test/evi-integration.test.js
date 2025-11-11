@@ -40,6 +40,8 @@ describe('Evi Integration Tests', () => {
   });
 
   describe('Enhanced Content Generation', () => {
+    jest.setTimeout(90000);
+
     test('should generate enhanced content with metadata', async () => {
       if (!hasAvailableProvider()) {
         console.log('⏭️  Skipping - no provider available');
@@ -118,6 +120,8 @@ describe('Evi Integration Tests', () => {
   });
 
   describe('Multi-Provider Workflow', () => {
+    jest.setTimeout(90000);
+
     test('should handle multi-provider fallback', async () => {
       if (!hasAvailableProvider()) {
         console.log('⏭️  Skipping - no provider available');
@@ -195,6 +199,8 @@ describe('Evi Integration Tests', () => {
   });
 
   describe('Performance Metrics', () => {
+    jest.setTimeout(90000);
+
     test('should track generation performance', async () => {
       if (!hasAvailableProvider()) {
         console.log('⏭️  Skipping - no provider available');

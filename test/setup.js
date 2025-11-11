@@ -1,37 +1,25 @@
-// Jest setup file for test configuration
-import dotenv from 'dotenv';
-import { jest } from '@jest/globals';
+/* eslint-env jest */
 
-// Load environment variables from .env.test or .env
-dotenv.config({ path: '.env.test' });
-dotenv.config({ path: '.env' });
+// Global test setup
 
-// Set test environment variables
-process.env.NODE_ENV = 'test';
+// Only silence logs in CI environment
+if (process.env.CI === 'true') {
+  global.console = {
+    ...console,
+    log: () => {}, // Silent but functional
+    debug: () => {},
+    info: () => {}
+    // Keep warn and error for debugging
+  };
+}
+ cursor/implement-stable-jest-mocking-for-test-isolation-d931
 
-// Suppress console logs during tests (unless explicitly needed)
-// Comment these out if you need to debug tests
-// global.console = {
-//   ...console,
-//   log: jest.fn(),
-//   debug: jest.fn(),
-//   info: jest.fn(),
-//   warn: jest.fn(),
-// };
+// Set reasonable timeout (30s, not 90s)
+jest.setTimeout(30000);
 
-// Configure default test timeouts for specific test patterns
-beforeEach(() => {
-  // Clear all mocks before each test
+// Clean up after each test
+afterEach(() => {
   jest.clearAllMocks();
 });
 
-// Global test utilities
-global.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock external services if no API keys are present
-if (!process.env.OPENAI_API_KEY &&
-    !process.env.ANTHROPIC_API_KEY &&
-    !process.env.PERPLEXITY_API_KEY &&
-    !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-  console.log('⚠️  No API keys found - tests will use mock responses');
-}
+ main

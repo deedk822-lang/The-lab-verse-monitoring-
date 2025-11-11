@@ -112,7 +112,7 @@ export class EviIntegration {
    * Multi-provider workflow with intelligent fallback
    */
   async multiProviderGenerate(prompt, options = {}) {
-    const providers = ['mistral-local', 'gpt-4', 'claude-sonnet'];
+    const providers = ['gpt-4', 'groq-llama', 'perplexity', 'claude-sonnet', 'gemini-pro', 'mistral'];
     let lastError = null;
 
     for (const provider of providers) {

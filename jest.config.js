@@ -1,7 +1,6 @@
 export default {
   testEnvironment: 'node',
   testTimeout: 90000, // 90 second timeout for network-heavy tests
-  maxRetries: 2, // auto-retry failed tests once
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
@@ -14,6 +13,9 @@ export default {
     }
   },
   testMatch: ['**/test/**/*.test.js'],
+  modulePathIgnorePatterns: [
+    '<rootDir>/scout-monetization/'
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/content-creator-ai/',

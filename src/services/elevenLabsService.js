@@ -504,10 +504,9 @@ class ElevenLabsService {
   /**
    * Get recommended voice for content type
    * @param {string} contentType - Type of content
-   * @param {string} audience - Target audience
    * @returns {string} - Recommended voice ID
    */
-  getRecommendedVoice(contentType, audience = 'general') {
+  getRecommendedVoice(contentType) {
     // This would ideally fetch from a database or configuration
     // For now, return some common voice IDs based on content type
     const voiceMap = {

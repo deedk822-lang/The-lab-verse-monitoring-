@@ -1,29 +1,29 @@
 export default {
-  testTimeout: 90000, // 90s safety net
-  maxWorkers: '50%',
+  testTimeout: 30000,          // 30s reasonable timeout
+  maxWorkers: '50%',           // Parallel execution
   cache: true,
   cacheDirectory: '.jest-cache',
   
-  // ESM support
-  transform: {
-    '^.+\\.js$': 'babel-jest',
-  },
-  transformIgnorePatterns: [
-    '/node_modules/(?!@automattic/mcp-wpcom-remote).+\\.js$',
+  // Setup file
+  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  
+  // Ignore patterns
+  modulePathIgnorePatterns: [
+    '<rootDir>/scout-monetization/',
+    '<rootDir>/.jest-cache/',
+    '<rootDir>/node_modules/'
   ],
   
-  // Test patterns
+  // Test match patterns
   testMatch: [
     '**/test/**/*.test.js'
   ],
   
-  // Coverage
+  // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',
-    '!src/**/__tests__/**',
-    '!src/index.js',
-    '!src/server.js'
+    '!src/**/__tests__/**'
   ],
   
   coverageThreshold: {
@@ -35,28 +35,8 @@ export default {
     }
   },
   
-  // Module ignores
-  modulePathIgnorePatterns: [
-    '<rootDir>/scout-monetization/',
-    '<rootDir>/.jest-cache/',
-    '<rootDir>/node_modules/'
-  ],
-  
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/content-creator-ai/',
-    '/kimi-computer/',
-    '/lapverse-ai-brain-trust/',
-    '/lapverse-alpha/',
-    '/lapverse-core/',
-    '/src/routes/test.js',
-    '/dist/',
-    '/build/'
-  ],
-  
-  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'html'],
+  // Better error reporting
   verbose: true,
-  testEnvironment: 'node'
+  detectOpenHandles: true,
+  forceExit: true // Prevent hanging tests
 };

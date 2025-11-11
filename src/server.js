@@ -31,7 +31,10 @@ app.use(express.json());
 app.use('/api/ayrshare', ayrshareRoutes);
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get('/', (_, res) => res.json({ uptime: process.uptime(), repo: 'the-lab-verse-monitoring' }));
+
+// Root endpoint
+app.get('/info', (req, res) => {
   res.json({
     name: 'Lab Verse Monitoring - AI Content Distribution',
     version: '1.0.0',

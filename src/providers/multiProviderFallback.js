@@ -114,7 +114,7 @@ export async function testAllProviders() {
   const testPrompt = 'Say "Hello from" followed by your model name in 5 words or less.';
   const results = {};
   
-  console.log('\n🧪 Testing all configured providers...\n');
+  console.log('\\n🧪 Testing all configured providers...\\n');
   
   for (const p of providers) {
     if (!process.env[p.env]) {

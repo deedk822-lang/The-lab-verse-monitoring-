@@ -14,3 +14,8 @@ if (process.env.CI === 'true') {
 
 // Set reasonable timeout (30s, not 90s)
 jest.setTimeout(30000);
+
+// Clean up after each test
+afterEach(() => {
+  jest.clearAllMocks();
+});

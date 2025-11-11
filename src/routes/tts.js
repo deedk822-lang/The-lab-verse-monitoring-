@@ -1,7 +1,7 @@
-const express = require('express');
-const Joi = require('joi');
-const validate = require('../middleware/validate');
-const TTSService = require('../services/ttsService');
+import express from 'express';
+import Joi from 'joi';
+import validate from '../middleware/validate.js';
+import TTSService from '../services/ttsService.js';
 
 const router = express.Router();
 const service = new TTSService();
@@ -16,7 +16,9 @@ const schema = Joi.object({
 router.post('/', validate(schema), async (req, res) => {
   try {
     const { audioBuffer, cached } = await service.generateSpeech(req.body.text, req.body);
-    if (cached) res.set('X-Cache', 'HIT');
+    if (cached) {
+      res.set('X-Cache', 'HIT');
+    }
     res.set({'Content-Type':'audio/mpeg','Content-Disposition':'attachment; filename="speech.mp3"'});
     res.send(audioBuffer);
   } catch (e) {
@@ -24,4 +26,4 @@ router.post('/', validate(schema), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,13 +1,16 @@
 /* eslint-env jest */
 import { jest } from '@jest/globals';
 
-// Silence console logs during tests unless they fail
-global.console = {
-  ...console,
-  log: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
-};
+// Only silence logs in CI environment
+if (process.env.CI === 'true') {
+  global.console = {
+    ...console,
+    log: () => {}, // Silent but functional
+    debug: () => {},
+    info: () => {}
+    // Keep warn and error for debugging
+  };
+}
 
-// Increase timeout for network-heavy suites
-jest.setTimeout(90000);
+// Set reasonable timeout (30s, not 90s)
+jest.setTimeout(30000);

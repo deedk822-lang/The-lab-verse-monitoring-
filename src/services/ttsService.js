@@ -1,4 +1,4 @@
-import { textToSpeech, getVoices } from 'elevenlabs-node';
+import { textToSpeech } from 'elevenlabs-node';
 import Redis from 'ioredis';
 import fs from 'fs/promises';
 import path from 'path';

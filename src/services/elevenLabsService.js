@@ -366,7 +366,6 @@ class ElevenLabsService {
         chapters = content.split(chapterBreak);
       }
 
-      const audioFiles = [];
       const results = {
         chapters: [],
         totalDuration: 0,

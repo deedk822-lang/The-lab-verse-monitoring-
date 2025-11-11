@@ -7,14 +7,14 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 export const providers = {
   // Primary OpenAI provider
   'gpt-4': {
-    model: process.env.OPENAI_API_KEY ? 
+    model: process.env.OPENAI_API_KEY ?
       createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4') : null,
     priority: 1,
     enabled: !!process.env.OPENAI_API_KEY,
     name: 'GPT-4',
     category: 'openai'
   },
-  
+
   // OpenAI fallback: Perplexity
   'perplexity': {
     model: process.env.PERPLEXITY_API_KEY ?
@@ -76,14 +76,15 @@ export const providers = {
     category: 'anthropic-fallback'
   },
 
-  // Local fallback (always available)
+  // Local fallback (only enabled if explicitly configured)
   'mistral-local': {
-    model: createOpenAI({
-      baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
-      apiKey: process.env.LOCALAI_API_KEY || 'localai',
-    })('mistral'),
+    model: (process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY) ?
+      createOpenAI({
+        baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
+        apiKey: process.env.LOCALAI_API_KEY || 'localai'
+      })('mistral') : null,
     priority: 10,
-    enabled: true,
+    enabled: !!(process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY),
     name: 'Mistral Local',
     category: 'local'
   }
@@ -110,7 +111,7 @@ export function getActiveProvider(preferredCategory = null) {
     const primaryProvider = availableProviders.find(
       ([_, config]) => config.category === preferredCategory
     );
-    
+
     if (primaryProvider) {
       const [name, config] = primaryProvider;
       console.log(`✅ Using preferred ${config.name} (${preferredCategory})`);
@@ -122,7 +123,7 @@ export function getActiveProvider(preferredCategory = null) {
     const fallbackProvider = availableProviders.find(
       ([_, config]) => config.category === fallbackCategory
     );
-    
+
     if (fallbackProvider) {
       const [name, config] = fallbackProvider;
       console.log(`🔄 Falling back to ${config.name} (${config.category})`);
@@ -152,24 +153,24 @@ export function getProviderByName(providerName, useFallback = true) {
 
   if (!provider.enabled || !provider.model) {
     console.warn(`❌ Provider ${providerName} (${provider.name}) is not available`);
-    
+
     if (useFallback) {
       console.log(`🔄 Attempting fallback for ${providerName}...`);
-      
+
       // OpenAI fallback chain: gpt-4 → perplexity → any available
       if (providerName === 'gpt-4') {
         return getActiveProvider('openai') || getActiveProvider();
       }
-      
+
       // Anthropic fallback chain: claude → mistral → gemini → groq → any available
       if (providerName === 'claude-sonnet') {
         return getActiveProvider('anthropic') || getActiveProvider();
       }
-      
+
       // For other providers, use general fallback
       return getActiveProvider();
     }
-    
+
     return null;
   }
 
@@ -190,8 +191,8 @@ export function getAvailableProviders() {
       priority: config.priority,
       enabled: config.enabled,
       available: config.enabled && !!config.model,
-      status: config.enabled && config.model ? '✅ Available' : 
-              config.enabled ? '⚠️ Configured but not working' : '❌ Not configured'
+      status: config.enabled && config.model ? '✅ Available' :
+        config.enabled ? '⚠️ Configured but not working' : '❌ Not configured'
     }))
     .sort((a, b) => a.priority - b.priority);
 }
@@ -213,7 +214,7 @@ export function getProviderStatus() {
   const total = available.length;
   const working = available.filter(p => p.available).length;
   const configured = available.filter(p => p.enabled).length;
-  
+
   return {
     total,
     configured,

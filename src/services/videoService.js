@@ -1,9 +1,14 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const Redis = require('ioredis');
-const fs = require('fs').promises;
-const path = require('path');
-const crypto = require('crypto');
-const pino = require('pino');
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Redis from 'ioredis';
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
+import pino from 'pino';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -20,11 +25,15 @@ class VideoService {
     const id = `v-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const key = `vid:${crypto.createHash('md5').update(JSON.stringify({ prompt, opts })).digest('hex')}`;
     const cached = await redis.get(key);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      return JSON.parse(cached);
+    }
 
     const result = await this.model.generateContent(`Create a ${opts.style || 'cinematic'} video: ${prompt}`);
     const url = result.response?.candidates?.[0]?.content?.parts?.[0]?.fileUri;
-    if (!url) throw new Error('No video URL returned');
+    if (!url) {
+      throw new Error('No video URL returned');
+    }
 
     const filePath = path.join(this.outDir, `${id}.mp4`);
     await fs.writeFile(filePath, Buffer.from(url)); // stub – replace with real download
@@ -33,4 +42,4 @@ class VideoService {
     return meta;
   }
 }
-module.exports = VideoService;
+export default VideoService;

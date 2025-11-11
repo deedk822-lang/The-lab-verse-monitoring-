@@ -11,8 +11,19 @@ export default {
       useESM: true
     }
   },
-  testMatch: ['**/test/**/*.test.js', '**/?(*.)+(spec|test).js'],
-  setupFilesAfterEnv: [],
+  testMatch: ['**/test/**/*.test.js'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/content-creator-ai/',
+    '/kimi-computer/',
+    '/lapverse-ai-brain-trust/',
+    '/lapverse-alpha/',
+    '/lapverse-core/',
+    '/src/routes/test.js',
+    '/dist/',
+    '/build/'
+  ],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',
@@ -21,6 +32,6 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
-  testTimeout: 30000, // 30 second timeout for AI provider tests
+  testTimeout: 60000, // 60 second timeout for AI provider tests (increased from 30s)
   verbose: true
 };

@@ -7,20 +7,20 @@ import { generateContent, streamContent } from './contentGenerator.js';
 (async () => {
   try {
     // Test content generation
-    const content = await generateContent("Write a short message about AI", {
+    const content = await generateContent('Write a short message about AI', {
       maxTokens: 100,
-      temperature: 0.7,
+      temperature: 0.7
     });
-    console.log("Generated Content:", content);
+    console.log('Generated Content:', content);
 
     // Test content streaming
-    console.log("\nStreamed Content:");
-    for await (const chunk of streamContent("Count to 5", {
-      maxTokens: 50,
+    console.log('\nStreamed Content:');
+    for await (const chunk of streamContent('Count to 5', {
+      maxTokens: 50
     })) {
       process.stdout.write(chunk);
     }
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error('Error:', error.message);
   }
 })();

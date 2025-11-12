@@ -19,7 +19,7 @@ router.post('/', validate(schema), async (req, res) => {
     if (cached) {
       res.set('X-Cache', 'HIT');
     }
-    res.set({'Content-Type':'audio/mpeg','Content-Disposition':'attachment; filename="speech.mp3"'});
+    res.set({ 'Content-Type':'audio/mpeg','Content-Disposition':'attachment; filename="speech.mp3"' });
     res.send(audioBuffer);
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -46,6 +46,92 @@ this.monthlyCosts = new Map();
 }
 
 /**
+* Get total cost
+*/
+getTotalCost() {
+    return Array.from(this.dailyCosts.values()).reduce((a, b) => a + b, 0);
+}
+
+/**
+* Get cost by service
+*/
+getCostByService() {
+    const byService = {};
+    for (const [key, cost] of this.dailyCosts.entries()) {
+        const [provider] = key.split(':');
+        byService[provider] = (byService[provider] || 0) + cost;
+    }
+    return byService;
+}
+
+/**
+* Check for cost alerts
+*/
+checkAlerts() {
+    return checkCostAlerts(this.getCostSummary());
+}
+
+/**
+* Get cost by period
+*/
+getCostByPeriod(period = 'day') {
+    const byPeriod = {};
+    const costs = period === 'day' ? this.dailyCosts : this.monthlyCosts;
+    for (const [key, cost] of costs.entries()) {
+        const [, date] = key.split(':');
+        byPeriod[date] = (byPeriod[date] || 0) + cost;
+    }
+    return byPeriod;
+}
+
+/**
+* Get metrics
+*/
+getMetrics() {
+    return {
+        total: this.getTotalCost(),
+        byService: this.getCostByService(),
+        daily: this.getCostByPeriod('day'),
+        monthly: this.getCostByPeriod('month')
+    };
+}
+
+/**
+* Project daily cost
+*/
+projectDailyCost() {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const secondsElapsed = (now.getTime() - startOfDay.getTime()) / 1000;
+    const secondsInDay = 24 * 60 * 60;
+    const dailyTotal = this.getCostSummary().total || 0;
+    if (secondsElapsed === 0) return 0;
+    return (dailyTotal / secondsElapsed) * secondsInDay;
+}
+
+/**
+* Project monthly cost
+*/
+projectMonthlyCost() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const secondsElapsed = (now.getTime() - startOfMonth.getTime()) / 1000;
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const secondsInMonth = daysInMonth * 24 * 60 * 60;
+    const monthlyTotal = Object.values(this.getCostSummary().monthly).reduce((a, b) => a + b, 0);
+    if (secondsElapsed === 0) return 0;
+    return (monthlyTotal / secondsElapsed) * secondsInMonth;
+}
+
+/**
+* Reset costs
+*/
+resetCosts() {
+    this.dailyCosts.clear();
+    this.monthlyCosts.clear();
+}
+
+/**
 * Track cost for an AI request
 */
 trackCost(provider, model, inputTokens, outputTokens) {

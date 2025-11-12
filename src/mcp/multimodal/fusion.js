@@ -208,7 +208,7 @@ export class MultiModalFusion {
   /**
    * Call Whisper STT API
    */
-  async callWhisper(audio) {
+  async callWhisper(_audio) {
     // Placeholder for Whisper API call
     return {
       text: 'Transcription result',
@@ -219,7 +219,7 @@ export class MultiModalFusion {
   /**
    * Call Open AI Vision API
    */
-  async callOpenAIVision(imageData) {
+  async callOpenAIVision(_imageData) {
     // Placeholder for OpenAI Vision API call
     return {
       description: 'OpenAI Vision description',
@@ -230,7 +230,7 @@ export class MultiModalFusion {
   /**
    * Call Qwen Vision API
    */
-  async callQwenVision(imageData) {
+  async callQwenVision(_imageData) {
     // Placeholder for Qwen Vision API call
     return {
       description: 'Qwen Vision description',

@@ -1,3 +1,6 @@
+import openlit from 'openlit';
+
+openlit.init();
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

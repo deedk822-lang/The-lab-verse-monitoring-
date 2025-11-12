@@ -1,4 +1,4 @@
-import openlit from "openlit";
+import openlit from 'openlit';
 
 openlit.init();
 import express from 'express';

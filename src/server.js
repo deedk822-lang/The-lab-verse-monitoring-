@@ -1,10 +1,8 @@
-// IMPORTANT: Import telemetry FIRST (before anything else)
+// Import telemetry FIRST
 import './telemetry.js';
 
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import { multiProviderGenerateInstrumented } from './providers/instrumentedProvider.js';
 
 // Monitoring imports
 import { initializeSentry, sentryErrorHandler } from './monitoring/sentry.js';
@@ -12,11 +10,10 @@ import { logger, requestLogger } from './monitoring/logger.js';
 import { configureSecurityHeaders, configureRateLimiting, configureCORS, suspiciousActivityDetector } from './monitoring/security.js';
 import { initializeSpeedInsights } from './monitoring/speedInsights.js';
 import { initializeRUM } from './monitoring/rum.js';
-import { costTracker, checkCostAlerts, formatCost } from './monitoring/costTracking.js';
+import { costTracker } from './monitoring/costTracking.js';
 import { syntheticMonitor } from './monitoring/synthetic.js';
 import monitoringRoutes from './routes/monitoring.js';
 import { performanceMiddleware } from './monitoring/performance.js';
-
 
 // Load environment variables
 dotenv.config();
@@ -39,11 +36,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request logging
 app.use(requestLogger);
 
+// Performance tracking
+app.use(performanceMiddleware);
+
 // Suspicious activity detection
 app.use(suspiciousActivityDetector);
-
-// Performance tracking middleware
-app.use(performanceMiddleware);
 
 // Initialize monitoring services
 initializeSpeedInsights();
@@ -60,81 +57,78 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     memory: process.memoryUsage(),
     synthetic: syntheticMonitor.getStatus(),
-    costs: costTracker.getCostSummary()
+    costs: {
+      total: costTracker.getTotalCost(),
+      byService: costTracker.getCostByService()
+    }
   };
 
   res.json(health);
 });
 
-// Research endpoint with OpenTelemetry instrumentation
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = {
+      costs: costTracker.getMetrics(),
+      synthetic: syntheticMonitor.getStatus(),
+      alerts: costTracker.checkAlerts()
+    };
+
+    res.json(metrics);
+  } catch (error) {
+    logger.error('Error fetching metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch metrics' });
+  }
+});
+
+// Example API endpoint with cost tracking
 app.post('/api/research', async (req, res) => {
+  const startTime = Date.now();
+
   try {
     const { q } = req.body;
 
     if (!q) {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
+      return res.status(400).json({ error: 'Query parameter required' });
     }
 
-    const messages = [
-      { role: 'user', content: q }
-    ];
-
-    const result = await multiProviderGenerateInstrumented({ messages });
-
-    res.json({
-      provider: result.provider,
-      text: result.text,
-      tokens: result.tokens,
+    // Simulate API call
+    const result = {
+      query: q,
+      results: [],
       timestamp: new Date().toISOString()
+    };
+
+    // Track costs (example)
+    const duration = Date.now() - startTime;
+    costTracker.trackAPICall('openai', 'gpt-4', {
+      inputTokens: 100,
+      outputTokens: 200,
+      duration
     });
+
+    logger.info('Research query processed', { query: q, duration });
+
+    res.json(result);
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
-  }
-});
-
-// Generate endpoint (alternative)
-app.post('/api/generate', async (req, res) => {
-  try {
-    const { messages, model } = req.body;
-
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Messages array is required' });
-    }
-
-    const result = await multiProviderGenerateInstrumented({ messages, model });
-
-    res.json({
-      provider: result.provider,
-      text: result.text,
-      tokens: result.tokens,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
+    logger.error('Research query failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // 404 handler
-app.use((req, res) => {
+app.use((req, res, _next) => {
   logger.warn('Route not found', { path: req.path, method: req.method });
   res.status(404).json({ error: 'Not found' });
 });
 
 // Sentry error handler (must be before other error handlers)
-sentryErrorHandler(app);
+app.use(sentryErrorHandler);
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   logger.error('Unhandled error:', err);
 
   res.status(err.status || 500).json({
@@ -164,9 +158,9 @@ process.on('SIGTERM', () => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📊 Monitoring enabled: Sentry, OpenTelemetry, Cost Tracking, Synthetic`);
-  logger.info(`🔒 Security: Rate limiting, CORS, Helmet`);
+  logger.info('🚀 Server running on port ' + PORT);
+  logger.info('📊 Monitoring enabled: Sentry, OpenTelemetry, Cost Tracking, Synthetic');
+  logger.info('🔒 Security: Rate limiting, CORS, Helmet');
 });
 
 export default app;

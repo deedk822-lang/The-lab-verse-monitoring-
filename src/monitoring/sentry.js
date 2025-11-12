@@ -24,7 +24,7 @@ export function initializeSentry(app) {
     ],
 
     // Filter sensitive data
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Remove sensitive headers
       if (event.request?.headers) {
         delete event.request.headers['authorization'];
@@ -40,7 +40,7 @@ export function initializeSentry(app) {
     },
 
     // Custom error grouping
-    beforeBreadcrumb(breadcrumb, hint) {
+    beforeBreadcrumb(breadcrumb, _hint) {
       if (breadcrumb.category === 'console') {
         return null; // Don't send console logs
       }

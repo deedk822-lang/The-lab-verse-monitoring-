@@ -17,8 +17,8 @@ unit: 's'
 export class SyntheticMonitor {
 constructor(config = {}) {
 this.endpoints = config.endpoints || [
-{ name: 'health', url: 'https://the-lab-verse-monitoring.vercel.app/health', method: 'GET' },
-{ name: 'api', url: 'https://the-lab-verse-monitoring.vercel.app/api/research', method: 'POST', body: { q: 'test' } }
+{ name: 'health', url: 'http://localhost:3001/health', method: 'GET' },
+{ name: 'api', url: 'http://localhost:3001/api/research', method: 'POST', body: { q: 'test' } }
 ];
 this.interval = config.interval || 60000; // 1 minute
 this.timeout = config.timeout || 10000; // 10 seconds

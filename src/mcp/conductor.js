@@ -78,6 +78,7 @@ export class AIConductor {
     const {
       prompt,
       optimize = 'balanced', // 'cost', 'quality', 'speed', 'balanced'
+      maxCost = null,
       fallback = true
     } = options;
 
@@ -120,8 +121,7 @@ export class AIConductor {
     const {
       prompt,
       models = ['gpt-4', 'claude-3', 'gemini-pro'],
-      threshold = 0.66,
-      maxCost = null
+      threshold = 0.66
     } = options;
 
     try {
@@ -135,9 +135,9 @@ export class AIConductor {
         results,
         threshold
       });
-      
+
       logger.info(`🗳️ Consensus: ${consensusResult.decision} (${consensusResult.confidence})`);
-      
+
       return consensusResult;
 
     } catch (error) {
@@ -245,9 +245,10 @@ export class AIConductor {
   async batch(options) {
     const {
       prompts,
-      maxCost,
       optimize = 'cost'
     } = options;
+
+    const maxCost = options.maxCost || null;
 
     try {
       let totalCost = 0;

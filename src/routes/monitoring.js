@@ -196,7 +196,7 @@ router.post('/synthetic/check', async (req, res) => {
  */
 router.get('/logs', (req, res) => {
   try {
-    const { level, limit = 100, offset = 0 } = req.query;
+    const { level: _level, limit: _limit = 100, offset: _offset = 0 } = req.query;
 
     // This is a placeholder - implement actual log retrieval
     // You might want to use a log aggregation service or database

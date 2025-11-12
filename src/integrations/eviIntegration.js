@@ -3,6 +3,7 @@
 
 import { generateContent, streamContent } from '../services/contentGenerator.js';
 import { getActiveProvider, hasAvailableProvider } from '../config/providers.js';
+import { httpReq, tokenCounter, errorCounter } from '../metrics.js';
 
 /**
  * Evi Integration Class
@@ -20,14 +21,14 @@ export class EviIntegration {
    */
   async initialize() {
     console.log('🤖 Initializing Evi Integration...');
-    
+
     if (!hasAvailableProvider()) {
       throw new Error('No AI providers available for Evi integration');
     }
 
     const provider = getActiveProvider();
     console.log('✅ Evi Integration ready with provider:', provider);
-    
+
     return {
       status: 'ready',
       provider: provider,
@@ -45,7 +46,7 @@ export class EviIntegration {
    */
   async enhancedGenerate(prompt, options = {}) {
     const enhancedPrompt = this.enhancePrompt(prompt, options);
-    
+
     try {
       const result = await generateContent(enhancedPrompt, {
         maxTokens: options.maxTokens || 1000,
@@ -82,7 +83,7 @@ export class EviIntegration {
       for await (const chunk of streamContent(enhancedPrompt, options)) {
         chunkCount++;
         totalContent += chunk;
-        
+
         yield {
           chunk,
           metadata: {
@@ -112,18 +113,21 @@ export class EviIntegration {
    * Multi-provider workflow with intelligent fallback
    */
   async multiProviderGenerate(prompt, options = {}) {
-    const providers = ['mistral-local', 'gpt-4', 'claude-sonnet'];
+    const providers = ['gpt-4', 'groq-llama', 'perplexity', 'claude-sonnet', 'gemini-pro', 'mistral'];
     let lastError = null;
 
     for (const provider of providers) {
+      const end = httpReq.startTimer({ provider: provider, model: 'default' });
       try {
         console.log(`🔄 Attempting with provider: ${provider}`);
-        
+
         const result = await this.enhancedGenerate(prompt, {
           ...options,
           provider
         });
 
+        end({ status: 'success' });
+        tokenCounter.inc({ provider: provider, model: 'default' }, Math.ceil(result.content.length / 4));
         console.log(`✅ Success with provider: ${provider}`);
         return {
           ...result,
@@ -132,6 +136,8 @@ export class EviIntegration {
         };
 
       } catch (error) {
+        end({ status: 'error' });
+        errorCounter.inc({ provider: provider, code: error.status || 500 });
         console.warn(`⚠️  Provider ${provider} failed: ${error.message}`);
         lastError = error;
         continue;
@@ -145,21 +151,26 @@ export class EviIntegration {
    * Enhance prompts with Evi context and capabilities
    */
   enhancePrompt(prompt, options = {}) {
-    if (!options.enhance) return prompt;
+    if (!options.enhance) {
+      return prompt;
+    }
 
     const enhancements = [];
-    
-    if (options.context) {
-      enhancements.push(`Context: ${options.context}`);\n    }
-    
-    if (options.tone) {
-      enhancements.push(`Tone: ${options.tone}`);\n    }
-    
-    if (options.format) {
-      enhancements.push(`Format: ${options.format}`);\n    }
 
-    const enhancedPrompt = enhancements.length > 0 
-      ? `${enhancements.join('\\n')}\\n\\nUser Request: ${prompt}`
+    if (options.context) {
+      enhancements.push(`Context: ${options.context}`);
+    }
+
+    if (options.tone) {
+      enhancements.push(`Tone: ${options.tone}`);
+    }
+
+    if (options.format) {
+      enhancements.push(`Format: ${options.format}`);
+    }
+
+    const enhancedPrompt = enhancements.length > 0
+      ? `${enhancements.join('\n')}\n\nUser Request: ${prompt}`
       : prompt;
 
     if (this.debug) {

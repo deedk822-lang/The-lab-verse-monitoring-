@@ -10,7 +10,7 @@ export const connectRedis = async () => {
 
   try {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-    
+
     redisClient = createClient({
       url: redisUrl,
       password: process.env.REDIS_PASSWORD || undefined,

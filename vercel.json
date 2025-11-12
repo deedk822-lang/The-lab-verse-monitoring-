@@ -2,27 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "app.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/api/$1"
+      "dest": "app.js"
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    }
-  },
-  "regions": ["iad1"]
+  }
 }

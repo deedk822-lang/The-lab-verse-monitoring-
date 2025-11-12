@@ -9,12 +9,12 @@ class ElevenLabsService {
     this.baseURL = 'https://api.elevenlabs.io/v1';
     this.defaultVoiceId = process.env.ELEVENLABS_DEFAULT_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'; // Adam voice
     this.outputDir = process.env.UPLOAD_DIR || './uploads';
-    
+
     // Ensure output directory exists
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir, { recursive: true });
     }
-    
+
     if (!this.apiKey) {
       logger.warn('ELEVENLABS_API_KEY not found in environment variables');
     }
@@ -92,7 +92,7 @@ class ElevenLabsService {
       });
 
       const fileStats = fs.statSync(filepath);
-      
+
       logger.info('Text-to-speech completed:', {
         filename,
         fileSize: fileStats.size,
@@ -279,34 +279,34 @@ class ElevenLabsService {
 
       // Platform-specific optimizations
       switch (platform.toLowerCase()) {
-        case 'tiktok':
-        case 'instagram':
-          voiceSettings.style = 0.3; // More expressive for short-form video
-          voiceSettings.stability = 0.6;
-          break;
-        case 'linkedin':
-          voiceSettings.stability = 0.7; // More stable for professional content
-          voiceSettings.style = 0.1;
-          break;
-        case 'youtube':
-          voiceSettings.similarity_boost = 0.9; // Higher quality for longer content
-          break;
+      case 'tiktok':
+      case 'instagram':
+        voiceSettings.style = 0.3; // More expressive for short-form video
+        voiceSettings.stability = 0.6;
+        break;
+      case 'linkedin':
+        voiceSettings.stability = 0.7; // More stable for professional content
+        voiceSettings.style = 0.1;
+        break;
+      case 'youtube':
+        voiceSettings.similarity_boost = 0.9; // Higher quality for longer content
+        break;
       }
 
       // Voice type adjustments
       switch (voiceType.toLowerCase()) {
-        case 'energetic':
-          voiceSettings.style = 0.4;
-          voiceSettings.stability = 0.4;
-          break;
-        case 'casual':
-          voiceSettings.style = 0.2;
-          voiceSettings.stability = 0.5;
-          break;
-        case 'professional':
-          voiceSettings.style = 0.1;
-          voiceSettings.stability = 0.7;
-          break;
+      case 'energetic':
+        voiceSettings.style = 0.4;
+        voiceSettings.stability = 0.4;
+        break;
+      case 'casual':
+        voiceSettings.style = 0.2;
+        voiceSettings.stability = 0.5;
+        break;
+      case 'professional':
+        voiceSettings.style = 0.1;
+        voiceSettings.stability = 0.7;
+        break;
       }
 
       // Add intro/outro if requested
@@ -315,7 +315,7 @@ class ElevenLabsService {
         processedContent = `Hello everyone! ${processedContent}`;
       }
       if (includeOutro) {
-        processedContent += ` Thanks for listening!`;
+        processedContent += ' Thanks for listening!';
       }
 
       const result = await this.textToSpeech({
@@ -366,7 +366,6 @@ class ElevenLabsService {
         chapters = content.split(chapterBreak);
       }
 
-      const audioFiles = [];
       const results = {
         chapters: [],
         totalDuration: 0,
@@ -384,7 +383,9 @@ class ElevenLabsService {
       // Generate audio for each chapter
       for (let i = 0; i < chapters.length; i++) {
         const chapter = chapters[i].trim();
-        if (chapter.length === 0) continue;
+        if (chapter.length === 0) {
+          continue;
+        }
 
         logger.info(`Generating audiobook chapter ${i + 1}/${chapters.length}`);
 
@@ -503,10 +504,9 @@ class ElevenLabsService {
   /**
    * Get recommended voice for content type
    * @param {string} contentType - Type of content
-   * @param {string} audience - Target audience
    * @returns {string} - Recommended voice ID
    */
-  getRecommendedVoice(contentType, audience = 'general') {
+  getRecommendedVoice(contentType) {
     // This would ideally fetch from a database or configuration
     // For now, return some common voice IDs based on content type
     const voiceMap = {
@@ -515,7 +515,7 @@ class ElevenLabsService {
       'energetic': '21m00Tcm4TlvDq8ikWAM',   // Rachel
       'storytelling': 'AZnzlk1XvdvUeBnXmlld', // Domi
       'news': 'pNInz6obpgDQGcFmaJgB',       // Adam
-      'educational': 'ErXwobaYiN019PkySvjV',  // Antoni
+      'educational': 'ErXwobaYiN019PkySvjV'  // Antoni
     };
 
     return voiceMap[contentType] || this.defaultVoiceId;
@@ -537,7 +537,7 @@ class ElevenLabsService {
         if (file.startsWith('tts_') && file.endsWith('.mp3')) {
           const filepath = path.join(this.outputDir, file);
           const stats = fs.statSync(filepath);
-          
+
           if (stats.mtime.getTime() < cutoffTime) {
             totalSize += stats.size;
             fs.unlinkSync(filepath);

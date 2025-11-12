@@ -10,14 +10,14 @@ class MCPService {
       model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
       version: '2023-06-01'
     };
-    
+
     // Mistral API configuration
     this.mistral = {
       apiKey: process.env.MISTRAL_API_KEY,
       baseURL: 'https://api.mistral.ai/v1',
       model: process.env.MISTRAL_MODEL || 'mistral-large-latest'
     };
-    
+
     // MCP servers configuration
     this.servers = {
       primary: {
@@ -29,13 +29,13 @@ class MCPService {
         apiKey: process.env.MCP_SECONDARY_API_KEY
       }
     };
-    
+
     this.defaultTimeout = 60000;
-    
+
     if (!this.claude.apiKey) {
       logger.warn('CLAUDE_API_KEY not found in environment variables');
     }
-    
+
     if (!this.mistral.apiKey) {
       logger.warn('MISTRAL_API_KEY not found in environment variables');
     }
@@ -115,7 +115,7 @@ class MCPService {
       );
 
       const content = response.data.content[0].text;
-      
+
       logger.info('Claude content generated successfully:', {
         contentLength: content.length,
         model: this.claude.model,
@@ -171,14 +171,14 @@ class MCPService {
       } = params;
 
       const messages = [];
-      
+
       if (systemPrompt) {
         messages.push({
           role: 'system',
           content: systemPrompt
         });
       }
-      
+
       messages.push({
         role: 'user',
         content: prompt
@@ -211,7 +211,7 @@ class MCPService {
       );
 
       const content = response.data.choices[0].message.content;
-      
+
       logger.info('Mistral content generated successfully:', {
         contentLength: content.length,
         model: this.mistral.model,
@@ -259,11 +259,11 @@ class MCPService {
       } = params;
 
       let result;
-      
+
       // Try preferred provider first
       if (preferredProvider === 'claude') {
         result = await this.generateWithClaude(otherParams);
-        
+
         // Fallback to Mistral if Claude fails and failover is enabled
         if (!result.success && useFailover && this.mistral.apiKey) {
           logger.info('Claude failed, attempting Mistral failover');
@@ -271,7 +271,7 @@ class MCPService {
         }
       } else if (preferredProvider === 'mistral') {
         result = await this.generateWithMistral(otherParams);
-        
+
         // Fallback to Claude if Mistral fails and failover is enabled
         if (!result.success && useFailover && this.claude.apiKey) {
           logger.info('Mistral failed, attempting Claude failover');
@@ -311,23 +311,23 @@ class MCPService {
       } = params;
 
       let systemPrompt = `You are a helpful customer support agent. Provide clear, accurate, and ${tone} responses to customer inquiries. `;
-      
+
       if (includeSteps) {
         systemPrompt += 'When appropriate, provide step-by-step instructions. ';
       }
-      
+
       systemPrompt += 'Always aim to resolve the customer\'s issue completely and offer additional help if needed.';
 
       let prompt = `Customer Query: ${customerQuery}\n\n`;
-      
+
       if (context.knowledgeBase) {
         prompt += `Knowledge Base Information:\n${context.knowledgeBase}\n\n`;
       }
-      
+
       if (context.customerHistory) {
         prompt += `Customer History:\n${context.customerHistory}\n\n`;
       }
-      
+
       prompt += 'Please provide a helpful response to the customer.';
 
       const result = await this.generateWithClaude({
@@ -374,16 +374,16 @@ class MCPService {
       let systemPrompt = 'You are a financial data analyst. Provide accurate, insightful analysis of financial data. ';
       systemPrompt += 'Focus on trends, patterns, and actionable insights. Present information clearly and professionally.';
 
-      let prompt = `Financial Data Analysis Request:\n\n`;
+      let prompt = 'Financial Data Analysis Request:\n\n';
       prompt += `Analysis Type: ${analysisType}\n`;
       prompt += `Timeframe: ${timeframe}\n\n`;
-      
+
       if (metrics.length > 0) {
         prompt += `Focus Metrics: ${metrics.join(', ')}\n\n`;
       }
-      
+
       prompt += `Data:\n${JSON.stringify(data, null, 2)}\n\n`;
-      
+
       if (includeRecommendations) {
         prompt += 'Please include actionable recommendations based on your analysis.';
       }
@@ -444,24 +444,24 @@ class MCPService {
       for (const language of targetLanguages) {
         let prompt = `Translate the following content to ${language}:\n\n${content}\n\n`;
         prompt += `Tone: ${tone}\n`;
-        
+
         if (culturalAdaptation) {
           prompt += 'Please adapt the content for the target culture and market, not just literal translation.';
         } else {
           prompt += 'Please provide an accurate, literal translation.';
         }
 
-        const translationResult = provider === 'mistral' 
-          ? await this.generateWithMistral({ 
-              prompt, 
-              maxTokens: 2000,
-              temperature: 0.3
-            })
-          : await this.generateWithClaude({ 
-              prompt, 
-              maxTokens: 2000,
-              temperature: 0.3 
-            });
+        const translationResult = provider === 'mistral'
+          ? await this.generateWithMistral({
+            prompt,
+            maxTokens: 2000,
+            temperature: 0.3
+          })
+          : await this.generateWithClaude({
+            prompt,
+            maxTokens: 2000,
+            temperature: 0.3
+          });
 
         if (translationResult.success) {
           results.translations[language] = translationResult.content;
@@ -472,7 +472,7 @@ class MCPService {
 
       logger.info('Multi-lingual content generation completed:', {
         targetLanguages,
-        successful: Object.keys(results.translations).filter(lang => 
+        successful: Object.keys(results.translations).filter(lang =>
           !results.translations[lang].startsWith('Translation failed')
         ).length
       });
@@ -537,10 +537,10 @@ class MCPService {
             await axios.get(`${server.url}/health`, { timeout: 5000 });
             results.mcpServers[serverName] = { configured: true, connected: true };
           } catch (error) {
-            results.mcpServers[serverName] = { 
-              configured: true, 
-              connected: false, 
-              error: error.message 
+            results.mcpServers[serverName] = {
+              configured: true,
+              connected: false,
+              error: error.message
             };
           }
         } else {

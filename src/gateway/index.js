@@ -37,7 +37,7 @@ const createRateLimiter = (win, max) => rateLimit({
   standardHeaders: true
 });
 
-function createApp() {
+async function createApp() {
   const app = express();
   app.use(helmet());
   app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
@@ -62,7 +62,7 @@ function createApp() {
   const strict  = createRateLimiter(15 * 60 * 1000, 100);
   app.use(general);
 
-  import auth from '../middleware/auth.js';
+  const auth = (await import('../middleware/auth.js')).default;
   app.use('/api/video',      strict, auth, (await import('../routes/video.js')).default);
   app.use('/api/text-to-speech', strict, auth, (await import('../routes/tts.js')).default);
   app.use('/api/alerts',     (await import('../routes/alerts.js')).default);
@@ -77,8 +77,13 @@ function createApp() {
 if (cluster.isPrimary) {
   const cpus = os.cpus().length;
   logger.info(`Master ${process.pid} forking ${cpus}`);
-  for (let i = 0; i < cpus; i++) cluster.fork();
-  cluster.on('exit', (w) => { logger.warn(`Worker ${w.process.pid} died`); cluster.fork(); });
+  for (let i = 0; i < cpus; i++) {
+    cluster.fork();
+  }
+  cluster.on('exit', (w) => {
+    logger.warn(`Worker ${w.process.pid} died`);
+    cluster.fork();
+  });
 } else {
   const app = createApp();
   app.listen(process.env.PORT, () => logger.info(`Worker ${process.pid} started`));

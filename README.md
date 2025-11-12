@@ -1,132 +1,140 @@
-# 🤖 AI Provider Monitoring - Python Agent Suite
+# 🤖 AI Provider Monitoring & Fallback Service
 
-Complete testing and monitoring toolkit for your AI provider infrastructure.
+This repository contains a Vercel serverless function that acts as a multi-provider fallback system for various AI models. It is instrumented with OpenTelemetry to provide detailed observability into performance, errors, and costs, sending all data to Grafana Cloud.
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Available Scripts](#available-scripts)
-- [Usage Examples](#usage-examples)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Observability with OpenTelemetry](#observability-with-opentelemetry)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## 🚀 Quick Start
+## ✨ Features
 
-### One-Command Setup
+- **Multi-Provider Fallback**: Automatically retries requests across multiple AI providers (e.g., OpenAI, Groq) to ensure high availability.
+- **Comprehensive Observability**: Uses OpenTelemetry to send traces, metrics, and logs to Grafana Cloud.
+- **Detailed Metrics**: Tracks request rates, error rates, latency percentiles, and token usage per provider and model.
+- **Distributed Tracing**: Provides end-to-end visibility into the lifecycle of each request.
+- **Deployable on Vercel**: Optimized for easy deployment as a serverless function.
+
+---
+
+## 🏗️ Architecture
+
+1.  **Client Request**: A client sends a request to the `/api/research` or `/api/generate` endpoint.
+2.  **Vercel Serverless Function**: The Node.js server, running on Vercel, receives the request.
+3.  **OpenTelemetry SDK**: The SDK, initialized first, automatically instruments incoming Express requests and outgoing HTTP calls.
+4.  **Instrumented Provider Logic**: The `multiProviderGenerateInstrumented` function attempts to call the primary AI provider (e.g., OpenAI).
+5.  **Fallback Logic**: If the primary provider fails, it automatically tries the next provider in the chain (e.g., Groq).
+6.  **Telemetry Export**: Throughout this process, the OpenTelemetry SDK captures spans (for traces) and metrics, exporting them asynchronously to the Grafana Cloud OTLP endpoint.
+7.  **Response**: The successful response from an AI provider is returned to the client.
+
+---
+
+## 📈 Observability with OpenTelemetry
+
+This service uses a robust OpenTelemetry setup to send telemetry data directly to Grafana Cloud's OTLP endpoint.
+
+### Required Environment Variables
+
+To enable observability, you must configure the following environment variables in your Vercel project:
+
+| Variable Name                  | Description                                                                                             | Example Value                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`  | The OTLP endpoint URL provided by Grafana Cloud.                                                        | `https://otlp-gateway-prod-us-central-0.grafana.net/otlp`                  |
+| `OTEL_EXPORTER_OTLP_PROTOCOL`  | The protocol to use for exporting data.                                                                 | `http/protobuf`                                                            |
+| `OTEL_EXPORTER_OTLP_HEADERS`   | The `Authorization` header, containing your Base64-encoded Grafana Cloud credentials.                     | `Authorization=Basic MTIzNDU2OmdsY19leUprSW...`                               |
+| `OTEL_SERVICE_NAME`            | The name of your service, which will appear in Grafana.                                                 | `ai-provider-monitoring`                                                   |
+| `OTEL_RESOURCE_ATTRIBUTES`     | Additional metadata for your service.                                                                   | `service.name=ai-provider-monitoring,deployment.environment=production`    |
+
+### How to Generate `OTEL_EXPORTER_OTLP_HEADERS`
+
+1.  Find your **Instance ID** and **API Token** in your Grafana Cloud OpenTelemetry connection settings.
+2.  Format them as a single string: `INSTANCE_ID:API_TOKEN`.
+3.  Base64-encode this string.
+
+**Example Command:**
 
 ```bash
-# Run the quick start script
-./quick-start.sh
+echo -n "YOUR_INSTANCE_ID:YOUR_API_TOKEN" | base64
 ```
 
-This script provides an interactive menu to run any of the available tools.
+### Verifying Data in Grafana Cloud
+
+After deploying and sending a few test requests, wait 30-60 seconds and then check Grafana Cloud:
+
+1.  **Traces (Tempo)**:
+    - Go to `Explore` → `Tempo` datasource.
+    - Search for traces where `service.name = "ai-provider-monitoring"`.
+    - You should see spans for `ai.generate` and `ai.multi_provider_generate`.
+
+2.  **Metrics (Prometheus)**:
+    - Go to `Explore` → `Prometheus` datasource.
+    - Use the Metrics browser to find metrics like `ai_provider_requests_total`, `ai_provider_errors_total`, and `ai_provider_request_duration_seconds`.
 
 ---
 
-## 🛠️ Installation
+## 🚀 Getting Started
 
-The `quick-start.sh` script handles dependency installation automatically. To install manually:
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/the-lab-verse-monitoring.git
+    cd the-lab-verse-monitoring
+    ```
 
-```bash
-pip3 install -r requirements.txt
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
----
+3.  **Set up environment variables:**
+    - Copy `.env.example` to `.env` and fill in your AI provider API keys.
+    - For deployment, add all required environment variables to your Vercel project settings.
 
-## ⚙️ Configuration
-
-Configuration is managed via environment variables.
-
-### Required
-
-- `VERCEL_URL`: The full URL to your Vercel API endpoint.
-  - **Default**: `https://the-lab-verse-monitoring.vercel.app/api/research`
-
-### Optional (for Grafana Integration)
-
-- `GRAFANA_CLOUD_PROM_URL`: The remote write URL for your Grafana Cloud Prometheus instance.
-- `GRAFANA_CLOUD_PROM_USER`: Your Grafana Cloud Prometheus username.
-- `GRAFANA_CLOUD_API_KEY`: A Grafana Cloud API key with `metrics:write` permissions.
+4.  **Deploy to Vercel:**
+    ```bash
+    vercel --prod
+    ```
 
 ---
 
-## 📜 Available Scripts
+## 🔑 Environment Variables
 
-### 1. `live_test_agent.py`
+See `.env.example` for a full list. Key variables include:
 
-A simple agent to send a single query to the endpoint, display the result, and push metrics to Grafana.
-
-**Usage:** `python3 live_test_agent.py "Your prompt here"`
-
-### 2. `test_suite.py`
-
-Runs a comprehensive suite of 8 test cases covering different categories (reasoning, code, math, etc.) and generates a detailed performance report.
-
-**Usage:** `python3 test_suite.py [rate_limit_delay_seconds]`
-
-### 3. `load_test.py`
-
-A powerful load testing tool with three modes:
-- `burst`: Send a quick burst of concurrent requests.
-- `ramp`: Gradually increase concurrency to find system limits.
-- `sustained`: Maintain a constant load for a specified duration.
-
-**Usage:**
-- `python3 load_test.py burst <num_requests>`
-- `python3 load_test.py ramp <max_concurrent> <step>`
-- `python3 load_test.py sustained <concurrent> <duration_seconds>`
-
-### 4. `monitor.py`
-
-A real-time dashboard that continuously polls the endpoint and displays rolling statistics, alerts, and performance ratings.
-
-**Usage:** `python3 monitor.py [interval_seconds]`
-
-### 5. `validate_metrics.py`
-
-Connects to your Grafana Cloud instance to validate that metrics are being received correctly. It checks for data freshness, SLO queries, and provider distribution.
-
-**Usage:** `python3 validate_metrics.py`
+- `OPENAI_API_KEY`: Your API key for OpenAI.
+- `GROQ_API_KEY`: Your API key for Groq.
+- All `OTEL_*` variables listed in the [Observability](#observability-with-opentelemetry) section for deployment.
 
 ---
 
-## 💡 Usage Examples
+## 📡 API Endpoints
 
-- **Run a single test:**
-  ```bash
-  python3 live_test_agent.py "What are the latest AI developments?"
-  ```
+-   **`POST /api/research`**:
+    -   Accepts a simple query.
+    -   **Body**: `{ "q": "Your question here" }`
 
-- **Run the full test suite with a 1-second delay between tests:**
-  ```bash
-  python3 test_suite.py 1
-  ```
+-   **`POST /api/generate`**:
+    -   Accepts a more complex request with messages and model selection.
+    -   **Body**: `{ "messages": [{ "role": "user", "content": "Hello" }], "model": "gpt-4" }`
 
-- **Simulate 20 concurrent users:**
-  ```bash
-  python3 load_test.py burst 20
-  ```
-
-- **Start the live monitoring dashboard with a 10-second refresh interval:**
-  ```bash
-  python3 monitor.py 10
-  ```
+-   **`GET /health`**:
+    -   A simple health check endpoint.
+    -   Returns the status and whether telemetry is enabled.
 
 ---
 
 ## 🔧 Troubleshooting
 
-- **`Python 3 not found`**: Ensure Python 3 is installed and available in your `PATH`.
-- **`ModuleNotFoundError`**: Run `pip3 install -r requirements.txt` to install dependencies.
-- **Grafana Push Errors**:
-  - Verify your `GRAFANA_CLOUD_*` environment variables are correct.
-  - Ensure your API key has the necessary permissions.
-  - Check for firewalls blocking the connection.
-- **Health Check Failed**:
-  - Verify the `VERCEL_URL` is correct and the service is deployed and running.
-- **Stale Data in Grafana Validator**:
-  - Run `live_test_agent.py` or `test_suite.py` to generate new metrics.
-  - Wait 30-60 seconds for the metrics to propagate in Grafana Cloud.
+-   **No data in Grafana**:
+    1.  **Verify Environment Variables**: Double-check all `OTEL_*` variables in your Vercel deployment settings. Ensure the Base64 value is correct.
+    2.  **Check Vercel Logs**: Run `vercel logs` and look for `"✅ OpenTelemetry initialized"`. If you see errors, they will likely point to an authentication or configuration issue.
+    3.  **Wait for Propagation**: It can take 1-2 minutes for the first batch of telemetry data to appear in Grafana.
+
+-   **`401 Unauthorized` errors in logs**:
+    -   This almost always means your `OTEL_EXPORTER_OTLP_HEADERS` value is incorrect. Regenerate your Base64-encoded credentials and update the variable in Vercel.

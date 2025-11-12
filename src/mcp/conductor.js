@@ -12,11 +12,11 @@ export class AIConductor {
     this.costOptimizer = new CostOptimizer();
     this.consensus = new ConsensusEngine();
     this.multiModal = new MultiModalFusion();
-    
+
     this.providers = new Map();
     this.loadProviders();
   }
-  
+
   loadProviders() {
     // AI Providers
     const aiProviders = [
@@ -33,7 +33,7 @@ export class AIConductor {
       { name: 'tongyi', key: process.env.TONGYI_API_KEY, tier: 'chinese' },
       { name: 'dashscope', key: process.env.DASHSCOPE_API_KEY, tier: 'chinese' }
     ];
-    
+
     // Integration Providers
     const integrations = [
       { name: 'elevenlabs', key: process.env.ELEVENLAPS_API_KEY, type: 'audio' },
@@ -43,7 +43,7 @@ export class AIConductor {
       { name: 'aryshare', key: process.env.ARYSHARE_API_KEY, type: 'social' },
       { name: 'newsai', key: process.env.NEWSAI_API_KEY, type: 'content' }
     ];
-    
+
     // Load AI providers
     aiProviders.forEach(provider => {
       if (provider.key) {
@@ -55,7 +55,7 @@ export class AIConductor {
         logger.info(`✅ Loaded AI provider: ${provider.name} (${provider.tier})`);
       }
     });
-    
+
     // Load integrations
     integrations.forEach(integration => {
       if (integration.key) {
@@ -67,10 +67,10 @@ export class AIConductor {
         logger.info(`✅ Loaded integration: ${integration.name} (${integration.type})`);
       }
     });
-    
+
     logger.info(`🎯 Total providers loaded: ${this.providers.size}`);
   }
-  
+
   /**
    * Smart Generate - Auto-routes based on optimization strategy
    */
@@ -78,15 +78,13 @@ export class AIConductor {
     const {
       prompt,
       optimize = 'balanced', // 'cost', 'quality', 'speed', 'balanced'
-      maxCost = null,
-      cache = false,
       fallback = true
     } = options;
-    
+
     try {
       // 1. Analyze prompt complexity
       const complexity = await this.analyzeComplexity(prompt);
-      
+
       // 2. Get optimal provider
       const provider = await this.router.selectProvider({
         complexity,
@@ -94,27 +92,27 @@ export class AIConductor {
         maxCost,
         availableProviders: Array.from(this.providers.keys())
       });
-      
+
       logger.info(`🎯 Routing to: ${provider.name} (${optimize} mode)`);
-      
+
       // 3. Execute with fallback
       const result = await this.executeWithFallback(provider, prompt, fallback);
-      
+
       // 4. Track costs
       await this.costOptimizer.track({
         provider: provider.name,
         cost: result.cost,
         tokens: result.usage
       });
-      
+
       return result;
-      
+
     } catch (error) {
       logger.error('Generate failed:', error);
       throw error;
     }
   }
-  
+
   /**
    * Consensus Voting - Query multiple models
    */
@@ -125,29 +123,29 @@ export class AIConductor {
       threshold = 0.66,
       maxCost = null
     } = options;
-    
+
     try {
       // Execute in parallel
       const results = await Promise.allSettled(
         models.map(model => this.executeSingle(model, prompt))
       );
-      
+
       // Analyze consensus
-      const consensus = await this.consensus.analyze({
+      const consensusResult = await this.consensus.analyze({
         results,
         threshold
       });
       
-      logger.info(`🗳️ Consensus: ${consensus.decision} (${consensus.confidence})`);
+      logger.info(`🗳️ Consensus: ${consensusResult.decision} (${consensusResult.confidence})`);
       
-      return consensus;
-      
+      return consensusResult;
+
     } catch (error) {
       logger.error('Consensus failed:', error);
       throw error;
     }
   }
-  
+
   /**
    * Multi-Modal Fusion - Combine text, image, audio, video
    */
@@ -156,13 +154,12 @@ export class AIConductor {
       text,
       image,
       audio,
-      video,
       providers = {}
     } = options;
-    
+
     try {
       const tasks = [];
-      
+
       // Vision task
       if (image) {
         tasks.push(this.multiModal.processVision({
@@ -170,7 +167,7 @@ export class AIConductor {
           provider: providers.vision || 'gemini-pro-vision'
         }));
       }
-      
+
       // Audio task
       if (audio || providers.audio) {
         tasks.push(this.multiModal.processAudio({
@@ -178,7 +175,7 @@ export class AIConductor {
           provider: providers.audio || 'elevenlabs'
         }));
       }
-      
+
       // Text task
       if (text) {
         tasks.push(this.multiModal.processText({
@@ -186,21 +183,21 @@ export class AIConductor {
           provider: providers.text || 'gpt-4'
         }));
       }
-      
+
       // Execute all tasks
       const results = await Promise.all(tasks);
-      
+
       // Fuse results
       const fused = await this.multiModal.fuse(results);
-      
+
       return fused;
-      
+
     } catch (error) {
       logger.error('Multi-modal fusion failed:', error);
       throw error;
     }
   }
-  
+
   /**
    * A/B Testing Engine
    */
@@ -210,10 +207,10 @@ export class AIConductor {
       metric,
       sampleSize = 100
     } = options;
-    
+
     try {
       const results = [];
-      
+
       for (const variant of variants) {
         const samples = await this.runSamples(variant, sampleSize);
         results.push({
@@ -222,26 +219,26 @@ export class AIConductor {
           score: this.calculateScore(samples, metric)
         });
       }
-      
+
       // Find winner
-      const winner = results.reduce((best, current) => 
+      const winner = results.reduce((best, current) =>
         current.score > best.score ? current : best
       );
-      
+
       logger.info(`🏆 A/B Test winner: ${winner.variant.model}`);
-      
+
       return {
         winner,
         results,
         improvement: this.calculateImprovement(results)
       };
-      
+
     } catch (error) {
       logger.error('A/B test failed:', error);
       throw error;
     }
   }
-  
+
   /**
    * Cost-Aware Batch Processing
    */
@@ -251,62 +248,62 @@ export class AIConductor {
       maxCost,
       optimize = 'cost'
     } = options;
-    
+
     try {
       let totalCost = 0;
       const results = [];
-      
+
       for (const prompt of prompts) {
         // Check budget
         if (maxCost && totalCost >= maxCost) {
           logger.warn(`💰 Budget limit reached: $${maxCost}`);
           break;
         }
-        
+
         // Execute with cost tracking
         const result = await this.generate({
           prompt,
           optimize,
           maxCost: maxCost ? maxCost - totalCost : null
         });
-        
+
         totalCost += result.cost;
         results.push(result);
       }
-      
+
       return {
         results,
         totalCost,
         processed: results.length,
         skipped: prompts.length - results.length
       };
-      
+
     } catch (error) {
       logger.error('Batch processing failed:', error);
       throw error;
     }
   }
-  
+
   /**
    * Execute with automatic fallback
    */
   async executeWithFallback(provider, prompt, enableFallback) {
     const fallbackChain = this.router.getFallbackChain(provider.name);
-    
+
     for (const providerName of fallbackChain) {
       try {
         const result = await this.executeSingle(providerName, prompt);
         return result;
       } catch (error) {
         logger.warn(`❌ ${providerName} failed, trying fallback...`);
-        
+
         if (!enableFallback || providerName === fallbackChain[fallbackChain.length - 1]) {
           throw error;
         }
       }
     }
   }
-  
+
   /**
    * Execute single provider call
    */
@@ -315,11 +312,11 @@ export class AIConductor {
     if (!plugin) {
       throw new Error(`Provider not found: ${providerName}`);
     }
-    
+
     const startTime = Date.now();
     const result = await plugin.execute('generate', { prompt });
     const duration = Date.now() - startTime;
-    
+
     return {
       ...result,
       provider: providerName,
@@ -327,7 +324,7 @@ export class AIConductor {
       cost: this.costOptimizer.calculateCost(providerName, result.usage)
     };
   }
-  
+
   /**
    * Analyze prompt complexity
    */
@@ -335,18 +332,18 @@ export class AIConductor {
     const wordCount = prompt.split(/\s+/).length;
     const hasCode = /```/.test(prompt);
     const hasMultiLang = /[\u4e00-\u9fa5]/.test(prompt); // Chinese chars
-    
+
     let score = 0;
     if (wordCount > 100) score += 2;
     if (wordCount > 500) score += 3;
     if (hasCode) score += 2;
     if (hasMultiLang) score += 1;
-    
+
     let complexity;
     if (score <= 2) complexity = 'simple';
     else if (score <= 5) complexity = 'moderate';
     else complexity = 'complex';
-    
+
     return {
       score,
       complexity,
@@ -355,13 +352,13 @@ export class AIConductor {
       hasMultiLang
     };
   }
-  
+
   /**
    * Get system status
    */
   async getStatus() {
     const providerStatus = [];
-    
+
     for (const [name, provider] of this.providers.entries()) {
       const health = await this.checkProviderHealth(name);
       providerStatus.push({
@@ -372,7 +369,7 @@ export class AIConductor {
         lastCheck: provider.lastCheck
       });
     }
-    
+
     return {
       totalProviders: this.providers.size,
       activeProviders: providerStatus.filter(p => p.status === 'healthy').length,
@@ -381,22 +378,22 @@ export class AIConductor {
       uptime: process.uptime()
     };
   }
-  
+
   /**
    * Check provider health
    */
   async checkProviderHealth(providerName) {
     const startTime = Date.now();
-    
+
     try {
       const plugin = this.gateway.plugins.get(providerName);
       if (!plugin) {
         return { status: 'unknown', latency: 0 };
       }
-      
+
       await plugin.healthCheck();
       const latency = Date.now() - startTime;
-      
+
       return { status: 'healthy', latency };
     } catch (error) {
       return { status: 'unhealthy', latency: 0, error: error.message };

@@ -96,7 +96,7 @@ export const providers = {
  * @returns {Object|null} The best available provider model
  */
 export function getActiveProvider(preferredCategory = null) {
-  let availableProviders = Object.entries(providers)
+  const availableProviders = Object.entries(providers)
     .filter(([_, config]) => config.enabled && config.model)
     .sort(([_, a], [__, b]) => a.priority - b.priority);
 

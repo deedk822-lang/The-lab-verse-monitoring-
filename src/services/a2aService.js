@@ -225,57 +225,57 @@ class A2AService {
     const { text, metadata } = payload;
 
     switch (target.toLowerCase()) {
-    case 'slack':
-      return {
-        text,
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text
-            }
-          }
-        ],
-        metadata
-      };
-
-    case 'teams':
-      return {
-        '@type': 'MessageCard',
-        '@context': 'https://schema.org/extensions',
-        text,
-        themeColor: '0078D4',
-        sections: [{
+      case 'slack':
+        return {
           text,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text
+              }
+            }
+          ],
           metadata
-        }]
-      };
+        };
 
-    case 'discord':
-      return {
-        content: text,
-        embeds: [{
-          description: text.substring(0, 2048), // Discord embed limit
-          timestamp: new Date().toISOString(),
-          footer: {
-            text: 'AI Content Suite'
-          }
-        }]
-      };
+      case 'teams':
+        return {
+          '@type': 'MessageCard',
+          '@context': 'https://schema.org/extensions',
+          text,
+          themeColor: '0078D4',
+          sections: [{
+            text,
+            metadata
+          }]
+        };
 
-    case 'zapier':
-    case 'ifttt':
-    case 'n8n':
-    case 'make':
-      return {
-        content: text,
-        metadata,
-        trigger_source: 'ai-content-suite'
-      };
+      case 'discord':
+        return {
+          content: text,
+          embeds: [{
+            description: text.substring(0, 2048), // Discord embed limit
+            timestamp: new Date().toISOString(),
+            footer: {
+              text: 'AI Content Suite'
+            }
+          }]
+        };
 
-    default:
-      return payload;
+      case 'zapier':
+      case 'ifttt':
+      case 'n8n':
+      case 'make':
+        return {
+          content: text,
+          metadata,
+          trigger_source: 'ai-content-suite'
+        };
+
+      default:
+        return payload;
     }
   }
 

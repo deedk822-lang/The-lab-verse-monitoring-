@@ -6,7 +6,7 @@ import path from 'path';
 
 // Mock the child_process module
 jest.unstable_mockModule('child_process', () => ({
-  spawn: jest.fn(),
+  spawn: jest.fn()
 }));
 
 const { spawn } = await import('child_process');
@@ -36,7 +36,7 @@ describe('MCP Server', () => {
     spawn.mockReturnValue({
       stdout: mockStdout,
       stderr: mockStderr,
-      on: mockOn,
+      on: mockOn
     });
   });
 
@@ -59,7 +59,7 @@ describe('MCP Server', () => {
     expect(spawn).toHaveBeenCalledWith(mcpPath, [
       'test',
       'arg1',
-      'arg2',
+      'arg2'
     ]);
   });
 });

@@ -92,7 +92,7 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
 
   } catch (error) {
     logger.error('Content generation failed:', error);
-    
+
     // Emit error update
     if (req.io) {
       req.io.emit('content_progress', {
@@ -131,7 +131,7 @@ router.get('/providers', (req, res) => {
 router.post('/test-provider', async (req, res) => {
   try {
     const { provider } = req.body;
-    
+
     if (!provider) {
       return res.status(400).json({
         success: false,
@@ -177,7 +177,7 @@ router.get('/content/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const content = await contentGenerator.getContentById(id);
-    
+
     if (!content) {
       return res.status(404).json({
         success: false,
@@ -203,7 +203,7 @@ router.get('/content/:id', async (req, res) => {
 router.post('/analyze', async (req, res) => {
   try {
     const { content, type = 'text', provider = 'google' } = req.body;
-    
+
     if (!content) {
       return res.status(400).json({
         success: false,
@@ -232,7 +232,7 @@ router.post('/analyze', async (req, res) => {
 router.post('/seo', async (req, res) => {
   try {
     const { topic, content, provider = 'google' } = req.body;
-    
+
     if (!topic || !content) {
       return res.status(400).json({
         success: false,
@@ -261,7 +261,7 @@ router.post('/seo', async (req, res) => {
 router.post('/social', async (req, res) => {
   try {
     const { topic, content, platforms = ['twitter', 'linkedin'], provider = 'google' } = req.body;
-    
+
     if (!topic || !content) {
       return res.status(400).json({
         success: false,

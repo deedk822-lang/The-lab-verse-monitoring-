@@ -1,26 +1,58 @@
 export default {
   testEnvironment: 'node',
-  transform: {
-    '^.+\\.js$': 'babel-jest',
-  },
-  transformIgnorePatterns: [
-    '/node_modules/(?!@automattic/mcp-wpcom-remote).+\\.js$',
+  testTimeout: 30000,
+  maxWorkers: '50%',
+  cache: true,
+  cacheDirectory: '.jest-cache',
+  
+  // Setup file
+  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  
+  // Ignore patterns
+  modulePathIgnorePatterns: [
+    '<rootDir>/scout-monetization/',
+    '<rootDir>/.jest-cache/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/dist/',
+    '<rootDir>/build/'
   ],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  },
-  testMatch: ['**/test/**/*.test.js', '**/?(*.)+(spec|test).js'],
-  setupFilesAfterEnv: [],
+  
+  // Test match patterns
+  testMatch: [
+    '**/test/**/*.test.js',
+    '!**/test/**/*.integration.test.js'
+  ],
+  
+  // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',
-    '!src/index.js',
-    '!src/server.js'
+    '!src/**/__tests__/**',
+    '!src/**/*.config.js'
   ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'html'],
-  testTimeout: 30000, // 30 second timeout for AI provider tests
-  verbose: true
+  
+  coverageThreshold: {
+    global: {
+      branches: 60,
+      functions: 65,
+      lines: 70,
+      statements: 70
+    }
+  },
+  
+  // Better error reporting
+  verbose: true,
+  detectOpenHandles: true,
+  forceExit: true,
+  
+  // Transform configuration
+  transform: {},
+  
+  // Coverage reporters
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json-summary'
+  ]
 };

@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "AI Provider Monitoring (OpenTelemetry)",
+    "tags": ["ai", "opentelemetry", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate by Provider",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(ai_provider_requests_total[5m])) by (provider)",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+      },
+      {
+        "id": 2,
+        "title": "Error Rate by Provider",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(ai_provider_errors_total[5m])) by (provider)",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+      },
+      {
+        "id": 3,
+        "title": "Latency P95 by Provider",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(ai_provider_request_duration_seconds_bucket[5m])) by (le, provider))",
+            "legendFormat": "{{provider}} P95"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+      },
+      {
+        "id": 4,
+        "title": "SLO: Availability",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "1 - (sum(rate(ai_provider_errors_total[5m])) / sum(rate(ai_provider_requests_total[5m])))"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 0.95, "color": "yellow" },
+                { "value": 0.99, "color": "green" }
+              ]
+            }
+          }
+        },
+        "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 }
+      },
+      {
+        "id": 5,
+        "title": "Token Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(ai_provider_tokens_total) by (provider)"
+          }
+        ],
+        "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 }
+      },
+      {
+        "id": 6,
+        "title": "Active Traces",
+        "type": "traces",
+        "datasource": "Tempo",
+        "targets": [
+          {
+            "query": "{service.name=\"ai-provider-monitoring\"}"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 }
+      }
+    ]
+  }
+}

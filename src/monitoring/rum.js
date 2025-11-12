@@ -1,4 +1,4 @@
-import { trace, metrics, context } from '@opentelemetry/api';
+import { trace, metrics } from '@opentelemetry/api';
 
 const tracer = trace.getTracer('rum', '1.0.0');
 const meter = metrics.getMeter('rum', '1.0.0');

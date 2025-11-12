@@ -250,7 +250,7 @@ export class CostTracker {
     let lowestCost = Infinity;
 
     for (const [provider, models] of Object.entries(PRICING)) {
-      for (const [model, pricing] of Object.entries(models)) {
+      for (const [model, _pricing] of Object.entries(models)) {
         const cost = this.estimateCost(provider, model, estimatedTokens);
 
         if (cost < lowestCost) {

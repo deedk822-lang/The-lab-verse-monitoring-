@@ -154,7 +154,7 @@ export class SyntheticMonitor {
   /**
 * Get uptime percentage
 */
-  getUptimePercentage(endpointName, period = 3600000) { // Default 1 hour
+  getUptimePercentage(endpointName, _period = 3600000) { // Default 1 hour
     // This would need to store historical data
     // For now, return current status
     const result = this.results.get(endpointName);

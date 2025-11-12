@@ -128,7 +128,7 @@ export class ConsensusEngine {
   /**
    * Unanimous vote - all models must agree
    */
-  unanimousVote(votes, threshold) {
+  unanimousVote(votes) {
     const firstAnswer = votes[0].answer;
     const allAgree = votes.every(v => v.answer === firstAnswer);
 

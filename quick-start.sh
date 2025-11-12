@@ -1,85 +1,133 @@
 #!/bin/bash
-
-# AI Content Creation Suite - Quick Start Script
+# Quick Start Script - Complete Agent Suite
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 set -e
 
-echo "🚀 AI Content Creation Suite - Quick Start"
-echo "=========================================="
+echo "╔════════════════════════════════════════════════════════════════════╗"
+echo "║ 🚀 AI Provider Monitoring - Quick Start ║"
+echo "╚════════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Check if Node.js is installed
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 18+ first."
-    echo "   Visit: https://nodejs.org/"
-    exit 1
-fi
-
-# Check Node.js version
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-    echo "❌ Node.js 18+ is required. Current version: $(node -v)"
-    exit 1
-fi
-
-echo "✅ Node.js $(node -v) detected"
-
-# Check if npm is installed
-if ! command -v npm &> /dev/null; then
-    echo "❌ npm is not installed. Please install npm first."
-    exit 1
-fi
-
-echo "✅ npm $(npm -v) detected"
+# Check Python version
+echo "🔍 Checking Python version..."
+python3 --version || { echo "❌ Python 3 not found"; exit 1; }
+echo "✅ Python 3 found"
+echo ""
 
 # Install dependencies
-echo ""
 echo "📦 Installing dependencies..."
-npm install
-
-# Run setup
+pip3 install -q aiohttp prometheus-client requests
+echo "✅ Dependencies installed"
 echo ""
-echo "🔧 Running setup..."
-npm run setup
 
-# Check if .env file exists
-if [ ! -f ".env" ]; then
-    echo ""
-    echo "⚠️  .env file not found. Creating from template..."
-    cp .env.example .env
-    echo "✅ .env file created. Please configure your API keys."
-fi
-
-# Check if Redis is running (optional)
-if command -v redis-cli &> /dev/null; then
-    if redis-cli ping &> /dev/null; then
-        echo "✅ Redis is running"
-    else
-        echo "⚠️  Redis is not running. Caching will be disabled."
-        echo "   To start Redis: redis-server"
-    fi
+# Check environment variables
+echo "🔐 Checking environment variables..."
+if [ -z "$VERCEL_URL" ]; then
+export VERCEL_URL="https://the-lab-verse-monitoring.vercel.app/api/research"
+echo "⚠️ VERCEL_URL not set, using default: $VERCEL_URL"
 else
-    echo "⚠️  Redis not found. Caching will be disabled."
-    echo "   Install Redis for better performance: https://redis.io/"
+echo "✅ VERCEL_URL: $VERCEL_URL"
 fi
 
+if [ -z "$GRAFANA_CLOUD_PROM_URL" ]; then
+echo "⚠️ GRAFANA_CLOUD_PROM_URL not set (metrics won't be pushed)"
+else
+echo "✅ Grafana Cloud configured"
+fi
 echo ""
-echo "🎉 Setup completed successfully!"
+
+# Menu
+echo "╔════════════════════════════════════════════════════════════════════╗"
+echo "║ SELECT TEST MODE ║"
+echo "╚════════════════════════════════════════════════════════════════════╝"
 echo ""
-echo "Next steps:"
-echo "1. Edit .env file and add your API keys:"
-echo "   - OPENAI_API_KEY=your_key_here"
-echo "   - GOOGLE_API_KEY=your_key_here"
-echo "   - ZAI_API_KEY=your_key_here"
-echo "   - API_KEY=your_secure_api_key"
+echo "1. 🧪 Quick Test (single request)"
+echo "2. 📊 Full Test Suite (8 test cases)"
+echo "3. 🔥 Load Test - Burst (10 concurrent)"
+echo "4. 📈 Load Test - Ramp Up (5 to 20 concurrent)"
+echo "5. ⏱️ Load Test - Sustained (5 concurrent, 60s)"
+echo "6. 🔍 Live Monitor (real-time dashboard)"
+echo "7. ✅ Validate Grafana Metrics"
+echo "8. 🎯 Run Everything (complete validation)"
 echo ""
-echo "2. Start the application:"
-echo "   npm start"
+read -p "Enter choice [1-8]: " choice
+
+case $choice in
+1)
 echo ""
-echo "3. Open your browser:"
-echo "   http://localhost:3000"
+echo "🧪 Running quick test..."
+python3 live_test_agent.py "What is AI?"
+;;
+2)
 echo ""
-echo "For Docker deployment:"
-echo "   docker-compose up -d"
+echo "📊 Running full test suite..."
+python3 test_suite.py
+;;
+3)
 echo ""
-echo "Happy content creating! 🎨"
+echo "🔥 Running burst load test..."
+python3 load_test.py burst 10
+;;
+4)
+echo ""
+echo "📈 Running ramp-up load test..."
+python3 load_test.py ramp 20 5
+;;
+5)
+echo ""
+echo "⏱️ Running sustained load test..."
+python3 load_test.py sustained 5 60
+;;
+6)
+echo ""
+echo "🔍 Starting live monitor (Ctrl+C to stop)..."
+python3 monitor.py 5
+;;
+7)
+echo ""
+echo "✅ Validating Grafana metrics..."
+python3 validate_metrics.py
+;;
+8)
+echo ""
+echo "🎯 Running complete validation suite..."
+echo ""
+
+echo "Step 1/4: Quick test..."
+python3 live_test_agent.py "Test query" || true
+sleep 2
+
+echo ""
+echo "Step 2/4: Full test suite..."
+python3 test_suite.py 1 || true
+sleep 2
+
+echo ""
+echo "Step 3/4: Load test..."
+python3 load_test.py burst 5 || true
+sleep 2
+
+echo ""
+echo "Step 4/4: Validate Grafana..."
+python3 validate_metrics.py || true
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════════╗"
+echo "║ ✅ COMPLETE VALIDATION FINISHED ║"
+echo "╚════════════════════════════════════════════════════════════════════╝"
+;;
+*)
+echo "❌ Invalid choice"
+exit 1
+;;
+esac
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════════╗"
+echo "║ ✅ COMPLETED ║"
+echo "╚════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "📊 Check your Grafana dashboard:"
+echo " https://dimakatsomoleli.grafana.net"
+echo ""

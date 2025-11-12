@@ -269,8 +269,8 @@ class ElevenLabsService {
       } = params;
 
       // Select appropriate voice based on type and platform
-      let voiceId = this.defaultVoiceId;
-      let voiceSettings = {
+      const voiceId = this.defaultVoiceId;
+      const voiceSettings = {
         stability: 0.5,
         similarity_boost: 0.8,
         style: 0.0,
@@ -279,34 +279,34 @@ class ElevenLabsService {
 
       // Platform-specific optimizations
       switch (platform.toLowerCase()) {
-      case 'tiktok':
-      case 'instagram':
-        voiceSettings.style = 0.3; // More expressive for short-form video
-        voiceSettings.stability = 0.6;
-        break;
-      case 'linkedin':
-        voiceSettings.stability = 0.7; // More stable for professional content
-        voiceSettings.style = 0.1;
-        break;
-      case 'youtube':
-        voiceSettings.similarity_boost = 0.9; // Higher quality for longer content
-        break;
+        case 'tiktok':
+        case 'instagram':
+          voiceSettings.style = 0.3; // More expressive for short-form video
+          voiceSettings.stability = 0.6;
+          break;
+        case 'linkedin':
+          voiceSettings.stability = 0.7; // More stable for professional content
+          voiceSettings.style = 0.1;
+          break;
+        case 'youtube':
+          voiceSettings.similarity_boost = 0.9; // Higher quality for longer content
+          break;
       }
 
       // Voice type adjustments
       switch (voiceType.toLowerCase()) {
-      case 'energetic':
-        voiceSettings.style = 0.4;
-        voiceSettings.stability = 0.4;
-        break;
-      case 'casual':
-        voiceSettings.style = 0.2;
-        voiceSettings.stability = 0.5;
-        break;
-      case 'professional':
-        voiceSettings.style = 0.1;
-        voiceSettings.stability = 0.7;
-        break;
+        case 'energetic':
+          voiceSettings.style = 0.4;
+          voiceSettings.stability = 0.4;
+          break;
+        case 'casual':
+          voiceSettings.style = 0.2;
+          voiceSettings.stability = 0.5;
+          break;
+        case 'professional':
+          voiceSettings.style = 0.1;
+          voiceSettings.stability = 0.7;
+          break;
       }
 
       // Add intro/outro if requested

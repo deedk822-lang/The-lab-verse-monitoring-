@@ -1,9 +1,10 @@
-// Import telemetry FIRST
+// IMPORTANT: Import telemetry FIRST (before anything else)
 import './telemetry.js';
 
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { multiProviderGenerateInstrumented } from './providers/instrumentedProvider.js';
 
 // Monitoring imports
 import { initializeSentry, sentryErrorHandler } from './monitoring/sentry.js';
@@ -13,6 +14,9 @@ import { initializeSpeedInsights } from './monitoring/speedInsights.js';
 import { initializeRUM } from './monitoring/rum.js';
 import { costTracker, checkCostAlerts, formatCost } from './monitoring/costTracking.js';
 import { syntheticMonitor } from './monitoring/synthetic.js';
+import monitoringRoutes from './routes/monitoring.js';
+import { performanceMiddleware } from './monitoring/performance.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -38,9 +42,15 @@ app.use(requestLogger);
 // Suspicious activity detection
 app.use(suspiciousActivityDetector);
 
+// Performance tracking middleware
+app.use(performanceMiddleware);
+
 // Initialize monitoring services
 initializeSpeedInsights();
 initializeRUM();
+
+// Monitoring routes
+app.use('/api/monitoring', monitoringRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -56,51 +66,61 @@ app.get('/health', (req, res) => {
   res.json(health);
 });
 
-// Metrics endpoint
-app.get('/metrics', async (req, res) => {
+// Research endpoint with OpenTelemetry instrumentation
+app.post('/api/research', async (req, res) => {
   try {
-    const metrics = {
-      costs: costTracker.getCostSummary(),
-      synthetic: syntheticMonitor.getStatus(),
-      alerts: checkCostAlerts(costTracker.getCostSummary())
-    };
+    const { q } = req.body;
 
-    res.json(metrics);
+    if (!q) {
+      return res.status(400).json({ error: 'Query parameter "q" is required' });
+    }
+
+    const messages = [
+      { role: 'user', content: q }
+    ];
+
+    const result = await multiProviderGenerateInstrumented({ messages });
+
+    res.json({
+      provider: result.provider,
+      text: result.text,
+      tokens: result.tokens,
+      timestamp: new Date().toISOString(),
+    });
+
   } catch (error) {
-    logger.error('Error fetching metrics:', error);
-    res.status(500).json({ error: 'Failed to fetch metrics' });
+    console.error('❌ Error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+    });
   }
 });
 
-// Example API endpoint with cost tracking
-app.post('/api/research', async (req, res) => {
-  const startTime = Date.now();
-
+// Generate endpoint (alternative)
+app.post('/api/generate', async (req, res) => {
   try {
-    const { q, provider, model } = req.body;
+    const { messages, model } = req.body;
 
-    if (!q) {
-      return res.status(400).json({ error: 'Query parameter required' });
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    // Simulate API call
-    const result = {
-      query: q,
-      results: [],
-      timestamp: new Date().toISOString()
-    };
+    const result = await multiProviderGenerateInstrumented({ messages, model });
 
-    // Track costs (example)
-    const duration = Date.now() - startTime;
-    costTracker.trackCost(provider, model, 100, 200);
-
-    logger.info('Research query processed', { query: q, duration });
-
-    res.json(result);
+    res.json({
+      provider: result.provider,
+      text: result.text,
+      tokens: result.tokens,
+      timestamp: new Date().toISOString(),
+    });
 
   } catch (error) {
-    logger.error('Research query failed:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+    });
   }
 });
 

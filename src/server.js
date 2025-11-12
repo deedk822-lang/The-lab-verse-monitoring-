@@ -85,14 +85,14 @@ app.post('/api/research', async (req, res) => {
       provider: result.provider,
       text: result.text,
       tokens: result.tokens,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('❌ Error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: error.message,
+      message: error.message
     });
   }
 });
@@ -112,14 +112,14 @@ app.post('/api/generate', async (req, res) => {
       provider: result.provider,
       text: result.text,
       tokens: result.tokens,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('❌ Error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: error.message,
+      message: error.message
     });
   }
 });

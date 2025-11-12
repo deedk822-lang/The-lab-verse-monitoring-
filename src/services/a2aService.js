@@ -8,7 +8,7 @@ class A2AService {
     this.secretKey = process.env.A2A_SECRET_KEY;
     this.baseURL = process.env.A2A_BASE_URL || 'https://api.a2a.ai/v1';
     this.clientId = process.env.A2A_CLIENT_ID;
-    
+
     // Application endpoints configuration
     this.endpoints = {
       slack: process.env.A2A_SLACK_WEBHOOK,
@@ -19,7 +19,7 @@ class A2AService {
       n8n: process.env.A2A_N8N_WEBHOOK,
       make: process.env.A2A_MAKE_WEBHOOK
     };
-    
+
     if (!this.apiKey) {
       logger.warn('A2A_API_KEY not found in environment variables');
     }
@@ -35,7 +35,7 @@ class A2AService {
     if (!this.secretKey) {
       throw new Error('A2A secret key not configured');
     }
-    
+
     const message = `${timestamp}.${payload}`;
     return crypto
       .createHmac('sha256', this.secretKey)
@@ -122,17 +122,17 @@ class A2AService {
         }));
 
         const targetResults = await Promise.allSettled(promises);
-        
+
         targetResults.forEach((result, index) => {
           const target = targets[index];
-          results[target] = result.status === 'fulfilled' 
-            ? result.value 
+          results[target] = result.status === 'fulfilled'
+            ? result.value
             : { success: false, error: result.reason.message };
         });
       }
 
       const successCount = Object.values(results).filter(r => r.success !== false).length;
-      
+
       logger.info('A2A distribution completed:', {
         totalTargets: targets.length,
         successful: successCount,
@@ -172,7 +172,7 @@ class A2AService {
   async sendToTarget(params) {
     try {
       const { target, content, metadata, signature, timestamp } = params;
-      
+
       const endpoint = this.endpoints[target.toLowerCase()];
       if (!endpoint) {
         throw new Error(`No endpoint configured for target: ${target}`);
@@ -223,59 +223,59 @@ class A2AService {
    */
   customizeForTarget(target, payload) {
     const { text, metadata } = payload;
-    
+
     switch (target.toLowerCase()) {
-      case 'slack':
-        return {
-          text,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text
-              }
+    case 'slack':
+      return {
+        text,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text
             }
-          ],
+          }
+        ],
+        metadata
+      };
+
+    case 'teams':
+      return {
+        '@type': 'MessageCard',
+        '@context': 'https://schema.org/extensions',
+        text,
+        themeColor: '0078D4',
+        sections: [{
+          text,
           metadata
-        };
+        }]
+      };
 
-      case 'teams':
-        return {
-          '@type': 'MessageCard',
-          '@context': 'https://schema.org/extensions',
-          text,
-          themeColor: '0078D4',
-          sections: [{
-            text,
-            metadata
-          }]
-        };
+    case 'discord':
+      return {
+        content: text,
+        embeds: [{
+          description: text.substring(0, 2048), // Discord embed limit
+          timestamp: new Date().toISOString(),
+          footer: {
+            text: 'AI Content Suite'
+          }
+        }]
+      };
 
-      case 'discord':
-        return {
-          content: text,
-          embeds: [{
-            description: text.substring(0, 2048), // Discord embed limit
-            timestamp: new Date().toISOString(),
-            footer: {
-              text: 'AI Content Suite'
-            }
-          }]
-        };
+    case 'zapier':
+    case 'ifttt':
+    case 'n8n':
+    case 'make':
+      return {
+        content: text,
+        metadata,
+        trigger_source: 'ai-content-suite'
+      };
 
-      case 'zapier':
-      case 'ifttt':
-      case 'n8n':
-      case 'make':
-        return {
-          content: text,
-          metadata,
-          trigger_source: 'ai-content-suite'
-        };
-
-      default:
-        return payload;
+    default:
+      return payload;
     }
   }
 
@@ -410,10 +410,10 @@ class A2AService {
 
             results.endpoints[target] = { success: true, configured: true };
           } catch (error) {
-            results.endpoints[target] = { 
-              success: false, 
+            results.endpoints[target] = {
+              success: false,
               configured: true,
-              error: error.message 
+              error: error.message
             };
           }
         });

@@ -6,7 +6,7 @@ class PerplexityService {
     this.apiKey = process.env.PERPLEXITY_API_KEY;
     this.baseURL = 'https://api.perplexity.ai';
     this.model = process.env.PERPLEXITY_MODEL || 'llama-3.1-sonar-large-128k-online';
-    
+
     if (!this.apiKey) {
       logger.warn('PERPLEXITY_API_KEY not found in environment variables');
     }
@@ -27,16 +27,16 @@ class PerplexityService {
         throw new Error('Perplexity API key not configured');
       }
 
-      const { 
-        prompt, 
-        searchEnabled = true, 
+      const {
+        prompt,
+        searchEnabled = true,
         maxTokens = 2000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant that provides accurate, well-researched content.'
       } = params;
 
       // Use Sonar models for web search, regular models for offline generation
-      const selectedModel = searchEnabled 
+      const selectedModel = searchEnabled
         ? (this.model.includes('sonar') ? this.model : 'llama-3.1-sonar-large-128k-online')
         : 'llama-3.1-8b-instruct';
 
@@ -77,7 +77,7 @@ class PerplexityService {
 
       const generatedContent = response.data.choices[0].message.content;
       const citations = response.data.citations || [];
-      
+
       logger.info('Perplexity content generated successfully:', {
         contentLength: generatedContent.length,
         citationsCount: citations.length,
@@ -125,9 +125,9 @@ class PerplexityService {
   async researchTopic(params) {
     try {
       const { query, domains = [], focusArea = 'comprehensive' } = params;
-      
+
       let researchPrompt = `Research and provide comprehensive information about: ${query}\n\n`;
-      
+
       if (focusArea === 'recent') {
         researchPrompt += 'Focus on the most recent developments, news, and updates. ';
       } else if (focusArea === 'trends') {
@@ -135,7 +135,7 @@ class PerplexityService {
       } else if (focusArea === 'technical') {
         researchPrompt += 'Focus on technical details, specifications, and expert analysis. ';
       }
-      
+
       researchPrompt += 'Provide accurate, well-sourced information with proper citations.';
 
       const result = await this.generateContent({
@@ -174,9 +174,9 @@ class PerplexityService {
    */
   async generateSocialContent(params) {
     try {
-      const { 
-        topic, 
-        platforms = ['twitter', 'linkedin'], 
+      const {
+        topic,
+        platforms = ['twitter', 'linkedin'],
         tone = 'professional',
         includeTrends = true,
         hashtags = true
@@ -185,19 +185,19 @@ class PerplexityService {
       let prompt = `Create engaging social media content about: ${topic}\n\n`;
       prompt += `Target platforms: ${platforms.join(', ')}\n`;
       prompt += `Tone: ${tone}\n\n`;
-      
+
       if (includeTrends) {
         prompt += 'Research current trends and news related to this topic and incorporate relevant insights. ';
       }
-      
+
       prompt += 'Requirements:\n';
       prompt += '- Make it engaging and shareable\n';
       prompt += '- Keep within platform character limits\n';
-      
+
       if (hashtags) {
         prompt += '- Include relevant hashtags\n';
       }
-      
+
       prompt += '- Ensure accuracy and credibility\n';
       prompt += '- Adapt tone and style for the target platforms';
 
@@ -290,17 +290,17 @@ class PerplexityService {
   async generateFactCheckedContent(params) {
     try {
       const { topic, includeCounterpoints = true } = params;
-      
+
       let prompt = `Research and write fact-checked content about: ${topic}\n\n`;
       prompt += 'Requirements:\n';
       prompt += '- Verify all facts with multiple reliable sources\n';
       prompt += '- Include proper citations for all claims\n';
       prompt += '- Present information objectively\n';
-      
+
       if (includeCounterpoints) {
         prompt += '- Include different perspectives and viewpoints where relevant\n';
       }
-      
+
       prompt += '- Clearly distinguish between facts and opinions\n';
       prompt += '- Use recent and authoritative sources';
 

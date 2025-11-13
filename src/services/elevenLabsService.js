@@ -42,10 +42,10 @@ class ElevenLabsService {
           stability: 0.5,
           similarity_boost: 0.8,
           style: 0.0,
-          use_speaker_boost: true
+          use_speaker_boost: true,
         },
         outputFormat = 'mp3',
-        modelId = 'eleven_multilingual_v2'
+        modelId = 'eleven_multilingual_v2',
       } = params;
 
       if (text.length > 5000) {
@@ -56,7 +56,7 @@ class ElevenLabsService {
         voiceId,
         textLength: text.length,
         modelId,
-        outputFormat
+        outputFormat,
       });
 
       const response = await axios.post(
@@ -64,17 +64,17 @@ class ElevenLabsService {
         {
           text,
           model_id: modelId,
-          voice_settings: voiceSettings
+          voice_settings: voiceSettings,
         },
         {
           headers: {
             'xi-api-key': this.apiKey,
             'Content-Type': 'application/json',
-            'Accept': `audio/${outputFormat}`
+            'Accept': `audio/${outputFormat}`,
           },
           responseType: 'stream',
-          timeout: 60000
-        }
+          timeout: 60000,
+        },
       );
 
       // Generate unique filename
@@ -97,7 +97,7 @@ class ElevenLabsService {
         filename,
         fileSize: fileStats.size,
         voiceId,
-        textLength: text.length
+        textLength: text.length,
       });
 
       return {
@@ -112,19 +112,19 @@ class ElevenLabsService {
           textLength: text.length,
           voiceSettings,
           outputFormat,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
 
     } catch (error) {
       logger.error('Text-to-speech failed:', {
         error: error.message,
-        response: error.response?.data
+        response: error.response?.data,
       });
 
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -141,8 +141,8 @@ class ElevenLabsService {
 
       const response = await axios.get(`${this.baseURL}/voices`, {
         headers: {
-          'xi-api-key': this.apiKey
-        }
+          'xi-api-key': this.apiKey,
+        },
       });
 
       const voices = response.data.voices.map(voice => ({
@@ -152,23 +152,23 @@ class ElevenLabsService {
         description: voice.description,
         labels: voice.labels,
         preview_url: voice.preview_url,
-        settings: voice.settings
+        settings: voice.settings,
       }));
 
       logger.info('Retrieved ElevenLabs voices:', {
-        count: voices.length
+        count: voices.length,
       });
 
       return {
         success: true,
-        voices
+        voices,
       };
 
     } catch (error) {
       logger.error('Failed to get voices:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -191,7 +191,7 @@ class ElevenLabsService {
         name,
         audioFiles,
         description = `Cloned voice: ${name}`,
-        labels = {}
+        labels = {},
       } = params;
 
       if (!audioFiles || audioFiles.length === 0) {
@@ -201,7 +201,7 @@ class ElevenLabsService {
       logger.info('Cloning voice:', {
         name,
         audioFilesCount: audioFiles.length,
-        description
+        description,
       });
 
       const formData = new FormData();
@@ -223,29 +223,29 @@ class ElevenLabsService {
         {
           headers: {
             'xi-api-key': this.apiKey,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',
           },
-          timeout: 120000 // 2 minutes for voice cloning
-        }
+          timeout: 120000, // 2 minutes for voice cloning
+        },
       );
 
       logger.info('Voice cloned successfully:', {
         voiceId: response.data.voice_id,
-        name
+        name,
       });
 
       return {
         success: true,
         voiceId: response.data.voice_id,
         name,
-        description
+        description,
       };
 
     } catch (error) {
       logger.error('Voice cloning failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -265,7 +265,7 @@ class ElevenLabsService {
         platform = 'general',
         voiceType = 'professional',
         includeIntro = false,
-        includeOutro = false
+        includeOutro = false,
       } = params;
 
       // Select appropriate voice based on type and platform
@@ -274,7 +274,7 @@ class ElevenLabsService {
         stability: 0.5,
         similarity_boost: 0.8,
         style: 0.0,
-        use_speaker_boost: true
+        use_speaker_boost: true,
       };
 
       // Platform-specific optimizations
@@ -322,7 +322,7 @@ class ElevenLabsService {
         text: processedContent,
         voiceId,
         voiceSettings,
-        outputFormat: 'mp3'
+        outputFormat: 'mp3',
       });
 
       if (result.success) {
@@ -337,7 +337,7 @@ class ElevenLabsService {
       logger.error('Social audio generation failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -357,7 +357,7 @@ class ElevenLabsService {
         voiceId = this.defaultVoiceId,
         addChapterMarks = true,
         chapterBreak = '\n\n---\n\n',
-        narratorStyle = 'storytelling'
+        narratorStyle = 'storytelling',
       } = params;
 
       // Split content into chapters if chapter marks are requested
@@ -369,7 +369,7 @@ class ElevenLabsService {
       const results = {
         chapters: [],
         totalDuration: 0,
-        audioFiles: []
+        audioFiles: [],
       };
 
       // Audiobook-optimized voice settings
@@ -377,7 +377,7 @@ class ElevenLabsService {
         stability: 0.8,  // Very stable for long narration
         similarity_boost: 0.9,  // High quality
         style: narratorStyle === 'storytelling' ? 0.3 : 0.1,
-        use_speaker_boost: true
+        use_speaker_boost: true,
       };
 
       // Generate audio for each chapter
@@ -393,7 +393,7 @@ class ElevenLabsService {
           text: chapter,
           voiceId,
           voiceSettings,
-          outputFormat: 'mp3'
+          outputFormat: 'mp3',
         });
 
         if (chapterResult.success) {
@@ -401,7 +401,7 @@ class ElevenLabsService {
             index: i + 1,
             audioFile: chapterResult.audioFile,
             duration: chapterResult.duration,
-            fileSize: chapterResult.fileSize
+            fileSize: chapterResult.fileSize,
           });
           results.audioFiles.push(chapterResult.filepath);
           results.totalDuration += chapterResult.duration;
@@ -411,7 +411,7 @@ class ElevenLabsService {
       logger.info('Audiobook generation completed:', {
         chapters: results.chapters.length,
         totalDuration: results.totalDuration,
-        totalSize: results.chapters.reduce((sum, ch) => sum + ch.fileSize, 0)
+        totalSize: results.chapters.reduce((sum, ch) => sum + ch.fileSize, 0),
       });
 
       return {
@@ -421,15 +421,15 @@ class ElevenLabsService {
           voiceId,
           narratorStyle,
           chaptersCount: results.chapters.length,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
 
     } catch (error) {
       logger.error('Audiobook creation failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -446,9 +446,9 @@ class ElevenLabsService {
 
       const response = await axios.get(`${this.baseURL}/voices`, {
         headers: {
-          'xi-api-key': this.apiKey
+          'xi-api-key': this.apiKey,
         },
-        timeout: 10000
+        timeout: 10000,
       });
 
       return response.status === 200 && response.data.voices;
@@ -470,20 +470,20 @@ class ElevenLabsService {
 
       const response = await axios.get(`${this.baseURL}/user`, {
         headers: {
-          'xi-api-key': this.apiKey
-        }
+          'xi-api-key': this.apiKey,
+        },
       });
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
 
     } catch (error) {
       logger.error('Failed to get user info:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -515,7 +515,7 @@ class ElevenLabsService {
       'energetic': '21m00Tcm4TlvDq8ikWAM',   // Rachel
       'storytelling': 'AZnzlk1XvdvUeBnXmlld', // Domi
       'news': 'pNInz6obpgDQGcFmaJgB',       // Adam
-      'educational': 'ErXwobaYiN019PkySvjV'  // Antoni
+      'educational': 'ErXwobaYiN019PkySvjV',  // Antoni
     };
 
     return voiceMap[contentType] || this.defaultVoiceId;
@@ -549,20 +549,20 @@ class ElevenLabsService {
       logger.info('Audio file cleanup completed:', {
         deletedCount,
         totalSize,
-        maxAgeHours
+        maxAgeHours,
       });
 
       return {
         success: true,
         deletedCount,
-        totalSize
+        totalSize,
       };
 
     } catch (error) {
       logger.error('Audio file cleanup failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }

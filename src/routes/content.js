@@ -25,7 +25,7 @@ const contentValidation = [
   body('aspectRatio').optional().isIn(['1:1', '16:9', '4:3', '9:16'])
     .withMessage('Aspect ratio must be one of: 1:1, 16:9, 4:3, 9:16'),
   body('length').optional().isIn(['short', 'medium', 'long'])
-    .withMessage('Length must be one of: short, medium, long')
+    .withMessage('Length must be one of: short, medium, long'),
 ];
 
 // Generate content endpoint
@@ -37,7 +37,7 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
-        details: errors.array()
+        details: errors.array(),
       });
     }
 
@@ -52,14 +52,14 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
       cta = null,
       aspectRatio = '16:9',
       length = 'medium',
-      options = {}
+      options = {},
     } = req.body;
 
     // Emit progress update via WebSocket
     if (req.io) {
       req.io.emit('content_progress', {
         status: 'started',
-        message: 'Starting content generation...'
+        message: 'Starting content generation...',
       });
     }
 
@@ -73,7 +73,7 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
       keywords,
       cta,
       aspectRatio,
-      length
+      length,
     }, options);
 
     // Emit completion update
@@ -81,13 +81,13 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
       req.io.emit('content_progress', {
         status: 'completed',
         message: 'Content generation completed',
-        resultId: result.id
+        resultId: result.id,
       });
     }
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
 
   } catch (error) {
@@ -97,14 +97,14 @@ router.post('/generate', contentValidation, cacheMiddleware, async (req, res) =>
     if (req.io) {
       req.io.emit('content_progress', {
         status: 'error',
-        message: error.message
+        message: error.message,
       });
     }
 
     res.status(500).json({
       success: false,
       error: 'Content generation failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -115,14 +115,14 @@ router.get('/providers', (req, res) => {
     const providers = getAvailableProviders();
     res.json({
       success: true,
-      data: providers
+      data: providers,
     });
   } catch (error) {
     logger.error('Failed to get providers:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get providers',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -135,21 +135,21 @@ router.post('/test-provider', async (req, res) => {
     if (!provider) {
       return res.status(400).json({
         success: false,
-        error: 'Provider is required'
+        error: 'Provider is required',
       });
     }
 
     const result = await ProviderFactory.testProvider(provider);
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     logger.error('Provider test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Provider test failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -160,14 +160,14 @@ router.get('/test-all-providers', async (req, res) => {
     const results = await ProviderFactory.testAllProviders();
     res.json({
       success: true,
-      data: results
+      data: results,
     });
   } catch (error) {
     logger.error('Provider testing failed:', error);
     res.status(500).json({
       success: false,
       error: 'Provider testing failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -181,20 +181,20 @@ router.get('/content/:id', async (req, res) => {
     if (!content) {
       return res.status(404).json({
         success: false,
-        error: 'Content not found'
+        error: 'Content not found',
       });
     }
 
     res.json({
       success: true,
-      data: content
+      data: content,
     });
   } catch (error) {
     logger.error('Failed to get content:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get content',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -207,7 +207,7 @@ router.post('/analyze', async (req, res) => {
     if (!content) {
       return res.status(400).json({
         success: false,
-        error: 'Content is required'
+        error: 'Content is required',
       });
     }
 
@@ -216,14 +216,14 @@ router.post('/analyze', async (req, res) => {
 
     res.json({
       success: true,
-      data: analysis
+      data: analysis,
     });
   } catch (error) {
     logger.error('Content analysis failed:', error);
     res.status(500).json({
       success: false,
       error: 'Content analysis failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -236,7 +236,7 @@ router.post('/seo', async (req, res) => {
     if (!topic || !content) {
       return res.status(400).json({
         success: false,
-        error: 'Topic and content are required'
+        error: 'Topic and content are required',
       });
     }
 
@@ -245,14 +245,14 @@ router.post('/seo', async (req, res) => {
 
     res.json({
       success: true,
-      data: seoData
+      data: seoData,
     });
   } catch (error) {
     logger.error('SEO generation failed:', error);
     res.status(500).json({
       success: false,
       error: 'SEO generation failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -265,7 +265,7 @@ router.post('/social', async (req, res) => {
     if (!topic || !content) {
       return res.status(400).json({
         success: false,
-        error: 'Topic and content are required'
+        error: 'Topic and content are required',
       });
     }
 
@@ -282,14 +282,14 @@ router.post('/social', async (req, res) => {
 
     res.json({
       success: true,
-      data: filteredPosts
+      data: filteredPosts,
     });
   } catch (error) {
     logger.error('Social posts generation failed:', error);
     res.status(500).json({
       success: false,
       error: 'Social posts generation failed',
-      message: error.message
+      message: error.message,
     });
   }
 });

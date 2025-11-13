@@ -1,5 +1,4 @@
 export default {
-  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   testTimeout: 30000,
   maxWorkers: '50%',
@@ -21,6 +20,7 @@ export default {
   // Test match patterns
   testMatch: [
     '**/test/**/*.test.js',
+    '**/test/**/*.test.ts',
     '**/tests/**/*.test.ts',
     '!**/test/**/*.integration.test.js'
   ],

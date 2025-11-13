@@ -2,7 +2,7 @@ import { context, propagation } from '@opentelemetry/api';
 import { costTracker } from '../monitoring/costTracking.js';
 
 export const telemetry = {
-  traceHeaders(span) {
+  traceHeaders(_span) {
     const headers = {};
     propagation.inject(context.active(), headers);
     return headers;

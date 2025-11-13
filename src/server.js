@@ -60,16 +60,16 @@ app.get('/api/health', (req, res) => {
     synthetic: syntheticMonitor.getStatus(),
     costs: {
       total: costTracker.getTotalCost(),
-      byService: costTracker.getCostByService()
+      byService: costTracker.getCostByService(),
     },
     dependencies: {
-      octokit: !!require('@octokit/rest')
+      octokit: !!require('@octokit/rest'),
     },
     providers: getProviderStatus().providers.map(p => ({
       name: p.name,
       status: p.status,
-      available: p.available
-    }))
+      available: p.available,
+    })),
   };
 
   res.json(health);
@@ -81,7 +81,7 @@ app.get('/metrics', async (req, res) => {
     const metrics = {
       costs: costTracker.getMetrics(),
       synthetic: syntheticMonitor.getStatus(),
-      alerts: costTracker.checkAlerts()
+      alerts: costTracker.checkAlerts(),
     };
 
     res.json(metrics);
@@ -106,7 +106,7 @@ app.post('/api/research', async (req, res) => {
     const result = {
       query: q,
       results: [],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Track costs (example)
@@ -114,7 +114,7 @@ app.post('/api/research', async (req, res) => {
     costTracker.trackAPICall('openai', 'gpt-4', {
       inputTokens: 100,
       outputTokens: 200,
-      duration
+      duration,
     });
 
     logger.info('Research query processed', { query: q, duration });
@@ -143,7 +143,7 @@ app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'production'
       ? 'Internal server error'
-      : err.message
+      : err.message,
   });
 });
 

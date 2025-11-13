@@ -1,18 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "app.js",
-      "use": "@vercel/node"
+  "functions": {
+    "pages/api/gateway/v1/chat/completions.js": {
+      "runtime": "edge",
+      "regions": ["iad1", "fra1", "hnd1"]
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "app.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
   }
 }

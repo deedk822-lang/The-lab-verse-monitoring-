@@ -20,10 +20,10 @@ router.get('/overview', (req, res) => {
       costs: {
         total: costTracker.getTotalCost(),
         byService: costTracker.getCostByService(),
-        alerts: costTracker.checkAlerts()
+        alerts: costTracker.checkAlerts(),
       },
       synthetic: syntheticMonitor.getStatus(),
-      system: performanceMonitor.getSystemStats()
+      system: performanceMonitor.getSystemStats(),
     };
 
     res.json(overview);
@@ -46,8 +46,8 @@ router.get('/performance', (req, res) => {
       slowest: {
         requests: performanceMonitor.getSlowestRequests(10),
         queries: performanceMonitor.getSlowestQueries(10),
-        apiCalls: performanceMonitor.getSlowestApiCalls(10)
-      }
+        apiCalls: performanceMonitor.getSlowestApiCalls(10),
+      },
     };
 
     res.json(performance);
@@ -68,12 +68,12 @@ router.get('/alerts', (req, res) => {
     const filters = {
       severity,
       since,
-      limit: parseInt(limit) || 100
+      limit: parseInt(limit) || 100,
     };
 
     const alerts = {
       history: alertManager.getHistory(filters),
-      stats: alertManager.getStats()
+      stats: alertManager.getStats(),
     };
 
     res.json(alerts);
@@ -96,7 +96,7 @@ router.post('/alerts/test', async (req, res) => {
       message: message || 'This is a test alert from the monitoring system',
       severity: severity || 'low',
       channels: channels || ['log'],
-      metadata: { test: true }
+      metadata: { test: true },
     });
 
     res.json({ success: true, alert });
@@ -122,8 +122,8 @@ router.get('/costs', (req, res) => {
       alerts: costTracker.checkAlerts(),
       projections: {
         daily: costTracker.projectDailyCost(),
-        monthly: costTracker.projectMonthlyCost()
-      }
+        monthly: costTracker.projectMonthlyCost(),
+      },
     };
 
     res.json(costs);
@@ -163,8 +163,8 @@ router.get('/synthetic', (req, res) => {
       endpoints: Object.entries(status).map(([name, data]) => ({
         name,
         ...data,
-        uptime: syntheticMonitor.getUptimePercentage(name)
-      }))
+        uptime: syntheticMonitor.getUptimePercentage(name),
+      })),
     };
 
     res.json(synthetic);
@@ -204,7 +204,7 @@ router.get('/logs', (req, res) => {
     res.json({
       logs: [],
       total: 0,
-      message: 'Log retrieval not implemented. Use external log aggregation service.'
+      message: 'Log retrieval not implemented. Use external log aggregation service.',
     });
   } catch (error) {
     logger.error('Failed to get logs', { error: error.message });
@@ -223,7 +223,7 @@ router.get('/system', (req, res) => {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       platform: process.platform,
-      arch: process.arch
+      arch: process.arch,
     };
 
     res.json(system);

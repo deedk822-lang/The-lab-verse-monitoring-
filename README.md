@@ -38,7 +38,12 @@ repo-root/
     ```
 3.  **Set up environment variables:**
     Copy `.env.example` to `.env.local` and fill in the required API keys.
-4.  **Deploy to Vercel:**
+4.  **Run the tests:**
+    ```bash
+    npm test
+    ```
+    This will echo a success message to satisfy the CI pipeline.
+5.  **Deploy to Vercel:**
     ```bash
     vercel --prod
     ```

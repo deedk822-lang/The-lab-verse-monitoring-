@@ -63,7 +63,7 @@ app.get('/api/health', (req, res) => {
       byService: costTracker.getCostByService()
     },
     dependencies: {
-      octokit: !!require('@octokit/rest'),
+      octokit: !!require('@octokit/rest')
     },
     providers: getProviderStatus().providers.map(p => ({
       name: p.name,

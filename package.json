@@ -6,10 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "wpcom": "node mcp-server/wpcom-gateway.js",
+    "unito": "node mcp-server/unito-gateway.js",
+    "socialpilot": "node mcp-server/socialpilot-gateway.js",
+    "hf": "node mcp-server/huggingface-gateway.js",
+    "start:all": "concurrently \"npm run wpcom\" \"npm run unito\" \"npm run socialpilot\" \"npm run hf\""
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
     "@opentelemetry/api": "^1.7.0",
+    "concurrently": "^9.2.1",
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

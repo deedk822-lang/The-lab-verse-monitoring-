@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "echo \"No tests defined – CI passes\"",
+    "test": "echo 'No tests yet – CI passes' && exit 0",
     "lint": "next lint",
     "wpcom": "node mcp-server/wpcom-gateway.js",
     "unito": "node mcp-server/unito-gateway.js",
@@ -28,5 +28,8 @@
     "@types/react": "19.2.4",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

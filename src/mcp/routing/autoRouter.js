@@ -19,7 +19,7 @@ export class AutoRouter {
       // Budget tier
       'deepseek': { input: 0.0001, output: 0.0002, quality: 0.70 },
       'moonshot': { input: 0.0002, output: 0.0004, quality: 0.70 },
-      'glm': { input: 0.0001, output: 0.0003, quality: 0.65 }
+      'glm': { input: 0.0001, output: 0.0003, quality: 0.65 },
     };
 
     // Fallback chains by tier
@@ -28,7 +28,7 @@ export class AutoRouter {
       'anthropic': ['anthropic', 'openai', 'gemini', 'groq'],
       'gemini': ['gemini', 'mistral', 'groq', 'deepseek'],
       'groq': ['groq', 'gemini', 'deepseek'],
-      'deepseek': ['deepseek', 'moonshot', 'glm']
+      'deepseek': ['deepseek', 'moonshot', 'glm'],
     };
   }
 
@@ -40,7 +40,7 @@ export class AutoRouter {
       complexity,
       optimize,
       maxCost,
-      availableProviders
+      availableProviders,
     } = options;
 
     // Filter available providers
@@ -87,7 +87,7 @@ export class AutoRouter {
     return {
       name: provider,
       reason: 'cost-optimized',
-      estimatedCost: this.estimateCost(provider, 1000)
+      estimatedCost: this.estimateCost(provider, 1000),
     };
   }
 
@@ -96,7 +96,7 @@ export class AutoRouter {
    */
   selectByQuality(candidates) {
     const sorted = candidates.sort((a, b) =>
-      this.pricing[b].quality - this.pricing[a].quality
+      this.pricing[b].quality - this.pricing[a].quality,
     );
 
     const provider = sorted[0];
@@ -105,7 +105,7 @@ export class AutoRouter {
     return {
       name: provider,
       reason: 'quality-optimized',
-      quality: this.pricing[provider].quality
+      quality: this.pricing[provider].quality,
     };
   }
 
@@ -121,7 +121,7 @@ export class AutoRouter {
 
     return {
       name: fastest,
-      reason: 'speed-optimized'
+      reason: 'speed-optimized',
     };
   }
 
@@ -137,7 +137,7 @@ export class AutoRouter {
       const complexityMultiplier = {
         'simple': 0.5,
         'moderate': 1.0,
-        'complex': 2.0
+        'complex': 2.0,
       }[complexity.complexity];
 
       const score = pricing.quality / (cost * complexityMultiplier);
@@ -163,7 +163,7 @@ export class AutoRouter {
       name: best.provider,
       reason: 'balanced',
       score: best.score,
-      estimatedCost: best.cost
+      estimatedCost: best.cost,
     };
   }
 

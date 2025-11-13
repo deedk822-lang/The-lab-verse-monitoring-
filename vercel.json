@@ -12,6 +12,15 @@
       "dest": "app.js"
     }
   ],
+  "functions": {
+    "api/workflows/**/*.ts": {
+      "runtime": "edge",
+      "maxDuration": 300
+    }
+  },
+  "rewrites": [
+    { "source": "/api/monitor", "destination": "/api/workflows/durableMonitor" }
+  ],
   "env": {
     "NODE_ENV": "production"
   }

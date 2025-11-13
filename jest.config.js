@@ -1,4 +1,5 @@
 export default {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   testTimeout: 30000,
   maxWorkers: '50%',
@@ -20,6 +21,7 @@ export default {
   // Test match patterns
   testMatch: [
     '**/test/**/*.test.js',
+    '**/tests/**/*.test.ts',
     '!**/test/**/*.integration.test.js'
   ],
   
@@ -46,7 +48,17 @@ export default {
   forceExit: true,
   
   // Transform configuration
-  transform: {},
+  transform: {
+    '^.+\\.ts?$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(.pnpm|@workflow)/)',
+  ],
   
   // Coverage reporters
   coverageReporters: [

@@ -1,53 +1,24 @@
 {
-  "name": "lab-verse-monitoring",
+  "name": "lab-verse-gateway",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
-    "lint:check": "eslint src/ --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{js,json}\"",
-    "validate": "npm run lint:check && npm test"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@octokit/rest": "^20.1.1",
     "@opentelemetry/api": "^1.7.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.40.0",
-    "@opentelemetry/exporter-metrics-otlp-http": "^0.45.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.45.0",
-    "@opentelemetry/sdk-node": "^0.45.0",
-    "@sentry/node": "^7.91.0",
-    "@sentry/profiling-node": "^1.3.0",
-    "@workflow/core": "^4.0.1-beta.11",
-    "axios": "^1.6.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "nodemailer": "^6.9.7",
-    "winston": "^3.11.0",
-    "winston-daily-rotate-file": "^4.7.1",
-    "workflow": "^4.0.1-beta.13"
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@ai-sdk/anthropic": "^2.0.44",
-    "@ai-sdk/openai": "^2.0.65",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^20.10.5",
-    "ai": "^5.0.93",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
-    "jest": "^29.7.0",
-    "nock": "^14.0.10",
-    "nodemon": "^3.0.2",
-    "prettier": "^3.6.2",
-    "supertest": "^7.1.4",
-    "ts-jest": "^29.4.5",
-    "typescript": "^5.9.3"
+    "@babel/preset-env": "^7.28.5",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.4",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5"
   }
 }

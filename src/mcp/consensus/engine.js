@@ -5,7 +5,7 @@ export class ConsensusEngine {
     this.votingStrategies = {
       'majority': this.majorityVote.bind(this),
       'weighted': this.weightedVote.bind(this),
-      'unanimous': this.unanimousVote.bind(this)
+      'unanimous': this.unanimousVote.bind(this),
     };
   }
 
@@ -16,7 +16,7 @@ export class ConsensusEngine {
     const {
       results,
       threshold = 0.66,
-      strategy = 'majority'
+      strategy = 'majority',
     } = options;
 
     // Filter successful results
@@ -33,7 +33,7 @@ export class ConsensusEngine {
       model: result.provider,
       answer: this.extractAnswer(result.text),
       confidence: result.confidence || 0.8,
-      reasoning: result.text
+      reasoning: result.text,
     }));
 
     // Apply voting strategy
@@ -49,7 +49,7 @@ export class ConsensusEngine {
       agreement: consensus.agreement,
       strategy,
       totalModels: results.length,
-      successfulModels: successful.length
+      successfulModels: successful.length,
     };
   }
 
@@ -72,14 +72,14 @@ export class ConsensusEngine {
         decision: null,
         confidence: agreement,
         agreement,
-        reason: 'No consensus reached'
+        reason: 'No consensus reached',
       };
     }
 
     return {
       decision: winner[0],
       confidence: agreement,
-      agreement
+      agreement,
     };
   }
 
@@ -103,7 +103,7 @@ export class ConsensusEngine {
     const scores = Object.entries(weights).map(([answer, weight]) => ({
       answer,
       score: weight / votes.length,
-      count: totalWeight[answer]
+      count: totalWeight[answer],
     }));
 
     const sorted = scores.sort((a, b) => b.score - a.score);
@@ -114,14 +114,14 @@ export class ConsensusEngine {
         decision: null,
         confidence: winner.score,
         agreement: winner.count / votes.length,
-        reason: 'Weighted consensus not reached'
+        reason: 'Weighted consensus not reached',
       };
     }
 
     return {
       decision: winner.answer,
       confidence: winner.score,
-      agreement: winner.count / votes.length
+      agreement: winner.count / votes.length,
     };
   }
 
@@ -137,7 +137,7 @@ export class ConsensusEngine {
         decision: null,
         confidence: 0,
         agreement: 0,
-        reason: 'Models disagree'
+        reason: 'Models disagree',
       };
     }
 
@@ -146,7 +146,7 @@ export class ConsensusEngine {
     return {
       decision: firstAnswer,
       confidence: avgConfidence,
-      agreement: 1.0
+      agreement: 1.0,
     };
   }
 
@@ -176,7 +176,7 @@ export class ConsensusEngine {
     const patterns = {
       polarized: false,
       nuanced: false,
-      uncertain: false
+      uncertain: false,
     };
 
     // Check for polarization (clear split)

@@ -30,7 +30,7 @@ class TTSService {
       const audioBuffer = await textToSpeech(process.env.ELEVEN_LABS_API_KEY, text, {
         voiceId: opts.voiceId || '21m00Tcm4TlvDq8ikWAM',
         modelId: 'eleven_multilingual_v2',
-        voiceSettings: { stability: opts.stability || 0.75, similarityBoost: opts.similarityBoost || 0.75 }
+        voiceSettings: { stability: opts.stability || 0.75, similarityBoost: opts.similarityBoost || 0.75 },
       });
 
       await redis.setex(key, 3600, audioBuffer);

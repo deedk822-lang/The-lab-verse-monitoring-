@@ -16,7 +16,7 @@ class AyrshareService {
       if (!this.apiKey) {
         return {
           success: false,
-          error: 'Ayrshare API key not configured'
+          error: 'Ayrshare API key not configured',
         };
       }
 
@@ -39,7 +39,7 @@ class AyrshareService {
         'youtube': 'youtube',
         'tiktok': 'tiktok',
         'telegram': 'telegram',
-        'reddit': 'reddit'
+        'reddit': 'reddit',
       };
 
       const mappedPlatforms = platformArray
@@ -53,20 +53,20 @@ class AyrshareService {
       const payload = {
         post,
         platforms: mappedPlatforms,
-        ...options
+        ...options,
       };
 
       logger.info('Posting to Ayrshare:', {
         platforms: mappedPlatforms,
-        postLength: post.length
+        postLength: post.length,
       });
 
       const response = await axios.post(`${this.baseURL}/post`, payload, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        timeout: 30000
+        timeout: 30000,
       });
 
       logger.info('Ayrshare post successful:', response.data.id);
@@ -75,7 +75,7 @@ class AyrshareService {
         success: true,
         data: response.data,
         platforms: mappedPlatforms,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
     } catch (error) {
@@ -85,7 +85,7 @@ class AyrshareService {
         success: false,
         error: error.message,
         details: error.response?.data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -98,19 +98,19 @@ class AyrshareService {
 
       const response = await axios.get(`${this.baseURL}/user`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
       });
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
 
     } catch (error) {
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }

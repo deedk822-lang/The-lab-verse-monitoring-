@@ -28,6 +28,7 @@ export default {
   // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.js',
+    'workflows/**/*.ts',
     '!src/**/*.test.js',
     '!src/**/__tests__/**',
     '!src/**/*.config.js'

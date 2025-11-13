@@ -13,6 +13,7 @@ import { initializeRUM } from './monitoring/rum.js';
 import { costTracker } from './monitoring/costTracking.js';
 import { syntheticMonitor } from './monitoring/synthetic.js';
 import monitoringRoutes from './routes/monitoring.js';
+import { getProviderStatus } from './config/providers.js';
 import { performanceMiddleware } from './monitoring/performance.js';
 
 // Load environment variables
@@ -50,7 +51,7 @@ initializeRUM();
 app.use('/api/monitoring', monitoringRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -60,7 +61,15 @@ app.get('/health', (req, res) => {
     costs: {
       total: costTracker.getTotalCost(),
       byService: costTracker.getCostByService()
-    }
+    },
+    dependencies: {
+      octokit: !!require('@octokit/rest'),
+    },
+    providers: getProviderStatus().providers.map(p => ({
+      name: p.name,
+      status: p.status,
+      available: p.available
+    }))
   };
 
   res.json(health);

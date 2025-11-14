@@ -1,21 +1,49 @@
 {
+ feature/monetization-supreme-tier-system
+
  TheLapVerseCore.ts
+ main
   "name": "the-lap-verse-monitoring",
   "version": "2.0.0",
   "description": "The Lab Verse Monitoring - Premium MCP Gateway with Multi-Tier Monetization",
   "main": "dist/index.js",
+ feature/monetization-supreme-tier-system
+
 
   "name": "lab-verse-gateway",
   "version": "1.0.0",
   "type": "module",
  main
-  "scripts": {
  main
+  "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test": "echo 'No tests yet – CI passes' && exit 0",
     "lint": "next lint",
+ feature/monetization-supreme-tier-system
+    "mcp:wpcom": "node mcp-server/wpcom-gateway.js",
+    "mcp:unito": "node mcp-server/unito-gateway.js",
+    "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
+    "mcp:hf": "node mcp-server/huggingface-gateway.js",
+    "start:all": "concurrently \"npm run mcp:wpcom\" \"npm run mcp:unito\" \"npm run mcp:socialpilot\" \"npm run mcp:hf\"",
+    "postinstall": "cd mcp-server && npm install && husky install",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
+    "validate:json": "node scripts/validate-json.js",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "mcp",
+    "gateway",
+    "ai",
+    "automation",
+    "saas",
+    "stripe",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "ISC",
+
     "wpcom": "node mcp-server/wpcom-gateway.js",
     "unito": "node mcp-server/unito-gateway.js",
     "socialpilot": "node mcp-server/socialpilot-gateway.js",
@@ -55,19 +83,20 @@
  main
   },
  main
-  "dependencies": {
  main
+  "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.1",
-    "@opentelemetry/api": "^1.7.0",
-    "concurrently": "^9.2.1",
-
     "@opentelemetry/api": "^1.8.0",
     "@stripe/stripe-js": "^2.4.0",
     "@vercel/postgres": "^0.10.0",
     "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.7.1",
+    "concurrently": "^9.2.1",
     "express": "^4.19.2",
+ feature/monetization-supreme-tier-system
+    "jsonwebtoken": "^9.0.2",
+
  TheLapVerseCore.ts
     "jsonwebtoken": "^9.0.2",
 
@@ -76,6 +105,7 @@
     "axios": "^1.6.8",
     "zod": "^3.23.8",
  fix/vercel-deployment-eslint-typescript
+ main
  main
     "next": "^14.2.5",
     "next-auth": "^4.24.7",
@@ -87,6 +117,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+ feature/monetization-supreme-tier-system
+    "@types/bcryptjs": "^2.4.6",
+
  TheLapVerseCore.ts
     "@types/bcryptjs": "^2.4.6",
 
@@ -98,6 +131,7 @@
     "eslint-config-next": "^14.2.5"
 
  main
+ main
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.12",
@@ -106,9 +140,9 @@
     "@typescript-eslint/parser": "^8.19.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
+    "husky": "^9.1.7",
     "nodemon": "^3.1.0",
     "typescript": "^5.4.5"
- fix/vercel-deployment-eslint-typescript
   },
   "engines": {
     "node": ">=20"

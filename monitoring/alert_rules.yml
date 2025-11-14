@@ -1,0 +1,83 @@
+groups:
+- name: labverse-alerts
+  rules:
+  - alert: HighTaskFailureRate
+    expr: rate(kimi_tasks_total{status="failed"}[5m]) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High task failure rate detected"
+      description: "Task failure rate is {{ $value }} per second"
+      
+  - alert: KimiServiceDown
+    expr: up{job="kimi-instruct"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Kimi Instruct service is down"
+      
+  - alert: HighRiskScore
+    expr: kimi_project_risk_score > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Project risk score is high: {{ $value }}"
+      
+  - alert: RevenueTargetAtRisk
+    expr: kimi_mrr_projection < 0.8 * 75000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MRR projection below 80% of target"
+      
+  - alert: HighMemoryUsage
+    expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage: {{ $value }}%"
+      
+  - alert: HighCPUUsage
+    expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage: {{ $value }}%"
+
+- name: AI Provider Monitoring Alerts
+  rules:
+  - alert: HighProviderLatency
+    expr: |
+      histogram_quantile(0.95, sum(rate(ai_provider_request_duration_seconds_bucket[5m])) by (le, provider, model)) > 5
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High P95 Latency for AI Provider: {{ $labels.provider }} (Model: {{ $labels.model }})"
+      description: "The 95th percentile request latency for {{ $labels.provider }} (Model: {{ $labels.model }}) has been above 5 seconds for the last 5 minutes. Current value: {{ $value }}s."
+
+  - alert: HighProviderErrorRate
+    expr: |
+      sum(rate(ai_provider_errors_total[5m])) by (provider) / sum(rate(ai_provider_request_duration_seconds_count[5m])) by (provider) * 100 > 5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Error Rate for AI Provider: {{ $labels.provider }}"
+      description: "The error rate for {{ $labels.provider }} has been above 5% for the last 5 minutes. Current rate: {{ $value }}%."
+
+  - alert: ProviderDown
+    expr: |
+      absent(ai_provider_request_duration_seconds_count{provider="gemini"}[10m]) or absent(ai_provider_request_duration_seconds_count{provider="openai"}[10m])
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "AI Provider Appears Down"
+      description: "No metrics have been received for one or more key AI providers (e.g., gemini, openai) for the last 10 minutes. This indicates a potential outage or metrics push failure."

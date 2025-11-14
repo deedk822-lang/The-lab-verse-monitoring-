@@ -8,7 +8,12 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "lint": "next lint",
-    "test": "echo 'No tests yet – CI passes' && exit 0"
+    "test": "echo 'No tests yet – CI passes' && exit 0",
+    "postinstall": "cd mcp-server && npm install",
+    "mcp:hf": "node mcp-server/huggingface-gateway.js",
+    "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
+    "mcp:unito": "node mcp-server/unito-gateway.js",
+    "mcp:wpcom": "node mcp-server/wpcom-gateway.js"
   },
   "keywords": [],
   "author": "",

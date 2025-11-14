@@ -12,7 +12,6 @@ import { TheLapVerseKagglePipe } from './kaggle/TheLapVerseKagglePipe';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import { createClient, RedisClientType } from 'redis';
 import * as promClient from 'prom-client';
-import { FinOpsEngine } from './monetization/FinOpsEngine';
 
 export class TheLapVerseCore {
   private readonly tracer   = trace.getTracer('lapverse-core', '2.0.0');
@@ -21,7 +20,7 @@ export class TheLapVerseCore {
   private readonly cost     = new FinOpsTagger();
   private readonly slo      = new SloErrorBudget();
   private readonly flags    = new OpenFeatureFlags();
-  private readonly validator= new OpenApiValidator();
+  private readonly validator = new OpenApiValidator();
   private readonly idempotency = new IdempotencyManager();
   private readonly kagglePipe: TheLapVerseKagglePipe;
 
@@ -52,7 +51,6 @@ export class TheLapVerseCore {
 
   /* ---------- Public API ---------- */
   async start(port = 3000): Promise<Express> {
-    FinOpsEngine.activate();
     await this.redisClient.connect();
     await this.validator.loadSpec('./openapi/lapverse.yaml');
     await this.slo.loadBudget();
@@ -172,4 +170,3 @@ export class TheLapVerseCore {
   private async callShareAPI(platform: string, news: any): Promise<any> { return { postId: randomUUID(), platform }; }
   private calcAmplification(news: any, shares: PromiseSettledResult<any>[]): number { return Math.min(100, (news.confidence * 50) + shares.filter(s => s.status === 'fulfilled').length * 10); }
 }
-

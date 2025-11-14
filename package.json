@@ -1,24 +1,42 @@
 {
-  "name": "the-lap-verse-monitoring",
+  "name": "lab-verse-gateway",
   "version": "1.0.0",
-  "description": "The Lap Verse Monitoring Core API",
-  "main": "dist/index.js",
+  "type": "module",
   "scripts": {
+ main
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "echo 'No tests yet – CI passes' && exit 0",
+    "lint": "next lint",
+    "wpcom": "node mcp-server/wpcom-gateway.js",
+    "unito": "node mcp-server/unito-gateway.js",
+    "socialpilot": "node mcp-server/socialpilot-gateway.js",
+    "hf": "node mcp-server/huggingface-gateway.js",
+    "start:all": "concurrently \"npm run wpcom\" \"npm run unito\" \"npm run socialpilot\" \"npm run hf\""
+
     "build": "tsc && next build",
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "lint": "next lint",
+ fix/python-tests-and-mcp-configuration
     "test": "echo 'No tests yet – CI passes' && exit 0",
     "postinstall": "cd mcp-server && npm install",
     "mcp:hf": "node mcp-server/huggingface-gateway.js",
     "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
     "mcp:unito": "node mcp-server/unito-gateway.js",
     "mcp:wpcom": "node mcp-server/wpcom-gateway.js"
+
+    "test": "echo 'No tests yet – CI passes' && exit 0"
+ fix/vercel-deployment-eslint-typescript
+ main
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+ main
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@opentelemetry/api": "^1.7.0",
+    "concurrently": "^9.2.1",
+
     "@opentelemetry/api": "^1.8.0",
     "bullmq": "^5.7.1",
     "express": "^4.19.2",
@@ -26,11 +44,19 @@
     "prom-client": "^15.1.2",
     "axios": "^1.6.8",
     "zod": "^3.23.8",
+ fix/vercel-deployment-eslint-typescript
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+ main
+    "@babel/preset-env": "^7.28.5",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.4",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5"
+
     "@types/express": "^4.17.21",
     "@types/node": "^20.12.12",
     "@types/react": "^19.2.4",
@@ -40,6 +66,7 @@
     "eslint-config-next": "^14.2.5",
     "nodemon": "^3.1.0",
     "typescript": "^5.4.5"
+ fix/vercel-deployment-eslint-typescript
   },
   "engines": {
     "node": ">=20"

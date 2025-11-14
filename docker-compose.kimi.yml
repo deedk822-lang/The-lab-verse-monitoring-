@@ -1,16 +1,29 @@
 version: '3.8'
 
+<<<<<<< HEAD
+=======
  feature/ml-anomaly-detection
+>>>>>>> origin/feat/ai-connectivity-layer
 networks:
   monitoring:
     external: true
 
+<<<<<<< HEAD
+=======
  main
+>>>>>>> origin/feat/ai-connectivity-layer
 services:
   kimi-project-manager:
     build:
       context: .
       dockerfile: Dockerfile.kimi
+<<<<<<< HEAD
+ cursor/debug-and-fix-main-branch-f40d
+    container_name: labverse_kimi_pm
+
+    container_name: labverse_kimi_manager
+ main
+=======
  feature/ml-anomaly-detection
     container_name: labverse_kimi_pm
     restart: unless-stopped
@@ -28,11 +41,18 @@ services:
       - ./logs:/app/logs
 
     container_name: labverse_kimi_manager
+>>>>>>> origin/feat/ai-connectivity-layer
     restart: unless-stopped
     ports:
       - "8084:8084"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+<<<<<<< HEAD
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+=======
+>>>>>>> origin/feat/ai-connectivity-layer
       - PROMETHEUS_URL=http://prometheus:9090
       - GRAFANA_URL=http://grafana:3000
       - COST_OPTIMIZER_URL=http://cost-optimizer:8083
@@ -43,6 +63,10 @@ services:
       - HUMAN_APPROVAL_CHANNEL=#project-approvals
       - KIMI_HOST=0.0.0.0
       - KIMI_PORT=8084
+<<<<<<< HEAD
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+=======
+>>>>>>> origin/feat/ai-connectivity-layer
     networks:
       - monitoring
     healthcheck:
@@ -61,6 +85,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.kimi.rule=Host(`kimi.localhost`)"
+<<<<<<< HEAD
+      - "traefik.http.services.kimi.loadbalancer.server.port=8084"
+ cursor/debug-and-fix-main-branch-f40d
+      - "com.docker.compose.service=kimi-project-manager"
+
+      - "com.docker.compose.service=kimi-project-manager"
+=======
       - "traefik.http.routers.kimi.entrypoints=web"
       - "traefik.http.services.kimi.loadbalancer.server.port=8084"
       - "com.docker.compose.service=kimi-project-manager"
@@ -69,4 +100,5 @@ services:
 networks:
   monitoring:
     external: true
+>>>>>>> origin/feat/ai-connectivity-layer
  main

@@ -13,7 +13,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - KAGGLE_API_KEY=${KAGGLE_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://openlit:4317
       - COST_CENTER=lapverse-core
     ports:
       - "3000:3000"
@@ -102,12 +102,56 @@ services:
     networks:
       - lapverse-network
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.4.1
+    container_name: clickhouse
+    environment:
+      CLICKHOUSE_PASSWORD: ${OPENLIT_DB_PASSWORD:-OPENLIT}
+      CLICKHOUSE_USER: ${OPENLIT_DB_USER:-default}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./assets/clickhouse-config.xml:/etc/clickhouse-server/config.d/custom-config.xml:ro
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    restart: always
+    networks:
+      - lapverse-network
+
+  openlit:
+    image: ghcr.io/openlit/openlit:latest
+    container_name: openlit
+    environment:
+      TELEMETRY_ENABLED: "true"
+      INIT_DB_HOST: clickhouse
+      INIT_DB_PORT: 8123
+      INIT_DB_DATABASE: ${OPENLIT_DB_NAME:-openlit}
+      INIT_DB_USERNAME: ${OPENLIT_DB_USER:-default}
+      INIT_DB_PASSWORD: ${OPENLIT_DB_PASSWORD:-OPENLIT}
+      SQLITE_DATABASE_URL: file:/app/client/data/data.db
+      PORT: "3000"
+      DOCKER_PORT: "3000"
+    ports:
+      - "3002:3000"
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - clickhouse
+    volumes:
+      - openlit-data:/app/client/data
+      - ./assets/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml
+      - ./assets/supervisor-dynamic.yaml:/etc/otel/supervisor-dynamic.yaml
+    restart: always
+    networks:
+      - lapverse-network
+
 volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  clickhouse-data:
+  openlit-data:
 
 networks:
   lapverse-network:
     driver: bridge
-

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  argilla:
+    image: argilla/argilla:2.8.0
+    container_name: argilla
+    restart: unless-stopped
+    ports:
+      - "6900:6900"
+    environment:
+      - ARGILLA_BASE_URL=http://localhost:6900
+      - ARGILLA_API_KEY=lapverse-internal
+      - ARGILLA_WORKSPACE=lapverse
+      - ARGILLA_ELASTICSEARCH=http://elasticsearch:9200
+      - ARGILLA_REDIS_URL=redis://redis:6379
+    depends_on:
+      - elasticsearch
+      - redis
+    volumes:
+      - ./datasets:/app/datasets
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6900/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: argilla-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: argilla-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  elasticsearch_data:
+  redis_data:

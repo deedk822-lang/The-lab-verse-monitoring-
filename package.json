@@ -14,8 +14,10 @@
     "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
     "mcp:hf": "node mcp-server/huggingface-gateway.js",
     "start:all": "concurrently \"npm run mcp:wpcom\" \"npm run mcp:unito\" \"npm run mcp:socialpilot\" \"npm run mcp:hf\"",
-    "postinstall": "cd mcp-server && npm install",
-    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
+    "postinstall": "cd mcp-server && npm install && husky install",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
+    "validate:json": "node scripts/validate-json.js",
+    "prepare": "husky install"
   },
   "keywords": [
     "mcp",
@@ -58,6 +60,7 @@
     "@typescript-eslint/parser": "^8.19.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
+    "husky": "^9.1.7",
     "nodemon": "^3.1.0",
     "typescript": "^5.4.5"
   },

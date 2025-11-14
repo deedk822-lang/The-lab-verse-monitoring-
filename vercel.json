@@ -1,4 +1,14 @@
 {
+  "builds": [
+    {
+      "src": "apps/web/package.json",
+      "use": "@vercel/next",
+      "config": {
+        "installCommand": "pnpm install",
+        "buildCommand": "pnpm turbo run build --filter=web"
+      }
+    }
+  ],
   "functions": {
     "pages/api/gateway/v1/chat/completions.js": {
       "runtime": "edge"

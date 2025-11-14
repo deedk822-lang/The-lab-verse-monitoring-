@@ -1,0 +1,444 @@
+#!/usr/bin/env python3
+"""
+Kimi Instruct CLI - Production Command Line Interface
+Real operations with AI provider integration
+"""
+
+import asyncio
+import json
+import sys
+import os
+import argparse
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+import aiohttp
+from datetime import datetime
+import uuid
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv('.env.local')
+except ImportError:
+    print("Warning: python-dotenv not installed, environment variables may not be loaded")
+
+class KimiCLI:
+    """Production Kimi Instruct CLI with real API integration"""
+    
+    def __init__(self, base_url: str = None):
+        self.base_url = base_url or os.getenv("KIMI_API_URL", "http://localhost:8084")
+        self.timeout = aiohttp.ClientTimeout(total=30)
+        
+    async def _make_request(self, method: str, endpoint: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Make HTTP request to Kimi service"""
+        url = f"{self.base_url}{endpoint}"
+        
+        try:
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                async with session.request(method, url, json=data) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    else:
+                        error_text = await response.text()
+                        raise Exception(f"API Error {response.status}: {error_text}")
+        except aiohttp.ClientError as e:
+            raise Exception(f"Connection error: {e}")
+
+    async def status(self, detailed: bool = False, competitive_analysis: bool = False) -> Dict[str, Any]:
+        """Get comprehensive project status"""
+        try:
+            # Get basic status
+            status_data = await self._make_request("GET", "/status")
+            
+            if detailed:
+                # Get additional insights
+                try:
+                    insights = await self._make_request("GET", "/api/v1/next-actions")
+                    status_data["insights"] = insights.get("recommendations", [])
+                except:
+                    pass
+            
+            if competitive_analysis:
+                # Get competitive metrics
+                try:
+                    optimization = await self._make_request("GET", "/api/v1/optimize")
+                    status_data["competitive_analysis"] = optimization.get("competitive_intelligence", {})
+                except:
+                    pass
+            
+            return status_data
+        except Exception as e:
+            return {"error": str(e), "status": "unreachable"}
+
+    async def create_task(self, title: str, description: str = "", priority: str = "medium", 
+                         task_type: str = "analysis", requires_approval: bool = False,
+                         validate: bool = True) -> Dict[str, Any]:
+        """Create a new task with validation"""
+        
+        if validate:
+            # Validate inputs
+            valid_priorities = ["low", "medium", "high", "critical"]
+            if priority not in valid_priorities:
+                raise ValueError(f"Priority must be one of: {valid_priorities}")
+            
+            valid_types = ["deployment", "monitoring", "analysis", "optimization", 
+                          "security", "backup", "maintenance", "revenue_optimization", "a2a_negotiation"]
+            if task_type not in valid_types:
+                raise ValueError(f"Task type must be one of: {valid_types}")
+        
+        task_data = {
+            "title": title,
+            "description": description,
+            "priority": priority,
+            "type": task_type,
+            "requires_approval": requires_approval,
+            "metadata": {
+                "created_via": "cli",
+                "cli_version": "2.0.0"
+            }
+        }
+        
+        return await self._make_request("POST", "/api/v1/tasks", task_data)
+
+    async def list_tasks(self, status_filter: str = None, priority_filter: str = None,
+                        limit: int = 50, format_output: bool = True) -> Dict[str, Any]:
+        """List tasks with filtering"""
+        params = []
+        if status_filter:
+            params.append(f"status={status_filter}")
+        if priority_filter:
+            params.append(f"priority={priority_filter}")
+        params.append(f"limit={limit}")
+        
+        query_string = "?" + "&".join(params) if params else ""
+        endpoint = f"/api/v1/tasks{query_string}"
+        
+        result = await self._make_request("GET", endpoint)
+        
+        if format_output and "tasks" in result:
+            # Format for better CLI display
+            tasks = result["tasks"]
+            formatted_tasks = []
+            
+            for task in tasks:
+                formatted_task = {
+                    "id": task["id"],
+                    "title": task["title"][:50] + "..." if len(task["title"]) > 50 else task["title"],
+                    "status": task["status"],
+                    "priority": task["priority"],
+                    "progress": f"{task.get('progress', 0)*100:.0f}%",
+                    "created": task["created_at"][:10]  # Just the date
+                }
+                formatted_tasks.append(formatted_task)
+            
+            result["formatted_tasks"] = formatted_tasks
+        
+        return result
+
+    async def revenue_optimize(self, target_mrr: float = 10000, 
+                             channels: List[str] = None,
+                             optimization_type: str = "conversion") -> Dict[str, Any]:
+        """Trigger revenue optimization"""
+        if channels is None:
+            channels = ["organic", "paid", "affiliate"]
+        
+        data = {
+            "target_mrr": target_mrr,
+            "channels": channels,
+            "type": optimization_type,
+            "description": f"CLI-initiated revenue optimization targeting ${target_mrr:,.0f} MRR"
+        }
+        
+        return await self._make_request("POST", "/api/v1/revenue/optimize", data)
+
+    async def checkin(self, interactive: bool = True) -> None:
+        """Perform human checkin with system overview"""
+        print("🤖 Kimi Instruct - Human Checkin")
+        print("=" * 50)
+        
+        try:
+            # Get comprehensive status
+            status = await self.status(detailed=True)
+            
+            if "error" in status:
+                print(f"❌ Unable to connect to Kimi service: {status['error']}")
+                return
+            
+            # Display key metrics
+            metrics = status.get("project_metrics", {})
+            print(f"📊 Progress: {metrics.get('progress_percentage', 0):.1f}%")
+            print(f"📋 Active Tasks: {status.get('active_tasks', 0)}")
+            print(f"🏆 Completed: {metrics.get('completed_tasks', 0)}/{metrics.get('total_tasks', 0)}")
+            print(f"📅 Days Remaining: {metrics.get('days_remaining', 0)}")
+            print(f"⚠️  Risk Score: {metrics.get('risk_score', 0):.2f}")
+            print(f"💰 Budget Used: ${metrics.get('budget_used', 0):,.2f}")
+            print(f"💵 MRR Projection: ${metrics.get('mrr_projection', 0):,.2f}")
+            
+            # Show AI provider status
+            ai_providers = status.get("ai_providers", {})
+            if ai_providers:
+                print(f"\n🧠 AI Providers:")
+                for provider, status_val in ai_providers.items():
+                    print(f"  • {provider.title()}: {status_val}")
+            
+            # Show insights
+            insights = status.get("insights", [])
+            if insights:
+                print("\n🎯 Recommended Actions:")
+                for i, rec in enumerate(insights[:3], 1):
+                    action = rec.get('action', 'Unknown') if isinstance(rec, dict) else str(rec)
+                    print(f"  {i}. {action}")
+            
+            # Interactive mode
+            if interactive:
+                print("\n" + "─" * 50)
+                while True:
+                    print("\nOptions:")
+                    print("1. View detailed task list")
+                    print("2. Run revenue optimization")
+                    print("3. Create new task")
+                    print("4. Exit")
+                    
+                    choice = input("\nSelect option (1-4): ").strip()
+                    
+                    if choice == "1":
+                        await self._interactive_task_list()
+                    elif choice == "2":
+                        await self._interactive_revenue_optimization()
+                    elif choice == "3":
+                        await self._interactive_task_creation()
+                    elif choice == "4":
+                        break
+                    else:
+                        print("Invalid choice. Please select 1-4.")
+            
+        except Exception as e:
+            print(f"❌ Error during checkin: {e}")
+
+    async def _interactive_task_list(self):
+        """Interactive task list display"""
+        print("\n📋 Task List:")
+        print("─" * 30)
+        
+        tasks_result = await self.list_tasks()
+        tasks = tasks_result.get("formatted_tasks", [])
+        
+        if not tasks:
+            print("No tasks found.")
+            return
+        
+        for task in tasks:
+            status_icon = {
+                "pending": "⏳",
+                "in_progress": "🔄", 
+                "completed": "✅",
+                "failed": "❌",
+                "requires_approval": "⚠️",
+                "cancelled": "🚫"
+            }.get(task["status"], "❓")
+            
+            priority_icon = {
+                "low": "🔵",
+                "medium": "🟡", 
+                "high": "🔴",
+                "critical": "🚨"
+            }.get(task["priority"], "⚪")
+            
+            print(f"{status_icon} {priority_icon} [{task['id']}] {task['title']}")
+            print(f"    Status: {task['status']} | Progress: {task['progress']} | Created: {task['created']}")
+
+    async def _interactive_revenue_optimization(self):
+        """Interactive revenue optimization"""
+        print("\n💰 Revenue Optimization:")
+        print("─" * 30)
+        
+        try:
+            target_mrr = float(input("Target MRR ($): ") or "10000")
+            
+            print("Available channels: organic, paid, affiliate, direct, referral")
+            channels_input = input("Channels (comma-separated, or Enter for default): ").strip()
+            channels = [c.strip() for c in channels_input.split(",")] if channels_input else ["organic", "paid", "affiliate"]
+            
+            print("\nStarting revenue optimization...")
+            result = await self.revenue_optimize(target_mrr=target_mrr, channels=channels)
+            
+            if "error" not in result:
+                projections = result.get("projections", {})
+                print(f"✅ Optimization initiated!")
+                print(f"   Current MRR: ${projections.get('current_mrr', 0):,.2f}")
+                print(f"   Projected Increase: ${projections.get('projected_increase', 0):,.2f}")
+                print(f"   New Projection: ${projections.get('new_mrr_projection', 0):,.2f}")
+                print(f"   Confidence: {projections.get('confidence', 0)*100:.0f}%")
+            else:
+                print(f"❌ Optimization failed: {result['error']}")
+                
+        except ValueError:
+            print("❌ Invalid MRR value")
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+    async def _interactive_task_creation(self):
+        """Interactive task creation"""
+        print("\n📝 Create New Task:")
+        print("─" * 25)
+        
+        try:
+            title = input("Task title: ").strip()
+            if not title:
+                print("❌ Title is required")
+                return
+            
+            description = input("Description (optional): ").strip()
+            
+            print("Available priorities: low, medium, high, critical")
+            priority = input("Priority (default: medium): ").strip() or "medium"
+            
+            print("Available types: analysis, deployment, monitoring, optimization, revenue_optimization")
+            task_type = input("Type (default: analysis): ").strip() or "analysis"
+            
+            print("\nCreating task...")
+            result = await self.create_task(title, description, priority, task_type)
+            
+            if "task" in result:
+                task = result["task"]
+                print(f"✅ Task created successfully!")
+                print(f"   ID: {task['id']}")
+                print(f"   Title: {task['title']}")
+                print(f"   Status: {task['status']}")
+                print(f"   Priority: {task['priority']}")
+            else:
+                print(f"❌ Task creation failed: {result.get('error', 'Unknown error')}")
+                
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+async def main():
+    """Main CLI entry point"""
+    parser = argparse.ArgumentParser(
+        description="Kimi Instruct CLI - AI Project Manager",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s status                                    # Get basic status
+  %(prog)s status --detailed --competitive          # Detailed status with competitive analysis
+  %(prog)s task --title "Deploy API" --priority high # Create high priority task
+  %(prog)s list --status pending                     # List pending tasks
+  %(prog)s revenue --target-mrr 25000               # Optimize for $25k MRR
+  %(prog)s checkin                                   # Interactive human checkin
+        """
+    )
+    
+    parser.add_argument("--url", default=None, 
+                       help="Kimi service URL (default: http://localhost:8084)")
+    parser.add_argument("--timeout", type=int, default=30,
+                       help="Request timeout in seconds")
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Status command
+    status_parser = subparsers.add_parser("status", help="Get project status")
+    status_parser.add_argument("--detailed", action="store_true", 
+                              help="Include detailed insights")
+    status_parser.add_argument("--competitive", action="store_true",
+                              help="Include competitive analysis")
+    
+    # Task command
+    task_parser = subparsers.add_parser("task", help="Create a new task")
+    task_parser.add_argument("--title", required=True, help="Task title")
+    task_parser.add_argument("--description", default="", help="Task description")
+    task_parser.add_argument("--priority", choices=["low", "medium", "high", "critical"], 
+                            default="medium", help="Task priority")
+    task_parser.add_argument("--type", choices=["deployment", "monitoring", "analysis", 
+                            "optimization", "security", "backup", "maintenance", 
+                            "revenue_optimization", "a2a_negotiation"], 
+                            default="analysis", help="Task type")
+    task_parser.add_argument("--approval", action="store_true", 
+                            help="Require human approval")
+    
+    # List command
+    list_parser = subparsers.add_parser("list", help="List tasks")
+    list_parser.add_argument("--status", help="Filter by status")
+    list_parser.add_argument("--priority", help="Filter by priority")
+    list_parser.add_argument("--limit", type=int, default=50, help="Maximum results")
+    
+    # Revenue optimization command
+    revenue_parser = subparsers.add_parser("revenue", help="Revenue optimization")
+    revenue_parser.add_argument("--target-mrr", type=float, default=10000,
+                               help="Target Monthly Recurring Revenue")
+    revenue_parser.add_argument("--channels", nargs="+", 
+                               default=["organic", "paid", "affiliate"],
+                               help="Revenue channels to optimize")
+    revenue_parser.add_argument("--type", default="conversion",
+                               help="Optimization type")
+    
+    # Checkin command
+    checkin_parser = subparsers.add_parser("checkin", help="Human checkin")
+    checkin_parser.add_argument("--non-interactive", action="store_true",
+                               help="Non-interactive mode")
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    # Initialize CLI
+    cli = KimiCLI(args.url)
+    
+    try:
+        if args.command == "status":
+            status = await cli.status(args.detailed, args.competitive)
+            print(json.dumps(status, indent=2))
+        
+        elif args.command == "task":
+            result = await cli.create_task(
+                args.title, args.description, args.priority, 
+                args.type, args.approval
+            )
+            if "task" in result:
+                print(f"✅ Task created: {result['task']['id']}")
+                print(f"   Title: {result['task']['title']}")
+                print(f"   Status: {result['task']['status']}")
+                print(f"   Priority: {result['task']['priority']}")
+            else:
+                print(f"❌ Failed to create task: {result.get('error', 'Unknown error')}")
+        
+        elif args.command == "list":
+            result = await cli.list_tasks(args.status, args.priority, args.limit)
+            tasks = result.get("formatted_tasks", [])
+            
+            if tasks:
+                print(f"📋 Found {len(tasks)} tasks:")
+                print("─" * 80)
+                for task in tasks:
+                    status_icon = {"pending": "⏳", "in_progress": "🔄", "completed": "✅", 
+                                  "failed": "❌", "requires_approval": "⚠️"}.get(task["status"], "❓")
+                    print(f"{status_icon} [{task['id']}] {task['title']} ({task['priority']} priority)")
+            else:
+                print("No tasks found")
+        
+        elif args.command == "revenue":
+            result = await cli.revenue_optimize(args.target_mrr, args.channels, args.type)
+            if "error" not in result:
+                projections = result.get("projections", {})
+                print(f"✅ Revenue optimization started!")
+                print(f"Target MRR: ${args.target_mrr:,.2f}")
+                print(f"Channels: {', '.join(args.channels)}")
+                print(f"Projected increase: ${projections.get('projected_increase', 0):,.2f}")
+            else:
+                print(f"❌ Failed: {result['error']}")
+        
+        elif args.command == "checkin":
+            await cli.checkin(not args.non_interactive)
+    
+    except KeyboardInterrupt:
+        print("\n👋 Operation cancelled")
+        sys.exit(0)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    asyncio.run(main())

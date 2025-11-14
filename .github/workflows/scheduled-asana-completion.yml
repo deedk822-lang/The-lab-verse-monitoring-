@@ -1,0 +1,342 @@
+# Scheduled Asana Task Completion Workflow
+# Automatically completes tasks based on predefined criteria on a daily schedule
+
+name: Scheduled Asana Completion
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC (can be adjusted based on your timezone)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (show what would be completed without completing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      completion_criteria:
+        description: 'Completion criteria'
+        required: false
+        default: 'overdue_tasks'
+        type: choice
+        options:
+        - overdue_tasks
+        - tagged_ready
+        - low_priority
+        - old_completed_projects
+      notification_channel:
+        description: 'Send notifications'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+env:
+  DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+  COMPLETION_CRITERIA: ${{ github.event.inputs.completion_criteria || 'overdue_tasks' }}
+  SEND_NOTIFICATIONS: ${{ github.event.inputs.notification_channel || 'true' }}
+
+jobs:
+  scheduled-completion:
+    runs-on: ubuntu-latest
+    outputs:
+      completed-count: ${{ steps.completion-summary.outputs.completed-count }}
+      skipped-count: ${{ steps.completion-summary.outputs.skipped-count }}
+      total-processed: ${{ steps.completion-summary.outputs.total-processed }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install asana requests python-dateutil
+
+      - name: Scheduled Task Completion
+        id: complete-tasks
+        run: |
+          cat > scheduled_completion.py << 'EOF'
+          import asana
+          import sys
+          import os
+          from datetime import datetime, timedelta
+          from dateutil.parser import parse
+          import json
+
+          def get_client():
+              pat = os.getenv('ASANA_PAT')
+              if not pat:
+                  print("❌ ASANA_PAT secret not found")
+                  return None
+              return asana.Client.access_token(pat)
+
+          def is_overdue_task(task):
+              """Check if task is overdue"""
+              if not task.get('due_date'):
+                  return False
+              due_date = parse(task['due_date'])
+              return due_date.date() < datetime.now().date()
+
+          def has_ready_tag(task, client):
+              """Check if task has 'ready-for-completion' tag"""
+              try:
+                  task_details = client.tasks.find_by_id(task['gid'], {"opt_fields": "tags.name"})
+                  tags = [tag['name'].lower() for tag in task_details.get('tags', [])]
+                  return any('ready' in tag or 'complete' in tag for tag in tags)
+              except:
+                  return False
+
+          def is_low_priority_old_task(task):
+              """Check if task is low priority and older than 30 days"""
+              try:
+                  created_at = parse(task.get('created_at', ''))
+                  days_old = (datetime.now() - created_at).days
+                  return days_old > 30  # Older than 30 days
+              except:
+                  return False
+
+          def should_complete_task(task, criteria, client):
+              """Determine if task should be completed based on criteria"""
+              if task['completed']:
+                  return False, "Already completed"
+              
+              if criteria == 'overdue_tasks':
+                  if is_overdue_task(task):
+                      return True, "Overdue task"
+              
+              elif criteria == 'tagged_ready':
+                  if has_ready_tag(task, client):
+                      return True, "Tagged as ready for completion"
+              
+              elif criteria == 'low_priority':
+                  if is_low_priority_old_task(task):
+                      return True, "Low priority old task"
+              
+              elif criteria == 'old_completed_projects':
+                  # For tasks in projects that are marked as complete
+                  try:
+                      task_details = client.tasks.find_by_id(task['gid'], {"opt_fields": "projects.completed"})
+                      for project in task_details.get('projects', []):
+                          if project.get('completed'):
+                              return True, "Task in completed project"
+                  except:
+                      pass
+              
+              return False, "Does not meet criteria"
+
+          def main():
+              client = get_client()
+              if not client:
+                  sys.exit(1)
+
+              criteria = os.getenv('COMPLETION_CRITERIA', 'overdue_tasks')
+              dry_run = os.getenv('DRY_RUN', 'false').lower() == 'true'
+
+              print(f"🔄 Scheduled completion running...")
+              print(f"📋 Criteria: {criteria}")
+              print(f"🧪 Dry run: {dry_run}")
+              print("-" * 50)
+
+              # Get user's workspace
+              workspaces = list(client.workspaces.find_all())
+              if not workspaces:
+                  print("❌ No workspaces found")
+                  sys.exit(1)
+
+              workspace_id = workspaces[0]['gid']
+              me = client.users.me()
+
+              # Get user's incomplete tasks
+              tasks = list(client.tasks.find_by_user(me['gid'], {
+                  "workspace": workspace_id,
+                  "opt_fields": "name,completed,due_date,created_at,projects.name,projects.completed",
+                  "completed_since": "now"
+              }))
+
+              completed_count = 0
+              skipped_count = 0
+              processed_tasks = []
+
+              for task in tasks:
+                  should_complete, reason = should_complete_task(task, criteria, client)
+                  
+                  task_info = {
+                      "name": task['name'],
+                      "id": task['gid'],
+                      "reason": reason,
+                      "action": "would_complete" if should_complete and dry_run else ("completed" if should_complete else "skipped")
+                  }
+                  
+                  if should_complete:
+                      if dry_run:
+                          print(f"🧪 WOULD COMPLETE: {task['name']} - {reason}")
+                          completed_count += 1
+                      else:
+                          try:
+                              client.tasks.update(task['gid'], {'completed': True})
+                              print(f"✅ COMPLETED: {task['name']} - {reason}")
+                              completed_count += 1
+                          except Exception as e:
+                              print(f"❌ FAILED: {task['name']} - {str(e)}")
+                              task_info["action"] = "failed"
+                              task_info["error"] = str(e)
+                  else:
+                      skipped_count += 1
+                  
+                  processed_tasks.append(task_info)
+
+              # Output summary for GitHub Actions
+              print(f"\n📊 SUMMARY:")
+              print(f"✅ {'Would complete' if dry_run else 'Completed'}: {completed_count}")
+              print(f"⏭️ Skipped: {skipped_count}")
+              print(f"📋 Total processed: {len(processed_tasks)}")
+              
+              # Set outputs for next jobs
+              with open(os.getenv('GITHUB_OUTPUT', '/dev/stdout'), 'a') as f:
+                  f.write(f"completed-count={completed_count}\n")
+                  f.write(f"skipped-count={skipped_count}\n")
+                  f.write(f"total-processed={len(processed_tasks)}\n")
+                  f.write(f"dry-run={dry_run}\n")
+                  f.write(f"criteria={criteria}\n")
+
+              # Save detailed results for reporting
+              results = {
+                  "timestamp": datetime.now().isoformat(),
+                  "criteria": criteria,
+                  "dry_run": dry_run,
+                  "summary": {
+                      "completed": completed_count,
+                      "skipped": skipped_count,
+                      "total": len(processed_tasks)
+                  },
+                  "tasks": processed_tasks
+              }
+              
+              with open('completion_results.json', 'w') as f:
+                  json.dump(results, f, indent=2)
+
+          if __name__ == "__main__":
+              main()
+          EOF
+
+          python scheduled_completion.py
+        env:
+          ASANA_PAT: ${{ secrets.ASANA_PAT }}
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: completion-results
+          path: completion_results.json
+
+      - name: Generate Summary Report
+        id: completion-summary
+        run: |
+          if [ -f completion_results.json ]; then
+            COMPLETED=$(cat completion_results.json | jq -r '.summary.completed')
+            SKIPPED=$(cat completion_results.json | jq -r '.summary.skipped')
+            TOTAL=$(cat completion_results.json | jq -r '.summary.total')
+            
+            echo "completed-count=$COMPLETED" >> $GITHUB_OUTPUT
+            echo "skipped-count=$SKIPPED" >> $GITHUB_OUTPUT
+            echo "total-processed=$TOTAL" >> $GITHUB_OUTPUT
+            
+            # Create GitHub Step Summary
+            echo "## 📊 Scheduled Asana Completion Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+            echo "**Criteria:** ${{ env.COMPLETION_CRITERIA }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Mode:** ${{ env.DRY_RUN == 'true' && 'Dry Run' || 'Live Run' }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ ${{ env.DRY_RUN == 'true' && 'Would Complete' || 'Completed' }}: $COMPLETED tasks" >> $GITHUB_STEP_SUMMARY
+            echo "- ⏭️ Skipped: $SKIPPED tasks" >> $GITHUB_STEP_SUMMARY
+            echo "- 📋 Total Processed: $TOTAL tasks" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Notification job (runs after completion)
+  notify:
+    needs: scheduled-completion
+    if: always() && github.event.inputs.notification_channel != 'false'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Slack Notification
+        if: env.SEND_NOTIFICATIONS == 'true' && secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "🤖 Asana Scheduled Completion Report",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Asana Scheduled Completion Report*\n📅 *Date:* $(date)\n🎯 *Criteria:* ${{ env.COMPLETION_CRITERIA }}\n🧪 *Mode:* ${{ env.DRY_RUN == 'true' && 'Dry Run' || 'Live Run' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*✅ ${{ env.DRY_RUN == 'true' && 'Would Complete' || 'Completed' }}:*\n${{ needs.scheduled-completion.outputs.completed-count }} tasks"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*⏭️ Skipped:*\n${{ needs.scheduled-completion.outputs.skipped-count }} tasks"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Teams Notification
+        if: env.SEND_NOTIFICATIONS == 'true' && secrets.TEAMS_WEBHOOK_URL
+        run: |
+          curl -H "Content-Type: application/json" -d '{
+            "@type": "MessageCard",
+            "@context": "https://schema.org/extensions",
+            "summary": "Asana Scheduled Completion Report",
+            "themeColor": "0078D4",
+            "title": "🤖 Asana Scheduled Completion Report",
+            "sections": [{
+              "activityTitle": "Scheduled Task Completion",
+              "activitySubtitle": "$(date)",
+              "facts": [
+                {"name": "Criteria", "value": "${{ env.COMPLETION_CRITERIA }}"},
+                {"name": "Mode", "value": "${{ env.DRY_RUN == 'true' && 'Dry Run' || 'Live Run' }}"},
+                {"name": "${{ env.DRY_RUN == 'true' && 'Would Complete' || 'Completed' }}", "value": "${{ needs.scheduled-completion.outputs.completed-count }} tasks"},
+                {"name": "Skipped", "value": "${{ needs.scheduled-completion.outputs.skipped-count }} tasks"}
+              ]
+            }]
+          }' ${{ secrets.TEAMS_WEBHOOK_URL }}
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+
+      - name: Create Issue for Failed Run
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Scheduled Asana Completion Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Scheduled Asana Completion Failure\n\n**Date:** ${new Date().toISOString()}\n**Workflow:** ${context.workflow}\n**Run ID:** ${context.runId}\n\n**Criteria:** ${{ env.COMPLETION_CRITERIA }}\n**Dry Run:** ${{ env.DRY_RUN }}\n\nPlease check the [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.\n\n### Possible Issues\n- Asana API rate limiting\n- Invalid ASANA_PAT token\n- Network connectivity issues\n- Invalid task criteria\n\n*This issue was automatically created by the scheduled workflow.*`,
+              labels: ['bug', 'automated', 'asana-integration']
+            })

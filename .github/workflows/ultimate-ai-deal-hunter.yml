@@ -1,0 +1,70 @@
+# .github/workflows/ultimate-ai-deal-hunter.yml
+name: Ultimate AI Deal Hunter
+on:
+schedule:
+- cron: '0 2 * * *' # 02:00 UTC daily
+workflow_dispatch: # Allow manual triggering
+inputs:
+category:
+description: 'Filter by category (optional)'
+required: false
+default: 'all'
+max_results:
+description: 'Maximum number of results'
+required: false
+default: '15'
+urgent_only:
+description: 'Only send urgent deals (expiring < 7 days)'
+required: false
+default: 'false'
+jobs:
+hunt:
+runs-on: ubuntu-latest
+timeout-minutes: 20
+steps:
+- name: Checkout
+uses: actions/checkout@v4
+
+- name: Set up Node.js
+uses: actions/setup-node@v4
+with:
+node-version: '20'
+cache: 'npm'
+
+- name: Install dependencies
+run: npm ci
+
+- name: Install Playwright browsers
+run: npx playwright install chromium
+
+- name: Run Ultimate Deal Hunter
+run: node ultimateAiDealHunter.ts
+env:
+SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+EMAIL_SERVICE_URL: ${{ secrets.EMAIL_SERVICE_URL }}
+SMS_SERVICE_URL: ${{ secrets.SMS_SERVICE_URL }}
+GENERIC_WEBHOOK_URL: ${{ secrets.GENERIC_WEBHOOK_URL }}
+REDIS_URL: ${{ secrets.REDIS_URL }}
+OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+SMS_RECIPIENTS: ${{ secrets.SMS_RECIPIENTS }}
+CATEGORY_FILTER: ${{ github.event.inputs.category || 'all' }}
+MAX_RESULTS: ${{ github.event.inputs.max_results || '15' }}
+URGENT_ONLY: ${{ github.event.inputs.urgent_only || 'false' }}
+
+- name: Upload deal data as artifact
+uses: actions/upload-artifact@v3
+with:
+name: deal-data
+path: deals.json
+
+- name: Performance metrics
+run: |
+echo "## Deal Hunter Performance" >> $GITHUB_STEP_SUMMARY
+echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+echo "| Sources Scraped | $(cat sources-scraped.txt) |" >> $GITHUB_STEP_SUMMARY
+echo "| Deals Found | $(cat deals-found.txt) |" >> $GITHUB_STEP_SUMMARY
+echo "| Deals Sent | $(cat deals-sent.txt) |" >> $GITHUB_STEP_SUMMARY
+echo "| Execution Time | $(cat execution-time.txt) |" >> $GITHUB_STEP_SUMMARY

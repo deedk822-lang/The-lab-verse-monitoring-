@@ -1,16 +1,67 @@
 {
   "compilerOptions": {
-    "target": "es2021",
-    "module": "commonjs",
-    "lib": ["es2021"],
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
+ main
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowJs": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "incremental": true,
+    "jsx": "preserve"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules"]
-}
+  "include": [
+    "**/*.ts",
+    "**/*.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "ts-node": {
+    "esm": true
+  }
 
+    "target": "es2021",
+    "lib": ["dom", "dom.iterable", "es2021"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+ fix/vercel-deployment-eslint-typescript
+}

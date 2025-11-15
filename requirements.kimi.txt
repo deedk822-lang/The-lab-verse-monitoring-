@@ -2,6 +2,10 @@
 aiohttp==3.9.1
 aiofiles==23.2.1
 aiohttp-cors==0.7.0
+<<<<<<< HEAD
+PyYAML==6.0.1
+=======
+>>>>>>> origin/feat/ai-connectivity-layer
 
 # AI/ML dependencies
 openai==1.6.1
@@ -34,4 +38,10 @@ pytest-aiohttp
 # Development
 black==23.11.0
 mypy==1.7.1
+<<<<<<< HEAD
 isort==5.13.2
+click
+aiohttp
+=======
+isort==5.13.2
+>>>>>>> origin/feat/ai-connectivity-layer

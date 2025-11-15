@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+import click
+import logging
+
+@click.group()
+def cli():
+    """Kimi Instruct CLI"""
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+from .recursive_cli import recursive   # noqa
+cli.add_command(recursive)
+
+if __name__ == "__main__":
+    cli()
+=======
  feature/ml-anomaly-detection
 import argparse
 import asyncio
@@ -106,64 +121,64 @@ from kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
 
 class KimiCLI:
     """Command-line interface for Kimi Instruct"""
-    
+
     def __init__(self):
         self.kimi = None
-    
+
     async def initialize(self):
         """Initialize Kimi instance"""
         self.kimi = KimiInstruct()
-    
+
     async def status_command(self, args):
         """Show project status"""
         status = await self.kimi.get_status_report()
-        
+
         if args.output == 'json':
             print(json.dumps(status, indent=2, default=str))
             return
-        
+
         # Pretty print status
         print("\n🎯 KIMI PROJECT STATUS")
         print("=" * 50)
-        
+
         # Progress info
         task_summary = status['task_summary']
         print(f"Progress: {task_summary['completion_percentage']:.1f}%")
         print(f"Tasks: {task_summary['completed']}/{task_summary['total']} completed")
         print(f"Risk Level: {status['risk_level'].upper()}")
-        
+
         # Context info
         context = status['project_context']
         print(f"Budget Remaining: ${context['budget_remaining']:.2f}")
         print(f"Timeline Status: {context['timeline_status']}")
-        
+
         # Critical issues
         if status['critical_issues']:
             print("\n⚠️  CRITICAL ISSUES:")
             for issue in status['critical_issues']:
                 print(f"  • {issue['title']}: {issue['reason']}")
-        
+
         # Next actions
         if status['next_actions']:
             print("\n📝 NEXT ACTIONS:")
             for action in status['next_actions']:
                 print(f"  • [{action['priority'].upper()}] {action['description']}")
-        
+
         print()
-    
+
     async def task_command(self, args):
         """Create and execute a task"""
         if not args.title:
             print("Error: --title required for task command")
             return
-        
+
         # Parse priority
         try:
             priority = TaskPriority(args.priority)
         except ValueError:
             print(f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical")
             return
-        
+
         # Create task
         task = await self.kimi.create_task(
             title=args.title,
@@ -171,12 +186,12 @@ class KimiCLI:
             priority=priority,
             metadata={"cli_created": True}
         )
-        
+
         print(f"✅ Created task: {task.id}")
         print(f"   Title: {task.title}")
         print(f"   Priority: {priority.value}")
         print(f"   Status: {task.status.value}")
-        
+
         # Execute if requested
         if args.execute:
             print("\n🔄 Executing task...")
@@ -185,7 +200,7 @@ class KimiCLI:
                 print("✅ Task executed successfully")
             else:
                 print("❌ Task execution failed")
-    
+
     async def list_tasks_command(self, args):
         """List all tasks"""
         if args.output == 'json':
@@ -200,15 +215,15 @@ class KimiCLI:
                 })
             print(json.dumps({"tasks": tasks_data}, indent=2))
             return
-        
+
         # Pretty print tasks
         if not self.kimi.tasks:
             print("No tasks found.")
             return
-        
+
         print("\n📋 TASKS")
         print("=" * 60)
-        
+
         # Group by status
         by_status = {}
         for task in self.kimi.tasks.values():
@@ -216,25 +231,25 @@ class KimiCLI:
             if status not in by_status:
                 by_status[status] = []
             by_status[status].append(task)
-        
+
         for status, tasks in by_status.items():
             print(f"\n{status.upper()} ({len(tasks)}):")
             for task in tasks:
                 priority_icon = {
                     "critical": "🔴",
-                    "high": "🟠", 
+                    "high": "🟠",
                     "medium": "🟡",
                     "low": "🟢"
                 }.get(task.priority.value, "⚪")
-                
+
                 print(f"  {priority_icon} {task.title}")
                 print(f"     ID: {task.id}")
                 print(f"     Created: {task.created_at.strftime('%Y-%m-%d %H:%M')}")
                 if task.description:
                     print(f"     Description: {task.description}")
-        
+
         print()
-    
+
     async def optimize_command(self, args):
         """Run project optimization"""
         # Create optimization task
@@ -244,12 +259,12 @@ class KimiCLI:
             priority=TaskPriority.MEDIUM,
             metadata={"cli_optimization": True}
         )
-        
+
         print(f"🔄 Running optimization...")
-        
+
         # Execute optimization
         success = await self.kimi.execute_task(task.id)
-        
+
         if success:
             result = task.metadata.get('result', {})
             if args.output == 'json':
@@ -262,57 +277,57 @@ class KimiCLI:
                 print(f"ROI Projection: {result.get('roi', 0) * 100:.1f}%")
         else:
             print("❌ Optimization failed")
-    
+
     async def checkin_command(self, args):
         """Perform human checkin"""
         print("\n👋 HUMAN CHECKIN")
         print("=" * 30)
-        
+
         # Get current status
         status = await self.kimi.get_status_report()
-        
+
         print(f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%")
         print(f"Risk Level: {status['risk_level'].upper()}")
         print(f"Budget Remaining: ${status['project_context']['budget_remaining']:.2f}")
-        
+
         # Update checkin time
         self.kimi.context.last_human_checkin = datetime.now()
-        
+
         # Log checkin
         self.kimi.decision_history.append({
             "type": "cli_checkin",
             "data": {"timestamp": datetime.now().isoformat()},
             "timestamp": datetime.now().isoformat()
         })
-        
+
         print("\n✅ Checkin completed")
         print(f"Next checkin due: {self.kimi.context.last_human_checkin.strftime('%Y-%m-%d %H:%M')}")
-    
+
     async def report_command(self, args):
         """Generate project report"""
         status = await self.kimi.get_status_report()
-        
+
         if args.output == 'json':
             print(json.dumps(status, indent=2, default=str))
             return
-        
+
         # Generate comprehensive report
         print("\n📊 KIMI PROJECT REPORT")
         print("=" * 60)
         print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
+
         # Executive Summary
         print("\n📈 EXECUTIVE SUMMARY")
         print("-" * 30)
         task_summary = status['task_summary']
         context = status['project_context']
-        
+
         print(f"Overall Progress: {task_summary['completion_percentage']:.1f}%")
         print(f"Total Tasks: {task_summary['total']}")
         print(f"Completed: {task_summary['completed']}")
         print(f"In Progress: {task_summary['in_progress']}")
         print(f"Blocked: {task_summary['blocked']}")
-        
+
         # Financial Status
         print("\n💰 FINANCIAL STATUS")
         print("-" * 25)
@@ -321,14 +336,14 @@ class KimiCLI:
         print(f"Budget Remaining: ${context['budget_remaining']:.2f}")
         print(f"Amount Spent: ${spent:.2f}")
         print(f"Budget Utilization: {(spent / initial_budget) * 100:.1f}%")
-        
+
         # Risk Assessment
         print("\n⚠️ RISK ASSESSMENT")
         print("-" * 25)
         print(f"Current Risk Level: {status['risk_level'].upper()}")
         print(f"Risk Score: {context['metrics'].get('risk_score', 0):.2f}")
         print(f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}")
-        
+
         # Critical Issues
         if status['critical_issues']:
             print("\n🔴 CRITICAL ISSUES")
@@ -336,7 +351,7 @@ class KimiCLI:
             for issue in status['critical_issues']:
                 print(f"• {issue['title']}")
                 print(f"  Reason: {issue['reason']}")
-        
+
         # Recommendations
         if status['next_actions']:
             print("\n💡 RECOMMENDATIONS")
@@ -349,7 +364,7 @@ class KimiCLI:
                     "low": "🟢"
                 }.get(action['priority'], "⚪")
                 print(f"{priority_icon} {action['description']}")
-        
+
         print()
 
 async def main():
@@ -368,42 +383,42 @@ Examples:
   %(prog)s report                             # Generate project report
         """
     )
-    
+
     parser.add_argument(
-        "command", 
+        "command",
         choices=['status', 'task', 'list', 'optimize', 'checkin', 'report'],
         help="Command to execute"
     )
-    
+
     # Task creation options
     parser.add_argument("--title", type=str, help="Task title")
     parser.add_argument("--description", type=str, help="Task description")
     parser.add_argument(
-        "--priority", 
-        choices=['low', 'medium', 'high', 'critical'], 
+        "--priority",
+        choices=['low', 'medium', 'high', 'critical'],
         default='medium',
         help="Task priority"
     )
     parser.add_argument(
-        "--execute", 
+        "--execute",
         action='store_true',
         help="Execute task immediately after creation"
     )
-    
+
     # Output options
     parser.add_argument(
-        "--output", 
-        choices=['json', 'table'], 
+        "--output",
+        choices=['json', 'table'],
         default='table',
         help="Output format"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Initialize CLI
     cli = KimiCLI()
     await cli.initialize()
-    
+
     # Route to appropriate command
     try:
         if args.command == 'status':
@@ -418,7 +433,7 @@ Examples:
             await cli.checkin_command(args)
         elif args.command == 'report':
             await cli.report_command(args)
-    
+
     except KeyboardInterrupt:
         print("\n👋 Goodbye!")
         sys.exit(0)
@@ -429,3 +444,4 @@ Examples:
 if __name__ == "__main__":
     asyncio.run(main())
  main
+>>>>>>> origin/feat/ai-connectivity-layer

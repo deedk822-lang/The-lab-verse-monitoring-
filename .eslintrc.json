@@ -1,4 +1,11 @@
 {
+ main
+"extends": "next/core-web-vitals",
+"rules": {
+"@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+"import/no-anonymous-default-export": "off"
+}
+
   "extends": [
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended"
@@ -29,4 +36,5 @@
     "es2021": true,
     "node": true
   }
+ fix/vercel-deployment-eslint-typescript
 }

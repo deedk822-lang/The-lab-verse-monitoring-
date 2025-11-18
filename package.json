@@ -1,19 +1,50 @@
 {
+ fix-package-json-syntax-error
+  "name": "the-lab-verse-monitoring",
+
   "name": "the-lap-verse-monitoring",
+ main
   "version": "2.0.0",
   "private": true,
   "description": "The Lab Verse Monitoring - Premium MCP Gateway with Multi-Tier Monetization",
+ fix-package-json-syntax-error
+  "main": "dist/index.js",
+
+ main
   "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+ fix-package-json-syntax-error
+    "mcp:wpcom": "node mcp-server/wpcom-gateway.js",
+    "mcp:unito": "node mcp-server/unito-gateway.js",
+    "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
+    "mcp:hf": "node mcp-server/huggingface-gateway.js",
+    "start:all": "concurrently \"npm run mcp:wpcom\" \"npm run mcp:unito\" \"npm run mcp:socialpilot\" \"npm run mcp:hf\"",
+    "postinstall": "cd mcp-server && npm install && husky install",
+
     "test": "echo 'No tests yet – CI passes' && exit 0",
+ main
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "validate:json": "node scripts/validate-json.js",
     "prepare": "husky install"
   },
+ fix-package-json-syntax-error
+  "keywords": [
+    "mcp",
+    "gateway",
+    "ai",
+    "automation",
+    "saas",
+    "stripe",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "ISC",
+
+ main
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@opentelemetry/api": "^1.8.0",
@@ -39,10 +70,17 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
+ fix-package-json-syntax-error
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+
     "@types/node": "^20.12.12",
     "@types/react": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
+ main
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "husky": "^9.1.7",

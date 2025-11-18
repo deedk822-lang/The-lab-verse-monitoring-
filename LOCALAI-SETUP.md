@@ -76,6 +76,7 @@ node scripts/validate-api-keys.js
 
 The `docker-compose.localai.yml` file configures:
 
+- **Image**: localai/localai:v2.16.0 (pinned version for stability)
 - **Port**: 8080 (LocalAI API)
 - **Model Path**: `./models` (where model configs are stored)
 - **Data Path**: `./localai-data` (where downloaded models are stored)
@@ -92,6 +93,7 @@ The `models/mistral-7b-instruct.yaml` file specifies:
 - **Temperature**: 0.7 (creativity level)
 - **Max Tokens**: 2048 (response length)
 - **Context Size**: 4096 tokens (conversation memory)
+- **Threads**: Managed via Docker Compose environment variable
 
 ## 🐳 Docker Commands Reference
 
@@ -124,9 +126,9 @@ docker ps | grep localai
 ### Troubleshooting
 
 ```bash
-# Remove all data and start fresh
+# Remove all data and start fresh (safer method)
 docker-compose -f docker-compose.localai.yml down -v
-rm -rf localai-data/*
+rm -rf ./localai-data && mkdir ./localai-data
 docker-compose -f docker-compose.localai.yml up -d
 
 # Access container shell

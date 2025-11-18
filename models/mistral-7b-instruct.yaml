@@ -8,7 +8,6 @@ parameters:
   max_tokens: 2048
 context_size: 4096
 f16: true
-threads: 4
 stopwords:
   - "</s>"
   - "[INST]"

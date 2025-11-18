@@ -24,7 +24,7 @@
 .env.local
 .envrc
 # Keep an example for newcomers, but never the real values
-.env.example
+!.env.example
 
 # Cloud provider credentials
 .aws/
@@ -42,6 +42,17 @@
 # Other credential stores
 # .ssh/  # <– usually not part of a repo, but keep here if ever added
 # .git-credentials  # Git credential helper – keep out of VCS
+
+# ----------------------------------------------------------------------
+#   🤖  LocalAI / LLM Models – large files that should not be committed
+# ----------------------------------------------------------------------
+localai-data/
+models/*.gguf
+models/*.bin
+models/*.safetensors
+# Keep model configs but not downloaded models
+!models/*.yaml
+!models/*.json
 
 # ----------------------------------------------------------------------
 #   📦  Dependencies / Packages – generated code you never edit

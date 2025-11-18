@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "pages/api/gateway/v1/chat/completions.js": {
-      "runtime": "edge"
-    }
-  },
-  "regions": ["iad1", "fra1", "hnd1"]
-}

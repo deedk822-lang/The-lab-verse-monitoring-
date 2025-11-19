@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: read
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -18,49 +15,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
           cache: 'npm'
 
-      - name: Clean install dependencies
-        run: npm ci   # reproducible & faster than npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Validate API keys & provider configuration
+      - name: Validate API keys & providers
         run: node scripts/validate-api-keys.js
         env:
-          # Primary
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          # Fallback providers
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}       # fixed name (was MISTRALAI_API_KEY in one place)
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-          # LocalAI – properly consolidated
           LOCALAI_API_KEY: ${{ secrets.CONNECT_AI_MPC }}
           LOCALAI_HOST: ${{ vars.LOCALAI_HOST || 'http://localhost:8080/v1' }}
-
           CI: true
           NODE_ENV: test
           DEBUG_PROVIDERS: true
 
       - name: Run tests
         run: npm test
-        # When you add real tests later, this will fail properly if they break
+        # When you add real tests (Jest, Vitest, etc.), this will fail on broken tests
 
-      - name: Lint code
+      - name: Lint
         run: npm run lint
-        continue-on-error: true   # make false when you want lint to be strict
+        continue-on-error: true  # ← set to false when you want lint to be required
 
-      - name: Verify .env.example exists
+      - name: Verify .env.example
         run: |
-          [ -f .env.example ] && echo ".env.example found ($(wc -l < .env.example) lines)" || (echo ".env.example missing!" && exit 1)
+          if [ ! -f .env.example ]; then
+            echo "❌ .env.example is missing!"
+            exit 1
+          fi
+          echo ".env.example found ($(wc -l < .env.example) lines)"
 
-  security-audit:
+  audit:
     needs: build-and-test
     runs-on: ubuntu-latest
 
@@ -68,21 +63,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (audit compatible)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'   # Node 22 works fine with npm audit now
+          node-version: '22.x'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: NPM security audit
-        run: |
-          echo "Running npm security audit..."
-          npm audit --audit-level=high
+      - name: Security audit
+        run: npm audit --audit-level=high
 
-      - name: Save audit report as artifact
+      - name: Upload audit report
         if: always()
         uses: actions/upload-artifact@v4
         with:

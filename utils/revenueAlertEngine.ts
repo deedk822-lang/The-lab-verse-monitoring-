@@ -1,6 +1,23 @@
 // utils/revenueAlertEngine.ts
 import fetch from 'node-fetch';
-import { retry, sleep } from 'workflow';
+import ms from 'ms';
+
+// A simple retry function to replace the one from the guide
+async function retry<T>(fn: () => Promise<T>, options: { maxAttempts: number, backoff: string }): Promise<T> {
+  let lastError: Error | undefined;
+  for (let i = 0; i < options.maxAttempts; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (i < options.maxAttempts - 1) {
+        const delay = options.backoff === 'exponential' ? Math.pow(2, i) * 1000 : 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
 
 interface AlertChannel {
 type: 'webhook' | 'email' | 'sms' | 'push' | 'discord' | 'slack';
@@ -219,7 +236,8 @@ if (!this.config.actions) return;
 for (const action of this.config.actions) {
 // Apply delay if specified
 if (action.delay) {
-await sleep(action.delay);
+  const delayMs = ms(action.delay);
+  await new Promise(resolve => setTimeout(resolve, delayMs));
 }
 
 switch (action.type) {

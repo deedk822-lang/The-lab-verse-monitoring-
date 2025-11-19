@@ -49,6 +49,7 @@ export default {
   forceExit: true,
   
   // Transform configuration
+  "extensionsToTreatAsEsm": [".ts"],
   transform: {
     '^.+\\.ts?$': [
       'ts-jest',
@@ -57,8 +58,12 @@ export default {
       },
     ],
   },
+  moduleNameMapper: {
+    '^kimi-computer/(.*)$': '<rootDir>/kimi-computer/$1',
+    '^workflow$': '<rootDir>/node_modules/workflow'
+  },
   transformIgnorePatterns: [
-    'node_modules/(?!(.pnpm|@workflow)/)',
+    'node_modules/(?!(.pnpm|@workflow/core)/)',
   ],
   
   // Coverage reporters

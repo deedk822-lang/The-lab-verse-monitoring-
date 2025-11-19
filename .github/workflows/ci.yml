@@ -8,23 +8,23 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate API keys & providers
+      - name: Validate API keys & provider setup
         run: node scripts/validate-api-keys.js
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -41,43 +41,32 @@ jobs:
 
       - name: Run tests
         run: npm test
-        # When you add real tests (Jest, Vitest, etc.), this will fail on broken tests
+        # Replace the dummy "echo 'No tests yet'" in package.json when you're ready
 
-      - name: Lint
+      - name: Lint codebase
         run: npm run lint
-        continue-on-error: true  # ← set to false when you want lint to be required
+        continue-on-error: true   # ← change to false when lint must pass
 
-      - name: Verify .env.example
+      - name: Check .env.example exists
         run: |
-          if [ ! -f .env.example ]; then
-            echo "❌ .env.example is missing!"
-            exit 1
-          fi
-          echo ".env.example found ($(wc -l < .env.example) lines)"
+          [ -f .env.example ] || (echo "❌ .env.example is missing" && exit 1)
+          echo ".env.example present ($(wc -l < .env.example) lines)"
 
   audit:
-    needs: build-and-test
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Security audit
+      - name: NPM security audit
         run: npm audit --audit-level=high
-
-      - name: Upload audit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-audit-report
-          path: npm-audit.json

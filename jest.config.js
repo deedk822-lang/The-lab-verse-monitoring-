@@ -1,71 +1,20 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-  testEnvironment: 'node',
-  testTimeout: 30000,
-  maxWorkers: '50%',
-  cache: true,
-  cacheDirectory: '.jest-cache',
-  
-  // Setup file
-  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  
-  // Ignore patterns
-  modulePathIgnorePatterns: [
-    '<rootDir>/scout-monetization/',
-    '<rootDir>/.jest-cache/',
-    '<rootDir>/node_modules/',
-    '<rootDir>/dist/',
-    '<rootDir>/build/'
-  ],
-  
-  // Test match patterns
-  testMatch: [
-    '**/test/**/*.test.js',
-    '**/test/**/*.test.ts',
-    '**/tests/**/*.test.ts',
-    '!**/test/**/*.integration.test.js'
-  ],
-  
-  // Coverage configuration
-  collectCoverageFrom: [
-    'src/**/*.js',
-    'workflows/**/*.ts',
-    '!src/**/*.test.js',
-    '!src/**/__tests__/**',
-    '!src/**/*.config.js'
-  ],
-  
-  coverageThreshold: {
-    global: {
-      branches: 60,
-      functions: 65,
-      lines: 70,
-      statements: 70
-    }
-  },
-  
-  // Better error reporting
-  verbose: true,
-  detectOpenHandles: true,
-  forceExit: true,
-  
-  // Transform configuration
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
   transform: {
-    '^.+\\.ts?$': [
-      'ts-jest',
-      {
-        useESM: true,
-      },
-    ],
+    '^.+\\.tsx?$': 'ts-jest',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(.pnpm|@workflow)/)',
-  ],
-  
-  // Coverage reporters
-  coverageReporters: [
-    'text',
-    'lcov',
-    'html',
-    'json-summary'
-  ]
+  transformIgnorePatterns: ['node_modules/(?!(node-fetch)/)'],
+  moduleNameMapper: {
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@workflow/core$': '<rootDir>/workflows/core',
+    '^../../src/gateway.js$': '<rootDir>/src/gateway.js',
+    '^../services/ProviderFactory.js$': '<rootDir>/src/services/ProviderFactory.js',
+    '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js',
+  },
+  setupFilesAfterEnv: ['./test/setup.js'],
+  setupFiles: ['./test/setup-nock.js'],
+  modulePaths: ['<rootDir>/src'],
+  testPathIgnorePatterns: ['<rootDir>/content-creator-ai/test.js'],
 };

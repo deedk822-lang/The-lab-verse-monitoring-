@@ -9,17 +9,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "mcp:wpcom": "node mcp-server/wpcom-gateway.js",
     "mcp:unito": "node mcp-server/unito-gateway.js",
     "mcp:socialpilot": "node mcp-server/socialpilot-gateway.js",
     "mcp:hf": "node mcp-server/huggingface-gateway.js",
     "start:all": "concurrently &quot;npm run mcp:wpcom&quot; &quot;npm run mcp:unito&quot; &quot;npm run mcp:socialpilot&quot; &quot;npm run mcp:hf&quot;",
-    "postinstall": "husky install",
     "test": "echo 'No tests yet – CI passes' && exit 0",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "validate:json": "node scripts/validate-json.js",
-    "prepare": "husky install"
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "keywords": [
     "mcp",
@@ -54,17 +61,24 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.5",
+    "@eslint/js": "^9.39.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.12",
     "@types/react": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9.39.1",
     "eslint-config-next": "^14.2.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "glob": "^11.1.0",
+    "globals": "^15.15.0",
     "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "nodemon": "^3.1.0",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.1.1",
     "typescript": "^5.4.5"
   },
   "engines": {

@@ -1,7 +1,7 @@
 name: hermes-2-pro-mistral
 mmap: true
 parameters:
-  model: huggingface://NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/Hermes-2-Pro-Mistral-7B.Q6_K.gguf
+  model: github:NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/Hermes-2-Pro-Mistral-7B.Q6_K.gguf
 
 template:
   chat_message: |

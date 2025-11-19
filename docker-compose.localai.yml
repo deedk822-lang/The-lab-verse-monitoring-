@@ -14,7 +14,7 @@ services:
       - API_KEY=local-ai-key-optional
     volumes:
       - ./models:/models
-      - ./localai-data:/build/models
+      - ./localai-data:/models/localai-data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/v1/models"]

@@ -1,1 +1,1 @@
-import '@mswjs/interceptors/presets/node';
+import { node } from '@mswjs/interceptors/presets/node';

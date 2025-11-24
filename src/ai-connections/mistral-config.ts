@@ -66,7 +66,7 @@ export interface AIConnectionConfig {
  * Supports fallback mechanisms for resilience
  */
 export const AI_CONNECTIONS: Record<string, AIConnectionConfig> = {
-  PRIMARY: {
+  PRIMARY_GENERATOR: {
     provider: AI_PROVIDERS.MISTRAL,
     model: MISTRAL_MODELS.MIXTRAL.name,
     apiKey: process.env.MISTRAL_API_KEY || '',
@@ -85,22 +85,22 @@ export const AI_CONNECTIONS: Record<string, AIConnectionConfig> = {
     apiKey: process.env.MISTRAL_API_KEY || '',
     apiEndpoint: MISTRAL_MODELS.CODESTRAL.apiEndpoint
   },
-  ARBITER: {
+  CONSENSUS_ARBITER: {
     provider: AI_PROVIDERS.ANTHROPIC,
     model: 'claude-3-5-sonnet-20241022',
     apiKey: process.env.ANTHROPIC_API_KEY || ''
   },
-  FACT_CHECKER_1: {
+  FACT_CHECK_JUDGE_1_VISIONARY: {
     provider: AI_PROVIDERS.GEMINI,
     model: 'gemini-2.0-flash-exp',
     apiKey: process.env.GEMINI_API_KEY || ''
   },
-  FACT_CHECKER_2: {
+  FACT_CHECK_JUDGE_2_OPERATOR: {
     provider: AI_PROVIDERS.GROQ,
     model: 'llama-3.3-70b-versatile',
     apiKey: process.env.GROQ_API_KEY || ''
   },
-  FACT_CHECKER_3: {
+  FACT_CHECK_JUDGE_3_AUDITOR: {
     provider: AI_PROVIDERS.MISTRAL,
     model: MISTRAL_MODELS.MIXTRAL.name,
     apiKey: process.env.MISTRAL_API_KEY || '',
@@ -129,7 +129,7 @@ export const JUDGE_ROLES = {
   },
   CHALLENGER: {
     name: 'Challenger Judge',
-    model: AI_CONNECTIONS.ARBITER,
+    model: AI_CONNECTIONS.CONSENSUS_ARBITER,
     systemPrompt: 'You are a Challenger Judge. Critically evaluate claims by identifying weaknesses, contradictions, and alternative perspectives. Provide evidence-based verdicts that challenge assumptions.'
   }
 } as const;

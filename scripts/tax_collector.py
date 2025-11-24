@@ -1,4 +1,3 @@
-# File: scripts/tax_collector.py
 import requests
 import json
 import os
@@ -10,7 +9,7 @@ GDELT_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 # GDELT themes related to hardship, poverty, and displacement.
 # These are official GDELT themes.
 DISTRESS_THEMES = [
-    "TAX_FNCACT_REFUGEE", "WB_2749_FOOD_CRISIS", "UNGP_FORCED_DISPLACEMENT",
+    "TAX_FNC_REFUGEE", "WB_2749_FOOD_CRISIS", "UNGP_FORCED_DISPLACEMENT",
     "TAX_ETHNICVIOLENCE", "CRISISLEX_C07_INSECURITY", "POVERTY"
 ]
 

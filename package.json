@@ -52,6 +52,8 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-fetch-mock": "^3.0.3",
     "lint-staged": "^15.2.11",
+    "@mswjs/interceptors": "^0.40.0",
+    "msw": "^2.5.1",
     "nock": "^14.0.10",
     "node-fetch": "^3.3.2",
     "prettier": "^3.4.2",

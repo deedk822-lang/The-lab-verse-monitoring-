@@ -1,4 +1,3 @@
-# File: scripts/tax_collector.py
 import requests
 import json
 import os
@@ -20,7 +19,7 @@ def find_events_of_hardship():
     matching themes of hardship.
     """
     print("[TAX COLLECTOR] Searching for real-world hardship events in Africa...")
-    
+
     # Build a complex query for GDELT
     # We are looking for articles with any of our distress themes, sourced from Africa.
     query_params = {
@@ -30,12 +29,12 @@ def find_events_of_hardship():
         "format": "json",
         "sort": "DateDesc"
     }
-    
+
     try:
         response = requests.get(GDELT_API_URL, params=query_params)
         response.raise_for_status() # Raises an HTTPError for bad responses
         data = response.json()
-        
+
         if 'articles' not in data or not data['articles']:
             print("[TAX COLLECTOR] No recent articles matching distress themes found.")
             return None
@@ -43,7 +42,7 @@ def find_events_of_hardship():
         print(f"[TAX COLLECTOR] Found {len(data['articles'])} potential articles for review.")
         # Select the most recent and relevant article
         top_article = data['articles'][0]
-        
+
         report = {
             "source": "GDELT",
             "title": top_article.get('title'),
@@ -52,7 +51,7 @@ def find_events_of_hardship():
             "date": top_article.get('seendate'),
             "summary": "A real-world news article has been identified indicating hardship. The next step is to use a Judge model (e.g., Command R+) to analyze the article content and propose a specific, micro-intervention action."
         }
-        
+
         return report
 
     except requests.exceptions.RequestException as e:
@@ -64,7 +63,7 @@ def main():
     Main execution function for the Tax Collector script.
     """
     report = find_events_of_hardship()
-    
+
     if report:
         # This output is designed to be captured by a GitHub Action.
         # We will save it to a file that can be used as an artifact or input for the next step.
@@ -80,4 +79,6 @@ def main():
         print("[INFO] Tax Collector run complete. No actionable report generated.")
 
 if __name__ == "__main__":
+    # The original conflict was resolved by keeping the main() call, as the Tax branch's logic 
+    # was incomplete (calling an undefined function 'collect_tax').
     main()

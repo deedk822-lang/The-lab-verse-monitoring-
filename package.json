@@ -1,22 +1,14 @@
 {
-  "name": "your-project",
+  "name": "migration-target",
   "version": "1.0.0",
-  "type": "module",
-  "description": "Your project description",
+  "description": "A placeholder project for ESLint migration.",
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml}\"",
-    "prepare": "husky",
-    "typecheck": "tsc --noEmit",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test",
-    "clean": "rimraf dist build coverage .cache",
-    "preinstall": "npx only-allow npm"
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\""
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -52,7 +44,6 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-fetch-mock": "^3.0.3",
     "lint-staged": "^15.2.11",
-    "@mswjs/interceptors": "^0.40.0",
     "msw": "^2.5.1",
     "nock": "^14.0.10",
     "node-fetch": "^3.3.2",
@@ -60,7 +51,9 @@
     "rimraf": "^6.0.1",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "glob": "^11.1.0",
+    "globals": "^15.15.0"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -78,5 +71,5 @@
   "engineStrict": true,
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "ISC"
 }

@@ -17,7 +17,7 @@ export const errorHandler = (err, req, res, _next) => {
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
   });
 
   // Mongoose bad ObjectId
@@ -64,6 +64,6 @@ export const errorHandler = (err, req, res, _next) => {
   res.status(error.status || 500).json({
     success: false,
     error: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

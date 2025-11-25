@@ -1,8 +1,7 @@
-node_modules/
-dist/
-build/
-coverage/
-logs/
+node_modules
+dist
+build
+coverage
+.next
 *.min.js
-.next/
-.vercel/
+package-lock.json

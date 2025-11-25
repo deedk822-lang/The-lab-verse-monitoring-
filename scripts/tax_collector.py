@@ -2,6 +2,9 @@
 import requests
 import json
 import os
+import pandas as pd
+from io import StringIO
+import datetime
 
 # --- CONFIGURATION ---
 # GDELT V2 GKG (Global Knowledge Graph) API endpoint. This is a public, factual endpoint.

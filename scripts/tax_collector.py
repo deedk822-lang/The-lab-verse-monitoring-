@@ -20,7 +20,7 @@ def find_events_of_hardship():
     matching themes of hardship.
     """
     print("[TAX COLLECTOR] Searching for real-world hardship events in Africa...")
-    
+
     # Build a complex query for GDELT
     # We are looking for articles with any of our distress themes, sourced from Africa.
     query_params = {
@@ -30,7 +30,7 @@ def find_events_of_hardship():
         "format": "json",
         "sort": "DateDesc"
     }
-    
+
     try:
         response = requests.get(GDELT_API_URL, params=query_params)
         response.raise_for_status() # Raises an HTTPError for bad responses

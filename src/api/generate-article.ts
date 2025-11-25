@@ -15,8 +15,7 @@ async function callPrimaryModel(prompt: string, primaryModel: string) {
         throw new Error("CData API configuration missing.");
     }
 
-    const query = `SELECT content FROM ${primaryModel} WHERE prompt = '${prompt.replace(/'/g, "''")}'`;
-    
+    const query = `SELECT content FROM ${primaryModel} WHERE prompt = '${prompt.replace(/\\/g, "\\\\").replace(/'/g, "''")}'`;    
     const response = await fetch(CDATA_API_ENDPOINT, {
         method: 'POST',
         headers: { 

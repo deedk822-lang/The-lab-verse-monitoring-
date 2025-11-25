@@ -10,7 +10,7 @@ export class ContentGenerator {
         tone,
         length,
         keywords = [],
-        options = {}
+        options = {},
       } = request;
 
       const prompt = this.buildPrompt({
@@ -21,12 +21,12 @@ export class ContentGenerator {
         keywords,
         optimizeForSocial: options.optimizeForSocial,
         optimizeForEmail: options.optimizeForEmail,
-        platforms: options.platforms
+        platforms: options.platforms,
       });
 
       const content = await generateContent(prompt, {
         maxTokens: this.getMaxTokens(length),
-        temperature: 0.7
+        temperature: 0.7,
       });
 
       return {
@@ -34,15 +34,15 @@ export class ContentGenerator {
         content,
         metadata: {
           title: topic,
-          generatedAt: new Date().toISOString()
-        }
+          generatedAt: new Date().toISOString(),
+        },
       };
 
     } catch (error) {
       logger.error('Content generation failed:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -70,7 +70,7 @@ export class ContentGenerator {
     const map = {
       short: 250,
       medium: 500,
-      long: 1000
+      long: 1000,
     };
     return map[length] || 500;
   }

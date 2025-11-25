@@ -11,7 +11,7 @@ test("unbreakableGenerate workflow works", async () => {
     sleep: sleepMock,
   }));
 
-  jest.unstable_mockModule('../kimi-computer/src/services/contentGenerator.js', () => ({
+  jest.unstable_mockModule('kimi-computer/src/services/contentGenerator.js', () => ({
     __esModule: true,
     generateContent: generateContentMock,
   }));

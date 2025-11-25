@@ -1,7 +1,5 @@
+# File: scripts/tax_collector.py
 import requests
-import pandas as pd
-from io import StringIO
-import datetime
 import json
 import os
 
@@ -12,7 +10,7 @@ GDELT_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 # GDELT themes related to hardship, poverty, and displacement.
 # These are official GDELT themes.
 DISTRESS_THEMES = [
-    "TAX_FNCACT_REFUGEE", "WB_2749_FOOD_CRISIS", "UNGP_FORECED_DISPLACEMENT",
+    "TAX_FNCACT_REFUGEE", "WB_2749_FOOD_CRISIS", "UNGP_FORCED_DISPLACEMENT",
     "TAX_ETHNICVIOLENCE", "CRISISLEX_C07_INSECURITY", "POVERTY"
 ]
 
@@ -37,7 +35,7 @@ def find_events_of_hardship():
         response = requests.get(GDELT_API_URL, params=query_params)
         response.raise_for_status() # Raises an HTTPError for bad responses
         data = response.json()
-
+        
         if 'articles' not in data or not data['articles']:
             print("[TAX COLLECTOR] No recent articles matching distress themes found.")
             return None
@@ -45,7 +43,7 @@ def find_events_of_hardship():
         print(f"[TAX COLLECTOR] Found {len(data['articles'])} potential articles for review.")
         # Select the most recent and relevant article
         top_article = data['articles'][0]
-
+        
         report = {
             "source": "GDELT",
             "title": top_article.get('title'),
@@ -54,7 +52,7 @@ def find_events_of_hardship():
             "date": top_article.get('seendate'),
             "summary": "A real-world news article has been identified indicating hardship. The next step is to use a Judge model (e.g., Command R+) to analyze the article content and propose a specific, micro-intervention action."
         }
-
+        
         return report
 
     except requests.exceptions.RequestException as e:
@@ -66,7 +64,7 @@ def main():
     Main execution function for the Tax Collector script.
     """
     report = find_events_of_hardship()
-
+    
     if report:
         # This output is designed to be captured by a GitHub Action.
         # We will save it to a file that can be used as an artifact or input for the next step.

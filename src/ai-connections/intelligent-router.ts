@@ -86,8 +86,8 @@ export async function generateContentWithFallback(
       'mistral',
       primaryModel,
       messages,
-      AI_CONNECTIONS.PRIMARY.apiKey,
-      AI_CONNECTIONS.PRIMARY.apiEndpoint
+      AI_CONNECTIONS.PRIMARY_GENERATOR.apiKey,
+      AI_CONNECTIONS.PRIMARY_GENERATOR.apiEndpoint
     );
 
     return {
@@ -132,11 +132,15 @@ export async function factCheckClaim(
   claim: string,
   searchResults?: string[]
 ): Promise<ConsensusResult> {
-  const judges = [
-    { name: 'Judge Gemini', config: AI_CONNECTIONS.FACT_CHECKER_1 },
-    { name: 'Judge Grok', config: AI_CONNECTIONS.FACT_CHECKER_2 },
-    { name: 'Judge Mistral', config: AI_CONNECTIONS.FACT_CHECKER_3 }
-  ];
+  const judgeKeys = Object.keys(AI_CONNECTIONS).filter(key => key.startsWith('FACT_CHECK_JUDGE'));
+  const judges = judgeKeys.map(key => {
+    const role = key.split('_').pop() as keyof typeof JUDGE_ROLES;
+    return {
+      name: `Judge ${role}`,
+      config: AI_CONNECTIONS[key],
+      systemPrompt: JUDGE_ROLES[role]?.systemPrompt || 'You are an independent fact-checking judge.'
+    };
+  });
 
   const judgeResults: FactCheckResult[] = [];
 
@@ -150,11 +154,7 @@ export async function factCheckClaim(
     const messages: Message[] = [
       {
         role: 'system',
-        content: `You are an independent fact-checking judge. Evaluate the following claim and provide:
-1. Verdict: "True", "False", or "Inconclusive"
-2. Confidence: 0-100
-3. Evidence URL (if available)
-4. Reasoning: Brief explanation
+        content: `${judge.systemPrompt}
 
 Respond in JSON format:
 {
@@ -292,11 +292,11 @@ export async function extractClaims(content: string): Promise<string[]> {
 
   try {
     const response = await callAIModel(
-      AI_CONNECTIONS.PRIMARY.provider,
-      AI_CONNECTIONS.PRIMARY.model,
+      AI_CONNECTIONS.PRIMARY_GENERATOR.provider,
+      AI_CONNECTIONS.PRIMARY_GENERATOR.model,
       messages,
-      AI_CONNECTIONS.PRIMARY.apiKey,
-      AI_CONNECTIONS.PRIMARY.apiEndpoint
+      AI_CONNECTIONS.PRIMARY_GENERATOR.apiKey,
+      AI_CONNECTIONS.PRIMARY_GENERATOR.apiEndpoint
     );
 
     const jsonMatch = response.match(/\[[\s\S]*\]/);

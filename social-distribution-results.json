@@ -1,0 +1,93 @@
+{
+  "summary": {
+    "totalPlatforms": 6,
+    "readyToPost": 6,
+    "timestamp": "2025-11-26T23:04:50.481Z",
+    "platforms": [
+      {
+        "name": "Twitter/X",
+        "status": "✅ Ready to post",
+        "length": 112
+      },
+      {
+        "name": "LinkedIn",
+        "status": "✅ Ready to post",
+        "length": 387
+      },
+      {
+        "name": "Facebook",
+        "status": "✅ Ready to post",
+        "length": 416
+      },
+      {
+        "name": "Instagram",
+        "status": "✅ Ready to post",
+        "length": 184
+      },
+      {
+        "name": "Threads",
+        "status": "✅ Ready to post",
+        "length": 112
+      },
+      {
+        "name": "YouTube",
+        "status": "✅ Script ready",
+        "length": "N/A"
+      }
+    ]
+  },
+  "content": {
+    "topic": "The Future of AI-Powered Content Creation",
+    "keywords": [
+      "AI",
+      "ContentCreation",
+      "Automation",
+      "DigitalMarketing",
+      "Innovation"
+    ],
+    "cta": "Read the full article on our blog →",
+    "content": "Artificial Intelligence is revolutionizing how we create, distribute, and optimize content \n    across digital platforms. From automated blog posts to AI-generated social media campaigns, \n    the landscape of content marketing is evolving at an unprecedented pace.\n    \n    Modern AI tools can now analyze audience behavior, generate personalized content, and \n    distribute it across multiple channels simultaneously. This level of automation not only \n    saves time but also ensures consistency and quality across all platforms.\n    \n    The integration of AI with social media platforms enables real-time optimization, \n    A/B testing at scale, and predictive analytics that help marketers stay ahead of trends."
+  },
+  "posts": {
+    "twitter": {
+      "platform": "Twitter/X",
+      "text": "The Future of AI-Powered Content Creation\n\nRead the full article on our blog →\n\n#AI #ContentCreation #Automation",
+      "length": 112,
+      "status": "✅ Ready to post"
+    },
+    "linkedin": {
+      "platform": "LinkedIn",
+      "text": "🚀 The Future of AI-Powered Content Creation\n\nArtificial Intelligence is revolutionizing how we create, distribute, and optimize content \n    across digital platforms. From automated blog posts to AI-generated social media campaigns, \n    the lan\n\nRead the full article on our blog →\n\n#AI #ContentCreation #Automation #DigitalMarketing #Innovation\n\n#ContentCreation #AI #DigitalMarketing",
+      "length": 387,
+      "status": "✅ Ready to post"
+    },
+    "facebook": {
+      "platform": "Facebook",
+      "text": "The Future of AI-Powered Content Creation\n\nArtificial Intelligence is revolutionizing how we create, distribute, and optimize content \n    across digital platforms. From automated blog posts to AI-generated social media campaigns, \n    the landscape of content marketing is evolving at an unprecedented pace.\n    \n    Modern AI tools can now a\n\nRead the full article on our blog →\n\n👉 Learn more in the full article!",
+      "length": 416,
+      "status": "✅ Ready to post"
+    },
+    "instagram": {
+      "platform": "Instagram",
+      "text": "The Future of AI-Powered Content Creation\n\nRead the full article on our blog →\n\n#AI #ContentCreation #Automation #DigitalMarketing #Innovation\n\n#ContentCreator #AITools #DigitalContent",
+      "length": 184,
+      "note": "📸 Pair with AI-generated image",
+      "status": "✅ Ready to post"
+    },
+    "threads": {
+      "platform": "Threads",
+      "text": "The Future of AI-Powered Content Creation\n\nRead the full article on our blog →\n\n#AI #ContentCreation #Automation",
+      "length": 112,
+      "status": "✅ Ready to post"
+    },
+    "youtube": {
+      "platform": "YouTube",
+      "hook": "Hey everyone! Today we're talking about The Future of AI-Powered Content Creation.",
+      "body": "Artificial Intelligence is revolutionizing how we create, distribute, and optimize content \n    across digital platforms. From automated blog posts to AI-generated social media campaigns, \n    the landscape of content marketing is evolving at an unprecedented pace.\n    \n    Modern AI tools can now a",
+      "cta": "If you found this helpful, don't forget to like, subscribe, and hit that notification bell!",
+      "estimatedDuration": "2-3 minutes",
+      "notes": "🎥 Add B-roll footage and graphics",
+      "status": "✅ Script ready"
+    }
+  }
+}

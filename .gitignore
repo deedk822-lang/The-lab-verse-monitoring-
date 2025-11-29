@@ -298,3 +298,8 @@ charts/
 
 # Secrets directory for Docker
 secrets/
+
+# Generated workflow artifacts
+*-state.json
+*-results.json
+g20-workflow-verified-state.json

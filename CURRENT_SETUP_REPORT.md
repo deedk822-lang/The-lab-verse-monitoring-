@@ -34,7 +34,7 @@ This report documents the November 2025 update to the Lab Verse Monitoring syste
 ✅ Installation: Aliyun CLI 3.1.5
 ✅ Profile: default (AK mode)
 ✅ Region: cn-shanghai
-✅ Credentials: LTAI5tPxmM...YVG (Valid)
+✅ Credentials: [REDACTED] (Valid)
 ✅ User: manus-automation@5212459344287865.onaliyun.com
 ```
 
@@ -43,7 +43,7 @@ This report documents the November 2025 update to the Lab Verse Monitoring syste
 $ aliyun configure list
 Profile   | Credential         | Valid   | Region           | Language
 --------- | ------------------ | ------- | ---------------- | --------
-default * | AK:***YVG          | Valid   | cn-shanghai      | en
+default * | AK:[REDACTED]          | Valid   | cn-shanghai      | en
 ```
 
 **Security Analyzer:**
@@ -75,7 +75,7 @@ default * | AK:***YVG          | Valid   | cn-shanghai      | en
 #### Gateway Configuration
 ```bash
 GATEWAY_URL=https://the-lab-verse-monitoring.vercel.app
-GATEWAY_API_KEY=vck_1q2GKJqSDzzkxuStIUYfIJoweotdJs6yTGYPU6f9eUL8oTr0dd3E7C7c
-API_SECRET_KEY=vck_1q2GKJqSDzzkxuStIUYfIJoweotdJs6yTGYPU6f9eUL8oTr0dd3E7C7c
-GATEWAY_KEY=vck_1q2GKJqSDzzkxuStIUYfIJoweotdJs6yTGYPU6f9eUL8oTr0dd3E7C7c
-ZAI_API_KEY=vck_1q2GKJqSDzzkxuStIUYfIJoweotdJs6yTGYPU6f9
+GATEWAY_API_KEY=[REDACTED]
+API_SECRET_KEY=[REDACTED]
+GATEWAY_KEY=[REDACTED]
+ZAI_API_KEY=[REDACTED]

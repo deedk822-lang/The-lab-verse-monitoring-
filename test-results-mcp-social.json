@@ -1,0 +1,134 @@
+{
+  "timestamp": "2025-11-26T23:03:55.645Z",
+  "summary": {
+    "environment": "9/9",
+    "mcpGateways": 4,
+    "socialPlatforms": "6/6",
+    "apiIntegrations": "6/6"
+  },
+  "details": {
+    "environment": [
+      {
+        "name": "GATEWAY_URL",
+        "status": true,
+        "value": "https://th..."
+      },
+      {
+        "name": "GATEWAY_API_KEY",
+        "status": true,
+        "value": "vck_1q2GKJ..."
+      },
+      {
+        "name": "MISTRAL_API_KEY",
+        "status": true,
+        "value": "crltQJRlrI..."
+      },
+      {
+        "name": "HF_API_TOKEN",
+        "status": true,
+        "value": "hf_zBEskpR..."
+      },
+      {
+        "name": "BRIA_API_KEY",
+        "status": true,
+        "value": "b42d9556d5..."
+      },
+      {
+        "name": "DEEP_INFRA_API_KEY",
+        "status": true,
+        "value": "klNp4U27Ky..."
+      },
+      {
+        "name": "VERCEL_TOKEN",
+        "status": true,
+        "value": "lvy8DrvDIa..."
+      },
+      {
+        "name": "ALIYUN_ACCESS_KEY_ID",
+        "status": true,
+        "value": "LTAI5tPxmM..."
+      },
+      {
+        "name": "ALIYUN_ACCESS_KEY_SECRET",
+        "status": true,
+        "value": "I0w1rBOXkZ..."
+      }
+    ],
+    "mcpTools": [
+      {
+        "name": "HuggingFace Gateway",
+        "endpoint": "https://the-lab-verse-monitoring.vercel.app/mcp/huggingface/messages"
+      },
+      {
+        "name": "SocialPilot Gateway",
+        "endpoint": "https://the-lab-verse-monitoring.vercel.app/mcp/socialpilot/messages"
+      },
+      {
+        "name": "Unito Gateway",
+        "endpoint": "https://the-lab-verse-monitoring.vercel.app/mcp/unito/messages"
+      },
+      {
+        "name": "WordPress.com Gateway",
+        "endpoint": "https://the-lab-verse-monitoring.vercel.app/mcp/wpcom/messages"
+      }
+    ],
+    "socialMedia": [
+      {
+        "name": "Twitter/X",
+        "supported": true
+      },
+      {
+        "name": "LinkedIn",
+        "supported": true
+      },
+      {
+        "name": "Facebook",
+        "supported": true
+      },
+      {
+        "name": "Instagram",
+        "supported": true
+      },
+      {
+        "name": "Threads",
+        "supported": true
+      },
+      {
+        "name": "YouTube",
+        "supported": true
+      }
+    ],
+    "integrations": [
+      {
+        "name": "Mistral Codestral",
+        "configured": true,
+        "endpoint": "https://codestral.mistral.ai/v1/chat/completions"
+      },
+      {
+        "name": "Mistral Agent",
+        "configured": true,
+        "endpoint": "https://api.mistral.ai/v1/conversations"
+      },
+      {
+        "name": "HuggingFace",
+        "configured": true,
+        "endpoint": "https://api-inference.huggingface.co"
+      },
+      {
+        "name": "Bria AI",
+        "configured": true,
+        "endpoint": "https://platform.bria.ai/labs/fibo"
+      },
+      {
+        "name": "Deep Infra",
+        "configured": true,
+        "endpoint": "https://api.deepinfra.com"
+      },
+      {
+        "name": "Alibaba Cloud",
+        "configured": true,
+        "endpoint": "cn-shanghai"
+      }
+    ]
+  }
+}

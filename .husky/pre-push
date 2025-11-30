@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-push checks..."
+
+# Run full test suite before push
+echo "🧪 Running full test suite..."
+npm test
+
+# Check coverage if tests pass
+echo "📊 Checking coverage..."
+npm run test:coverage
+
+echo "✅ Pre-push checks passed!"

@@ -1,0 +1,13 @@
+name: Codespace CI
+on: [push, pull_request]
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc }
+      - run: npm ci
+      - run: npm run build
+      - run: npm run dev &
+      - run: npx wait-on http://localhost:3000 --timeout 60000

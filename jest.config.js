@@ -5,7 +5,7 @@ export default {
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
   },
-  transformIgnorePatterns: ['node_modules/(?!(node-fetch)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(node-fetch|@mswjs/interceptors)/)'],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@workflow/core$': '<rootDir>/workflows/core',

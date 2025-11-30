@@ -29,7 +29,7 @@ from .core import (
 __all__ = [
     "KimiInstruct",
     "Task",
-    "TaskPriority", 
+    "TaskPriority",
     "TaskStatus",
     "ProjectContext"
 ]

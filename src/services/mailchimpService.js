@@ -39,7 +39,7 @@ class MailChimpService {
           },
         },
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` },
+          headers: { Authorization: `apikey ${this.apiKey}` },
         },
       );
 
@@ -50,7 +50,7 @@ class MailChimpService {
         `${this.baseURL}/campaigns/${campaignId}/content`,
         { html: this.formatEmailContent(content) },
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` },
+          headers: { Authorization: `apikey ${this.apiKey}` },
         },
       );
 
@@ -60,7 +60,7 @@ class MailChimpService {
           `${this.baseURL}/campaigns/${campaignId}/actions/send`,
           {},
           {
-            headers: { Authorization: `Bearer ${this.apiKey}` },
+            headers: { Authorization: `apikey ${this.apiKey}` },
           },
         );
       }
@@ -117,7 +117,7 @@ class MailChimpService {
       const response = await axios.get(
         `${this.baseURL}/lists/${this.listId}`,
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` },
+          headers: { Authorization: `apikey ${this.apiKey}` },
         },
       );
 
@@ -126,9 +126,10 @@ class MailChimpService {
         data: response.data,
       };
     } catch (error) {
+      logger.error('MailChimp getListInfo failed:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.message,
+        error: error.response?.data || error.message,
       };
     }
   }

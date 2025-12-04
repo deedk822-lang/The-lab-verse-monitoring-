@@ -71,7 +71,7 @@ def main():
     if report:
         # This output is designed to be captured by a GitHub Action.
         # We will save it to a file that can be used as an artifact or input for the next step.
-        output_path = os.getenv('GITHUB_WORKSPACE', '.') + '/tax_collector_report.json'
+        output_path = './tax_collector_report.json'
         with open(output_path, 'w') as f:
             json.dump(report, f, indent=2)
 

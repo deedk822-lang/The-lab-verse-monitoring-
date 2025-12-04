@@ -13,6 +13,7 @@ const config = require('./config/config');
 const logger = require('./utils/logger');
 const cache = require('./utils/cache');
 const apiRoutes = require('./routes/api');
+const keywordResearchRoutes = require('./routes/keywordResearch');
 const { apiKeyAuth } = require('./middlewares/auth');
 
 // Initialize Express app
@@ -71,6 +72,7 @@ app.get('/', (req, res) => {
 // API routes with authentication (except health and test)
 app.use('/api/health', apiRoutes);
 app.use('/api/test', apiRoutes);
+app.use('/api/keyword-research', keywordResearchRoutes);
 app.use('/api', apiKeyAuth, apiRoutes);
 
 // Socket.IO connection handling

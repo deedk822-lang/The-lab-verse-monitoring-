@@ -10,6 +10,13 @@ class MistralAPI:
         try:
             import ollama
             self.ollama = ollama
+ feat/production-hardening-and-keyword-research
+        except ImportError:
+            raise ImportError("Ollama not installed. Please install it with 'pip install ollama'")
+
+    def query_local(self, prompt: str, model: str = "mistral:latest") -> Dict:
+        """Query local Mistral via Ollama"""
+
             self.available = True
         except ImportError:
             logger.warning("Ollama not installed - using mock mode")
@@ -24,6 +31,7 @@ class MistralAPI:
                 "host": self.host
             }
 
+ main
         try:
             response = self.ollama.chat(
                 model=model,
@@ -40,8 +48,12 @@ class MistralAPI:
             }
         except Exception as e:
             logger.error(f"Mistral API error: {e}")
+ feat/production-hardening-and-keyword-research
+            raise e
+
             return {
                 "text": f"[MOCK] Mistral response (error: {str(e)})",
                 "model": model,
                 "host": self.host
             }
+ main

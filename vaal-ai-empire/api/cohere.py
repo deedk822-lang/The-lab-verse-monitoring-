@@ -10,6 +10,21 @@ class CohereAPI:
         try:
             import cohere
             self.cohere = cohere
+ feat/production-hardening-and-keyword-research
+        except ImportError:
+            raise ImportError("Cohere SDK not installed. Please install it with 'pip install cohere'")
+
+        api_key = os.getenv("COHERE_API_KEY")
+        if not api_key:
+            raise ValueError("COHERE_API_KEY environment variable not set.")
+
+        self.client = cohere.Client(api_key)
+        self.model = "command-r"
+        self.usage_log = []
+
+    def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
+        """Generate content and track usage"""
+
             api_key = os.getenv("COHERE_API_KEY")
             if not api_key:
                 logger.warning("COHERE_API_KEY not set - using mock mode")
@@ -30,6 +45,7 @@ class CohereAPI:
                 "usage": {"input_tokens": 100, "output_tokens": 200, "cost_usd": 0.0}
             }
 
+ main
         try:
             response = self.client.chat(
                 model=self.model,
@@ -51,10 +67,14 @@ class CohereAPI:
             }
         except Exception as e:
             logger.error(f"Cohere API error: {e}")
+ feat/production-hardening-and-keyword-research
+            raise e
+
             return {
                 "text": f"Error generating content: {str(e)}",
                 "usage": {"error": str(e)}
             }
+ main
 
     def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
         """Generate email sequence for MailChimp"""

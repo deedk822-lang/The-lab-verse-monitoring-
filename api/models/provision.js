@@ -53,7 +53,8 @@ async function deployModel(modelId, location) {
 
   if (model.provider === 'LocalAI') {
     // SSH into location's Raspberry Pi and pull model
-    return await fetch(`http://${model.endpoint}/models/apply`, {
+    const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
+    return await fetch(`${baseUrl}/models/apply`, {
       method: 'POST',
       body: JSON.stringify({
         model: modelId,

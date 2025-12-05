@@ -5,6 +5,10 @@ const { validateContentRequest, enhanceRequest, sanitizeInput } = require('../ut
 const logger = require('../utils/logger');
 const costTracker = require('../utils/cost-tracker');
 const { v4: uuidv4 } = require('uuid');
+const googleProvider = require('../services/providers/google');
+const localaiProvider = require('../services/providers/localai');
+const zaiProvider = require('../services/providers/zai');
+const openaiProvider = require('../services/providers/openai');
 
 class ContentController {
   async createContent(req, res) {
@@ -232,10 +236,57 @@ class ContentController {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      providers: {}
+      providers: {
+        google: googleProvider.isEnabled(),
+        localai: localaiProvider.isEnabled(),
+        zai: zaiProvider.isEnabled(),
+        openai: openaiProvider.isEnabled()
+      }
     };
 
-    const statusCode = health.status === 'healthy' ? 200 : 200;
+    // Check LocalAI health if enabled
+    if (localaiProvider.isEnabled()) {
+      health.localai = await localaiProvider.checkHealth();
+    }
+
+    // Check Google health if enabled
+    if (googleProvider.isEnabled()) {
+        health.google = await googleProvider.checkHealth();
+    }
+
+    // Check OpenAI health if enabled
+    if (openaiProvider.isEnabled()) {
+        health.openai = await openaiProvider.checkHealth();
+    }
+
+    // Check ZAI health if enabled
+    if (zaiProvider.isEnabled()) {
+        health.zai = await zaiProvider.checkHealth();
+    }
+
+    const providerResults = {
+      google: health.google,
+      localai: health.localai,
+      openai: health.openai,
+      zai: health.zai
+    };
+
+    const hasUnhealthyProvider = Object.entries(health.providers)
+      .filter(([provider, isEnabled]) => isEnabled)
+      .some(([provider]) => providerResults[provider] && !providerResults[provider].healthy);
+
+    if (hasUnhealthyProvider) {
+      health.status = 'unhealthy';
+    }
+
+    const hasAnyProvider = Object.values(health.providers).some(enabled => enabled);
+
+    if (!hasAnyProvider) {
+      health.status = 'warning';
+      health.message = 'No AI providers are enabled';
+    }
+
+    const statusCode = health.status === 'unhealthy' ? 503 : 200;
     return res.status(statusCode).json(health);
   }
 }

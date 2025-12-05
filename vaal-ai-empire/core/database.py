@@ -143,12 +143,13 @@ class Database:
         """Log revenue transaction"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            invoice_number = f"INV-{datetime.now().strftime('%Y%m%d')}-{cursor.lastrowid or 1}"
             cursor.execute("""
-                INSERT INTO revenue (client_id, amount, service_type, payment_date, payment_method, invoice_number)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (client_id, amount, service_type, datetime.now().isoformat(), payment_method, invoice_number))
+                INSERT INTO revenue (client_id, amount, service_type, payment_date, payment_method)
+                VALUES (?, ?, ?, ?, ?)
+            """, (client_id, amount, service_type, datetime.now().isoformat(), payment_method))
             revenue_id = cursor.lastrowid
+            invoice_number = f"INV-{datetime.now().strftime('%Y%m%d')}-{revenue_id}"
+            cursor.execute("UPDATE revenue SET invoice_number = ? WHERE id = ?", (invoice_number, revenue_id))
             conn.commit()
         logger.info(f"Logged revenue: R{amount} from {client_id}")
         return revenue_id

@@ -89,6 +89,18 @@ class Database:
                 )
             """)
 
+ feat/model-orchestration-architecture
+            # Model usage logs table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS model_usage_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    model_id TEXT NOT NULL,
+                    location TEXT,
+                    task TEXT,
+                    tokens_used INTEGER,
+                    cost_usd REAL,
+                    client_id TEXT,
+
             # Social posts queue
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS post_queue (
@@ -100,6 +112,7 @@ class Database:
                     scheduled_time TEXT NOT NULL,
                     posted INTEGER DEFAULT 0,
                     posted_at TEXT,
+ main
                     FOREIGN KEY (client_id) REFERENCES clients(id)
                 )
             """)

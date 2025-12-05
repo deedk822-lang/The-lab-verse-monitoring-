@@ -65,7 +65,7 @@ class EnhancedKeywordResearchController {
           });
         }
 
-        const result = results;
+        const result = results[0];
 
         res.json({
           success: true,

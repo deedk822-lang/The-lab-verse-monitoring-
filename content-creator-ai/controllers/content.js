@@ -229,33 +229,11 @@ class ContentController {
   }
 
   async healthCheck(req, res) {
-    // const googleProvider = require('../services/providers/google');
-    // const localaiProvider = require('../services/providers/localai');
-    // const zaiProvider = require('../services/providers/zai');
-    // const openaiProvider = require('../services/providers/openai');
-
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      providers: {
-        // google: googleProvider.isEnabled(),
-        // localai: localaiProvider.isEnabled(),
-        // zai: zaiProvider.isEnabled(),
-        // openai: openaiProvider.isEnabled()
-      }
+      providers: {}
     };
-
-    // // Check LocalAI health if enabled
-    // if (localaiProvider.isEnabled()) {
-    //   health.localai = await localaiProvider.checkHealth();
-    // }
-
-    // const hasAnyProvider = Object.values(health.providers).some(enabled => enabled);
-    
-    // if (!hasAnyProvider) {
-    //   health.status = 'warning';
-    //   health.message = 'No AI providers are enabled';
-    // }
 
     const statusCode = health.status === 'healthy' ? 200 : 200;
     return res.status(statusCode).json(health);

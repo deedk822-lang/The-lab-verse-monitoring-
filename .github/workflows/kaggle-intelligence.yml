@@ -42,7 +42,7 @@ jobs:
           echo "Downloading World Development Indicators..."
           kaggle datasets download -d worldbank/world-development-indicators -p /tmp/kaggle-data --unzip || echo "WDI download failed"
           
-          # Download Global Commodity Trade Statistics  
+          # Download Global Commodity Trade Statistics
           echo "Downloading Global Trade Statistics..."
           kaggle datasets download -d unitednations/global-commodity-trade-statistics -p /tmp/kaggle-data --unzip || echo "Trade stats download failed"
           
@@ -56,39 +56,39 @@ jobs:
         continue-on-error: true
         run: |
           python3 << 'PYEOF'
-import os
-import pandas as pd
-from databricks import sql
-import glob
-
-try:
-    # Find CSV files
-    csv_files = glob.glob('/tmp/kaggle-data/**/*.csv', recursive=True)
-    print(f"Found {len(csv_files)} CSV files")
-    
-    # Process sample file
-    if csv_files:
-        df = pd.read_csv(csv_files[0], nrows=100)
-        print(f"Sample data shape: {df.shape}")
-        print(f"Columns: {df.columns.tolist()}")
-        
-        # Save summary
-        summary = {
-            'files_processed': len(csv_files),
-            'sample_rows': len(df),
-            'sample_columns': len(df.columns)
-        }
-        
-        with open('/tmp/databricks-summary.txt', 'w') as f:
-            f.write(str(summary))
-        
-        print("Data processing complete")
-    else:
-        print("No CSV files found")
-        
-except Exception as e:
-    print(f"Processing error: {e}")
-PYEOF
+          import os
+          import pandas as pd
+          from databricks import sql
+          import glob
+          
+          try:
+              # Find CSV files
+              csv_files = glob.glob('/tmp/kaggle-data/**/*.csv', recursive=True)
+              print(f"Found {len(csv_files)} CSV files")
+              
+              # Process sample file
+              if csv_files:
+                  df = pd.read_csv(csv_files[0], nrows=100)
+                  print(f"Sample data shape: {df.shape}")
+                  print(f"Columns: {df.columns.tolist()}")
+                  
+                  # Save summary
+                  summary = {
+                      'files_processed': len(csv_files),
+                      'sample_rows': len(df),
+                      'sample_columns': len(df.columns)
+                  }
+                  
+                  with open('/tmp/databricks-summary.txt', 'w') as f:
+                      f.write(str(summary))
+                  
+                  print("Data processing complete")
+              else:
+                  print("No CSV files found")
+          
+          except Exception as e:
+              print(f"Processing error: {e}")
+          PYEOF
           
           echo "rows_updated=15000" >> $GITHUB_OUTPUT
         env:
@@ -115,73 +115,72 @@ PYEOF
         run: |
           mkdir -p /tmp
           python3 << 'PYEOF'
-import json
-from datetime import datetime, timedelta
-
-# Generate Q1 2026 forecast
-forecast = {
-    "quarter": "Q1 2026",
-    "generated_at": datetime.now().isoformat(),
-    "predictions": {
-        "african_trade_volume": {
-            "value": 847000000,
-            "growth": "+12.5%",
-            "confidence": 0.87
-        },
-        "top_commodities": [
-            {"name": "Petroleum", "projected_value": 245000000},
-            {"name": "Gold", "projected_value": 189000000},
-            {"name": "Cocoa", "projected_value": 156000000}
-        ],
-        "emerging_trends": [
-            "Increased South-South trade",
-            "Digital payment adoption",
-            "Green energy exports"
-        ]
-    }
-}
-
-with open('/tmp/predictions.json', 'w') as f:
-    json.dump(forecast, f, indent=2)
-
-# Generate markdown report
-report = f"""# African Trade Forecast: Q1 2026
-
-## Executive Summary
-Generated: {datetime.now().strftime('%Y-%m-%d')}
-
-### Key Predictions
-- **Trade Volume**: $847M (+12.5% YoY)
-- **Confidence Score**: 87%
-
-### Top Commodities
-1. Petroleum - $245M
-2. Gold - $189M  
-3. Cocoa - $156M
-
-### Emerging Trends
-- Increased South-South trade partnerships
-- Accelerated digital payment adoption
-- Growth in green energy exports
-
-## Methodology
-Analysis based on:
-- World Bank Development Indicators
-- UN Global Trade Statistics
-- Kaggle datasets (updated weekly)
-- Machine learning predictions
-
-## Data Sources
-- Kaggle: World Development Indicators
-- UN: Global Commodity Trade Statistics
-- Updated: {datetime.now().strftime('%Y-%m-%d')}
-"""
-
-with open('/tmp/q1-2026-forecast.md', 'w') as f:
-    f.write(report)
-
-print("Forecast generated successfully")
-PYEOF
+          import json
+          from datetime import datetime, timedelta
+          
+          # Generate Q1 2026 forecast
+          forecast = {
+              "quarter": "Q1 2026",
+              "generated_at": datetime.now().isoformat(),
+              "predictions": {
+                  "african_trade_volume": {
+                      "value": 847000000,
+                      "growth": "+12.5%",
+                      "confidence": 0.87
+                  },
+                  "top_commodities": [
+                      {"name": "Petroleum", "projected_value": 245000000},
+                      {"name": "Gold", "projected_value": 189000000},
+                      {"name": "Cocoa", "projected_value": 156000000}
+                  ],
+                  "emerging_trends": [
+                      "Increased South-South trade",
+                      "Digital payment adoption",
+                      "Green energy exports"
+                  ]
+              }
+          }
+          
+          with open('/tmp/predictions.json', 'w') as f:
+              json.dump(forecast, f, indent=2)
+          
+          # Generate markdown report
+          report = f"""# African Trade Forecast: Q1 2026
+          
+          ## Executive Summary
+          Generated: {datetime.now().strftime('%Y-%m-%d')}
+          
+          ### Key Predictions
+          - **Trade Volume**: $847M (+12.5% YoY)
+          - **Confidence Score**: 87%
+          
+          ### Top Commodities
+          1. Petroleum - $245M
+          2. Gold - $189M
+          3. Cocoa - $156M
+          
+          ### Emerging Trends
+          - Increased South-South trade partnerships
+          - Accelerated digital payment adoption
+          - Growth in green energy exports
+          
+          ## Methodology
+          Analysis based on:
+          - World Bank Development Indicators
+          - UN Global Trade Statistics
+          - Kaggle datasets (updated weekly)
+          - Machine learning predictions
+          
+          ## Data Sources
+          - Kaggle: World Development Indicators
+          - UN: Global Commodity Trade Statistics
+          - Updated: {datetime.now().strftime('%Y-%m-%d')}
+          """
+          
+          with open('/tmp/q1-2026-forecast.md', 'w') as f:
+              f.write(report)
+          print("Forecast generated successfully")
+          PYEOF
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}

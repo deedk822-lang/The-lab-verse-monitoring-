@@ -2,7 +2,7 @@ import { MODEL_CATALOG } from '../models.config.js';
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-  const { task, location, language, student_id } = req.body;
+  const { task, location, language, student_id: client_id } = req.body;
 
   // 1. Determine which model to use
   let model_id;
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       model_id = 'mistral-7b-instruct-v0.2-q4'; // Default safe choice
   }
 
-  const model = MODEL_CATALOG[model_id];
+  let model = MODEL_CATALOG[model_id];
 
   // 2. Check if model is healthy
   const is_healthy = await checkModelHealth(model_id);
@@ -37,6 +37,7 @@ export default async function handler(req, res) {
   if (!is_healthy) {
     // Fallback to LocalAI mistral if cloud fails
     model_id = 'mistral-7b-instruct-v0.2-q4';
+    model = MODEL_CATALOG[model_id];
   }
 
   // 3. Execute on the specific model
@@ -45,10 +46,10 @@ export default async function handler(req, res) {
   // 4. Log cost for this query
   await sql`
     INSERT INTO model_usage_logs
-    (model_id, location, task, tokens_used, cost_usd, student_id)
+    (model_id, location, task, tokens_used, cost_usd, client_id)
     VALUES
     (${model_id}, ${location}, ${task}, ${result.usage.total_tokens},
-     ${result.usage.total_tokens * model.cost_per_1k_tokens / 1000}, ${student_id})
+     ${result.usage.total_tokens * model.cost_per_1k_tokens / 1000}, ${client_id})
   `;
 
   res.json({
@@ -64,7 +65,7 @@ async function executeOnModel(modelId, payload) {
 
   // Route to correct provider
   if (model.provider === 'LocalAI') {
-    const response = await fetch(model.endpoint, {
+    const res = await fetch(model.endpoint, {
       method: 'POST',
       body: JSON.stringify({
         model: modelId,
@@ -72,17 +73,24 @@ async function executeOnModel(modelId, payload) {
         max_tokens: 500,
         temperature: 0.3
       })
-    }).then(r => r.json());
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
-      output: response.choices[0].text,
+      output: response?.choices?.[0]?.text,
       usage: {
-        total_tokens: response.usage.total_tokens
+        total_tokens: response?.usage?.total_tokens || 0
       }
     };
   }
 
   if (model.provider === 'OpenAI' || model.provider === 'Groq') {
-    const response = await fetch(model.endpoint, {
+    const res = await fetch(model.endpoint, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
       body: JSON.stringify({
@@ -90,17 +98,24 @@ async function executeOnModel(modelId, payload) {
         messages: [{ role: 'user', content: payload.query }],
         max_tokens: 500
       })
-    }).then(r => r.json());
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
-      output: response.choices[0].message.content,
+      output: response?.choices?.[0]?.message?.content,
       usage: {
-        total_tokens: response.usage.total_tokens
+        total_tokens: response?.usage?.total_tokens || 0
       }
     };
   }
 
   if (model.provider === 'Anthropic') {
-    const response = await fetch(model.endpoint, {
+    const res = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
         'x-api-key': process.env[model.api_key_env],
@@ -112,34 +127,48 @@ async function executeOnModel(modelId, payload) {
         max_tokens: 500,
         messages: [{ role: 'user', content: payload.query }]
       })
-    }).then(r => r.json());
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
-      output: response.content[0].text,
+      output: response?.content?.[0]?.text,
       usage: {
-        total_tokens: response.usage.input_tokens + response.usage.output_tokens
+        total_tokens: (response?.usage?.input_tokens || 0) + (response?.usage?.output_tokens || 0)
       }
     };
   }
 
   if (model.provider === 'Cohere') {
-      const response = await fetch(model.endpoint, {
-          method: 'POST',
-          headers: {
-              'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-              texts: [payload.query],
-              model: modelId,
-              input_type: 'search_document'
-          })
-      }).then(r => r.json());
-      return {
-          output: response.embeddings,
-          usage: {
-              total_tokens: response.meta.billed_units.input_tokens + response.meta.billed_units.output_tokens
-          }
-      };
+    const res = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        texts: [payload.query],
+        model: modelId,
+        input_type: 'search_document'
+      })
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Cohere API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
+    return {
+      output: response.embeddings,
+      usage: {
+        total_tokens: (response?.meta?.billed_units?.input_tokens || 0) + (response?.meta?.billed_units?.output_tokens || 0)
+      }
+    };
   }
 }
 

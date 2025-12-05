@@ -9,6 +9,7 @@ class MailChimpClient:
         try:
             from mailchimp_marketing import Client
             self.client = Client()
+ feat/production-hardening-and-keyword-research
         except ImportError:
             raise ImportError("MailChimp SDK not installed. Please install it with 'pip install mailchimp-marketing'")
 
@@ -25,6 +26,33 @@ class MailChimpClient:
 
     def create_audience(self, name: str) -> Dict:
         """Create new MailChimp audience"""
+
+            api_key = os.getenv("MAILCHIMP_API_KEY")
+            server = os.getenv("MAILCHIMP_SERVER_PREFIX", "us10")
+
+            if api_key:
+                self.client.set_config({
+                    "api_key": api_key,
+                    "server": server
+                })
+                self.available = True
+            else:
+                logger.warning("MAILCHIMP_API_KEY not set - using mock mode")
+                self.available = False
+        except ImportError:
+            logger.warning("MailChimp SDK not installed - using mock mode")
+            self.available = False
+
+    def create_audience(self, name: str) -> Dict:
+        """Create new MailChimp audience"""
+        if not self.available:
+            return {
+                "id": f"mock_list_{name.replace(' ', '_')}",
+                "name": name,
+                "status": "mock"
+            }
+
+ main
         try:
             return self.client.lists.create_list({
                 "name": name,
@@ -47,4 +75,8 @@ class MailChimpClient:
             })
         except Exception as e:
             logger.error(f"MailChimp error: {e}")
+ feat/production-hardening-and-keyword-research
             raise e
+
+            return {"error": str(e), "id": "error"}
+ main

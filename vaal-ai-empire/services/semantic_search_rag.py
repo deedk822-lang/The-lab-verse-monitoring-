@@ -173,7 +173,7 @@ class SemanticSearchService:
             for idx, dist in zip(indices, distances):
                 result = self.documents[idx].copy()
                 if include_distances:
-                    result['similarity_score'] = 1 - (dist / 2)  # Convert to 0-1 similarity
+                    result['similarity_score'] = 1 - (dist**2 / 2)  # Convert to 0-1 similarity
                     result['distance'] = dist
                 results.append(result)
 
@@ -234,7 +234,7 @@ class SemanticSearchService:
             results = []
             for idx, dist in zip(indices[1:], distances[1:]):  # Skip first (itself)
                 result = self.documents[idx].copy()
-                result['similarity_score'] = 1 - (dist / 2)
+                result['similarity_score'] = 1 - (dist**2 / 2)
                 result['distance'] = dist
                 results.append(result)
 
@@ -549,7 +549,7 @@ class ContentClusteringService:
                     scores = counts.toarray()[0]
                     top_indices = np.argsort(scores)[-top_n:][::-1]
                     keywords[cluster_id] = [feature_names[i] for i in top_indices]
-                except:
+                except ValueError:
                     keywords[cluster_id] = [f"cluster_{cluster_id}"]
 
             return keywords

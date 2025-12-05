@@ -3,13 +3,9 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-dotenv==1.0.0
 requests==2.31.0
- feat/production-hardening-and-keyword-research
 pydantic==2.12.5
-
-pydantic==2.5.0
- main
 pydantic-settings==2.1.0
-sqlalchemy==2.0.23
+sqlalchemy<2.0.0
 alembic==1.13.0
 
 # Alibaba Cloud (Optional - comment out if not using)
@@ -20,18 +16,13 @@ alembic==1.13.0
 cohere==5.11.0
 # groq==0.4.2  # Install separately if needed
 transformers==4.35.2
- feat/production-hardening-and-keyword-research
 torch==2.3.0
-# accelerate==0.25.0
-
-torch==2.1.1
 accelerate==0.25.0
- main
 sentence-transformers==2.2.2
 huggingface-hub==0.19.4
 
 # Mistral & LocalAI
-# ollama==0.1.6  # Requires local Ollama installation
+ollama==0.1.6  # Requires local Ollama installation
 
 # Social Media
 twilio==8.10.1

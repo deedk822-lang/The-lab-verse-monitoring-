@@ -5,6 +5,10 @@ const { validateContentRequest, enhanceRequest, sanitizeInput } = require('../ut
 const logger = require('../utils/logger');
 const costTracker = require('../utils/cost-tracker');
 const { v4: uuidv4 } = require('uuid');
+const googleProvider = require('../services/providers/google');
+const localaiProvider = require('../services/providers/localai');
+const zaiProvider = require('../services/providers/zai');
+const openaiProvider = require('../services/providers/openai');
 
 class ContentController {
   async createContent(req, res) {
@@ -229,11 +233,6 @@ class ContentController {
   }
 
   async healthCheck(req, res) {
-    const googleProvider = require('../services/providers/google');
-    const localaiProvider = require('../services/providers/localai');
-    const zaiProvider = require('../services/providers/zai');
-    const openaiProvider = require('../services/providers/openai');
-
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),

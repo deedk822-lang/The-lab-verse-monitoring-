@@ -12,8 +12,12 @@
   },
   "dependencies": {
     "dotenv": "^17.2.3",
+    "lucide-react": "^0.555.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "recharts": "^3.5.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2.0.45",

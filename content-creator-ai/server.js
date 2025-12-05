@@ -12,7 +12,9 @@ const path = require('path');
 const config = require('./config/config');
 const logger = require('./utils/logger');
 const cache = require('./utils/cache');
+const publicApiRoutes = require('./routes/publicApi');
 const apiRoutes = require('./routes/api');
+const enhancedKeywordResearchRoutes = require('./routes/enhancedKeywordResearch.js');
 const { apiKeyAuth } = require('./middlewares/auth');
 
 // Initialize Express app
@@ -69,8 +71,8 @@ app.get('/', (req, res) => {
 });
 
 // API routes with authentication (except health and test)
-app.use('/api/health', apiRoutes);
-app.use('/api/test', apiRoutes);
+app.use('/api', publicApiRoutes);
+app.use('/api/keyword-research', enhancedKeywordResearchRoutes);
 app.use('/api', apiKeyAuth, apiRoutes);
 
 // Socket.IO connection handling

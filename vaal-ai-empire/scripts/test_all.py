@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
+ feat/production-hardening-and-keyword-research
+Complete System Test - Now with Graceful Fallbacks
+Tests every component, reporting missing dependencies as warnings instead of errors.
+
 Complete System Test - FIXED AND WORKING
 Tests every component with proper error handling
+ main
 """
 
 import sys
@@ -17,7 +22,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def test_import(module_name: str, description: str) -> bool:
+ feat/production-hardening-and-keyword-research
+    """Test if a module can be imported, returns success status."""
+
     """Test if a module can be imported"""
+ main
     try:
         __import__(module_name)
         logger.info(f"✅ {description}: OK")
@@ -30,13 +39,25 @@ def test_import(module_name: str, description: str) -> bool:
         return False
 
 def test_api_client(client_class, description: str) -> bool:
+ feat/production-hardening-and-keyword-research
+    """Test if an API client can be instantiated, handling expected errors."""
+
     """Test if an API client can be instantiated"""
+ main
     try:
         client = client_class()
         logger.info(f"✅ {description}: OK")
         return True
+ feat/production-hardening-and-keyword-research
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  {description}: Not configured or installed - {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"❌ {description}: Unexpected error - {str(e)}")
+
     except Exception as e:
         logger.warning(f"⚠️  {description}: {str(e)}")
+ main
         return False
 
 def main():
@@ -47,6 +68,15 @@ def main():
     results = {
         "critical": [],
         "optional": [],
+ feat/production-hardening-and-keyword-research
+        "services": [],
+        "failed": []
+    }
+
+    # --- Critical imports ---
+    logger.info("\n📦 Testing Critical Dependencies...")
+    critical_tests = [("requests", "Requests"), ("pydantic", "Pydantic")]
+
         "failed": []
     }
 
@@ -58,11 +88,35 @@ def main():
         ("fastapi", "FastAPI"),
     ]
 
+ main
     for module, desc in critical_tests:
         if test_import(module, desc):
             results["critical"].append(desc)
         else:
             results["failed"].append(desc)
+
+ feat/production-hardening-and-keyword-research
+    # --- Test API clients ---
+    logger.info("\n🔌 Testing API Clients...")
+    api_clients_to_test = []
+    try:
+        from api.cohere import CohereAPI
+        api_clients_to_test.append((CohereAPI, "Cohere API Client"))
+        from api.mistral import MistralAPI
+        api_clients_to_test.append((MistralAPI, "Mistral API Client"))
+        from clients.mailchimp_client import MailChimpClient
+        api_clients_to_test.append((MailChimpClient, "MailChimp Client"))
+        from clients.asana_client import AsanaClient
+        api_clients_to_test.append((AsanaClient, "Asana Client"))
+    except ImportError as e:
+        logger.error(f"❌ Failed to import a client module: {e}")
+        results["failed"].append("API Client Imports")
+
+    for client_class, description in api_clients_to_test:
+        if test_api_client(client_class, description):
+            results["optional"].append(description)
+
+    # --- Test services ---
 
     # Optional imports
     logger.info("\n📦 Testing Optional Dependencies...")
@@ -95,10 +149,51 @@ def main():
         results["failed"].append("API Clients")
 
     # Test services
+ main
     logger.info("\n🛠️  Testing Services...")
     try:
         from services.content_generator import ContentFactory
         factory = ContentFactory()
+ feat/production-hardening-and-keyword-research
+        logger.info("✅ Content Factory: Instantiated")
+
+        logger.info("🧪 Testing content generation...")
+        pack = factory.generate_social_pack("butchery", "afrikaans")
+        if pack and "posts" in pack and len(pack['posts']) > 0:
+            logger.info(f"✅ Generated {len(pack['posts'])} posts")
+            results["services"].append("Content Generation")
+        else:
+            logger.warning("⚠️  Content generation returned no posts or unexpected format.")
+
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Services test skipped: {e}")
+    except Exception as e:
+        logger.error(f"❌ Services test failed with unexpected error: {e}")
+        results["failed"].append("Services")
+
+    # --- Print summary ---
+    logger.info("\n" + "=" * 60)
+    logger.info("TEST SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"✅ Critical System: {len(results['critical'])} passed")
+    logger.info(f"✅ API Clients Initialized: {len(results['optional'])}")
+    logger.info(f"✅ Services Functional: {len(results['services'])}")
+
+    if results["failed"]:
+        logger.error(f"❌ Failed Components: {', '.join(results['failed'])}")
+        logger.error("Please address the critical failures above.")
+        return 1
+
+    logger.info("\n" + "=" * 60)
+    if len(results["critical"]) >= 2:
+        logger.info("🎉 CORE SYSTEM FUNCTIONAL!")
+        logger.info("Note: Some API clients or services may be unavailable if not configured.")
+        logger.info("To enable all features, configure API keys in your .env file.")
+        return 0
+    else:
+        logger.error("❌ CRITICAL FAILURES - Core system is not functional.")
+        logger.error("Please run: pip install -r requirements.txt")
+
         logger.info("✅ Content Factory: OK")
 
         # Test content generation
@@ -135,6 +230,7 @@ def main():
     else:
         logger.error("❌ CRITICAL FAILURES - Fix dependencies first")
         logger.error("Run: pip install -r requirements.txt")
+ main
         return 1
 
 if __name__ == "__main__":

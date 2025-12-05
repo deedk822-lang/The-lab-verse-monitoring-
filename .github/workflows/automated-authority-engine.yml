@@ -10,6 +10,8 @@ jobs:
   # Job 1: The Visionary - Content Generation and Deployment
   the_visionary:
     runs-on: ubuntu-latest
+    outputs:
+      content_deployed: ${{ steps.deployment_status.outputs.content_deployed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,7 +50,7 @@ jobs:
     needs: the_visionary
     runs-on: ubuntu-latest
     name: "Run The Tax Collector Agent"
-    if: needs.the_visionary.outputs.deployment_status.content_deployed == 'true'
+    if: needs.the_visionary.outputs.content_deployed == 'true'
 
     steps:
       - name: Checkout repository

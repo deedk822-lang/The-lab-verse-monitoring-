@@ -5,21 +5,18 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
- feat/model-orchestration-architecture
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-
     "test": "node run-test-suite-ci.js",
     "test:js": "jest --runInBand --passWithNoTests",
     "test:py": "pytest -q || echo 'Python tests failed or pytest missing'",
     "test:integration": "node run-test-suite.js",
- main
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\""
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.44",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.555.0",
     "react": "^18.3.1",

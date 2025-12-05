@@ -65,6 +65,11 @@ class EnhancedKeywordResearchController {
           });
         }
 
+        if (!results || results.length === 0) {
+          return res.status(500).json({
+            error: 'Keyword processing returned no results',
+          });
+        }
         const result = results[0];
 
         res.json({

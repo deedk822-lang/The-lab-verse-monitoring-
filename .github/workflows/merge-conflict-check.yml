@@ -41,7 +41,9 @@ jobs:
         run: |
           echo "🔍 Checking for duplicate keys in package.json..."
           
-          if [ -f package.json ]; then
+          if [ ! -f package.json ]; then
+            echo "⚠️  package.json not found (skipping check)"
+          else
             # Use Python to check for duplicate keys
             python3 << 'EOF'
 import json
@@ -67,8 +69,6 @@ except Exception as e:
     print(f"❌ Error checking package.json: {e}")
     sys.exit(1)
 EOF
-          else
-            echo "⚠️  package.json not found (skipping check)"
           fi
 
       - name: Validate JSON syntax

@@ -21,7 +21,7 @@ const colors = {
 const envConfig = {
   // At least ONE AI provider is required
   aiProviders: {
-    required: false, // Not all required, but at least one
+    required: false,
     variables: [
       { name: 'COHERE_API_KEY', provider: 'Cohere', url: 'https://cohere.com' },
       { name: 'GROQ_API_KEY', provider: 'Groq', url: 'https://groq.com' },
@@ -41,12 +41,12 @@ const envConfig = {
     ]
   },
 
-  // Communication services
+  // Optional communication services
   communication: {
     required: false,
     variables: [
-      { name: 'TWILIO_ACCOUNT_SID', provider: 'Twilio', url: 'https://twilio.com' },
-      { name: 'TWILIO_AUTH_TOKEN', provider: 'Twilio', url: 'https://twilio.com' }
+      { name: 'TWILIO_ACCOUNT_SID', provider: 'Twilio', url: 'https://twilio.com', optional: true },
+      { name: 'TWILIO_AUTH_TOKEN', provider: 'Twilio', url: 'https://twilio.com', optional: true }
     ]
   },
 
@@ -154,35 +154,27 @@ class EnvironmentValidator {
       this.validateGroup(groupName, group);
     }
 
-    // Display results
-    if (this.configured.length > 0) {
-      this.log('\n✓ Configured Services:', 'green');
-      this.configured.forEach(({ variable, provider, value }) => {
-        this.log(`  ${variable}: ${value}`, 'green');
-      });
-    }
-
+    // Display warnings
     if (this.warnings.length > 0) {
       this.log('\n⚠ Optional Services (Not Configured):', 'yellow');
-      this.warnings.forEach(({ variable, provider, url }) => {
-        this.log(`  ${variable} (${provider})`, 'yellow');
-        if (url) {
-          this.log(`    Get key at: ${url}`, 'yellow');
-        }
+      this.warnings.forEach(warning => {
+        this.log(`  ${warning.variable} (${warning.provider})`, 'yellow');
+        this.log(`    Get key at: ${warning.url}`, 'yellow');
       });
     }
 
+    // Display errors
     if (this.errors.length > 0) {
       this.log('\n✗ Configuration Errors:', 'red');
-      this.errors.forEach((error) => {
-        if (error.providers && Array.isArray(error.providers)) {
-          this.log(`  ${error.message}`, 'red');
-          error.providers.forEach(p => {
-            if (typeof p === 'object') {
-              this.log(`    - ${p.name} (${p.key})`, 'red');
-              this.log(`      Get key at: ${p.url}`, 'red');
+      this.errors.forEach(error => {
+        if (Array.isArray(error.providers)) {
+          this.log(`  ${error.variable}: ${error.message}`, 'red');
+          error.providers.forEach(provider => {
+            if (typeof provider === 'string') {
+              this.log(`    - ${provider}`, 'red');
             } else {
-              this.log(`    - ${p}`, 'red');
+              this.log(`    - ${provider.name} (${provider.key})`, 'red');
+              this.log(`      Get key at: ${provider.url}`, 'red');
             }
           });
         } else {
@@ -192,86 +184,22 @@ class EnvironmentValidator {
           }
         }
       });
-
-      this.log('\n================================', 'red');
-      this.log('VALIDATION FAILED', 'red');
-      this.log('================================\n', 'red');
-
-      // Provide helpful instructions
-      this.log('To fix these errors:', 'yellow');
-      this.log('1. Copy .env.example to .env: cp .env.example .env', 'yellow');
-      this.log('2. Edit .env and add your API keys', 'yellow');
-      this.log('3. At minimum, configure ONE AI provider (Cohere recommended)', 'yellow');
-      this.log('4. Run this script again to verify\n', 'yellow');
-
-      if (process.env.VERCEL) {
-        this.log('VERCEL DEPLOYMENT:', 'blue');
-        this.log('Configure secrets in Vercel dashboard:', 'yellow');
-        this.log('  https://vercel.com/dashboard > Your Project > Settings > Environment Variables\n', 'yellow');
-      }
-
-      return false;
+      this.log('', 'reset');
+      process.exit(1);
     }
 
-    this.log('\n================================', 'green');
-    this.log('✓ VALIDATION PASSED', 'green');
-    this.log('================================\n', 'green');
-
-    // Show what's working
-    const aiProviders = this.configured.filter(c =>
-      ['COHERE_API_KEY', 'GROQ_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'HUGGINGFACE_TOKEN'].includes(c.variable)
-    );
-
-    if (aiProviders.length > 0) {
-      this.log(`AI Providers Available: ${aiProviders.length}`, 'green');
+    // Display configured
+    if (this.configured.length > 0) {
+      this.log('✓ Configured Services:', 'green');
+      this.configured.forEach(item => {
+        this.log(`  ${item.variable}: ${item.value}`, 'green');
+      });
     }
 
-    const optional = this.configured.filter(c =>
-      !['COHERE_API_KEY', 'GROQ_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'HUGGINGFACE_TOKEN'].includes(c.variable)
-    );
-
-    if (optional.length > 0) {
-      this.log(`Additional Services: ${optional.length}`, 'green');
-    }
-
-    this.log('');
-    return true;
-  }
-
-  generateReport() {
-    return {
-      timestamp: new Date().toISOString(),
-      configured: this.configured.length,
-      warnings: this.warnings.length,
-      errors: this.errors.length,
-      valid: this.errors.length === 0,
-      details: {
-        configured: this.configured,
-        warnings: this.warnings,
-        errors: this.errors
-      }
-    };
+    this.log('\n✓ Environment validation passed!', 'green');
   }
 }
 
 // Run validation
-function main() {
-  const validator = new EnvironmentValidator();
-  const isValid = validator.validate();
-
-  // Generate report file
-  const report = validator.generateReport();
-  const reportPath = path.join(process.cwd(), 'env-validation-report.json');
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-
-  console.log(`Report saved to: ${reportPath}\n`);
-
-  // Exit with appropriate code
-  process.exit(isValid ? 0 : 1);
-}
-
-if (require.main === module) {
-  main();
-}
-
-module.exports = { EnvironmentValidator };
+const validator = new EnvironmentValidator();
+validator.validate();

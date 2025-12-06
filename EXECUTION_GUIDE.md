@@ -76,36 +76,7 @@ HUMANITARIAN_FUND_PERCENTAGE=0.70
 
 ### Execution
 
-#### Option 1: Complete Automated Workflow (Recommended)
-
-```bash
-# Run complete G20 campaign workflow
-node scripts/execute-g20-content-complete.js
-```
-
-**What It Does:**
-1. ✅ Research G20 opportunities for South Africa (5 topics)
-2. ✅ Generate comprehensive blog post (1,500+ words)
-3. ✅ Create platform-specific social media content (6 platforms)
-4. ✅ Generate visual assets (hero images, social cards)
-5. ✅ Set up distribution plan (scheduled posting)
-6. ✅ Configure analytics tracking
-
-**Duration:** 3-5 minutes
-
-**Output Location:** `output/g20-campaign/`
-
-**Generated Files:**
-- `research-data.json` - Research findings from AI
-- `blog-post.md` - Complete blog post content
-- `blog-post-metadata.json` - WordPress metadata
-- `social-media-posts.json` - All social posts (Twitter, LinkedIn, Facebook, Instagram, YouTube)
-- `visual-assets-manifest.json` - Image generation specs
-- `distribution-plan.json` - Publishing schedule
-- `analytics-config.json` - Tracking setup
-- `workflow-final-state.json` - Execution log
-
-#### Option 2: Original Simplified Workflow
+#### Original Simplified Workflow
 
 ```bash
 # Run simplified workflow (simulation)
@@ -194,34 +165,6 @@ Access analytics:
 
 ### Execution
 
-#### Step 1: Run Setup Script
-
-```bash
-# Execute complete tax agent system setup
-node scripts/execute-tax-agent-setup.js
-```
-
-**What It Does:**
-1. ✅ Configure 5 AI model integrations
-2. ✅ Create 4 automated tax agents
-3. ✅ Set up revenue distribution system (70% humanitarian / 30% operational)
-4. ✅ Configure Grafana + Prometheus monitoring
-5. ✅ Generate deployment scripts and Docker configs
-
-**Duration:** 2-3 minutes
-
-**Output Location:** `output/tax-agent-system/`
-
-**Generated Files:**
-- `ai-models-config.json` - AI model endpoints & keys
-- `tax-agents-config.json` - Agent rules & workflows
-- `revenue-distribution-config.json` - Fund allocation rules
-- `monitoring-config.json` - Grafana dashboards & alerts
-- `setup-file-structure.sh` - Creates directory structure
-- `docker-compose.yml` - Docker services config
-- `startup.js` - System startup script
-- `README.md` - System documentation
-- `system-state.json` - Setup execution log
 
 #### Step 2: Create File Structure
 
@@ -609,24 +552,6 @@ GRAFANA_URL=http://localhost:3002
 ---
 
 ## 🎯 Next Steps
-
-### Immediate (Today - Dec 3)
-
-- [ ] ✅ **Run G20 content generation**
-  ```bash
-  node scripts/execute-g20-content-complete.js
-  ```
-
-- [ ] ✅ **Review generated blog post**
-  ```bash
-  cat output/g20-campaign/blog-post.md
-  ```
-
-- [ ] ✅ **Run Tax Agent setup**
-  ```bash
-  node scripts/execute-tax-agent-setup.js
-  bash output/tax-agent-system/setup-file-structure.sh
-  ```
 
 ### Tomorrow (Dec 4)
 

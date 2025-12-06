@@ -8,7 +8,9 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "public" }
+      "config": {
+        "distDir": "public"
+      }
     }
   ],
   "routes": [
@@ -22,12 +24,8 @@
     }
   ],
   "env": {
- Vaal-empire-1
-
     "CDATA_CONNECT_API": "disabled",
     "CDATA_API_KEY": "disabled",
- main
-    "GLM4_API_KEY": "@glm4_api_key",
     "AIRTABLE_BASE_ID": "@airtable_base_id",
     "AIRTABLE_API_KEY": "@airtable_api_key"
   }

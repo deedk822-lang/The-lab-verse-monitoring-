@@ -140,32 +140,42 @@ jobs:
       
       - name: Generate Security Report
         run: |
-          cat > /tmp/security-report.md << 'EOF'
-# Security Scan Report
-**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-**Source:** Alibaba Cloud Security Analyzer
+          # Determine status message
+          if [ "${{ steps.security_check.outputs.critical_count }}" -gt 0 ]; then
+            STATUS_MSG="🚨 IMMEDIATE ACTION REQUIRED"
+          elif [ "${{ steps.security_check.outputs.high_count }}" -gt 0 ]; then
+            STATUS_MSG="⚠️ HIGH PRIORITY REVIEW NEEDED"
+          else
+            STATUS_MSG="✅ No critical issues detected"
+          fi
 
-## Summary
-- **Total Findings:** ${{ steps.security_check.outputs.total_count }}
-- **Critical:** ${{ steps.security_check.outputs.critical_count }}
-- **High:** ${{ steps.security_check.outputs.high_count }}
-- **Medium:** ${{ steps.security_check.outputs.medium_count }}
+          cat > /tmp/security-report.md << EOF
+          # Security Scan Report
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Source:** Alibaba Cloud Security Analyzer
 
-## Status
-${{ steps.security_check.outputs.critical_count > 0 && '🚨 IMMEDIATE ACTION REQUIRED' || steps.security_check.outputs.high_count > 0 && '⚠️ HIGH PRIORITY REVIEW NEEDED' || '✅ No critical issues detected' }}
+          ## Summary
+          - **Total Findings:** ${{ steps.security_check.outputs.total_count }}
+          - **Critical:** ${{ steps.security_check.outputs.critical_count }}
+          - **High:** ${{ steps.security_check.outputs.high_count }}
+          - **Medium:** ${{ steps.security_check.outputs.medium_count }}
 
-## Next Steps
-1. Review findings in Alibaba Security Analyzer
-2. Address critical/high severity items immediately  
-3. Monitor Grafana dashboard for trends
-4. Update Asana tasks with remediation status
+          ## Status
+          $STATUS_MSG
 
-## Integration Status
-- ✅ Alibaba Security Analyzer
-- ✅ Grafana Dashboard
-- ✅ Datadog Metrics
-- ✅ Asana Alerts
-EOF
+          ## Next Steps
+          1. Review findings in Alibaba Security Analyzer
+          2. Address critical/high severity items immediately
+          3. Monitor Grafana dashboard for trends
+          4. Update Asana tasks with remediation status
+
+          ## Integration Status
+          - ✅ Alibaba Security Analyzer
+          - ✅ Grafana Dashboard
+          - ✅ Datadog Metrics
+          - ✅ Asana Alerts
+          EOF
+
           cat /tmp/security-report.md
       
       - name: Upload Security Report

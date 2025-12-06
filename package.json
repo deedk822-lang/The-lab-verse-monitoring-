@@ -23,7 +23,13 @@
     "react-dom": "^18.3.1",
     "recharts": "^3.5.1",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "axios": "^1.6.8",
+    "cohere-ai": "^2.0.1",
+    "@perplexity-ai/perplexity_ai": "^0.12.0",
+    "googleapis": "^134.0.0",
+    "nodemailer": "^6.9.13",
+    "wordpress-rest-api": "^0.1.0"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2.0.53",

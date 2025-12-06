@@ -480,6 +480,6 @@ class SocialPoster:
         platforms = ["facebook", "instagram", "twitter", "linkedin"]
 
         if self.providers["ayrshare"] or self.providers["socialpilot"]:
-            platforms.extend(["pinterest", "tiktok", "youtube"])
+            platforms.extend(["pinterest", "tiktok"])
 
         return platforms

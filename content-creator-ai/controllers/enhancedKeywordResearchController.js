@@ -1,132 +1,126 @@
-const { PythonShell } = require('python-shell');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
+/**
+ * Enhanced Keyword Research Controller - Fixed
+ * Handles multiple results properly with warnings
+ */
 
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    await fs.mkdir(uploadDir, { recursive: true });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+const { processKeywordsWithDeepSearch } = require('../services/keywordResearchService');
+
+module.exports = async (req, res) => {
+  const { csv_path, num_topics = 4, enable_deep_search = true, deep_search_top_n = 3 } = req.body;
+
+  if (!csv_path) {
+    return res.status(400).json({
+      error: 'Missing required field: csv_path'
+    });
   }
-});
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (path.extname(file.originalname).toLowerCase() !== '.csv') {
-      return cb(new Error('Only CSV files are allowed'));
+  try {
+    // Process keywords
+    const results = await processKeywordsWithDeepSearch({
+      csv_path,
+      num_topics,
+      enable_deep_search,
+      deep_search_top_n
+    });
+
+    // Handle empty results
+    if (!results || (Array.isArray(results) && results.length === 0)) {
+      return res.status(500).json({
+        error: 'Keyword processing returned no results',
+        csv_path
+      });
     }
-    cb(null, true);
-  }
-});
 
-class EnhancedKeywordResearchController {
-  /**
-   * Process keywords with Perplexity deep search
-   */
-  static async processWithDeepSearch(req, res) {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No CSV file uploaded' });
+    // Handle multiple results (log warning if unexpected)
+    if (Array.isArray(results)) {
+      if (results.length > 1) {
+        console.warn(`⚠️  Keyword processing returned ${results.length} results, expected 1`);
+        console.warn('   Using first result, others will be ignored');
       }
 
-      const numTopics = parseInt(req.body.num_topics) || 4;
-      const enableDeepSearch = req.body.enable_deep_search !== 'false';
-      const deepSearchTopN = parseInt(req.body.deep_search_top_n) || 3;
-      const filePath = req.file.path;
+      // Use first result
+      const result = results[0];
 
-      const options = {
-        mode: 'json',
-        pythonPath: 'python3',
-        pythonOptions: ['-u'],
-        scriptPath: path.join(__dirname, '../services'),
-        args: [
-          '--csv-path', filePath,
-          '--num-topics', numTopics,
-          '--enable-deep-search', enableDeepSearch,
-          '--deep-search-top-n', deepSearchTopN
-        ]
-      };
-
-      // Execute Python script
-      PythonShell.run('keywordResearchWithPerplexity.py', options, async (err, results) => {
-        // Clean up uploaded file
-        await fs.unlink(filePath).catch(console.error);
-
-        if (err) {
-          console.error('Python script error:', err);
-          return res.status(500).json({
-            error: 'Keyword processing failed',
-            details: err.message
-          });
+      return res.json({
+        success: true,
+        result,
+        metadata: {
+          csv_path,
+          num_topics,
+          enable_deep_search,
+          deep_search_top_n,
+          results_count: results.length,
+          warning: results.length > 1 ?
+            `Multiple results returned (${results.length}), using first result` :
+            null
         }
-
-        if (!results || results.length === 0) {
-          return res.status(500).json({
-            error: 'Keyword processing returned no results',
-          });
-        }
-        const result = results[0];
-
-        res.json({
-          success: true,
-          data: {
-            topics: result.enriched_topics,
-            summary: result.summary,
-            topic_summary: result.topic_summary
-          },
-          message: `Processed ${result.summary.total_keywords} keywords into ${result.summary.num_topics} topics with deep search insights`
-        });
       });
-    } catch (error) {
-      console.error('Enhanced keyword research error:', error);
-      res.status(500).json({
-        error: 'Internal server error',
+    }
+
+    // Single result (not array)
+    return res.json({
+      success: true,
+      result: results,
+      metadata: {
+        csv_path,
+        num_topics,
+        enable_deep_search,
+        deep_search_top_n
+      }
+    });
+
+  } catch (error) {
+    console.error('Keyword research error:', error);
+
+    // Differentiate between service errors and processing errors
+    if (error.message.includes('COHERE_API_KEY') || error.message.includes('PERPLEXITY_API_KEY')) {
+      return res.status(503).json({
+        error: 'Service configuration error',
+        message: 'Required API keys not configured',
+        details: error.message,
+        required: ['COHERE_API_KEY', 'PERPLEXITY_API_KEY (optional)']
+      });
+    }
+
+    if (error.message.includes('ENOENT') || error.message.includes('file')) {
+      return res.status(404).json({
+        error: 'File not found',
+        message: `CSV file not found: ${csv_path}`,
         details: error.message
       });
     }
+
+    // General error
+    return res.status(500).json({
+      error: 'Keyword research failed',
+      message: error.message,
+      csv_path
+    });
   }
+};
 
-  /**
-   * Get detailed insights for a specific topic
-   */
-  static async getTopicInsights(req, res) {
-    try {
-      const { topic_name, keywords } = req.body;
+// Health check endpoint
+module.exports.healthCheck = async (req, res) => {
+  try {
+    // Check if required services are available
+    const cohereAvailable = !!process.env.COHERE_API_KEY;
+    const perplexityAvailable = !!process.env.PERPLEXITY_API_KEY;
 
-      if (!topic_name || !keywords) {
-        return res.status(400).json({
-          error: 'topic_name and keywords array required'
-        });
-      }
-
-      // Call Python service for deep search on single topic
-      const options = {
-        mode: 'json',
-        pythonPath: 'python3',
-        scriptPath: path.join(__dirname, '../services'),
-        args: ['--single-topic', topic_name, '--keywords', JSON.stringify(keywords)]
-      };
-
-      PythonShell.run('keywordResearchWithPerplexity.py', options, (err, results) => {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to get insights' });
-        }
-
-        res.json({
-          success: true,
-          insights: results
-        });
-      });
-    } catch (error) {
-      console.error('Topic insights error:', error);
-      res.status(500).json({ error: 'Failed to retrieve topic insights' });
-    }
+    return res.json({
+      status: cohereAvailable ? 'healthy' : 'degraded',
+      services: {
+        cohere: cohereAvailable ? 'available' : 'not_configured',
+        perplexity: perplexityAvailable ? 'available' : 'not_configured',
+        deep_search: perplexityAvailable ? 'enabled' : 'disabled'
+      },
+      note: !perplexityAvailable ?
+        'Deep search disabled - Perplexity API not configured (optional)' :
+        null
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'unhealthy',
+      error: error.message
+    });
   }
-}
-
-module.exports = { EnhancedKeywordResearchController, upload };
+};

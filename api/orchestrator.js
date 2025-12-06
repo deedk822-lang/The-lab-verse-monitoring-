@@ -1,108 +1,87 @@
-import { MODEL_CATALOG } from '../models.config.js';
-import { sql } from '@vercel/postgres';
+/**
+ * AI Model Orchestrator - Fixed Version
+ * Refactored with Strategy Pattern and removed code duplication
+ */
 
-export default async function handler(req, res) {
-  const { task, location, language, student_id: client_id } = req.body;
+const MODEL_CATALOG = require('./models/models.config.js');
 
-  // 1. Determine which model to use
-  let model_id;
-  switch (task) {
-    case 'content_generation':
-      model_id = location === 'Sebokeng' ? 'mistral-7b-instruct-v0.2-q4' : 'mixtral-8x7b-together';
-      break;
-    case 'job_matching':
-      model_id = 'llama-3.1-8b-groq'; // Fast & cheap
-      break;
-    case 'compliance_analysis':
-      model_id = 'claude-3.5-sonnet'; // Best for legal docs
-      break;
-    case 'executive_coaching':
-      model_id = 'gpt-4o-mini'; // Premium
-      break;
-    case 'code_assistance':
-      model_id = location === 'Vanderbijlpark' ? 'qwen2.5-coder-1.5b-q4' : 'gpt-4o-mini';
-      break;
-    case 'rag_embeddings':
-      model_id = 'cohere-embed-multilingual';
-      break;
-    default:
-      model_id = 'mistral-7b-instruct-v0.2-q4'; // Default safe choice
-  }
-
-  let model = MODEL_CATALOG[model_id];
-
-  // 2. Check if model is healthy
-  const is_healthy = await checkModelHealth(model_id);
-
-  if (!is_healthy) {
-    // Fallback to LocalAI mistral if cloud fails
-    model_id = 'mistral-7b-instruct-v0.2-q4';
-    model = MODEL_CATALOG[model_id];
-  }
-
-  // 3. Execute on the specific model
-  const result = await executeOnModel(model_id, req.body);
-
-  // 4. Log cost for this query
-  await sql`
-    INSERT INTO model_usage_logs
-    (model_id, location, task, tokens_used, cost_usd, client_id)
-    VALUES
-    (${model_id}, ${location}, ${task}, ${result.usage.total_tokens},
-     ${result.usage.total_tokens * model.cost_per_1k_tokens / 1000}, ${client_id})
-  `;
-
-  res.json({
-    model_used: model_id,
-    result: result.output,
-    cost_usd: result.usage.total_tokens * model.cost_per_1k_tokens / 1000,
-    human_review_needed: model.capability < 7.0 // Flag if low-confidence
-  });
+// Helper function to calculate cost (eliminates duplication)
+function calculateCost(totalTokens, costPer1kTokens) {
+  return (totalTokens * costPer1kTokens) / 1000;
 }
 
-async function executeOnModel(modelId, payload) {
-  const model = MODEL_CATALOG[modelId];
+// Provider Strategy Pattern
+class ProviderStrategy {
+  constructor(model) {
+    this.model = model;
+  }
 
-  // Route to correct provider
-  if (model.provider === 'LocalAI') {
-    const res = await fetch(model.endpoint, {
+  async execute(modelId, payload) {
+    throw new Error('Execute method must be implemented');
+  }
+
+  async checkHealth(modelId) {
+    throw new Error('CheckHealth method must be implemented');
+  }
+}
+
+class LocalAIProvider extends ProviderStrategy {
+  async execute(modelId, payload) {
+    const res = await fetch(this.model.endpoint, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: modelId,
         prompt: payload.query,
-        max_tokens: 500,
-        temperature: 0.3
-      })
+        temperature: 0.7
+      }),
+      timeout: 30000
     });
 
     if (!res.ok) {
       const errorBody = await res.text();
-      throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
+      throw new Error(`LocalAI error (${res.status}): ${errorBody}`);
     }
 
     const response = await res.json();
     return {
-      output: response?.choices?.[0]?.text,
+      output: response?.choices?.[0]?.text || response?.text,
       usage: {
         total_tokens: response?.usage?.total_tokens || 0
       }
     };
   }
 
-  if (model.provider === 'OpenAI' || model.provider === 'Groq') {
-    const res = await fetch(model.endpoint, {
+  async checkHealth(modelId) {
+    const baseUrl = this.model.endpoint.replace(/\/v1\/.*$/, '');
+    try {
+      const r = await fetch(`${baseUrl}/health`, { timeout: 2000 });
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+class OpenAIProvider extends ProviderStrategy {
+  async execute(modelId, payload) {
+    const res = await fetch(this.model.endpoint, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
+      headers: {
+        'Authorization': `Bearer ${process.env[this.model.api_key_env]}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         model: modelId,
         messages: [{ role: 'user', content: payload.query }],
         max_tokens: 500
-      })
+      }),
+      timeout: 30000
     });
 
     if (!res.ok) {
       const errorBody = await res.text();
-      throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
+      throw new Error(`OpenAI/Groq error (${res.status}): ${errorBody}`);
     }
 
     const response = await res.json();
@@ -114,11 +93,34 @@ async function executeOnModel(modelId, payload) {
     };
   }
 
-  if (model.provider === 'Anthropic') {
-    const res = await fetch(model.endpoint, {
+  async checkHealth(modelId) {
+    try {
+      const response = await fetch(this.model.endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env[this.model.api_key_env]}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 1
+        }),
+        timeout: 5000
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+class AnthropicProvider extends ProviderStrategy {
+  async execute(modelId, payload) {
+    const res = await fetch(this.model.endpoint, {
       method: 'POST',
       headers: {
-        'x-api-key': process.env[model.api_key_env],
+        'x-api-key': process.env[this.model.api_key_env],
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json'
       },
@@ -126,7 +128,8 @@ async function executeOnModel(modelId, payload) {
         model: modelId,
         max_tokens: 500,
         messages: [{ role: 'user', content: payload.query }]
-      })
+      }),
+      timeout: 30000
     });
 
     if (!res.ok) {
@@ -143,18 +146,43 @@ async function executeOnModel(modelId, payload) {
     };
   }
 
-  if (model.provider === 'Cohere') {
-    const res = await fetch(model.endpoint, {
+  async checkHealth(modelId) {
+    try {
+      const response = await fetch(this.model.endpoint, {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env[this.model.api_key_env],
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'test' }]
+        }),
+        timeout: 5000
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+class CohereProvider extends ProviderStrategy {
+  async execute(modelId, payload) {
+    const res = await fetch(this.model.endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+        'Authorization': `Bearer ${process.env[this.model.api_key_env]}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         texts: [payload.query],
         model: modelId,
         input_type: 'search_document'
-      })
+      }),
+      timeout: 30000
     });
 
     if (!res.ok) {
@@ -164,42 +192,144 @@ async function executeOnModel(modelId, payload) {
 
     const response = await res.json();
     return {
-      output: response.embeddings,
+      output: response?.embeddings || [],
       usage: {
-        total_tokens: (response?.meta?.billed_units?.input_tokens || 0) + (response?.meta?.billed_units?.output_tokens || 0)
+        total_tokens: (response?.meta?.billed_units?.input_tokens || 0) +
+                     (response?.meta?.billed_units?.output_tokens || 0)
       }
     };
   }
+
+  async checkHealth(modelId) {
+    try {
+      const response = await fetch(this.model.endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env[this.model.api_key_env]}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          texts: ['test'],
+          model: modelId,
+          input_type: 'search_document'
+        }),
+        timeout: 5000
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// Provider Factory
+class ProviderFactory {
+  static create(model) {
+    const providerMap = {
+      'LocalAI': LocalAIProvider,
+      'OpenAI': OpenAIProvider,
+      'Groq': OpenAIProvider, // Groq uses OpenAI-compatible API
+      'Anthropic': AnthropicProvider,
+      'Cohere': CohereProvider
+    };
+
+    const ProviderClass = providerMap[model.provider];
+    if (!ProviderClass) {
+      throw new Error(`Unknown provider: ${model.provider}`);
+    }
+
+    return new ProviderClass(model);
+  }
+}
+
+// Main orchestration functions
+async function executeOnModel(modelId, payload, client_id = null) {
+  const model = MODEL_CATALOG[modelId];
+  if (!model) {
+    throw new Error(`Model ${modelId} not found in catalog`);
+  }
+
+  const provider = ProviderFactory.create(model);
+  const result = await provider.execute(modelId, payload);
+
+  // Calculate cost once using helper function
+  const cost = calculateCost(result.usage.total_tokens, model.cost_per_1k_tokens);
+
+  // Log usage (if database available)
+  if (client_id && global.db) {
+    await global.db.query(`
+      INSERT INTO model_usage_logs (model_id, location, task, tokens_used, cost_usd, client_id, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    `, [modelId, payload.location, payload.task, result.usage.total_tokens, cost, client_id]);
+  }
+
+  return {
+    model_used: modelId,
+    result: result.output,
+    cost_usd: cost,
+    usage: result.usage,
+    timestamp: new Date().toISOString()
+  };
 }
 
 async function checkModelHealth(modelId) {
-    const model = MODEL_CATALOG[modelId];
+  const model = MODEL_CATALOG[modelId];
+  if (!model) {
+    return false;
+  }
 
-    if (model.provider === 'LocalAI') {
-        const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
-        try {
-            const r = await fetch(`${baseUrl}/health`, { timeout: 2000 });
-            return r.ok;
-        } catch {
-            return false;
-        }
-    } else {
-        try {
-            const response = await fetch(model.endpoint, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: modelId,
-                    messages: [{ role: 'user', content: 'test' }],
-                    max_tokens: 1
-                })
-            });
-            return response.ok;
-        } catch {
-            return false;
-        }
-    }
+  try {
+    const provider = ProviderFactory.create(model);
+    return await provider.checkHealth(modelId);
+  } catch (error) {
+    console.error(`Health check failed for ${modelId}:`, error);
+    return false;
+  }
 }
+
+// API Handler
+module.exports = async (req, res) => {
+  const { model_id, task, location, query, client_id } = req.body;
+
+  if (!model_id || !query) {
+    return res.status(400).json({
+      error: 'Missing required fields: model_id and query'
+    });
+  }
+
+  try {
+    // Check model health first
+    const isHealthy = await checkModelHealth(model_id);
+
+    if (!isHealthy) {
+      return res.status(503).json({
+        error: `Model ${model_id} is currently unavailable`,
+        suggestion: 'Try a different model or retry later'
+      });
+    }
+
+    // Execute on model
+    const result = await executeOnModel(
+      model_id,
+      { task, location, query },
+      client_id
+    );
+
+    return res.json(result);
+
+  } catch (error) {
+    console.error('Orchestration error:', error);
+
+    return res.status(500).json({
+      error: 'Model execution failed',
+      message: error.message,
+      model_id
+    });
+  }
+};
+
+// Export functions for testing
+module.exports.executeOnModel = executeOnModel;
+module.exports.checkModelHealth = checkModelHealth;
+module.exports.calculateCost = calculateCost;
+module.exports.ProviderFactory = ProviderFactory;

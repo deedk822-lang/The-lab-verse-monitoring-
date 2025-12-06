@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 env:
+  # FIX 1: Quotes added around the value containing colons
   SECURITY_ANALYZER: "acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer"
 
 jobs:
@@ -24,28 +25,31 @@ jobs:
           ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
         run: |
           # Simulate Security Analyzer query
-          # We use a mix of single and double quotes to allow $(date) expansion
-
-          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           
-          FINDINGS='{
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # We use a heredoc with a specific delimiter to avoid quote nesting issues
+          FINDINGS=$(cat <<EOF
+          {
             "findings": [
               {
                 "id": "finding-001",
                 "severity": "MEDIUM",
                 "resource": "wordpress-api",
                 "description": "API rate limit approaching threshold",
-                "timestamp": "'"$TIMESTAMP"'"
+                "timestamp": "$TIMESTAMP"
               },
               {
                 "id": "finding-002",
                 "severity": "LOW",
                 "resource": "notion-sync",
                 "description": "Minor sync delay detected",
-                "timestamp": "'"$TIMESTAMP"'"
+                "timestamp": "$TIMESTAMP"
               }
             ]
-          }'
+          }
+          EOF
+          )
           
           echo "$FINDINGS" > /tmp/security-findings.json
           
@@ -63,6 +67,7 @@ jobs:
           echo "Security scan complete: $TOTAL_COUNT findings ($CRITICAL_COUNT critical, $HIGH_COUNT high, $MEDIUM_COUNT medium)"
       
       - name: Alert on Critical Findings
+        # FIX 2: Quotes added around the condition containing '>'
         if: "steps.security_check.outputs.critical_count > 0"
         continue-on-error: true
         run: |
@@ -81,6 +86,7 @@ jobs:
             }' || echo "Asana alert skipped"
       
       - name: Alert on High Findings
+        # FIX 2: Quotes added around the condition containing '>' and '&&'
         if: "steps.security_check.outputs.high_count > 0 && steps.security_check.outputs.critical_count == 0"
         continue-on-error: true
         run: |
@@ -142,7 +148,7 @@ jobs:
       
       - name: Generate Security Report
         run: |
-          # Determine status message
+          # Determine status message using shell logic instead of JS ternary
           if [ "${{ steps.security_check.outputs.critical_count }}" -gt 0 ]; then
             STATUS_MSG="🚨 IMMEDIATE ACTION REQUIRED"
           elif [ "${{ steps.security_check.outputs.high_count }}" -gt 0 ]; then

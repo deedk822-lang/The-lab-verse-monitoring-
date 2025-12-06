@@ -1,5 +1,5 @@
-const request = require('supertest');
-const { createApp } = require('../../src/gateway');
+import request from 'supertest';
+import { createApp } from '../../src/gateway.js';
 
 const app = createApp();
 

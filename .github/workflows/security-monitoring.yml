@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  SECURITY_ANALYZER: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
+  # FIX 1: Quotes added around the value containing colons
+  SECURITY_ANALYZER: "acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer"
 
 jobs:
   security-scan:
@@ -19,28 +20,36 @@ jobs:
       - name: Query Security Analyzer
         id: security_check
         continue-on-error: true
+        env:
+          ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
         run: |
-          # Simulate Security Analyzer query (replace with actual Alibaba CLI)
-          # In production, use: aliyun accessanalyzer ListFindings
+          # Simulate Security Analyzer query
           
-          FINDINGS='{
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # We use a heredoc with a specific delimiter to avoid quote nesting issues
+          FINDINGS=$(cat <<EOF
+          {
             "findings": [
               {
                 "id": "finding-001",
                 "severity": "MEDIUM",
                 "resource": "wordpress-api",
                 "description": "API rate limit approaching threshold",
-                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+                "timestamp": "$TIMESTAMP"
               },
               {
                 "id": "finding-002",
                 "severity": "LOW",
                 "resource": "notion-sync",
                 "description": "Minor sync delay detected",
-                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+                "timestamp": "$TIMESTAMP"
               }
             ]
-          }'
+          }
+          EOF
+          )
           
           echo "$FINDINGS" > /tmp/security-findings.json
           
@@ -56,12 +65,10 @@ jobs:
           echo "total_count=$TOTAL_COUNT" >> $GITHUB_OUTPUT
           
           echo "Security scan complete: $TOTAL_COUNT findings ($CRITICAL_COUNT critical, $HIGH_COUNT high, $MEDIUM_COUNT medium)"
-        env:
-          ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
-          ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
       
       - name: Alert on Critical Findings
-        if: steps.security_check.outputs.critical_count > 0
+        # FIX 2: Quotes added around the condition containing '>'
+        if: "steps.security_check.outputs.critical_count > 0"
         continue-on-error: true
         run: |
           echo "🚨 CRITICAL SECURITY ALERT: ${{ steps.security_check.outputs.critical_count }} critical findings detected"
@@ -79,7 +86,8 @@ jobs:
             }' || echo "Asana alert skipped"
       
       - name: Alert on High Findings
-        if: steps.security_check.outputs.high_count > 0 && steps.security_check.outputs.critical_count == 0
+        # FIX 2: Quotes added around the condition containing '>' and '&&'
+        if: "steps.security_check.outputs.high_count > 0 && steps.security_check.outputs.critical_count == 0"
         continue-on-error: true
         run: |
           echo "⚠️ HIGH PRIORITY: ${{ steps.security_check.outputs.high_count }} high-severity findings"
@@ -140,32 +148,42 @@ jobs:
       
       - name: Generate Security Report
         run: |
-          cat > /tmp/security-report.md << 'EOF'
-# Security Scan Report
-**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-**Source:** Alibaba Cloud Security Analyzer
+          # Determine status message using shell logic instead of JS ternary
+          if [ "${{ steps.security_check.outputs.critical_count }}" -gt 0 ]; then
+            STATUS_MSG="🚨 IMMEDIATE ACTION REQUIRED"
+          elif [ "${{ steps.security_check.outputs.high_count }}" -gt 0 ]; then
+            STATUS_MSG="⚠️ HIGH PRIORITY REVIEW NEEDED"
+          else
+            STATUS_MSG="✅ No critical issues detected"
+          fi
 
-## Summary
-- **Total Findings:** ${{ steps.security_check.outputs.total_count }}
-- **Critical:** ${{ steps.security_check.outputs.critical_count }}
-- **High:** ${{ steps.security_check.outputs.high_count }}
-- **Medium:** ${{ steps.security_check.outputs.medium_count }}
+          cat > /tmp/security-report.md <<EOF
+          # Security Scan Report
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Source:** Alibaba Cloud Security Analyzer
 
-## Status
-${{ steps.security_check.outputs.critical_count > 0 && '🚨 IMMEDIATE ACTION REQUIRED' || steps.security_check.outputs.high_count > 0 && '⚠️ HIGH PRIORITY REVIEW NEEDED' || '✅ No critical issues detected' }}
+          ## Summary
+          - **Total Findings:** ${{ steps.security_check.outputs.total_count }}
+          - **Critical:** ${{ steps.security_check.outputs.critical_count }}
+          - **High:** ${{ steps.security_check.outputs.high_count }}
+          - **Medium:** ${{ steps.security_check.outputs.medium_count }}
 
-## Next Steps
-1. Review findings in Alibaba Security Analyzer
-2. Address critical/high severity items immediately  
-3. Monitor Grafana dashboard for trends
-4. Update Asana tasks with remediation status
+          ## Status
+          $STATUS_MSG
 
-## Integration Status
-- ✅ Alibaba Security Analyzer
-- ✅ Grafana Dashboard
-- ✅ Datadog Metrics
-- ✅ Asana Alerts
-EOF
+          ## Next Steps
+          1. Review findings in Alibaba Security Analyzer
+          2. Address critical/high severity items immediately
+          3. Monitor Grafana dashboard for trends
+          4. Update Asana tasks with remediation status
+
+          ## Integration Status
+          - ✅ Alibaba Security Analyzer
+          - ✅ Grafana Dashboard
+          - ✅ Datadog Metrics
+          - ✅ Asana Alerts
+          EOF
+
           cat /tmp/security-report.md
       
       - name: Upload Security Report

@@ -25,13 +25,19 @@ jobs:
       - name: Validate package.json
         run: |
           echo "🔍 Validating package.json syntax..."
-          node -e "require('./package.json')"
-          echo "✅ package.json is valid JSON"
+          if [ -f package.json ]; then
+            jq empty package.json
+            echo "✅ package.json is valid JSON"
+          else
+            echo "❌ package.json not found!"
+            exit 1
+          fi
       
       - name: Check for Duplicate Dependencies
         run: |
           echo "🔍 Checking for duplicate dependencies..."
-          if jq -e '.dependencies + .devDependencies | group_by(.) | map(select(length > 1))' package.json | grep -q '\['; then
+          # Uses // {} to handle cases where devDependencies or dependencies might be missing
+          if jq -e '(.dependencies // {}) + (.devDependencies // {}) | group_by(.) | map(select(length > 1))' package.json | grep -q '\['; then
             echo "❌ Duplicate dependencies found!"
             exit 1
           else
@@ -83,7 +89,12 @@ jobs:
         run: npm ci
 
       - name: Create dummy .env file
-        run: cp .env.example .env
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
 
       - name: Run Environment Validation Script
         run: node scripts/validate-environment.cjs
@@ -109,18 +120,21 @@ jobs:
       - name: Validate JSON Files
         run: |
           echo "🔍 Validating all JSON files..."
+          # Using jq empty is safer and standard for validation
           find . -name "*.json" \
             -not -path "*/node_modules/*" \
             -not -path "*/.next/*" \
             -not -path "*/dist/*" \
             -not -path "*/build/*" \
-            -exec echo "Checking: {}" \; \
-            -exec node -e "try { require('{}'); console.log('✅ Valid'); } catch(e) { console.error('❌ Invalid:', e.message); process.exit(1); }" \;
+            -print0 | xargs -0 -I {} sh -c 'echo "Checking: {}"; jq empty "{}" || exit 255'
           echo "✅ All JSON files valid"
       
       - name: Validate YAML Workflow Files
         run: |
           echo "🔍 Validating GitHub workflow YAML files..."
+          # Ensure PyYAML is available
+          pip install pyyaml
+
           for file in .github/workflows/*.yml .github/workflows/*.yaml; do
             if [ -f "$file" ]; then
               echo "Checking: $file"

@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  SECURITY_ANALYZER: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
+  # FIX: Quoted string to handle colons safely
+  SECURITY_ANALYZER: "acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer"
 
 jobs:
   monitor-and-respond:
@@ -58,7 +59,7 @@ jobs:
           GDELT_API_KEY: ${{ secrets.GDELT_API_KEY }}
       
       - name: Cross-Validate with NewsAPI
-        if: steps.gdelt_monitor.outputs.events_detected == 'true'
+        if: "steps.gdelt_monitor.outputs.events_detected == 'true'"
         id: news_validate
         continue-on-error: true
         run: |
@@ -75,7 +76,7 @@ jobs:
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
       
       - name: Judge System Verification
-        if: steps.news_validate.outputs.validated == 'true'
+        if: "steps.news_validate.outputs.validated == 'true'"
         id: judge_crisis
         continue-on-error: true
         run: |
@@ -97,7 +98,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       
       - name: Security Analyzer - Log Crisis Detection
-        if: steps.judge_crisis.outputs.consensus_score != '' && steps.judge_crisis.outputs.consensus_score > '0.8'
+        # FIX: Quoted condition because it contains '>'
+        if: "steps.judge_crisis.outputs.consensus_score != '' && steps.judge_crisis.outputs.consensus_score > '0.8'"
         continue-on-error: true
         run: |
           echo '{
@@ -112,45 +114,48 @@ jobs:
           ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
       
       - name: Generate Guardian Content
-        if: steps.judge_crisis.outputs.consensus_score != '' && steps.judge_crisis.outputs.consensus_score > '0.8'
+        # FIX: Quoted condition because it contains '>'
+        if: "steps.judge_crisis.outputs.consensus_score != '' && steps.judge_crisis.outputs.consensus_score > '0.8'"
         id: generate_guardian
         continue-on-error: true
         run: |
           mkdir -p tmp
-          cat > ./tmp/guardian-article.md << 'EOF'
-# Guardian Alert: Humanitarian Crisis Response
+          # FIX: Removed quotes from EOF to allow $(date) to work
+          cat > ./tmp/guardian-article.md <<EOF
+          # Guardian Alert: Humanitarian Crisis Response
 
-## Crisis Overview
-Location: ${{ steps.judge_crisis.outputs.location }}
-Severity: High
-Verified by: Multi-source intelligence
+          ## Crisis Overview
+          Location: ${{ steps.judge_crisis.outputs.location }}
+          Severity: High
+          Verified by: Multi-source intelligence
 
-## Situation Analysis
-A significant humanitarian situation has been detected and verified through:
-- GDELT real-time monitoring (Severity: ${{ steps.gdelt_monitor.outputs.severity }})
-- Cross-validation with major news sources
-- AI consensus verification (Score: ${{ steps.judge_crisis.outputs.consensus_score }})
+          ## Situation Analysis
+          A significant humanitarian situation has been detected and verified through:
+          - GDELT real-time monitoring (Severity: ${{ steps.gdelt_monitor.outputs.severity }})
+          - Cross-validation with major news sources
+          - AI consensus verification (Score: ${{ steps.judge_crisis.outputs.consensus_score }})
 
-## Guardian Engine Response
-The Guardian Engine has been activated to:
-1. Monitor ongoing developments
-2. Track revenue from this article
-3. Deploy 100% of proceeds to humanitarian aid
+          ## Guardian Engine Response
+          The Guardian Engine has been activated to:
+          1. Monitor ongoing developments
+          2. Track revenue from this article
+          3. Deploy 100% of proceeds to humanitarian aid
 
-## How You Can Help
-All revenue generated from this article will be converted to crypto and deployed
-to verified humanitarian organizations on the ground.
+          ## How You Can Help
+          All revenue generated from this article will be converted to crypto and deployed
+          to verified humanitarian organizations on the ground.
 
-**Crisis ID:** ${{ steps.judge_crisis.outputs.crisis_id }}
-**Detection Time:** $(date -u +%Y-%m-%d)
-EOF
+          **Crisis ID:** ${{ steps.judge_crisis.outputs.crisis_id }}
+          **Detection Time:** $(date -u +%Y-%m-%d)
+          EOF
+
           echo "Article generated at ./tmp/guardian-article.md"
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           BRIA_API_KEY: ${{ secrets.BRIA_API_KEY }}
       
       - name: Publish Guardian Article
-        if: steps.generate_guardian.outcome == 'success'
+        if: "steps.generate_guardian.outcome == 'success'"
         id: publish_guardian
         continue-on-error: true
         run: |
@@ -160,7 +165,7 @@ EOF
           WORDPRESS_TOKEN: ${{ secrets.WORDPRESS_TOKEN }}
       
       - name: Track Revenue & Deploy Aid
-        if: steps.publish_guardian.outputs.post_id != ''
+        if: "steps.publish_guardian.outputs.post_id != ''"
         continue-on-error: true
         run: |
           echo "Tracking revenue for article: ${{ steps.publish_guardian.outputs.post_id }}"
@@ -171,7 +176,7 @@ EOF
           STELLAR_SECRET: ${{ secrets.STELLAR_SECRET }}
       
       - name: Update Grafana Dashboard
-        if: steps.publish_guardian.outputs.post_id != ''
+        if: "steps.publish_guardian.outputs.post_id != ''"
         continue-on-error: true
         run: |
           curl -X POST https://dimakatsomoleli.grafana.net/api/annotations \
@@ -184,7 +189,7 @@ EOF
             }' || echo "Grafana update skipped"
       
       - name: Create Asana Alert
-        if: steps.publish_guardian.outputs.post_id != ''
+        if: "steps.publish_guardian.outputs.post_id != ''"
         continue-on-error: true
         run: |
           curl -X POST https://app.asana.com/api/1.0/tasks \

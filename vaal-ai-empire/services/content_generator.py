@@ -15,8 +15,8 @@ class ContentFactory:
 
         # Initialize image generation if available
         try:
-            from api.image_generation import BusinessImageGenerator
-            self.image_generator = BusinessImageGenerator()
+            from api.local_image_gen import LocalImageGenerator
+            self.image_generator = LocalImageGenerator()
             logger.info("✅ Image generation enabled")
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
@@ -40,8 +40,8 @@ class ContentFactory:
 
         # Try Groq
         try:
-            from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
+            from api.local_llm import LocalLLM
+            providers["groq"] = LocalLLM()
             logger.info("✅ Groq provider initialized")
         except (ImportError, ValueError) as e:
             logger.warning(f"⚠️  Groq unavailable: {e}")
@@ -165,9 +165,10 @@ class ContentFactory:
             images = []
             if self.image_generator:
                 try:
-                    image_results = self.image_generator.generate_for_business(
-                        business_type,
-                        count=num_images
+                    image_prompts = [f"A high-quality image for a {business_type} in the Vaal Triangle" for _ in range(num_images)]
+                    image_results = self.image_generator.generate_batch(
+                        image_prompts,
+                        style="professional"
                     )
                     images = image_results
                     logger.info(f"✅ Generated {len(images)} images")

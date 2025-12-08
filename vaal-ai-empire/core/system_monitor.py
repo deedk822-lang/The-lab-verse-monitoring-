@@ -137,8 +137,9 @@ class SystemMonitor:
     def _check_groq(self) -> str:
         """Check Groq API health"""
         try:
-            from api.groq_api import GroqAPI
-            api = GroqAPI()
+            from api.local_llm import LocalLLM
+            api = LocalLLM()
+            api.list_models()
             return "healthy"
         except ValueError:
             return "not_configured"

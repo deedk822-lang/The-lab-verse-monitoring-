@@ -13,7 +13,8 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "postinstall": "npm dedupe"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",
@@ -64,6 +65,22 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.6",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "glob": "^11.1.0",
+    "rimraf": "^6.0.1",
+    "inflight": "npm:@xtuc/inflight@^1.0.0",
+    "npmlog": "npm:are-we-there-yet@^4.0.2",
+    "gauge": "npm:gauge@^5.0.0",
+    "are-we-there-yet": "^4.0.2",
+    "@npmcli/move-file": "npm:@npmcli/fs@^4.0.0",
+    "domexception": "^4.0.0",
+    "abab": "^2.0.6",
+    "node-domexception": "^1.0.0"
+  },
+  "resolutions": {
+    "glob": "^11.1.0",
+    "rimraf": "^6.0.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

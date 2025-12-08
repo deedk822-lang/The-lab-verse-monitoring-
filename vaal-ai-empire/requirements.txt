@@ -20,14 +20,6 @@ torch==2.3.0
 accelerate==0.25.0
 sentence-transformers==2.2.2
 huggingface-hub==0.19.4
-python-multipart
-mcp
-databricks-sdk
-httpx
-dashscope
-openai
-mistralai
-groq
 
 # Mistral & LocalAI
 ollama==0.1.6  # Requires local Ollama installation

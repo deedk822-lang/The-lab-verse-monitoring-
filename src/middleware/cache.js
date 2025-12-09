@@ -12,7 +12,7 @@ export const cacheMiddleware = async (req, res, next) => {
   try {
     const redis = await connectRedis();
     const cacheKey = `cache:${req.originalUrl}:${JSON.stringify(req.query)}`;
-    
+
     const cached = await redis.get(cacheKey);
     if (cached) {
       logger.info(`Cache hit for ${cacheKey}`);
@@ -21,13 +21,13 @@ export const cacheMiddleware = async (req, res, next) => {
 
     // Store original res.json
     const originalJson = res.json;
-    
+
     // Override res.json to cache the response
-    res.json = function(data) {
+    res.json = function (data) {
       // Cache the response
       redis.setex(cacheKey, CACHE_TTL, JSON.stringify(data))
         .catch(err => logger.error('Cache set failed:', err));
-      
+
       // Call original json method
       return originalJson.call(this, data);
     };

@@ -7,14 +7,14 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 export const providers = {
   // Primary OpenAI provider
   'gpt-4': {
-    model: process.env.OPENAI_API_KEY ? 
+    model: process.env.OPENAI_API_KEY ?
       createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4') : null,
     priority: 1,
     enabled: !!process.env.OPENAI_API_KEY,
     name: 'GPT-4',
     category: 'openai'
   },
-  
+
   // OpenAI fallback: Perplexity
   'perplexity': {
     model: process.env.PERPLEXITY_API_KEY ?
@@ -39,15 +39,15 @@ export const providers = {
   },
 
   // Anthropic fallback 1: Mistral (via OpenAI-compatible API)
-  'mistral': {
+  'hermes-2-pro-mistral': {
     model: process.env.MISTRAL_API_KEY ?
       createOpenAI({
-        baseURL: 'https://api.mistral.ai/v1',
+        baseURL: 'process.env.MISTRAL_API_URL || "http://localhost:8080/v1"',
         apiKey: process.env.MISTRAL_API_KEY
-      })('mistral-large-latest') : null,
-    priority: 4,
-    enabled: !!process.env.MISTRAL_API_KEY,
-    name: 'Mistral Large',
+      })('hermes-2-pro-hermes-2-pro-mistral') : null,
+    priority: 3,
+    enabled: !!(process.env.MISTRAL_API_URL && process.env.MISTRAL_API_KEY),
+    name: 'Mistral (LocalAI)',
     category: 'anthropic-fallback'
   },
 
@@ -76,14 +76,15 @@ export const providers = {
     category: 'anthropic-fallback'
   },
 
-  // Local fallback (always available)
-  'mistral-local': {
-    model: createOpenAI({
-      baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
-      apiKey: process.env.LOCALAI_API_KEY || 'localai',
-    })('mistral'),
+  // Local fallback (only enabled if explicitly configured)
+  'hermes-2-pro-mistral-local': {
+    model: (process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY) ?
+      createOpenAI({
+        baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
+        apiKey: process.env.LOCALAI_API_KEY || 'localai'
+      })('hermes-2-pro-mistral') : null,
     priority: 10,
-    enabled: true,
+    enabled: !!(process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY),
     name: 'Mistral Local',
     category: 'local'
   }
@@ -95,7 +96,7 @@ export const providers = {
  * @returns {Object|null} The best available provider model
  */
 export function getActiveProvider(preferredCategory = null) {
-  let availableProviders = Object.entries(providers)
+  const availableProviders = Object.entries(providers)
     .filter(([_, config]) => config.enabled && config.model)
     .sort(([_, a], [__, b]) => a.priority - b.priority);
 
@@ -110,9 +111,9 @@ export function getActiveProvider(preferredCategory = null) {
     const primaryProvider = availableProviders.find(
       ([_, config]) => config.category === preferredCategory
     );
-    
+
     if (primaryProvider) {
-      const [name, config] = primaryProvider;
+      const [_name, config] = primaryProvider;
       console.log(`✅ Using preferred ${config.name} (${preferredCategory})`);
       return config.model;
     }
@@ -122,16 +123,16 @@ export function getActiveProvider(preferredCategory = null) {
     const fallbackProvider = availableProviders.find(
       ([_, config]) => config.category === fallbackCategory
     );
-    
+
     if (fallbackProvider) {
-      const [name, config] = fallbackProvider;
+      const [_name, config] = fallbackProvider;
       console.log(`🔄 Falling back to ${config.name} (${config.category})`);
       return config.model;
     }
   }
 
   // Default: use highest priority available provider
-  const [name, config] = availableProviders[0];
+  const [_name, config] = availableProviders[0];
   console.log(`🎯 Using best available provider: ${config.name} (priority: ${config.priority})`);
   return config.model;
 }
@@ -152,24 +153,24 @@ export function getProviderByName(providerName, useFallback = true) {
 
   if (!provider.enabled || !provider.model) {
     console.warn(`❌ Provider ${providerName} (${provider.name}) is not available`);
-    
+
     if (useFallback) {
       console.log(`🔄 Attempting fallback for ${providerName}...`);
-      
+
       // OpenAI fallback chain: gpt-4 → perplexity → any available
       if (providerName === 'gpt-4') {
         return getActiveProvider('openai') || getActiveProvider();
       }
-      
-      // Anthropic fallback chain: claude → mistral → gemini → groq → any available
+
+      // Anthropic fallback chain: claude → hermes-2-pro-mistral → gemini → groq → any available
       if (providerName === 'claude-sonnet') {
         return getActiveProvider('anthropic') || getActiveProvider();
       }
-      
+
       // For other providers, use general fallback
       return getActiveProvider();
     }
-    
+
     return null;
   }
 
@@ -190,8 +191,8 @@ export function getAvailableProviders() {
       priority: config.priority,
       enabled: config.enabled,
       available: config.enabled && !!config.model,
-      status: config.enabled && config.model ? '✅ Available' : 
-              config.enabled ? '⚠️ Configured but not working' : '❌ Not configured'
+      status: config.enabled && config.model ? '✅ Available' :
+        config.enabled ? '⚠️ Configured but not working' : '❌ Not configured'
     }))
     .sort((a, b) => a.priority - b.priority);
 }
@@ -213,7 +214,7 @@ export function getProviderStatus() {
   const total = available.length;
   const working = available.filter(p => p.available).length;
   const configured = available.filter(p => p.enabled).length;
-  
+
   return {
     total,
     configured,
@@ -222,17 +223,19 @@ export function getProviderStatus() {
     providers: available,
     fallbackChains: {
       openai: ['gpt-4', 'perplexity'],
-      anthropic: ['claude-sonnet', 'mistral', 'gemini-pro', 'groq-llama'],
-      local: ['mistral-local']
+      anthropic: ['claude-sonnet', 'hermes-2-pro-mistral', 'gemini-pro', 'groq-llama'],
+      local: ['hermes-2-pro-mistral-local']
     }
   };
 }
 
-export default {
+const providersConfig = {
   providers,
   getActiveProvider,
-  getProviderByName,
-  getAvailableProviders,
-  hasAvailableProvider,
-  getProviderStatus
-};
+    getProviderByName,
+    getAvailableProviders,
+    hasAvailableProvider,
+    getProviderStatus
+  };
+
+export default providersConfig;

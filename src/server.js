@@ -1,123 +1,175 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import { logger } from './utils/logger.js';
-import { generateContent, streamContent } from './services/contentGenerator.js';
-import { getActiveProvider } from './config/providers.js';
-import ayrshareRoutes from './routes/ayrshare.js';
+// Import telemetry FIRST
+import './telemetry.js';
 
+import express from 'express';
+import dotenv from 'dotenv';
+
+// Monitoring imports
+import { initializeSentry, sentryErrorHandler } from './monitoring/sentry.js';
+import { logger, requestLogger } from './monitoring/logger.js';
+import { configureSecurityHeaders, configureRateLimiting, configureCORS, suspiciousActivityDetector } from './monitoring/security.js';
+import { initializeSpeedInsights } from './monitoring/speedInsights.js';
+import { initializeRUM } from './monitoring/rum.js';
+import { costTracker } from './monitoring/costTracking.js';
+import { syntheticMonitor } from './monitoring/synthetic.js';
+import monitoringRoutes from './routes/monitoring.js';
+import { getProviderStatus } from './config/providers.js';
+import { performanceMiddleware } from './monitoring/performance.js';
+
+// Load environment variables
 dotenv.config();
 
 const app = express();
-const httpServer = createServer(app);
+const PORT = process.env.PORT || 3001;
 
-export const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST']
-  }
-});
+// Initialize Sentry (must be first)
+initializeSentry(app);
 
-app.use(helmet());
-app.use(cors());
-app.use(morgan('combined'));
-app.use(express.json());
+// Security middleware
+configureSecurityHeaders(app);
+configureRateLimiting(app);
+configureCORS(app);
 
-// Mount routes
-app.use('/api/ayrshare', ayrshareRoutes);
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Lab Verse Monitoring - AI Content Distribution',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      health: '/health',
-      zapierWebhook: '/api/ayrshare/ayr',
-      testWorkflow: '/api/ayrshare/test/workflow',
-      contentGeneration: '/catch',
-      streaming: '/stream'
-    }
-  });
-});
+// Request logging
+app.use(requestLogger);
 
-app.get('/health', async (req, res) => {
-  const provider = getActiveProvider();
-  res.json({
+// Performance tracking
+app.use(performanceMiddleware);
+
+// Suspicious activity detection
+app.use(suspiciousActivityDetector);
+
+// Initialize monitoring services
+initializeSpeedInsights();
+initializeRUM();
+
+// Monitoring routes
+app.use('/api/monitoring', monitoringRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  const health = {
     status: 'healthy',
-    provider: provider ? 'available' : 'none',
-    timestamp: new Date().toISOString()
-  });
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    synthetic: syntheticMonitor.getStatus(),
+    costs: {
+      total: costTracker.getTotalCost(),
+      byService: costTracker.getCostByService(),
+    },
+    dependencies: {
+      octokit: !!require('@octokit/rest'),
+    },
+    providers: getProviderStatus().providers.map(p => ({
+      name: p.name,
+      status: p.status,
+      available: p.available,
+    })),
+  };
+
+  res.json(health);
 });
 
-app.post('/catch', async (req, res) => {
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
   try {
-    if (!req.body.prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
+    const metrics = {
+      costs: costTracker.getMetrics(),
+      synthetic: syntheticMonitor.getStatus(),
+      alerts: costTracker.checkAlerts(),
+    };
+
+    res.json(metrics);
+  } catch (error) {
+    logger.error('Error fetching metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch metrics' });
+  }
+});
+
+// Example API endpoint with cost tracking
+app.post('/api/research', async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { q } = req.body;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Query parameter required' });
     }
-    
-    const content = await generateContent(req.body.prompt);
-    res.json({
-      content,
-      timestamp: new Date().toISOString()
+
+    // Simulate API call
+    const result = {
+      query: q,
+      results: [],
+      timestamp: new Date().toISOString(),
+    };
+
+    // Track costs (example)
+    const duration = Date.now() - startTime;
+    costTracker.trackAPICall('openai', 'gpt-4', {
+      inputTokens: 100,
+      outputTokens: 200,
+      duration,
     });
+
+    logger.info('Research query processed', { query: q, duration });
+
+    res.json(result);
+
   } catch (error) {
-    logger.error('Content generation failed:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Research query failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/stream', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  try {
-    for await (const chunk of streamContent(req.body.prompt)) {
-      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-    }
-    res.end();
-  } catch (error) {
-    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-    res.end();
-  }
+// 404 handler
+app.use((req, res, _next) => {
+  logger.warn('Route not found', { path: req.path, method: req.method });
+  res.status(404).json({ error: 'Not found' });
 });
 
-io.on('connection', (socket) => {
-  logger.info('WebSocket client connected:', socket.id);
-  socket.on('disconnect', () => {
-    logger.info('WebSocket client disconnected:', socket.id);
+// Sentry error handler (must be before other error handlers)
+app.use(sentryErrorHandler);
+
+// Global error handler
+app.use((err, req, res, _next) => {
+  logger.error('Unhandled error:', err);
+
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err.message,
   });
 });
 
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    path: req.path
-  });
-});
-
-app.use((err, req, res, next) => {
-  logger.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-});
-
+// Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, closing server');
-  httpServer.close(() => process.exit(0));
+  logger.info('SIGTERM received, shutting down gracefully');
+
+  syntheticMonitor.stop();
+
+  server.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    logger.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+});
+
+// Start server
+const server = app.listen(PORT, () => {
+  logger.info('🚀 Server running on port ' + PORT);
+  logger.info('📊 Monitoring enabled: Sentry, OpenTelemetry, Cost Tracking, Synthetic');
+  logger.info('🔒 Security: Rate limiting, CORS, Helmet');
 });
 
 export default app;

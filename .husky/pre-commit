@@ -51,6 +51,16 @@ else
   echo "ℹ️  No JSON files to validate"
 fi
 
+# Run lint-staged (re-add this)
+echo "
+💅 Running lint-staged..."
+npx lint-staged
+
+# Run quick test check on staged files (re-add this)
+echo "
+🧪 Running tests on staged files..."
+npm run test -- --bail --findRelatedTests --passWithNoTests
+
 echo ""
 echo "✅ Pre-commit checks passed!"
 echo ""

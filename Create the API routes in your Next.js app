@@ -9,8 +9,7 @@ export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace('Bearer ', '');
   
-  const validToken = token === process.env.GATEWAY_API_KEY || 
-                     token === process.env.HF_API_TOKEN;
+  const validToken = token === process.env.GATEWAY_API_KEY;
   
   if (!validToken) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -29,17 +28,19 @@ export default async function handler(req, res) {
   try {
     // 3. Parse tool call from message content
     const content = messages[messages.length - 1]?.content || '';
-    const [toolName, ...argsParts] = content.split(' ');
-    const argsJson = argsParts.join(' ');
-    let args = {};
-    
+    let toolCall;
     try {
-      args = JSON.parse(argsJson);
+      toolCall = JSON.parse(content);
     } catch (e) {
       return res.status(400).json({ 
-        error: 'Invalid arguments format',
+        error: 'Invalid tool call format. Content must be a valid JSON string.',
         details: e.message 
       });
+    }
+
+    const { tool: toolName, args } = toolCall;
+    if (!toolName || !args) {
+      return res.status(400).json({ error: 'Tool call must include "tool" and "args" keys.' });
     }
 
     // 4. Execute tool based on name

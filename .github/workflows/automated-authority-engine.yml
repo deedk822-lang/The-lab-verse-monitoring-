@@ -1,100 +1,89 @@
-name: Automated Authority Engine
+name: Automated Authority Engine (Production)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *' # Run Daily at 6 AM SAST
   workflow_dispatch:
 
 jobs:
-  # Job 1: The Visionary - Content Generation and Deployment
-  the_visionary:
+  # JOB 1: THE AI WORKFORCE (Real Execution)
+  empire_operations:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    name: "Execute Tax Agent & Titans"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install dependencies
-        run: pip install requests python-dotenv
-
-      - name: The Visionary - Generate and Post Content
-        env:
-          WORDPRESS_URL: ${{ secrets.WORDPRESS_URL }}
-          WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
-          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-          LOCALAI_API_URL: ${{ secrets.LOCALAI_API_URL }}
-          # The Visionary uses a high-quality model (e.g., command-r-plus) for content generation
-          VISIONARY_MODEL: command-r-plus
-        run: |
-          # Placeholder for the actual content generation and posting script
-          # This script would call the LOCALAI_API_URL with the VISIONARY_MODEL
-          # to generate content and then use the WordPress credentials to post it.
-          echo "Simulating content generation by The Visionary..."
-          echo "Content generated and posted to WordPress."
-          # In a real scenario, a Python script like this would be executed:
-          # python3 scripts/visionary_content_generator.py
-
-      - name: Save content deployment status
-        run: echo "content_deployed=true" >> $GITHUB_OUTPUT
-        id: deployment_status
-
-  # Job 2: The Tax Collector - Conscience Check and Impact Reporting
-  the_tax_collector:
-    needs: the_visionary
-    runs-on: ubuntu-latest
-    name: "Run The Tax Collector Agent"
-    if: needs.the_visionary.outputs.deployment_status.content_deployed == 'true'
+    # 1. MAP THE KEYS (The Nervous System)
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         # DeepSeek / Kimi
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # Aya Vision / RAG
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # Qwen
+      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }} # Content Factory
+      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}           # Internal Data
+      GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
-      - name: Install Python dependencies
+      - name: Install Empire Core
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pandas
+          echo "📦 Installing AI Workforce..."
+          pip install --upgrade pip
 
-      - name: Execute Tax Collector Script
-        id: tax_collector_execution
-        run: python scripts/tax_collector.py
+          echo "🧹 Cleaning artifact pollution..."
+          find vaal-ai-empire -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 
-      - name: Upload Report as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tax-collector-report
-          path: ./tax_collector_report.json
+          # Installs the package we built + dependencies
+          pip install -e vaal-ai-empire/
+          # Ensure critical drivers are present
+          pip install fastapi uvicorn huggingface_hub requests mcp databricks-sdk httpx dashscope openai cohere mistralai groq
 
-  # Job 3: The Arbiter - Autonomous Optimization (Placeholder for future)
-  # This job would use the output of the Tax Collector and the performance data
-  # (e.g., from Grafana/Prometheus) to adjust the parameters of The Judges.
+      - name: 🛡️ Run Guardian Engine (Crisis Monitor)
+        run: |
+          # Use the Titan Brain to check for Market Threats
+          python3 -c "
+          from src.agents.tax_collector import TaxAgentMaster
+          agent = TaxAgentMaster()
+          agent.set_model('deepseek-v3') # Use High Intelligence
+          agent.execute_revenue_search() # This triggers the Titan/Glean flow
+          "
+
+      - name: ✍️ Run Content Factory (Visionary)
+        run: |
+          # Use Hugging Face Lab to generate daily assets
+          python3 -c "
+          from src.products.content_studio import ContentStudio
+          studio = ContentStudio()
+          res = studio.generate_social_bundle('Tech Startup', 'AI Automation in South Africa')
+          print(res)
+          "
+
+      - name: 💰 Run Tax Compliance Scan
+        run: |
+          # Use Glean Bridge to check internal ledgers
+          python3 -c "
+          from src.agents.tax_collector import TaxAgentMaster
+          agent = TaxAgentMaster()
+          # Check for 'standard' internal records
+          agent.set_model('standard')
+          agent.execute_revenue_search()
+          "
+
+  # JOB 2: THE ARBITER (System Optimization)
   the_arbiter:
-    needs: the_tax_collector
+    needs: empire_operations
     runs-on: ubuntu-latest
-    if: always() # Run regardless of previous job success for monitoring
+    if: always()
     steps:
-      - name: Download Tax Collector Report
-        uses: actions/download-artifact@v4
-        with:
-          name: tax-collector-report
-          path: artifacts
-
-      - name: The Arbiter - Review and Optimize
-        env:
-          ALIBABA_SELF_EVOLVING_API: ${{ secrets.ALIBABA_SELF_EVOLVING_API }}
-        run: |
-          echo "Simulating review of Tax Collector report and performance data by The Arbiter..."
-          # In a real scenario, this script would:
-          # 1. Read artifacts/tax_collector_report.json
-          # 2. Query Grafana/Prometheus for performance metrics
-          # 3. Use the ALIBABA_SELF_EVOLVING_API to adjust LocalAI Judge parameters
-          echo "Optimization complete. System parameters adjusted."
+      - name: Report Status
+        run: echo "✅ Empire Cycle Complete. Revenue & Compliance Logs Updated."

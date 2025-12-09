@@ -15,86 +15,86 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install Python Dependencies
         run: |
           pip install kaggle pandas databricks-sql-connector requests
-      
+
       - name: Setup Kaggle
         run: |
           mkdir -p ~/.kaggle
           echo '${{ secrets.KAGGLE_JSON }}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
           echo "Kaggle configured"
-      
+
       - name: Download Trade Datasets
         id: download_data
         continue-on-error: true
         run: |
           mkdir -p /tmp/kaggle-data
-          
+
           # Download World Development Indicators
           echo "Downloading World Development Indicators..."
           kaggle datasets download -d worldbank/world-development-indicators -p /tmp/kaggle-data --unzip || echo "WDI download failed"
-          
-          # Download Global Commodity Trade Statistics  
+
+          # Download Global Commodity Trade Statistics
           echo "Downloading Global Trade Statistics..."
           kaggle datasets download -d unitednations/global-commodity-trade-statistics -p /tmp/kaggle-data --unzip || echo "Trade stats download failed"
-          
+
           # Count files
           FILE_COUNT=$(find /tmp/kaggle-data -name '*.csv' | wc -l)
           echo "Downloaded $FILE_COUNT CSV files"
           echo "file_count=$FILE_COUNT" >> $GITHUB_OUTPUT
-      
+
       - name: Process & Upload to Databricks
         id: databricks_upload
         continue-on-error: true
         run: |
           python3 << 'PYEOF'
-import os
-import pandas as pd
-from databricks import sql
-import glob
+          import os
+          import pandas as pd
+          from databricks import sql
+          import glob
 
-try:
-    # Find CSV files
-    csv_files = glob.glob('/tmp/kaggle-data/**/*.csv', recursive=True)
-    print(f"Found {len(csv_files)} CSV files")
-    
-    # Process sample file
-    if csv_files:
-        df = pd.read_csv(csv_files[0], nrows=100)
-        print(f"Sample data shape: {df.shape}")
-        print(f"Columns: {df.columns.tolist()}")
-        
-        # Save summary
-        summary = {
-            'files_processed': len(csv_files),
-            'sample_rows': len(df),
-            'sample_columns': len(df.columns)
-        }
-        
-        with open('/tmp/databricks-summary.txt', 'w') as f:
-            f.write(str(summary))
-        
-        print("Data processing complete")
-    else:
-        print("No CSV files found")
-        
-except Exception as e:
-    print(f"Processing error: {e}")
-PYEOF
-          
+          try:
+              # Find CSV files
+              csv_files = glob.glob('/tmp/kaggle-data/**/*.csv', recursive=True)
+              print(f"Found {len(csv_files)} CSV files")
+
+              # Process sample file
+              if csv_files:
+                  df = pd.read_csv(csv_files[0], nrows=100)
+                  print(f"Sample data shape: {df.shape}")
+                  print(f"Columns: {df.columns.tolist()}")
+
+                  # Save summary
+                  summary = {
+                      'files_processed': len(csv_files),
+                      'sample_rows': len(df),
+                      'sample_columns': len(df.columns)
+                  }
+
+                  with open('/tmp/databricks-summary.txt', 'w') as f:
+                      f.write(str(summary))
+
+                  print("Data processing complete")
+              else:
+                  print("No CSV files found")
+
+          except Exception as e:
+              print(f"Processing error: {e}")
+          PYEOF
+
           echo "rows_updated=15000" >> $GITHUB_OUTPUT
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      
+
       - name: Security Analyzer - Log Data Update
         continue-on-error: true
         run: |
@@ -108,89 +108,88 @@ PYEOF
         env:
           ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
           ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
-      
+
       - name: Generate Predictive Report
         id: generate_predictions
         continue-on-error: true
         run: |
           mkdir -p /tmp
           python3 << 'PYEOF'
-import json
-from datetime import datetime, timedelta
+          import json
+          from datetime import datetime, timedelta
 
-# Generate Q1 2026 forecast
-forecast = {
-    "quarter": "Q1 2026",
-    "generated_at": datetime.now().isoformat(),
-    "predictions": {
-        "african_trade_volume": {
-            "value": 847000000,
-            "growth": "+12.5%",
-            "confidence": 0.87
-        },
-        "top_commodities": [
-            {"name": "Petroleum", "projected_value": 245000000},
-            {"name": "Gold", "projected_value": 189000000},
-            {"name": "Cocoa", "projected_value": 156000000}
-        ],
-        "emerging_trends": [
-            "Increased South-South trade",
-            "Digital payment adoption",
-            "Green energy exports"
-        ]
-    }
-}
+          # Generate Q1 2026 forecast
+          forecast = {
+              "quarter": "Q1 2026",
+              "generated_at": datetime.now().isoformat(),
+              "predictions": {
+                  "african_trade_volume": {
+                      "value": 847000000,
+                      "growth": "+12.5%",
+                      "confidence": 0.87
+                  },
+                  "top_commodities": [
+                      {"name": "Petroleum", "projected_value": 245000000},
+                      {"name": "Gold", "projected_value": 189000000},
+                      {"name": "Cocoa", "projected_value": 156000000}
+                  ],
+                  "emerging_trends": [
+                      "Increased South-South trade",
+                      "Digital payment adoption",
+                      "Green energy exports"
+                  ]
+              }
+          }
 
-with open('/tmp/predictions.json', 'w') as f:
-    json.dump(forecast, f, indent=2)
+          with open('/tmp/predictions.json', 'w') as f:
+              json.dump(forecast, f, indent=2)
 
-# Generate markdown report
-report = f"""# African Trade Forecast: Q1 2026
+          # Generate markdown report
+          report = f"""# African Trade Forecast: Q1 2026
 
-## Executive Summary
-Generated: {datetime.now().strftime('%Y-%m-%d')}
+          ## Executive Summary
+          Generated: {datetime.now().strftime('%Y-%m-%d')}
 
-### Key Predictions
-- **Trade Volume**: $847M (+12.5% YoY)
-- **Confidence Score**: 87%
+          ### Key Predictions
+          - **Trade Volume**: $847M (+12.5% YoY)
+          - **Confidence Score**: 87%
 
-### Top Commodities
-1. Petroleum - $245M
-2. Gold - $189M  
-3. Cocoa - $156M
+          ### Top Commodities
+          1. Petroleum - $245M
+          2. Gold - $189M
+          3. Cocoa - $156M
 
-### Emerging Trends
-- Increased South-South trade partnerships
-- Accelerated digital payment adoption
-- Growth in green energy exports
+          ### Emerging Trends
+          - Increased South-South trade partnerships
+          - Accelerated digital payment adoption
+          - Growth in green energy exports
 
-## Methodology
-Analysis based on:
-- World Bank Development Indicators
-- UN Global Trade Statistics
-- Kaggle datasets (updated weekly)
-- Machine learning predictions
+          ## Methodology
+          Analysis based on:
+          - World Bank Development Indicators
+          - UN Global Trade Statistics
+          - Kaggle datasets (updated weekly)
+          - Machine learning predictions
 
-## Data Sources
-- Kaggle: World Development Indicators
-- UN: Global Commodity Trade Statistics
-- Updated: {datetime.now().strftime('%Y-%m-%d')}
-"""
+          ## Data Sources
+          - Kaggle: World Development Indicators
+          - UN: Global Commodity Trade Statistics
+          - Updated: {datetime.now().strftime('%Y-%m-%d')}
+          """
 
-with open('/tmp/q1-2026-forecast.md', 'w') as f:
-    f.write(report)
-
-print("Forecast generated successfully")
-PYEOF
+          with open('/tmp/q1-2026-forecast.md', 'w') as f:
+              f.write(report)
+          print("Forecast generated successfully")
+          PYEOF
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      
+
       - name: Setup Node.js for BRIA
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Create BRIA Data Visualization
         continue-on-error: true
         run: |
@@ -199,7 +198,7 @@ PYEOF
           echo "Visualizations placeholder"
         env:
           BRIA_API_KEY: ${{ secrets.BRIA_API_KEY }}
-      
+
       - name: Publish Premium Report
         id: publish_report
         continue-on-error: true
@@ -209,7 +208,7 @@ PYEOF
           echo "url=https://rankyak.africa/premium/q1-2026-forecast" >> $GITHUB_OUTPUT
         env:
           WORDPRESS_TOKEN: ${{ secrets.WORDPRESS_TOKEN }}
-      
+
       - name: Update Grafana Dashboard
         continue-on-error: true
         run: |
@@ -221,7 +220,7 @@ PYEOF
               "tags": ["kaggle", "intelligence", "databricks"],
               "time": '$(date +%s000)'
             }' || echo "Grafana update skipped"
-      
+
       - name: Create Asana Task
         continue-on-error: true
         run: |
@@ -235,7 +234,7 @@ PYEOF
                 "workspace": "${{ secrets.ASANA_WORKSPACE_ID }}"
               }
             }' || echo "Asana task skipped"
-      
+
       - name: Workflow Summary
         run: |
           echo "## Kaggle Intelligence Pipeline 📊" >> $GITHUB_STEP_SUMMARY

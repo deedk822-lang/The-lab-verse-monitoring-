@@ -30,21 +30,9 @@ run_protected_job() {
         echo "   🚑 ACTIVATING QWEN SYSADMIN..."
 
         # 3. WAKE THE BRAIN (Qwen reads the log and fixes the code)
-        # We pass the error log content to the SysAdmin Core
-        ERROR_CONTENT=$(cat $LOG_FILE)
+        # We pass the error log file path to the SysAdmin Core
+        python3 vaal-ai-empire/src/core/alibaba_sysadmin_core.py "$LOG_FILE"
 
-        python3 -c "
-import os
-import sys
-sys.path.append(os.getcwd())
-from vaal_ai_empire.src.core.alibaba_sysadmin_core import MasterController
-
-# Initialize Qwen SysAdmin
-admin = MasterController()
-
-# Heal the System
-print(admin.self_heal('''$ERROR_CONTENT'''))
-"
         echo "   ✅ RECOVERY SEQUENCE FINISHED."
     else
         echo "   ✅ $JOB_NAME Completed Successfully."

@@ -8,9 +8,6 @@ TODAY=$(date +%Y-%m-%d)
 
 echo "🌞 STARTING DAILY EMPIRE OPERATIONS [$TODAY]..."
 
-# Set Python path to include the project root
-export PYTHONPATH=$PWD
-
 # --- FUNCTION: RUN WITH PROTECTION ---
 # This wrapper performs the "Trigger" logic you described.
 run_protected_job() {

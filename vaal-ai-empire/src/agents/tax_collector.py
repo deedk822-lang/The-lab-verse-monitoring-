@@ -1,64 +1,55 @@
+import logging
 import sys
 import os
-import logging
 
-# Setup Logging
+# Add project root to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+
+try:
+    from src.core.empire_supervisor import EmpireSupervisor
+except ImportError:
+    EmpireSupervisor = None
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("TaxAgentMaster")
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-
-# --- DYNAMIC IMPORTS (Preserve existing architecture) ---
-try:
-    from src.core.glean_bridge import GleanContextLayer
-except ImportError:
-    GleanContextLayer = None
-
-# NEW: Import HF Lab
-try:
-    from src.core.hf_lab import HuggingFaceLab, CostRouter
-except ImportError:
-    HuggingFaceLab = None
-    CostRouter = None
-
 class TaxAgentMaster:
     def __init__(self):
-        # 1. Existing Glean Bridge (Preserved)
-        self.home = GleanContextLayer() if GleanContextLayer else None
-
-        # 2. NEW: Hugging Face Lab (Added)
-        if HuggingFaceLab:
-            self.hf_lab = HuggingFaceLab()
-            self.router = CostRouter(self.hf_lab)
-            logger.info("✅ Cost Optimization Engine Online.")
-        else:
-            self.hf_lab = None
-            self.router = None
+        self.supervisor = EmpireSupervisor() if EmpireSupervisor else None
 
     def execute_revenue_search(self):
-        logger.info("--- TAX AGENT MASTER (OPTIMIZED) ---")
+        """
+        The Daily Mission: Check for Tax Credits & Talent Revenue.
+        """
+        logger.info("--- TAX AGENT MASTER: STARTING RUN ---")
 
-        # A. Low-Cost Check (HF Lab)
-        if self.router:
-            decision = self.router.route_task("sentiment_scan", complexity="low")
-            if decision == "HUGGING_FACE_FREE":
-                sentiment = self.hf_lab.analyze_sentiment("Market is volatile but promising.")
-                logger.info(f"🧪 HF Lab Insight (Free): Sentiment is {sentiment}")
+        if not self.supervisor:
+            logger.error("❌ Supervisor Offline. Cannot execute.")
+            raise RuntimeError("Dependency Missing: EmpireSupervisor")
 
-        # B. High-Value Search (Glean/Titans)
-        internal_data = None
-        if self.home:
-            internal_data = self.home.search_enterprise_memory("Q4 Tax Credits", "finance")
-            logger.info(f"📡 Glean Insight (Premium): {internal_data}")
+        # 1. TAX MISSION (SARS)
+        # We instruct the Supervisor (Qwen) to use the SARS tool
+        logger.info("💰 Phase 1: SARS Tax Audit...")
+        tax_result = self.supervisor.run(
+            "Check for ETI claims on the payroll file 'oss://vaal-vault/payroll/latest.json' using sars_cash_flow_miner."
+        )
+        logger.info(f"   > Result: {tax_result}")
 
-        # Value Calculation
-        revenue_potential = 25.00
-        logger.info(f"💰 Revenue Potential: ${revenue_potential:.2f}")
-        return revenue_potential
+        # 2. TALENT MISSION (VanHack)
+        # We instruct the Supervisor to check the resume queue
+        logger.info("🌍 Phase 2: VanHack Talent Scan...")
+        talent_result = self.supervisor.run(
+            "Check the resume 'oss://vaal-vault/resumes/pending.pdf' for Canada eligibility using vanhack_crs_simulator."
+        )
+        logger.info(f"   > Result: {talent_result}")
+
+        return True
 
 if __name__ == "__main__":
     agent = TaxAgentMaster()
-    if agent.execute_revenue_search() > 10:
+    try:
+        agent.execute_revenue_search()
         sys.exit(0)
-    else:
+    except Exception as e:
+        logger.error(f"FATAL: {e}")
         sys.exit(1)

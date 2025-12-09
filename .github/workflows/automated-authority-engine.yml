@@ -36,6 +36,13 @@ jobs:
         run: |
           echo "📦 Installing AI Workforce..."
           pip install --upgrade pip
+
+          echo "🧹 Cleaning artifact pollution..."
+          find vaal-ai-empire -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+          find vaal-ai-empire -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
+
           # Installs the package we built + dependencies
           pip install -e vaal-ai-empire/
           # Ensure critical drivers are present

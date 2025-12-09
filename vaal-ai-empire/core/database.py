@@ -89,7 +89,6 @@ class Database:
                 )
             """)
 
- feat/model-orchestration-architecture
             # Model usage logs table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS model_usage_logs (
@@ -100,6 +99,9 @@ class Database:
                     tokens_used INTEGER,
                     cost_usd REAL,
                     client_id TEXT,
+                    timestamp TEXT NOT NULL
+                )
+            """)
 
             # Social posts queue
             cursor.execute("""
@@ -112,7 +114,6 @@ class Database:
                     scheduled_time TEXT NOT NULL,
                     posted INTEGER DEFAULT 0,
                     posted_at TEXT,
- main
                     FOREIGN KEY (client_id) REFERENCES clients(id)
                 )
             """)

@@ -1,5 +1,20 @@
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+# --- Start of Google Colab Integration ---
+# Check if running in Google Colab environment
+IN_COLAB = 'COLAB_GPU' in os.environ
+
+colab_userdata = None
+if IN_COLAB:
+    try:
+        from google.colab import userdata as colab_userdata
+        print("Successfully imported Google Colab userdata.")
+    except ImportError:
+        print("Could not import Google Colab userdata. Skipping Colab-specific secret loading.")
+        colab_userdata = None
+# --- End of Google Colab Integration ---
 
 class Settings(BaseSettings):
     # AI Models
@@ -36,3 +51,21 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 settings = Settings()
+
+# --- Load secrets from Google Colab if available ---
+if colab_userdata:
+    print("Attempting to load secrets from Google Colab userdata...")
+    for field_name in Settings.model_fields:
+        # Check if the field is not already set from .env or environment
+        if getattr(settings, field_name) is None:
+            try:
+                # Attempt to get the secret from Colab userdata
+                secret_value = colab_userdata.get(field_name)
+                if secret_value:
+                    setattr(settings, field_name, secret_value)
+                    print(f"Loaded secret for '{field_name}' from Colab userdata.")
+            except Exception as e:
+                # This might happen if the key doesn't exist. It's safe to ignore.
+                pass
+    print("Finished loading secrets from Google Colab userdata.")
+# --- End of secret loading ---

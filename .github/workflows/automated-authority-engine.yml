@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     name: "Execute Tax Agent & Titans"
 
-    # 1. MAP THE KEYS (The Nervous System)
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         # DeepSeek / Kimi
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # Aya Vision / RAG
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # Qwen
-      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }} # Content Factory
-      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}           # Internal Data
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}
       GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
+      PYTHONPATH: ${{ github.workspace }}/vaal-ai-empire
 
     steps:
       - name: Checkout Codebase
@@ -37,30 +37,25 @@ jobs:
           echo "📦 Installing AI Workforce..."
           pip install --upgrade pip
 
-          echo "🧹 Cleaning artifact pollution..."
+          # Clean artifacts to prevent stale builds
           find vaal-ai-empire -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-          find vaal-ai-empire -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          find vaal-ai-empire -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
-          find vaal-ai-empire -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 
-          # Installs the package we built + dependencies
+          # Install dependencies
+          pip install -r vaal-ai-empire/requirements.txt
           pip install -e vaal-ai-empire/
-          # Ensure critical drivers are present
           pip install fastapi uvicorn huggingface_hub requests mcp databricks-sdk httpx dashscope openai cohere mistralai groq
 
       - name: 🛡️ Run Guardian Engine (Crisis Monitor)
         run: |
-          # Use the Titan Brain to check for Market Threats
           python3 -c "
           from src.agents.tax_collector import TaxAgentMaster
           agent = TaxAgentMaster()
-          agent.set_model('deepseek-v3') # Use High Intelligence
-          agent.execute_revenue_search() # This triggers the Titan/Glean flow
+          agent.set_model('deepseek-v3')
+          agent.execute_revenue_search()
           "
 
       - name: ✍️ Run Content Factory (Visionary)
         run: |
-          # Use Hugging Face Lab to generate daily assets
           python3 -c "
           from src.products.content_studio import ContentStudio
           studio = ContentStudio()
@@ -70,11 +65,9 @@ jobs:
 
       - name: 💰 Run Tax Compliance Scan
         run: |
-          # Use Glean Bridge to check internal ledgers
           python3 -c "
           from src.agents.tax_collector import TaxAgentMaster
           agent = TaxAgentMaster()
-          # Check for 'standard' internal records
           agent.set_model('standard')
           agent.execute_revenue_search()
           "

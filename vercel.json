@@ -2,31 +2,21 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/api/generate-article.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "public"
-      }
+      "src": "vaal-ai-empire/src/core/workforce_api.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/src/api/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "vaal-ai-empire/src/core/workforce_api.py"
     }
   ],
   "env": {
-    "CDATA_CONNECT_API": "disabled",
-    "CDATA_API_KEY": "disabled",
-    "AIRTABLE_BASE_ID": "@airtable_base_id",
-    "AIRTABLE_API_KEY": "@airtable_api_key"
+    "DASHSCOPE_API_KEY": "@dashscope_api_key",
+    "OSS_ACCESS_KEY_ID": "@access_key_id",
+    "OSS_ACCESS_KEY_SECRET": "@access_key_secret",
+    "OSS_ENDPOINT": "https://oss-eu-west-1.aliyuncs.com",
+    "OSS_BUCKET": "vaal-vault"
   }
 }

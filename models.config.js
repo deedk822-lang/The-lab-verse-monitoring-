@@ -45,6 +45,17 @@ export const MODEL_CATALOG = {
     location: 'Sasolburg' // Fast for industrial document search
   },
 
+  'gemini-1.5-flash': {
+    provider: 'Google',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+    api_key_env: 'GEMINI_API_KEY',
+    cost_per_1k_tokens: 0.001,
+    capability: 8.2,
+    specialization: 'multimodal_analysis',
+    languages: ['en', 'af', 'zu'],
+    location: 'Meyerton'
+  },
+
   // ** TIER 3: Premium (Requires Stable Power/Internet) **
   'gpt-4o-mini': {
     provider: 'OpenAI',

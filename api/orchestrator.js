@@ -89,6 +89,31 @@ async function executeOnModel(modelId, payload) {
     };
   }
 
+  if (model.provider === 'Google') {
+    const res = await fetch(`${model.endpoint}?key=${process.env[model.api_key_env]}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: payload.query }] }]
+      })
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Google API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
+    return {
+      output: response.candidates[0].content.parts[0].text,
+      usage: {
+        total_tokens: response.usageMetadata.totalTokenCount
+      }
+    };
+  }
+
   if (model.provider === 'OpenAI' || model.provider === 'Groq') {
     const res = await fetch(model.endpoint, {
       method: 'POST',

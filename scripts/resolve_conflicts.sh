@@ -115,3 +115,14 @@ console.log("✅ Environment validation handed off to Python Core.");
 process.exit(0);
 EOF
 echo "✅ Resolved: scripts/validate-environment.cjs"
+
+# 5. COMMIT RESOLUTION
+echo "💾 SAVING RESOLUTIONS..."
+git add .github/workflows/ci.yml
+git add vaal-ai-empire/src/core/alibaba_sysadmin_core.py
+git add vaal-ai-empire/services/social_poster.py
+git add scripts/validate-environment.cjs
+
+git commit -m "fix: resolve merge conflicts by enforcing production architecture"
+
+echo "🚀 CONFLICTS CLEARED. YOU CAN NOW PUSH."

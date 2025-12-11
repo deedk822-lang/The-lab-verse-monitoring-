@@ -9,6 +9,7 @@
     "test": "vitest --run"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.6.0",
     "monaco-editor": "^0.52.2",
     "pino": "^8.19.0",

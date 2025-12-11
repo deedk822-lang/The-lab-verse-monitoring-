@@ -1,0 +1,57 @@
+# ---------------------------------------------------
+# Cognitive Swarm Configuration
+# ---------------------------------------------------
+
+# Redis Connection for Message Queue and Context Store
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  events_channel: "cognitive_swarm:events"
+
+# OpenAI/OpenRouter API Configuration
+# The orchestrator will use this client to talk to all models.
+# Ensure OPENAI_API_KEY and OPENAI_API_BASE are set as environment variables.
+# Example for OpenRouter:
+# OPENAI_API_KEY=sk-or-v1-....
+# OPENAI_API_BASE=https://openrouter.ai/api/v1
+ai_client:
+  timeout: 120 # seconds
+
+# Model Mapping for Agent Selection
+# Maps abstract agent types to specific, powerful models available via your provider.
+agent_model_map:
+  # Fast, cheap model for high-volume, low-complexity tasks (planning, simple analysis)
+  supervisor: "meta-llama/llama-3-8b-instruct:free"
+  # Models specialized for their respective tasks
+  web_research: "google/gemini-2.5-flash"
+  code_analysis: "deepseek/deepseek-coder-v2-instruct"
+  data_analysis: "anthropic/claude-3-haiku"
+  creative_writing: "meta-llama/llama-3-70b"
+  # Powerful, expensive model for final, high-quality synthesis
+  synthesis_reasoning: "anthropic/claude-3.5-sonnet"
+
+# Sensor Configurations
+sensors:
+  github_monitor:
+    # Repositories to watch. Format: "owner/repo"
+    repositories:
+      - "deedk822-lang/The-lab-verse-monitoring-"
+    # Keywords to filter for in commit messages. Case-insensitive.
+    keywords:
+      - "feat"
+      - "fix"
+      - "refactor"
+      - "bug"
+      - "security"
+      - "release"
+    # How often the sensor should run, in seconds.
+    poll_interval: 300 # 5 minutes
+
+# Notification / Delivery Configuration
+# Where the final report is sent.
+notifications:
+  # Example for a Slack Incoming Webhook.
+  # Set the SLACK_WEBHOOK_URL environment variable.
+  slack:
+    enabled: true

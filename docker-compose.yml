@@ -1,279 +1,89 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Kimi Instruct AI Project Manager - Main Service
-  kimi-project-manager:
+  localai:
+    image: localai/localai:v2.16.0
+    container_name: localai-mistral
+    ports:
+      - "8080:8080"
+    environment:
+      - MODELS_PATH=/models
+      - THREADS=4
+      - CONTEXT_SIZE=4096
+      - DEBUG=true
+      - API_KEY=local-ai-key-optional
+    volumes:
+      - ./models:/models
+      - ./localai-data:/models/localai-data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - lab-verse-network
+
+  mcp-server:
+    image: python:3.12-slim
+    container_name: mcp-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./mcp-server:/app
+      - ./mcp-data:/data
+    working_dir: /app
+    command: ["python", "-m", "mcp.server.fastmcp"]
+    depends_on:
+      - localai
+    environment:
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - CONNECTOR_MOD=${CONNECTOR_MOD:-}
+      - CONNECTION_STRING=${CONNECTION_STRING:-}
+    restart: unless-stopped
+    networks:
+      - lab-verse-network
+
+  anomaly-detection:
     build:
       context: .
-      dockerfile: Dockerfile.kimi
-    container_name: labverse-kimi
-    restart: unless-stopped
+      dockerfile: src/anomaly_detection/Dockerfile
+    container_name: anomaly-detection-service
     ports:
-      - "8084:8084"
+      - "8085:8085"
     environment:
       - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - NODE_ENV=production
-      - PYTHON_ENV=production
-      # AI Provider Keys - loaded from .env.local
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
-      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
-      # System Configuration
-      - REDIS_URL=redis://redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      - HUMAN_OVERSIGHT_MODE=${HUMAN_OVERSIGHT_MODE:-collaborative}
-      - AUTO_EXECUTION_THRESHOLD=${AUTO_EXECUTION_THRESHOLD:-0.75}
-      - PROJECT_BUDGET=${PROJECT_BUDGET:-100000}
-      - TARGET_MRR=${TARGET_MRR:-75000}
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./config:/app/config
-    depends_on:
-      - redis
-      - prometheus
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8084/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     networks:
-      - labverse-network
-
-  # LapVerse Core (original service)
-  app:
-    build: .
-    container_name: lapverse-app
-    image: lapverse-monitoring:2.0.0
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
-      - REDIS_URL=redis://redis:6379
-      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - COST_CENTER=lapverse-core
-    ports:
-      - "3000:3000"
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - labverse-network
-    user: "lapverse"
-    volumes:
-      - ./logs:/app/logs
-
-  # Redis - Message Queue and Cache
-  redis:
-    image: redis:7-alpine
-    container_name: labverse-redis
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-redis123}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
+      - lab-verse-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
       retries: 5
-    volumes:
-      - redis_data:/data
-    networks:
-      - labverse-network
+      start_period: 60s
 
-  # Ollama - Local AI Models (Free MoE)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: labverse-ollama
-    restart: unless-stopped
+  ayrshare:
+    build:
+      context: ./ayrshare
+      dockerfile: Dockerfile
+    container_name: ayrshare-service
     ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    environment:
-      - OLLAMA_ORIGINS=*
-      - OLLAMA_HOST=0.0.0.0
+      - "8086:8086"
+    networks:
+      - lab-verse-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-    networks:
-      - labverse-network
-
-  # PostgreSQL - Advanced Data Storage
-  postgres:
-    image: postgres:15-alpine
-    container_name: labverse-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=labverse
-      - POSTGRES_USER=labverse
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-labverse123}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U labverse"]
-      interval: 10s
-      timeout: 5s
       retries: 5
-    networks:
-      - labverse-network
-
-  # Nginx - Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: labverse-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
-      - kimi-project-manager
-    restart: unless-stopped
-    networks:
-      - labverse-network
-
-  # Prometheus - Metrics Collection
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: labverse-prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=15d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    restart: unless-stopped
-    depends_on:
-      - kimi-project-manager
-      - app
-    networks:
-      - labverse-network
-
-  # Grafana - Visualization Dashboard
-  grafana:
-    image: grafana/grafana:latest
-    container_name: labverse-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-    networks:
-      - labverse-network
-
-  # AlertManager - Alert Management
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: labverse-alertmanager
-    restart: unless-stopped
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
-      - '--cluster.advertise-address=0.0.0.0:9093'
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - labverse-network
-
-  # Node Exporter - System Metrics
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: labverse-node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    networks:
-      - labverse-network
-
-  # OpenTelemetry Collector - Distributed Tracing
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: labverse-otel
-    restart: unless-stopped
-    ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics
-    volumes:
-      - ./monitoring/otel-collector.yml:/etc/otel-collector-config.yml:ro
-    command: ["--config=/etc/otel-collector-config.yml"]
-    depends_on:
-      - prometheus
-    networks:
-      - labverse-network
-
-volumes:
-  redis_data:
-  prometheus_data:
-  grafana_data:
-  ollama-data:
-    driver: local
-  postgres-data:
-    driver: local
-  alertmanager-data:
-    driver: local
+      start_period: 60s
 
 networks:
-  labverse-network:
+  lab-verse-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+
+volumes:
+  mcp-data:

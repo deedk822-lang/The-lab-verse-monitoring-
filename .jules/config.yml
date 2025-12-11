@@ -1,0 +1,30 @@
+version: 2.1
+
+agent:
+  name: "Jules-DevOps-Agent"
+  repository: "deedk822-lang/The-lab-verse-monitoring-"
+
+automation:
+  # Minimum confidence score (0-100) required for auto-merge
+  min_confidence_score: 85
+  
+  # Maximum number of files changed before human review is forced
+  max_file_churn: 15
+  
+  # Automatically attempt to rebase branches that are behind main
+  auto_rebase: true
+
+protected_paths:
+  # Regex patterns for sensitive areas (Modifying these = Automatic Block)
+  - "^config/"
+  - "^scripts/setup-"
+  - "docker-compose.*\\.yml$"
+  - "^\\.github/workflows/"
+  - "requirements.*\\.txt$"
+  - "package.*\\.json$"
+
+scoring:
+  # Points deducted from 100
+  todo_comment_penalty: 10
+  console_log_penalty: 5
+  large_pr_penalty: 20  # Applied if > 500 lines changed

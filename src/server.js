@@ -1,134 +1,175 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import 'express-async-errors';
+// Import telemetry FIRST
+import './telemetry.js';
 
-// Import routes and middleware
-import contentRoutes from './routes/content.js';
-import testRoutes from './routes/test.js';
-import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { logger } from './utils/logger.js';
-import { connectRedis } from './utils/redis.js';
-import { validateApiKey } from './middleware/auth.js';
+import express from 'express';
+import dotenv from 'dotenv';
+
+// Monitoring imports
+import { initializeSentry, sentryErrorHandler } from './monitoring/sentry.js';
+import { logger, requestLogger } from './monitoring/logger.js';
+import { configureSecurityHeaders, configureRateLimiting, configureCORS, suspiciousActivityDetector } from './monitoring/security.js';
+import { initializeSpeedInsights } from './monitoring/speedInsights.js';
+import { initializeRUM } from './monitoring/rum.js';
+import { costTracker } from './monitoring/costTracking.js';
+import { syntheticMonitor } from './monitoring/synthetic.js';
+import monitoringRoutes from './routes/monitoring.js';
+import { getProviderStatus } from './config/providers.js';
+import { performanceMiddleware } from './monitoring/performance.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "*",
-    methods: ["GET", "POST"]
-  }
-});
+const PORT = process.env.PORT || 3001;
 
-const PORT = process.env.PORT || 3000;
+// Initialize Sentry (must be first)
+initializeSentry(app);
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:"]
-    }
-  }
-}));
+configureSecurityHeaders(app);
+configureRateLimiting(app);
+configureCORS(app);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.use('/api/', limiter);
+// Request logging
+app.use(requestLogger);
 
-// Body parsing middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Performance tracking
+app.use(performanceMiddleware);
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
-  credentials: true
-}));
+// Suspicious activity detection
+app.use(suspiciousActivityDetector);
 
-// Compression and logging
-app.use(compression());
-app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
+// Initialize monitoring services
+initializeSpeedInsights();
+initializeRUM();
+
+// Monitoring routes
+app.use('/api/monitoring', monitoringRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+app.get('/api/health', (req, res) => {
+  const health = {
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0'
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    synthetic: syntheticMonitor.getStatus(),
+    costs: {
+      total: costTracker.getTotalCost(),
+      byService: costTracker.getCostByService(),
+    },
+    dependencies: {
+      octokit: !!require('@octokit/rest'),
+    },
+    providers: getProviderStatus().providers.map(p => ({
+      name: p.name,
+      status: p.status,
+      available: p.available,
+    })),
+  };
+
+  res.json(health);
+});
+
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = {
+      costs: costTracker.getMetrics(),
+      synthetic: syntheticMonitor.getStatus(),
+      alerts: costTracker.checkAlerts(),
+    };
+
+    res.json(metrics);
+  } catch (error) {
+    logger.error('Error fetching metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch metrics' });
+  }
+});
+
+// Example API endpoint with cost tracking
+app.post('/api/research', async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { q } = req.body;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Query parameter required' });
+    }
+
+    // Simulate API call
+    const result = {
+      query: q,
+      results: [],
+      timestamp: new Date().toISOString(),
+    };
+
+    // Track costs (example)
+    const duration = Date.now() - startTime;
+    costTracker.trackAPICall('openai', 'gpt-4', {
+      inputTokens: 100,
+      outputTokens: 200,
+      duration,
+    });
+
+    logger.info('Research query processed', { query: q, duration });
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('Research query failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 404 handler
+app.use((req, res, _next) => {
+  logger.warn('Route not found', { path: req.path, method: req.method });
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentryErrorHandler);
+
+// Global error handler
+app.use((err, req, res, _next) => {
+  logger.error('Unhandled error:', err);
+
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err.message,
   });
-});
-
-// API routes
-app.use('/api/content', validateApiKey, contentRoutes);
-app.use('/api/test', testRoutes);
-
-// WebSocket connection handling
-io.on('connection', (socket) => {
-  logger.info(`Client connected: ${socket.id}`);
-  
-  socket.on('disconnect', () => {
-    logger.info(`Client disconnected: ${socket.id}`);
-  });
-  
-  // Make io available to routes
-  socket.io = io;
-});
-
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
-
-// Initialize Redis connection
-connectRedis().catch(err => {
-  logger.error('Failed to connect to Redis:', err);
-});
-
-// Start server
-server.listen(PORT, () => {
-  logger.info(`🚀 AI Content Creation Suite running on port ${PORT}`);
-  logger.info(`📊 Health check: http://localhost:${PORT}/health`);
-  logger.info(`🔧 Test endpoint: http://localhost:${PORT}/api/test`);
-  logger.info(`📝 Content API: http://localhost:${PORT}/api/content`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
+
+  syntheticMonitor.stop();
+
   server.close(() => {
-    logger.info('Process terminated');
+    logger.info('Server closed');
     process.exit(0);
   });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    logger.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Process terminated');
-    process.exit(0);
-  });
+// Start server
+const server = app.listen(PORT, () => {
+  logger.info('🚀 Server running on port ' + PORT);
+  logger.info('📊 Monitoring enabled: Sentry, OpenTelemetry, Cost Tracking, Synthetic');
+  logger.info('🔒 Security: Rate limiting, CORS, Helmet');
 });
 
-export { app, io };
+export default app;

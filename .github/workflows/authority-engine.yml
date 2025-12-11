@@ -230,3 +230,29 @@ jobs:
           echo "3. **Broadcast System:** ${{ needs.broadcast_content.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Status:** Execution Cycle Complete." >> $GITHUB_STEP_SUMMARY
+
+  self_healing_controller:
+    name: 🤖 Jules Self-Healing Controller
+    needs: [empire_operations, generate-and-publish, broadcast_content]
+    runs-on: ubuntu-latest
+    if: failure()
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_URL: "https://jules.google.com/session"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # The controller might need this for context
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Trigger Jules Autonomous Fix
+        run: |
+          PROMPT="The '${{ github.workflow }}' workflow in repo '${{ github.repository }}' failed on branch '${{ github.ref_name }}'. The failing job was likely related to one of the following: ${{ join(needs.*.result, ', ') }}. Please diagnose and fix the root cause."
+          python3 vaal-ai-empire/scripts/jules_controller.py "$PROMPT"

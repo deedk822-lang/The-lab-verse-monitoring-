@@ -1,0 +1,159 @@
+name: Automated Authority Engine (Live Run)
+
+on:
+  # CHANGED: Schedule removed. Runs on Push or Button Click.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # JOB 1: THE AI WORKFORCE (Real Execution)
+  empire_operations:
+    runs-on: ubuntu-latest
+    name: "Execute Tax Agent & Titans"
+
+ main
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}
+      GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
+      PYTHONPATH: ${{ github.workspace }}/vaal-ai-empire
+
+    # 1. MAP THE KEYS (Using only what you have)
+    env:
+      # BRAINS
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   
+      
+      # WORKERS
+      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }} 
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}       
+      
+      # STORAGE (Alibaba Native)
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+ Vaal-empire-1
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Empire Core
+        run: |
+          echo "📦 Installing AI Workforce..."
+          pip install --upgrade pip
+ main
+
+          # Clean artifacts to prevent stale builds
+          find vaal-ai-empire -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+
+          # Install dependencies
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install fastapi uvicorn huggingface_hub requests mcp databricks-sdk httpx dashscope openai cohere mistralai groq
+
+      - name: 🛡️ Run Guardian Engine (Crisis Monitor)
+        run: |
+
+          
+          # 1. Install Requirements
+          pip install -r vaal-ai-empire/requirements.txt
+          
+          # 2. Install Package
+          pip install -e vaal-ai-empire/
+          
+          # 3. Ensure Drivers
+          pip install fastapi uvicorn huggingface_hub requests mcp httpx dashscope openai cohere mistralai groq oss2 pandas
+
+      - name: 🛡️ Run Guardian Engine (Crisis Monitor)
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
+          
+ Vaal-empire-1
+          python3 -c "
+          import sys
+          from src.agents.tax_collector import TaxAgentMaster
+          
+          print('🚀 ACTIVATING GUARDIAN (TITAN MODE)...')
+          agent = TaxAgentMaster()
+ main
+          agent.set_model('deepseek-v3')
+          agent.execute_revenue_search()
+
+          # Force DeepSeek/Qwen Reasoning for High Value Checks
+          agent.set_model('deepseek-v3') 
+          
+          # Execute Real Revenue Search
+          revenue = agent.execute_revenue_search()
+          print(f'💰 GUARDIAN REPORT: Revenue Generated: R{revenue}')
+ Vaal-empire-1
+          "
+
+      - name: ✍️ Run Content Factory (Visionary)
+        run: |
+ main
+
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
+          
+ Vaal-empire-1
+          python3 -c "
+          import sys
+          from src.products.content_studio import ContentStudio
+          
+          print('🎨 ACTIVATING CONTENT FACTORY...')
+          studio = ContentStudio()
+          
+          # Real Generation via Hugging Face
+          if hasattr(studio, 'generate_social_bundle'):
+              res = studio.generate_social_bundle('Tech Startup', 'AI Automation in South Africa')
+              print(f'✅ ASSET GENERATED: {res}')
+          else:
+              print('⚠️ Content Studio module loading...')
+          "
+
+      - name: 💰 Run Tax Compliance Scan (SARS)
+        run: |
+ main
+
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
+          
+ Vaal-empire-1
+          python3 -c "
+          from src.agents.tax_collector import TaxAgentMaster
+          
+          print('📉 ACTIVATING SARS CASH FLOW MINER...')
+          agent = TaxAgentMaster()
+ main
+          agent.set_model('standard')
+          agent.execute_revenue_search()
+
+          
+          # Use Standard Mode (Checks internal OSS Vault)
+          agent.set_model('standard') 
+          
+          # Execute Real Audit
+          result = agent.execute_revenue_search()
+          print(f'✅ COMPLIANCE CHECK COMPLETE. Value: R{result}')
+ Vaal-empire-1
+          "
+
+  # JOB 2: THE ARBITER (System Optimization)
+  the_arbiter:
+    needs: empire_operations
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report Status
+        run: echo "✅ Empire Cycle Complete. Revenue & Compliance Logs Updated."

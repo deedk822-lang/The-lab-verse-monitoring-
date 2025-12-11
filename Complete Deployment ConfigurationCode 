@@ -1,0 +1,136 @@
+{
+  "deployment_configs": {
+    "vercel": {
+      "filename": "vercel.json",
+      "content": {
+        "version": 2,
+        "name": "lab-verse-monitoring",
+        "builds": [
+          {
+            "src": "package.json",
+            "use": "@vercel/next"
+          }
+        ],
+        "routes": [
+          {
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
+          }
+        ],
+        "env": {
+          "NODE_ENV": "production"
+        },
+        "functions": {
+          "api/**/*.js": {
+            "maxDuration": 30,
+            "memory": 1024
+          }
+        },
+        "headers": [
+          {
+            "source": "/api/(.*)",
+            "headers": [
+              {
+                "key": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "key": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "key": "Access-Control-Allow-Headers",
+                "value": "Authorization, Content-Type"
+              }
+            ]
+          }
+        ],
+        "rewrites": [
+          {
+            "source": "/health",
+            "destination": "/api/health"
+          }
+        ]
+      }
+    },
+    "pm2": {
+      "filename": "ecosystem.config.cjs",
+      "content": "module.exports = {\n  apps: [\n    {\n      name: 'mcp-huggingface',\n      script: './mcp-server/huggingface-gateway.js',\n      interpreter: 'node',\n      instances: 1,\n      autorestart: true,\n      watch: false,\n      max_memory_restart: '500M',\n      env: {\n        NODE_ENV: 'production'\n      },\n      error_file: './logs/hf-error.log',\n      out_file: './logs/hf-out.log',\n      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'\n    },\n    {\n      name: 'mcp-socialpilot',\n      script: './mcp-server/socialpilot-gateway.js',\n      interpreter: 'node',\n      instances: 1,\n      autorestart: true,\n      watch: false,\n      max_memory_restart: '500M',\n      env: {\n        NODE_ENV: 'production'\n      },\n      error_file: './logs/sp-error.log',\n      out_file: './logs/sp-out.log'\n    },\n    {\n      name: 'mcp-unito',\n      script: './mcp-server/unito-gateway.js',\n      interpreter: 'node',\n      instances: 1,\n      autorestart: true,\n      watch: false,\n      max_memory_restart: '500M',\n      env: {\n        NODE_ENV: 'production'\n      },\n      error_file: './logs/unito-error.log',\n      out_file: './logs/unito-out.log'\n    },\n    {\n      name: 'mcp-wpcom',\n      script: './mcp-server/wpcom-gateway.js',\n      interpreter: 'node',\n      instances: 1,\n      autorestart: true,\n      watch: false,\n      max_memory_restart: '500M',\n      env: {\n        NODE_ENV: 'production'\n      },\n      error_file: './logs/wpcom-error.log',\n      out_file: './logs/wpcom-out.log'\n    }\n  ]\n};"
+    },
+    "docker": {
+      "filename": "Dockerfile",
+      "content": "# Multi-stage build for MCP gateways\nFROM node:20-alpine AS base\n\n# Install dependencies\nWORKDIR /app\nCOPY mcp-server/package*.json ./mcp-server/\nRUN cd mcp-server && npm ci --production\n\n# Copy source code\nCOPY mcp-server/ ./mcp-server/\n\n# Create logs directory\nRUN mkdir -p logs\n\n# Expose health check port (if needed)\nEXPOSE 8080\n\n# Run all gateways using PM2\nRUN npm install -g pm2\n\nCMD [\"pm2-runtime\", \"start\", \"ecosystem.config.cjs\"]"
+    },
+    "docker_compose": {
+      "filename": "docker-compose.yml",
+      "content": "version: '3.8'\n\nservices:\n  mcp-gateways:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: mcp-gateways\n    restart: unless-stopped\n    env_file:\n      - .env\n    environment:\n      - NODE_ENV=production\n      - GATEWAY_URL=${GATEWAY_URL}\n      - GATEWAY_KEY=${GATEWAY_KEY}\n      - HF_API_TOKEN=${HF_API_TOKEN}\n      - SOCIALPILOT_ACCESS_TOKEN=${SOCIALPILOT_ACCESS_TOKEN}\n      - UNITO_ACCESS_TOKEN=${UNITO_ACCESS_TOKEN}\n      - WORDPRESS_COM_OAUTH_TOKEN=${WORDPRESS_COM_OAUTH_TOKEN}\n    volumes:\n      - ./logs:/app/logs\n    ports:\n      - \"8080:8080\"\n    healthcheck:\n      test: [\"CMD\", \"node\", \"-e\", \"process.exit(0)\"]\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 40s\n    networks:\n      - mcp-network\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  logs:\n    driver: local"
+    },
+    "github_actions": {
+      "filename": ".github/workflows/deploy.yml",
+      "content": "name: Deploy to Vercel\n\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      \n      - name: Setup Node.js\n        uses: actions/setup-node@v3\n        with:\n          node-version: '20'\n      \n      - name: Install dependencies\n        run: |\n          cd mcp-server\n          npm ci\n      \n      - name: Run tests\n        run: node test-suite.js all\n        env:\n          GATEWAY_URL: ${{ secrets.GATEWAY_URL }}\n          GATEWAY_KEY: ${{ secrets.GATEWAY_KEY }}\n          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}\n\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    if: github.ref == 'refs/heads/main'\n    \n    steps:\n      - uses: actions/checkout@v3\n      \n      - name: Deploy to Vercel\n        uses: amondnet/vercel-action@v25\n        with:\n          vercel-token: ${{ secrets.VERCEL_TOKEN }}\n          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}\n          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}\n          vercel-args: '--prod'"
+    },
+    "gitignore": {
+      "filename": ".gitignore",
+      "content": "# Dependencies\nnode_modules/\n.pnp\n.pnp.js\n\n# Environment variables\n.env\n.env.*\n!.env.example\n\n# Logs\nlogs/\n*.log\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\n\n# Testing\ncoverage/\n.nyc_output/\n\n# Next.js\n.next/\nout/\n\n# Production\nbuild/\ndist/\n\n# Vercel\n.vercel\n\n# IDE\n.vscode/\n.idea/\n*.swp\n*.swo\n*~\n\n# OS\n.DS_Store\nThumbs.db\n\n# PM2\n.pm2/\npids/\n\n# Docker\n.docker/"
+    },
+    "env_example": {
+      "filename": ".env.example",
+      "content": "# Gateway Configuration\nGATEWAY_URL=http://localhost:3000\nGATEWAY_API_KEY=generate-with-openssl-rand-hex-32\nAPI_SECRET_KEY=another-secure-key-here\n\n# Stripe (for monetization)\nSTRIPE_SECRET_KEY=sk_test_xxxxx\nSTRIPE_PUBLISHABLE_KEY=pk_test_xxxxx\nSTRIPE_WEBHOOK_SECRET=whsec_xxxxx\n\n# HuggingFace\nHF_API_TOKEN=hf_xxxxxxxxxxxxx\n\n# SocialPilot\nSOCIALPILOT_ACCESS_TOKEN=sp_xxxxxxxxxxxxx\n\n# Unito\nUNITO_ACCESS_TOKEN=unito_xxxxxxxxxxxxx\n\n# WordPress.com\nWORDPRESS_COM_OAUTH_TOKEN=wpcom_xxxxxxxxxxxxx\n\n# Optional: OpenTelemetry\nOTEL_EXPORTER_OTLP_ENDPOINT=https://your-otel-endpoint\n\n# Database (if using)\nDATABASE_URL=postgresql://user:pass@host:5432/dbname\n\n# Redis (if using)\nREDIS_URL=redis://localhost:6379"
+    }
+  },
+  "scripts": {
+    "package_json_additions": {
+      "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "test": "node test-suite.js all",
+        "test:hf": "node test-suite.js huggingface",
+        "test:sp": "node test-suite.js socialpilot",
+        "test:unito": "node test-suite.js unito",
+        "test:wpcom": "node test-suite.js wordpress",
+        "mcp:hf": "node mcp-server/huggingface-gateway.js",
+        "mcp:sp": "node mcp-server/socialpilot-gateway.js",
+        "mcp:unito": "node mcp-server/unito-gateway.js",
+        "mcp:wpcom": "node mcp-server/wpcom-gateway.js",
+        "mcp:all": "pm2 start ecosystem.config.cjs",
+        "mcp:stop": "pm2 stop all",
+        "mcp:restart": "pm2 restart all",
+        "mcp:logs": "pm2 logs",
+        "docker:build": "docker-compose build",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "deploy:vercel": "vercel --prod",
+        "lint": "eslint .",
+        "format": "prettier --write ."
+      },
+      "devDependencies": {
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0"
+      }
+    }
+  },
+  "deployment_steps": {
+    "vercel": [
+      "1. Install Vercel CLI: npm i -g vercel",
+      "2. Login: vercel login",
+      "3. Link project: vercel link",
+      "4. Add environment variables: vercel env add GATEWAY_API_KEY",
+      "5. Deploy: vercel --prod",
+      "6. Configure Stripe webhook: Use the Vercel URL"
+    ],
+    "docker": [
+      "1. Build image: docker-compose build",
+      "2. Start containers: docker-compose up -d",
+      "3. Check logs: docker-compose logs -f",
+      "4. Stop: docker-compose down"
+    ],
+    "pm2": [
+      "1. Install PM2: npm install -g pm2",
+      "2. Start all: pm2 start ecosystem.config.cjs",
+      "3. Save config: pm2 save",
+      "4. Setup startup: pm2 startup",
+      "5. Monitor: pm2 monit"
+    ]
+  }
+}

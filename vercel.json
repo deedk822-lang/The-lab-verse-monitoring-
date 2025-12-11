@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/api/generate-article.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "public"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
+  ],
+  "env": {
+    "CDATA_CONNECT_API": "disabled",
+    "CDATA_API_KEY": "disabled",
+    "AIRTABLE_BASE_ID": "@airtable_base_id",
+    "AIRTABLE_API_KEY": "@airtable_api_key"
+  }
+}

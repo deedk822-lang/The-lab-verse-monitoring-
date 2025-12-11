@@ -180,6 +180,16 @@ jobs:
       ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
       MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
       MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+      WIX_API_KEY: ${{ secrets.WIX_API_KEY }}
+      WIX_SITE_ID: ${{ secrets.WIX_SITE_ID }}
+      WIX_ACCOUNT_ID: ${{ secrets.WIX_ACCOUNT_ID }}
+      MAILCHIMP_SERVER_PREFIX: ${{ secrets.MAILCHIMP_SERVER_PREFIX }}
+      MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
+      MAILCHIMP_FROM_NAME: ${{ secrets.MAILCHIMP_FROM_NAME }}
+      MAILCHIMP_REPLY_TO: ${{ secrets.MAILCHIMP_REPLY_TO }}
+      WORDPRESS_SITE_URL: ${{ secrets.WORDPRESS_SITE_URL }}
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
 
     steps:
       - uses: actions/checkout@v4

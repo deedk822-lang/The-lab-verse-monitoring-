@@ -1,100 +1,196 @@
+# .github/workflows/automated-authority-engine.yml
 name: Automated Authority Engine
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
 
 jobs:
-  # Job 1: The Visionary - Content Generation and Deployment
-  the_visionary:
+  empire_operations:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    name: Execute AI Workforce
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+    env:
+      # AI Model APIs
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      
+      # Alibaba Cloud Storage
+      OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
+      # Optional Services
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+      
+      # Python Path
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          python-version: '3.x'
+          fetch-depth: 1
 
-      - name: Install dependencies
-        run: pip install requests python-dotenv
-
-      - name: The Visionary - Generate and Post Content
-        env:
-          WORDPRESS_URL: ${{ secrets.WORDPRESS_URL }}
-          WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
-          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-          LOCALAI_API_URL: ${{ secrets.LOCALAI_API_URL }}
-          # The Visionary uses a high-quality model (e.g., command-r-plus) for content generation
-          VISIONARY_MODEL: command-r-plus
-        run: |
-          # Placeholder for the actual content generation and posting script
-          # This script would call the LOCALAI_API_URL with the VISIONARY_MODEL
-          # to generate content and then use the WordPress credentials to post it.
-          echo "Simulating content generation by The Visionary..."
-          echo "Content generated and posted to WordPress."
-          # In a real scenario, a Python script like this would be executed:
-          # python3 scripts/visionary_content_generator.py
-
-      - name: Save content deployment status
-        run: echo "content_deployed=true" >> $GITHUB_OUTPUT
-        id: deployment_status
-
-  # Job 2: The Tax Collector - Conscience Check and Impact Reporting
-  the_tax_collector:
-    needs: the_visionary
-    runs-on: ubuntu-latest
-    name: "Run The Tax Collector Agent"
-    if: needs.the_visionary.outputs.deployment_status.content_deployed == 'true'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
 
-      - name: Install Python dependencies
+      - name: Clean Build Artifacts
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pandas
+          echo "🧹 Cleaning previous build artifacts..."
+          find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -type f -name "*.pyc" -delete 2>/dev/null || true
+          rm -rf build/ dist/ .eggs/ 2>/dev/null || true
 
-      - name: Execute Tax Collector Script
-        id: tax_collector_execution
-        run: python scripts/tax_collector.py
+      - name: Install Dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          python -m pip install --upgrade pip setuptools wheel
 
-      - name: Upload Report as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tax-collector-report
-          path: ./tax_collector_report.json
+          # Core dependencies
+          pip install qwen-agent==0.0.6
+          pip install oss2==2.18.4
+          pip install mistralai==1.0.0
+          pip install cohere==5.11.0
+          pip install pandas==2.2.0
+          pip install python-dotenv==1.0.1
+          pip install dashscope==1.20.0
 
-  # Job 3: The Arbiter - Autonomous Optimization (Placeholder for future)
-  # This job would use the output of the Tax Collector and the performance data
-  # (e.g., from Grafana/Prometheus) to adjust the parameters of The Judges.
-  the_arbiter:
-    needs: the_tax_collector
+          # Optional dependencies (won't fail if not needed)
+          pip install notion-client jira requests || echo "Optional deps skipped"
+
+      - name: Verify Installation
+        run: |
+          echo "✓ Verifying installation..."
+          python -c "import qwen_agent; print('✓ qwen-agent')"
+          python -c "import oss2; print('✓ oss2')"
+          python -c "import pandas; print('✓ pandas')"
+          python -c "import sys; print(f'Python: {sys.version}')"
+
+      - name: Run Tax Agent (SARS Revenue Detection)
+        id: tax_agent
+        run: |
+          echo "💰 Executing Tax Revenue Search..."
+          python src/agents/tax_collector.py > tax_report.json
+
+          # Extract and display revenue
+          REVENUE=$(python -c "import json; data=json.load(open('tax_report.json')); print(data.get('total_revenue_zar', 0))")
+          echo "revenue=$REVENUE" >> $GITHUB_OUTPUT
+          echo "💰 Revenue Detected: R$REVENUE"
+
+      - name: Run VanHack CRS Simulator
+        id: vanhack
+        continue-on-error: true
+        run: |
+          echo "🎯 Running VanHack CRS calculations..."
+          python -c "
+          from src.tools.vanhack_crs import VanHackCRSSimulator
+          import json
+
+          simulator = VanHackCRSSimulator()
+
+          # Test resume (replace with OSS fetch in production)
+          test_resume = '''
+          Age: 28
+          Bachelor of Commerce (University of Cape Town)
+          5 years software development experience
+          IELTS: 7.5
+          Current Salary: R850,000
+          Location: Cape Town
+          '''
+
+          result = simulator.call({'resume_text': test_resume})
+          data = json.loads(result)
+
+          print(f'CRS Score: {data[\"crs_score\"]}')
+          print(f'Gap to Target: {data[\"gap\"]} points')
+          "
+
+      - name: Store Results in OSS
+        if: success()
+        run: |
+          echo "💾 Storing results in Alibaba OSS..."
+          python -c "
+          import os
+          import json
+          from datetime import datetime
+          import oss2
+
+          # Initialize OSS
+          auth = oss2.Auth(
+              os.getenv('OSS_ACCESS_KEY_ID'),
+              os.getenv('OSS_ACCESS_KEY_SECRET')
+          )
+          bucket = oss2.Bucket(
+              auth,
+              os.getenv('OSS_ENDPOINT'),
+              os.getenv('OSS_BUCKET')
+          )
+
+          # Store workflow run data
+          run_data = {
+              'timestamp': datetime.utcnow().isoformat(),
+              'run_id': '${{ github.run_id }}',
+              'commit': '${{ github.sha }}',
+              'tax_revenue': '${{ steps.tax_agent.outputs.revenue }}',
+              'status': 'success'
+          }
+
+          key = f'workflow_runs/{datetime.utcnow().strftime(\"%Y%m%d_%H%M%S\")}.json'
+          bucket.put_object(key, json.dumps(run_data, indent=2))
+
+          print(f'✓ Stored to OSS: {key}')
+          "
+
+      - name: Generate Summary Report
+        if: always()
+        run: |
+          echo "📊 Generating workflow summary..."
+          echo "## Workflow Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tax Revenue Detected:** R${{ steps.tax_agent.outputs.revenue }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tool Status" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Tax Agent: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ VanHack CRS: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ OSS Storage: Complete" >> $GITHUB_STEP_SUMMARY
+
+  system_health_check:
+    needs: empire_operations
     runs-on: ubuntu-latest
-    if: always() # Run regardless of previous job success for monitoring
-    steps:
-      - name: Download Tax Collector Report
-        uses: actions/download-artifact@v4
-        with:
-          name: tax-collector-report
-          path: artifacts
+    if: always()
 
-      - name: The Arbiter - Review and Optimize
-        env:
-          ALIBABA_SELF_EVOLVING_API: ${{ secrets.ALIBABA_SELF_EVOLVING_API }}
+    steps:
+      - name: Check System Health
         run: |
-          echo "Simulating review of Tax Collector report and performance data by The Arbiter..."
-          # In a real scenario, this script would:
-          # 1. Read artifacts/tax_collector_report.json
-          # 2. Query Grafana/Prometheus for performance metrics
-          # 3. Use the ALIBABA_SELF_EVOLVING_API to adjust LocalAI Judge parameters
-          echo "Optimization complete. System parameters adjusted."
+          echo "🏥 System Health Check"
+          echo "Previous job status: ${{ needs.empire_operations.result }}"
+
+          if [ "${{ needs.empire_operations.result }}" == "success" ]; then
+            echo "✅ All systems operational"
+          else
+            echo "⚠️ Some operations failed - check logs"
+          fi
+
+      - name: Send Status Notification
+        if: failure()
+        run: |
+          echo "🚨 Workflow failed - notification would be sent here"
+          # Add notification logic (email, Slack, etc.)

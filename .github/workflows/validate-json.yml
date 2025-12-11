@@ -1,0 +1,122 @@
+name: Validate JSON Files
+
+on:
+  pull_request:
+    paths:
+      - '**.json'
+  push:
+    branches:
+      - main
+      - TheLapVerseCore.ts
+    paths:
+      - '**.json'
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate package.json
+        run: |
+          echo "🔍 Validating package.json..."
+          
+          # Check if package.json exists
+          if [ ! -f package.json ]; then
+            echo "❌ package.json not found!"
+            exit 1
+          fi
+          
+          # Validate JSON syntax
+          if ! jq empty package.json 2>/dev/null; then
+            echo "❌ package.json is not valid JSON!"
+            echo ""
+            echo "Common issues:"
+            echo "  - Merge conflict markers (<<<<<<<, =======, >>>>>>>)"
+            echo "  - Duplicate keys"
+            echo "  - Missing commas or quotes"
+            echo "  - Trailing commas"
+            echo ""
+            echo "File content:"
+            cat package.json
+            exit 1
+          fi
+          
+          echo "✅ package.json is valid JSON"
+          
+          # Check for merge conflict markers
+          if grep -q "^<<<<<<< \|^======= \|^>>>>>>> " package.json; then
+            echo "❌ Merge conflict markers found in package.json!"
+            echo "Please resolve conflicts before committing."
+            exit 1
+          fi
+          
+          echo "✅ No merge conflict markers found"
+          
+          # Check for duplicate keys (basic check)
+          DUPLICATE_KEYS=$(jq -r 'keys[]' package.json | sort | uniq -d)
+          if [ -n "$DUPLICATE_KEYS" ]; then
+            echo "❌ Duplicate keys found:"
+            echo "$DUPLICATE_KEYS"
+            exit 1
+          fi
+          
+          echo "✅ No duplicate keys"
+          
+          # Verify required fields
+          REQUIRED_FIELDS=("name" "version" "scripts" "dependencies")
+          for field in "${REQUIRED_FIELDS[@]}"; do
+            if ! jq -e ".$field" package.json > /dev/null; then
+              echo "❌ Required field missing: $field"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All required fields present"
+          echo ""
+          echo "🎉 package.json validation passed!"
+
+      - name: Validate other JSON files
+        run: |
+          echo "🔍 Validating all JSON files..."
+          
+          JSON_FILES=$(find . -name "*.json" -not -path "*/node_modules/*" -not -path "*/.next/*" -not -path "*/dist/*")
+          
+          for file in $JSON_FILES; do
+            echo "Checking $file..."
+            if ! jq empty "$file" 2>/dev/null; then
+              echo "❌ $file is not valid JSON!"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All JSON files are valid"
+
+      - name: Check for branch names in files
+        run: |
+          echo "🔍 Checking for branch names accidentally committed..."
+          
+          # List of branch names to check for
+          BRANCHES=("main" "feature/" "fix/" "hotfix/" "release/" "TheLapVerseCore.ts")
+          
+          for branch in "${BRANCHES[@]}"; do
+            if grep -q "^ *$branch *$" package.json; then
+              echo "❌ Found branch name '$branch' in package.json!"
+              echo "This usually indicates a merge conflict that wasn't resolved."
+              exit 1
+            fi
+          done
+          
+          echo "✅ No branch names found in package.json"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════"
+          echo "✅ ALL JSON VALIDATION CHECKS PASSED"
+          echo "═══════════════════════════════════════"
+          echo ""
+          echo "Your JSON files are clean and ready to deploy!"

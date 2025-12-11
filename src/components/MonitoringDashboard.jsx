@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, Cell
+  ResponsiveContainer, Cell,
 } from 'recharts';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -26,7 +26,7 @@ export default function MonitoringDashboard() {
         fetch('/api/monitoring/performance'),
         fetch('/api/monitoring/alerts?limit=10'),
         fetch('/api/monitoring/costs'),
-        fetch('/api/monitoring/synthetic')
+        fetch('/api/monitoring/synthetic'),
       ]);
 
       if (!overviewRes.ok) throw new Error('Failed to fetch overview');
@@ -71,8 +71,8 @@ export default function MonitoringDashboard() {
           title: 'Test Alert',
           message: 'This is a test alert from the dashboard',
           severity: 'low',
-          channels: ['log']
-        })
+          channels: ['log'],
+        }),
       });
 
       if (response.ok) {
@@ -88,7 +88,7 @@ export default function MonitoringDashboard() {
   const runSyntheticCheck = async () => {
     try {
       const response = await fetch('/api/monitoring/synthetic/check', {
-        method: 'POST'
+        method: 'POST',
       });
 
       if (response.ok) {
@@ -300,7 +300,7 @@ export default function MonitoringDashboard() {
                   critical: 'bg-red-50 border-red-500',
                   high: 'bg-orange-50 border-orange-500',
                   medium: 'bg-yellow-50 border-yellow-500',
-                  low: 'bg-blue-50 border-blue-500'
+                  low: 'bg-blue-50 border-blue-500',
                 }[alert.severity]
               }`}>
                 <div className="flex justify-between text-sm">
@@ -345,7 +345,7 @@ function StatusCard({ title, value, subtitle, icon, color }) {
     blue: 'bg-blue-50 border-blue-200 text-blue-800',
     red: 'bg-red-50 border-red-200 text-red-800',
     yellow: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    purple: 'bg-purple-50 border-purple-200 text-purple-800'
+    purple: 'bg-purple-50 border-purple-200 text-purple-800',
   };
 
   return (
@@ -367,7 +367,7 @@ function MemoryBar({ label, value, max, color }) {
   const colorClasses = {
     blue: 'bg-blue-500',
     purple: 'bg-purple-500',
-    green: 'bg-green-500'
+    green: 'bg-green-500',
   };
 
   return (

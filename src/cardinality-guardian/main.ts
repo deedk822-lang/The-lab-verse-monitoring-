@@ -5,11 +5,11 @@ import * as http from 'http';
 import { CompetitiveIntelligence, BusinessImpactTracking } from './config/EnterpriseConfig';
 
 async function initializeCompetitiveBenchmarking(config: CompetitiveIntelligence) {
-    console.log('Initializing competitive benchmarking with config:', config);
+  console.log('Initializing competitive benchmarking with config:', config);
 }
 
 async function initializeBusinessImpactTracking(config: BusinessImpactTracking) {
-    console.log('Initializing business impact tracking with config:', config);
+  console.log('Initializing business impact tracking with config:', config);
 }
 
 async function main() {
@@ -67,6 +67,6 @@ async function main() {
 }
 
 main().catch(error => {
-    console.error("Failed to start the service:", error);
-    process.exit(1);
+  console.error('Failed to start the service:', error);
+  process.exit(1);
 });

@@ -43,6 +43,11 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
+      - name: Install Qwen Agent from Hugging Face
+        run: |
+          pip install git+https://github.com/huggingface/transformers.git
+          pip install qwen-agent
+
       - name: Install Empire Core
         run: |
           echo "📦 Installing AI Workforce Dependencies..."
@@ -63,19 +68,7 @@ jobs:
           # Sets python path to include the project root so imports work
           export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
           
-          python3 -c "
-          import sys
-          from src.agents.tax_collector import TaxAgentMaster
-          
-          print('🚀 ACTIVATING GUARDIAN (TITAN MODE)...')
-          agent = TaxAgentMaster()
-          # Force DeepSeek/Qwen Reasoning
-          agent.set_model('deepseek-v3') 
-          
-          # Execute Real Revenue Search (VanHack/Crisis)
-          revenue = agent.execute_revenue_search()
-          print(f'💰 GUARDIAN REPORT: Revenue Generated: R{revenue}')
-          "
+          python3 vaal-ai-empire/src/agents/tax_collector.py
 
       - name: ✍️ Run Content Factory (Visionary)
         run: |

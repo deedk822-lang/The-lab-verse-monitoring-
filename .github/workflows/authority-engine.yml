@@ -1,6 +1,7 @@
-name: Automated Authority Engine (Production)
+name: Authority Engine - Content Pipeline
 
 on:
+ bolt-db-connection-pooling-16386782449900478470
  main
   push:
     branches: [main]
@@ -8,6 +9,10 @@ on:
     - cron: '0 6 * * *' # Run Daily at 6 AM SAST (04:00 UTC)
   workflow_dispatch:    # Allows manual trigger button
 
+
+  schedule:
+    - cron: '0 4 * * *'
+ main
   workflow_dispatch:
     inputs:
       notion_page_id:
@@ -19,11 +24,8 @@ on:
   schedule:
     - cron: '0 4 * * *'  # Daily at 6 AM SAST (4 AM UTC)
 
-env:
-  ALIBABA_REGION: cn-shanghai
-  SECURITY_ANALYZER: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
-
 jobs:
+ bolt-db-connection-pooling-16386782449900478470
  main
   # JOB 1: THE AI WORKFORCE (Real Execution)
 	@@ -15,11 +14,22 @@ jobs:
@@ -57,11 +59,48 @@ jobs:
           pip install --upgrade pip
 
           # 1. Install Requirements from the file we generated
+=======
+  broadcast_content:
+    runs-on: ubuntu-latest
+    name: "Run Authority Pipeline"
+
+    env:
+      # BRAINS
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+
+      # SOURCE
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+
+      # DESTINATIONS
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}  # Uses the new App Password
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}    # Uses the new Key
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+
+      # REPORTING
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Stack
+        run: |
+ main
           pip install -r vaal-ai-empire/requirements.txt
 
           # 2. Install the Project as an Editable Package
           # This ensures 'from src.core...' works anywhere
           pip install -e vaal-ai-empire/
+ bolt-db-connection-pooling-16386782449900478470
 
           # 3. Verify Critical Drivers
           pip install fastapi uvicorn huggingface_hub requests mcp databricks-sdk httpx dashscope openai cohere mistralai groq oss2 pandas
@@ -296,3 +335,9 @@ jobs:
           echo "**Judge Score:** ${{ steps.judge_verify.outputs.consensus_score }}" >> $GITHUB_STEP_SUMMARY
           echo "**Published URL:** ${{ steps.publish_wordpress.outputs.url }}" >> $GITHUB_STEP_SUMMARY
  feat/immune-system-scaffolding-9673656258847392683
+
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+
+      - name: 🚀 Run Omnichannel Pipeline
+        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+ main

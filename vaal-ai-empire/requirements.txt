@@ -9,8 +9,8 @@ sqlalchemy<2.0.0
 alembic==1.13.0
 
 # Alibaba Cloud (Optional - comment out if not using)
-# aliyun-python-sdk-core==2.14.0
-# aliyun-python-sdk-ecs==4.24.0
+aliyun-python-sdk-core==2.14.0
+aliyun-python-sdk-ecs==4.24.0
 
 # AI/ML Stack
 cohere==5.11.0

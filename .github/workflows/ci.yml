@@ -183,10 +183,17 @@ jobs:
           cache: 'npm'
       - name: Install Dependencies
         run: npm ci
-      - name: Run Tests
+      - name: Run Node.js Tests
         run: |
-          echo "🧪 Running tests..."
+          echo "🧪 Running Node.js tests..."
           npm test || echo "⚠️  No tests configured or tests failed"
+      - name: Run Python Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/vaal-ai-empire
+        run: |
+          echo "🐍 Running Python tests..."
+          pip install pytest
+          python -m pytest vaal-ai-empire/tests/
       - name: Build Project
         run: |
           echo "🏗️  Building project..."

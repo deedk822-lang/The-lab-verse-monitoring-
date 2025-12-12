@@ -59,12 +59,19 @@ except ImportError:
 
 
 # === BLOCKING ISSUE #2: Missing/undefined imports - Create stubs ===
-class EmpireSupervisor:
-    """Stub for Qwen supervisor - replace with actual implementation"""
-    def run(self, query: str) -> str:
-        logger.warning("Using stub EmpireSupervisor - replace with actual implementation")
-        return f"# {query.split(':')[0]}\n\nContent refined by Qwen."
+try:
+    from src.core.empire_supervisor import EmpireSupervisor
+    logger.info("✓ EmpireSupervisor loaded")
+except ImportError:
+    logger.error("✗ EmpireSupervisor not found. This is a critical component.")
+    # In a real scenario, we might exit here, but for now we'll create a stub to allow partial execution.
+    class EmpireSupervisor:
+        """Stub for Qwen supervisor - replace with actual implementation"""
+        def run(self, query: str) -> str:
+            logger.warning("Using stub EmpireSupervisor - replace with actual implementation")
+            return f"# {query.split(':')[0]}\n\nContent refined by Qwen."
 
+# DepartmentRouter appears to be a placeholder for now.
 class DepartmentRouter:
     """Stub for Aya router - replace with actual implementation"""
     def delegate_to_vision(self, prompt: str) -> str:
@@ -79,14 +86,11 @@ class AyrshareTool:
         self.url = "https://app.ayrshare.com/api/post"
         
         if not self.api_key:
-            logger.warning("AYRSHARE_API_KEY not set - social posting disabled")
+            raise ValueError("AYRSHARE_API_KEY not set - social posting disabled")
     
     def post_to_socials(self, text: str, image_url: Optional[str] = None) -> str:
-        if not self.api_key:
-            return "SKIPPED: Ayrshare API key not configured"
-        
         if not AVAILABLE_TOOLS.get('requests'):
-            return "ERROR: requests library not installed"
+            raise RuntimeError("requests library not installed")
         
         logger.info("🗣️ AYRSHARE: Broadcasting to Social Media...")
         
@@ -120,14 +124,11 @@ class WixTool:
         self.account_id = os.getenv("WIX_ACCOUNT_ID")
         
         if not all([self.api_key, self.site_id, self.account_id]):
-            logger.warning("Wix credentials incomplete - blog posting disabled")
+            raise ValueError("Wix credentials incomplete - blog posting disabled")
     
     def create_blog_post(self, title: str, content: str) -> str:
-        if not all([self.api_key, self.site_id, self.account_id]):
-            return "SKIPPED: Wix credentials not configured (need WIX_API_KEY, WIX_SITE_ID, WIX_ACCOUNT_ID)"
-        
         if not AVAILABLE_TOOLS.get('requests'):
-            return "ERROR: requests library not installed"
+            raise RuntimeError("requests library not installed")
         
         logger.info(f"🌐 WIX: Posting '{title}'...")
         
@@ -171,37 +172,22 @@ class WixTool:
 class MailChimpTool:
     def __init__(self):
         self.api_key = os.getenv("MAILCHIMP_API_KEY")
-        self.server = os.getenv("MAILCHIMP_SERVER_PREFIX", "us6")
-        self.list_id = os.getenv("MAILCHIMP_LIST_ID")  # REQUIRED
+        self.server = os.getenv("MAILCHIMP_SERVER_PREFIX")
+        self.list_id = os.getenv("MAILCHIMP_LIST_ID")
         
-        self.client = None
-        
-        if not self.api_key:
-            logger.warning("MAILCHIMP_API_KEY not set - newsletter disabled")
-            return
-        
-        if not self.list_id:
-            logger.warning("MAILCHIMP_LIST_ID not set - newsletter disabled")
-            return
+        if not self.api_key or not self.server or not self.list_id:
+            raise ValueError("MailChimp credentials incomplete - newsletter disabled")
         
         if not AVAILABLE_TOOLS.get('mailchimp'):
-            logger.warning("mailchimp-marketing library not installed")
-            return
+            raise RuntimeError("mailchimp-marketing library not installed")
         
-        try:
-            self.client = MailchimpMarketing.Client()
-            self.client.set_config({
-                "api_key": self.api_key,
-                "server": self.server
-            })
-        except Exception as e:
-            logger.error(f"MailChimp client initialization failed: {e}")
-            self.client = None
+        self.client = MailchimpMarketing.Client()
+        self.client.set_config({
+            "api_key": self.api_key,
+            "server": self.server
+        })
     
     def send_campaign(self, subject: str, body_text: str) -> str:
-        if not self.client:
-            return "SKIPPED: MailChimp not configured (need MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_SERVER_PREFIX)"
-        
         logger.info(f"📧 MAILCHIMP: Preparing Campaign '{subject}'...")
         
         try:
@@ -244,14 +230,11 @@ class WordPressTool:
         self.app_password = os.getenv("WORDPRESS_APP_PASSWORD")
         
         if not all([self.site_url, self.username, self.app_password]):
-            logger.warning("WordPress credentials incomplete - publishing disabled")
+            raise ValueError("WordPress credentials incomplete - publishing disabled")
     
     def publish_article(self, title: str, content: str, tags: list = None) -> str:
-        if not all([self.site_url, self.username, self.app_password]):
-            return "SKIPPED: WordPress not configured (need WORDPRESS_SITE_URL, WORDPRESS_USERNAME, WORDPRESS_APP_PASSWORD)"
-        
         if not AVAILABLE_TOOLS.get('requests'):
-            return "ERROR: requests library not installed"
+            raise RuntimeError("requests library not installed")
         
         logger.info(f"📝 WORDPRESS: Publishing '{title}'...")
         
@@ -289,13 +272,11 @@ class WordPressTool:
 def fetch_notion_content(page_id: str) -> str:
     """Safely fetch content from Notion"""
     if not AVAILABLE_TOOLS.get('notion'):
-        logger.warning("Notion SDK not available, using fallback content")
-        return "AI is revolutionizing South African industries through automation and intelligent systems."
+        raise RuntimeError("Notion SDK not available.")
     
     notion_key = os.getenv("NOTION_API_KEY")
     if not notion_key:
-        logger.warning("NOTION_API_KEY not set, using fallback content")
-        return "AI is revolutionizing South African industries through automation and intelligent systems."
+        raise ValueError("NOTION_API_KEY not set.")
     
     try:
         notion = NotionClient(auth=notion_key)
@@ -326,7 +307,7 @@ def fetch_notion_content(page_id: str) -> str:
 def log_to_jira(title: str, report_log: list) -> str:
     """Log pipeline execution to Jira"""
     if not AVAILABLE_TOOLS.get('jira'):
-        return "SKIPPED: Jira SDK not installed"
+        raise RuntimeError("Jira SDK not installed")
     
     jira_url = os.getenv("JIRA_URL")
     jira_user = os.getenv("JIRA_USER_EMAIL")
@@ -334,7 +315,7 @@ def log_to_jira(title: str, report_log: list) -> str:
     jira_project = os.getenv("JIRA_PROJECT_KEY")  # REQUIRED
     
     if not all([jira_url, jira_user, jira_token, jira_project]):
-        return "SKIPPED: Jira not configured (need JIRA_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY)"
+        raise ValueError("Jira credentials incomplete - logging disabled")
     
     try:
         jira = JIRA(server=jira_url, basic_auth=(jira_user, jira_token))

@@ -2,22 +2,47 @@ name: Kaggle Intelligence Pipeline
 
 on:
   schedule:
+ bolt-db-connection-pooling-16386782449900478470
     - cron: '0 0 * * 1'  # Weekly on Monday midnight SAST (Sunday 22:00 UTC)
   workflow_dispatch:
 
 env:
   SECURITY_ANALYZER: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
 
+    - cron: '0 4 * * *'  # Daily at 6 AM SAST
+  workflow_dispatch:
+ main
+
 jobs:
   data-intelligence:
     runs-on: ubuntu-latest
     
+ bolt-db-connection-pooling-16386782449900478470
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
+
+    env:
+      # SECURE MAPPING (No Hardcoding)
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_TOKEN }}
+      
+      # JIRA & CLOUD
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+ main
         with:
           python-version: '3.11'
 
@@ -209,6 +234,7 @@ jobs:
         env:
           WORDPRESS_TOKEN: ${{ secrets.WORDPRESS_TOKEN }}
 
+ bolt-db-connection-pooling-16386782449900478470
       - name: Update Grafana Dashboard
         continue-on-error: true
         run: |
@@ -243,3 +269,19 @@ jobs:
           echo "**Rows Processed:** ${{ steps.databricks_upload.outputs.rows_updated }}" >> $GITHUB_STEP_SUMMARY
           echo "**Report ID:** ${{ steps.publish_report.outputs.report_id }}" >> $GITHUB_STEP_SUMMARY
           echo "**Report URL:** ${{ steps.publish_report.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install Drivers
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+
+      - name: Configure Auth
+        run: |
+          # Create kaggle.json from Secrets
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: 🚀 Execute Sync
+        run: python3 vaal-ai-empire/scripts/kaggle_intelligence.py
+ main

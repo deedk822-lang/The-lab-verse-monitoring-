@@ -326,12 +326,26 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+ bolt-db-connection-pooling-16386782449900478470
 
       - name: Run Tests
-        run: |
-          echo "🧪 Running tests..."
-          npm test || echo "⚠️  No tests configured or tests failed"
 
+      - name: Run Node.js Tests
+ main
+        run: |
+          echo "🧪 Running Node.js tests..."
+          npm test || echo "⚠️  No tests configured or tests failed"
+ bolt-db-connection-pooling-16386782449900478470
+
+
+      - name: Run Python Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/vaal-ai-empire
+        run: |
+          echo "🐍 Running Python tests..."
+          pip install pytest
+          python -m pytest vaal-ai-empire/tests/
+ main
       - name: Build Project
         run: |
           echo "🏗️  Building project..."

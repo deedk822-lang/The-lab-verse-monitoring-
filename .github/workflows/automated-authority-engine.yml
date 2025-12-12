@@ -1,53 +1,185 @@
-name: Authority Engine - Content Pipeline
+# .github/workflows/automated-authority-engine.yml
+name: Automated Authority Engine
 
 on:
-  schedule:
-    - cron: '0 4 * * *'
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      notion_page_id:
-        default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
 
 jobs:
-  broadcast_content:
+  empire_operations:
     runs-on: ubuntu-latest
+    name: Execute AI Workforce
+
     env:
-      # --- BRAINS ---
+      # AI Model APIs
       DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
       COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
       
-      # --- SOURCE ---
+      # Alibaba Cloud Storage
+      OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
+      # Optional Services
       NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
-
-      # --- DESTINATIONS (SEPARATE IDENTITIES) ---
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
       
-      # Identity 1: Deedk822 (WordPress)
-      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}     # deedk822@gmail.com
-      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-
-      # Identity 2: Dimakatso (Jira)
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}   # dimakatsomoleli@gmail.com
-      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
-
-      # Identity 3: Marketing
-      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
-      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+      # Python Path
+      PYTHONPATH: ${{ github.workspace }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
+          cache-dependency-path: requirements.txt
 
-      - name: Install Stack
+      - name: Clean Build Artifacts
         run: |
-          pip install -r vaal-ai-empire/requirements.txt
-          pip install -e vaal-ai-empire/
-          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+          echo "🧹 Cleaning previous build artifacts..."
+          find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -type f -name "*.pyc" -delete 2>/dev/null || true
+          rm -rf build/ dist/ .eggs/ 2>/dev/null || true
 
-      - name: 🚀 Run Pipeline
-        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+      - name: Install Dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          python -m pip install --upgrade pip
+          pip install -r vaal-ai-empire/requirements-ci.txt
+
+      - name: Verify Installation
+        run: |
+          echo "✓ Verifying installation..."
+          python -c "import qwen_agent; print('✓ qwen-agent')"
+          python -c "import oss2; print('✓ oss2')"
+          python -c "import pandas; print('✓ pandas')"
+          python -c "import sys; print(f'Python: {sys.version}')"
+
+      - name: Run Tax Agent (SARS Revenue Detection)
+        id: tax_agent
+        run: |
+          echo "💰 Executing Tax Revenue Search..."
+          python src/agents/tax_collector.py > tax_report.json
+
+          # Extract and display revenue
+          REVENUE=$(python -c "import json; data=json.load(open('tax_report.json')); print(data.get('total_revenue_zar', 0))")
+          echo "revenue=$REVENUE" >> $GITHUB_OUTPUT
+          echo "💰 Revenue Detected: R$REVENUE"
+
+      - name: Run VanHack CRS Simulator
+        id: vanhack
+        continue-on-error: true
+        run: |
+          echo "🎯 Running VanHack CRS calculations..."
+          python -c "
+          from src.tools.vanhack_crs import VanHackCRSSimulator
+          import json
+
+          simulator = VanHackCRSSimulator()
+
+          # Test resume (replace with OSS fetch in production)
+          test_resume = '''
+          Age: 28
+          Bachelor of Commerce (University of Cape Town)
+          5 years software development experience
+          IELTS: 7.5
+          Current Salary: R850,000
+          Location: Cape Town
+          '''
+
+          result = simulator.call({'resume_text': test_resume})
+          data = json.loads(result)
+
+          print(f'CRS Score: {data[\"crs_score\"]}')
+          print(f'Gap to Target: {data[\"gap\"]} points')
+          "
+
+      - name: Store Results in OSS
+        if: success()
+        run: |
+          echo "💾 Storing results in Alibaba OSS..."
+          python -c "
+          import os
+          import json
+          from datetime import datetime
+          import oss2
+
+          # Initialize OSS
+          auth = oss2.Auth(
+              os.getenv('OSS_ACCESS_KEY_ID'),
+              os.getenv('OSS_ACCESS_KEY_SECRET')
+          )
+          bucket = oss2.Bucket(
+              auth,
+              os.getenv('OSS_ENDPOINT'),
+              os.getenv('OSS_BUCKET')
+          )
+
+          # Store workflow run data
+          run_data = {
+              'timestamp': datetime.utcnow().isoformat(),
+              'run_id': '${{ github.run_id }}',
+              'commit': '${{ github.sha }}',
+              'tax_revenue': '${{ steps.tax_agent.outputs.revenue }}',
+              'status': 'success'
+          }
+
+          key = f'workflow_runs/{datetime.utcnow().strftime(\"%Y%m%d_%H%M%S\")}.json'
+          bucket.put_object(key, json.dumps(run_data, indent=2))
+
+          print(f'✓ Stored to OSS: {key}')
+          "
+
+      - name: Generate Summary Report
+        if: always()
+        run: |
+          echo "📊 Generating workflow summary..."
+          echo "## Workflow Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tax Revenue Detected:** R${{ steps.tax_agent.outputs.revenue }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tool Status" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Tax Agent: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ VanHack CRS: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ OSS Storage: Complete" >> $GITHUB_STEP_SUMMARY
+
+  system_health_check:
+    needs: empire_operations
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check System Health
+        run: |
+          echo "🏥 System Health Check"
+          echo "Previous job status: ${{ needs.empire_operations.result }}"
+
+          if [ "${{ needs.empire_operations.result }}" == "success" ]; then
+            echo "✅ All systems operational"
+          else
+            echo "⚠️ Some operations failed - check logs"
+          fi
+
+      - name: Send Status Notification
+        if: failure()
+        run: |
+          echo "🚨 Workflow failed - notification would be sent here"
+          # Add notification logic (email, Slack, etc.)

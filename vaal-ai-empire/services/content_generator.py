@@ -61,21 +61,6 @@ def _initialize_providers() -> Dict:
     return providers
 
 
-@lru_cache(maxsize=1)
-def _initialize_image_generator():
-    """
-    Initialize the image generator.
-    This function is cached to ensure the generator is only initialized once.
-    """
-    try:
-        from api.image_generation import BusinessImageGenerator
-        logger.info("✅ Image generation enabled")
-        return BusinessImageGenerator()
-    except Exception as e:
-        logger.warning(f"⚠️  Image generation disabled: {e}")
-        return None
-
-
 class ContentFactory:
     """Enhanced content generation with multiple provider support"""
 
@@ -83,7 +68,15 @@ class ContentFactory:
         self.db = db
         # Use the cached function to get providers, ensuring they are only initialized once.
         self.providers = _initialize_providers()
-        self.image_generator = _initialize_image_generator()
+        self.image_generator = None
+
+        # Initialize image generation if available
+        try:
+            from api.image_generation import BusinessImageGenerator
+            self.image_generator = BusinessImageGenerator()
+            logger.info("✅ Image generation enabled")
+        except Exception as e:
+            logger.warning(f"⚠️  Image generation disabled: {e}")
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""

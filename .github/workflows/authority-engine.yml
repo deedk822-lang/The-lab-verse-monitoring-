@@ -1,196 +1,43 @@
 name: Authority Engine - Content Pipeline
 
 on:
-  push:
-    branches: [main]
   schedule:
-    - cron: '0 4 * * *' # Daily at 6 AM SAST (4 AM UTC)
+    - cron: '0 4 * * *'
   workflow_dispatch:
     inputs:
       notion_page_id:
         description: 'Notion Page ID'
+        required: true
         default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
-        type: string
-
-env:
-  ALIBABA_REGION: cn-shanghai
-  SECURITY_ANALYZER: "acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer"
 
 jobs:
-  empire_operations:
-    runs-on: ubuntu-latest
-    name: "Execute Tax Agent & Titans"
-    env:
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
-      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
-      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
-      OSS_BUCKET: vaal-vault
-      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}
-      GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install Empire Core
-        run: |
-          echo "📦 Installing AI Workforce Dependencies..."
-          pip install --upgrade pip
-
-          # Check if requirements file exists
-          if [ -f vaal-ai-empire/requirements.txt ]; then
-            pip install -r vaal-ai-empire/requirements.txt
-          fi
-
-          # Install package if setup.py or pyproject.toml exists
-          if [ -f vaal-ai-empire/setup.py ] || [ -f vaal-ai-empire/pyproject.toml ]; then
-            pip install -e vaal-ai-empire/
-          fi
-
-          # Install core dependencies
-          pip install fastapi uvicorn huggingface_hub requests databricks-sdk httpx pandas || true
-
-      - name: 🛡️ Run Guardian Engine (Crisis Monitor)
-        continue-on-error: true
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
-
-          if [ -f vaal-ai-empire/src/agents/tax_collector.py ]; then
-            python3 -c "
-          import sys
-          from src.agents.tax_collector import TaxAgentMaster
-          print('🚀 ACTIVATING GUARDIAN (TITAN MODE)...')
-          agent = TaxAgentMaster()
-          revenue = agent.execute_revenue_search()
-          print(f'💰 GUARDIAN REPORT: Revenue Generated: R{revenue}')
-          " || echo "⚠️ Guardian engine not available"
-          else
-            echo "⚠️ Tax collector module not found, skipping..."
-          fi
-
-      - name: ✍️ Run Content Factory (Visionary)
-        continue-on-error: true
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
-
-          if [ -f vaal-ai-empire/src/products/content_studio.py ]; then
-            python3 -c "
-          import sys
-          from src.products.content_studio import ContentStudio
-          print('🎨 ACTIVATING CONTENT FACTORY...')
-          studio = ContentStudio()
-          if studio.client:
-              res = studio.generate_social_bundle('Tech Startup', 'AI Automation in South Africa')
-              print(f'✅ ASSET GENERATED: {res}')
-          else:
-              print('❌ Studio Offline (Check HF Key)')
-          " || echo "⚠️ Content factory not available"
-          else
-            echo "⚠️ Content studio module not found, skipping..."
-          fi
-
-  generate-and-publish:
-    runs-on: ubuntu-latest
-    needs: empire_operations
-    if: always()
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: |
-          if [ -f package.json ]; then
-            npm ci || npm install
-          else
-            echo "No package.json found, creating minimal setup"
-            npm init -y
-            npm install @notionhq/client axios
-          fi
-
-      - name: Fetch Content from Notion
-        id: fetch_notion
-        continue-on-error: true
-        run: |
-          mkdir -p tmp
-
-          if [ -z "${{ secrets.NOTION_API_KEY }}" ]; then
-            echo "⚠️ NOTION_API_KEY not configured"
-            echo '# Sample Content' > ./tmp/notion-content.md
-            exit 0
-          fi
-
-          node -e "
-          const { Client } = require('@notionhq/client');
-          const notion = new Client({ auth: process.env.NOTION_API_KEY });
-          (async () => {
-            try {
-              const pageId = '${{ github.event.inputs.notion_page_id || '2b8af2b8d06b8150a5acfe7aa7d8f221' }}';
-              const blocks = await notion.blocks.children.list({ block_id: pageId });
-              const content = blocks.results.map(b => b[b.type]?.text?.[0]?.plain_text || '').join('\n');
-              require('fs').writeFileSync('./tmp/notion-content.md', content);
-              console.log('Content fetched successfully');
-            } catch (error) {
-              console.log('Error fetching content:', error.message);
-              require('fs').writeFileSync('./tmp/notion-content.md', '# Error fetching content');
-            }
-          })();
-          " || echo "Failed to fetch Notion content"
-        env:
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-
-      - name: Workflow Summary
-        if: always()
-        run: |
-          echo "## Authority Engine Execution Complete 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Time:** $(date)" >> $GITHUB_STEP_SUMMARY
-
   broadcast_content:
     runs-on: ubuntu-latest
-    needs: generate-and-publish
-    if: always()
+    name: "Run Authority Pipeline"
+
     env:
+      # BRAINS
       DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
       COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
       MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+
+      # SOURCE
       NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
       NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+
+      # DESTINATIONS
       WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
-      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_APP_PASSWORD }}
-      WORDPRESS_SITE_URL: "https://deedk822.wordpress.com"
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-      JIRA_URL: "https://dimakatsomoleli.atlassian.net"
-      JIRA_PROJECT_KEY: "VAAL"
-      AYRSHARE_API_KEY: ${{ secrets.AYRSHARE_API_KEY }}
-      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-      MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
-      MAILCHIMP_SERVER_PREFIX: ${{ secrets.MAILCHIMP_SERVER_PREFIX }}
-      WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
-      WIX_SITE_ID: ${{ secrets.WIX_SITE_ID }}
-      WIX_ACCOUNT_ID: ${{ secrets.WIX_ACCOUNT_ID }}
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}  # Uses the new App Password
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}    # Uses the new Key
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+
+      # REPORTING
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
@@ -198,61 +45,9 @@ jobs:
 
       - name: Install Stack
         run: |
-          if [ -f vaal-ai-empire/requirements.txt ]; then
-            pip install -r vaal-ai-empire/requirements.txt || true
-          fi
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
 
-          if [ -f vaal-ai-empire/setup.py ] || [ -f vaal-ai-empire/pyproject.toml ]; then
-            pip install -e vaal-ai-empire/ || true
-          fi
-
-          pip install requests || true
-
-      - name: 🚀 Run Pipeline
-        continue-on-error: true
-        run: |
-          if [ -f vaal-ai-empire/scripts/run_authority_pipeline.py ]; then
-            python3 vaal-ai-empire/scripts/run_authority_pipeline.py || echo "Pipeline execution failed"
-          else
-            echo "⚠️ Pipeline script not found, skipping..."
-          fi
-
-  the_arbiter:
-    needs: [empire_operations, generate-and-publish, broadcast_content]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Pipeline Status Report
-        run: |
-          echo "## 🦁 Empire Daily Report" >> $GITHUB_STEP_SUMMARY
-          echo "1. **Guardian Engine:** ${{ needs.empire_operations.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "2. **Content Generator:** ${{ needs.generate-and-publish.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "3. **Broadcast System:** ${{ needs.broadcast_content.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Status:** Execution Cycle Complete." >> $GITHUB_STEP_SUMMARY
-
-  self_healing_controller:
-    name: 🤖 Jules Self-Healing Controller
-    needs: [empire_operations, generate-and-publish, broadcast_content]
-    runs-on: ubuntu-latest
-    if: failure()
-    env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-      JULES_API_URL: "https://jules.google.com/session"
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # The controller might need this for context
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: pip install requests
-
-      - name: Trigger Jules Autonomous Fix
-        run: |
-          PROMPT="The '${{ github.workflow }}' workflow in repo '${{ github.repository }}' failed on branch '${{ github.ref_name }}'. The failing job was likely related to one of the following: ${{ join(needs.*.result, ', ') }}. Please diagnose and fix the root cause."
-          python3 vaal-ai-empire/scripts/jules_controller.py "$PROMPT"
+      - name: 🚀 Run Omnichannel Pipeline
+        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py

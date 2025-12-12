@@ -61,18 +61,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           python -m pip install --upgrade pip setuptools wheel
-
-          # Core dependencies
-          pip install qwen-agent==0.0.6
-          pip install oss2==2.18.4
-          pip install mistralai==1.0.0
-          pip install cohere==5.11.0
-          pip install pandas==2.2.0
-          pip install python-dotenv==1.0.1
-          pip install dashscope==1.20.0
-
-          # Optional dependencies (won't fail if not needed)
-          pip install notion-client jira requests || echo "Optional deps skipped"
+          pip install -r vaal-ai-empire/requirements.txt
 
       - name: Verify Installation
         run: |

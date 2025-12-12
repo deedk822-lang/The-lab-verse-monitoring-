@@ -14,8 +14,16 @@ alembic==1.13.0
 
 # AI/ML Stack
 cohere==5.11.0
-# groq==0.4.2  # Install separately if needed
+groq==0.4.2
+kaggle==1.6.14
+mistralai==1.0.0
 transformers==4.35.2
+
+# Workflow Specific
+qwen-agent==0.0.6
+oss2==2.18.4
+dashscope==1.20.0
+notion-client==2.0.0
 torch==2.3.0
 accelerate==0.25.0
 sentence-transformers==2.2.2
@@ -34,6 +42,7 @@ mailchimp-marketing==3.0.80
 # Asana & Jira
 asana==3.2.1
 atlassian-python-api==3.41.11
+jira==3.5.2
 
 # Databricks
 databricks-sql-connector==2.9.3

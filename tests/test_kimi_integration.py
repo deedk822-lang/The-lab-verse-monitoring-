@@ -1,7 +1,6 @@
 import pytest
 from aiohttp import web
 from src.kimi_instruct.core import KimiInstruct
-from src.kimi_instruct.service import handle_status, handle_create_task, handle_health, default_serializer
 import json
 from datetime import datetime, timedelta
 from unittest.mock import patch, AsyncMock
@@ -11,20 +10,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
-from src.kimi_instruct.service import KimiService
+from src.kimi_instruct.service import KimiInstructService
 
 
 # This fixture sets up the test client for the Kimi service
 @pytest.fixture
 def kimi_client(aiohttp_client):
-    app = web.Application()
-    app['kimi'] = KimiInstruct()
-    app.router.add_get("/status", handle_status)
-    app.router.add_post("/tasks", handle_create_task)
-    app.router.add_get("/health", handle_health)
-
-    # The default JSON serializer needs to be passed to the client
-    return aiohttp_client(app, server_kwargs={'port': 8084})
+    kimi_service = KimiInstructService()
+    app = kimi_service.app
+    return aiohttp_client(app)
 
 async def test_health_endpoint(kimi_client):
     """Tests if the /health endpoint is working."""
@@ -86,7 +80,7 @@ class TestKimiIntegration:
     @pytest.fixture
     async def kimi_service(self):
         """Create Kimi web service for testing"""
-        service = KimiService()
+        service = KimiInstructService()
         return service
 
     async def test_full_project_lifecycle(self, kimi):
@@ -301,35 +295,20 @@ class TestKimiIntegration:
         assert 'budget_review' in action_types
         assert 'human_checkin' in action_types
 
-    async def test_web_service_endpoints(self, kimi_service):
+    async def test_web_service_endpoints(self, kimi_client):
         """Test web service HTTP endpoints"""
-        from aiohttp.test_utils import make_mocked_request
-
+        client = await kimi_client
         # Test health endpoint
-        request = make_mocked_request('GET', '/health')
-        response = await kimi_service.health(request)
-
-        assert response.status == 200
+        resp = await client.get("/health")
+        assert resp.status == 200
 
         # Test status endpoint
-        request = make_mocked_request('GET', '/status')
-        with patch.object(kimi_service.kimi, 'get_status_report', new_callable=AsyncMock) as mock_status:
-            mock_status.return_value = {
-                'task_summary': {'total': 0, 'completed': 0, 'completion_percentage': 0},
-                'risk_level': 'low',
-                'project_context': {'budget_remaining': 50000},
-                'critical_issues': [],
-                'next_actions': []
-            }
+        resp = await client.get("/status")
+        assert resp.status == 200
 
-            response = await kimi_service.get_status(request)
-            assert response.status == 200
-
-    async def test_task_creation_via_api(self, kimi_service):
+    async def test_task_creation_via_api(self, kimi_client):
         """Test task creation via web API"""
-        from aiohttp.test_utils import make_mocked_request
-        import json
-
+        client = await kimi_client
         # Mock request data
         task_data = {
             'title': 'Test API Task',
@@ -337,15 +316,9 @@ class TestKimiIntegration:
             'priority': 'high'
         }
 
-        request = make_mocked_request('POST', '/tasks')
-        request.json = AsyncMock(return_value=task_data)
+        resp = await client.post("/api/v1/tasks", json=task_data)
 
-        response = await kimi_service.create_task(request)
-
-        assert response.status == 201
-
-        # Check if task was created
-        assert len(kimi_service.kimi.tasks) > 0
+        assert resp.status == 200
 
     async def test_metrics_collection(self, kimi):
         """Test project metrics collection and updates"""

@@ -24,15 +24,6 @@ jobs:
 
       - name: Validate package.json
         run: |
- main
- main
-
-          echo "🔍 Validating package.json syntax..."
- feat/crisis-monetization-workflow
-          node -e "require('./package.json')"
-          echo "✅ package.json is valid JSON"
-
- main
           echo "🔍 Validating package.json syntax..."
           if [ -f package.json ]; then
             jq empty package.json
@@ -87,75 +78,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
- fix/remove-youtube-api
-
-      - name: Install Node Dependencies
-        run: npm ci
-
- main
-      # --- PYTHON AI LAYER ---
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Create dummy .env file
-        run: |
-          if [ -f .env.example ]; then
-            cp .env.example .env
-          else
-            touch .env
-          fi
- fix/remove-youtube-api
-
-      - name: Install AI Empire Dependencies
-
-      - name: Check for Duplicate Dependencies
- feat/crisis-monetization-workflow
-        run: |
-          echo "🔍 Checking for duplicate dependencies..."
-          if jq -e '.dependencies + .devDependencies | group_by(.) | map(select(length > 1))' package.json | grep -q '\['; then
-            echo "❌ Duplicate dependencies found!"
-            exit 1
-          else
-            echo "✅ No duplicate dependencies"
-          fi
-
-      - name: Install Dependencies
-        run: |
-          echo "📦 Installing dependencies..."
-          npm ci
-          echo "✅ Dependencies installed successfully"
-
-      - name: Verify Dependency Tree
-        run: |
-          echo "🌳 Checking dependency tree for issues..."
-          npm ls --depth=0 || true
-          echo "✅ Dependency tree verified"
-
-      - name: Check for Outdated Dependencies
-        run: |
-          echo "📊 Checking for outdated dependencies..."
-          npm outdated || true
-          echo "ℹ️  Outdated dependencies listed above (if any)"
-
-  env-validation:
-    name: Environment Validation
-    runs-on: ubuntu-latest
-    needs: dependency-check
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
-      GLM4_API_KEY: ${{ secrets.GLM4_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -167,7 +89,12 @@ jobs:
         run: npm ci
 
       - name: Create dummy .env file
-        run: cp .env.example .env
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
 
       - name: Run Environment Validation Script
         run: node scripts/validate-environment.cjs
@@ -185,18 +112,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
- main
- main
-
-          cache: 'npm'
- feat/crisis-monetization-workflow
-
-      - name: Install Dependencies
-        run: npm ci
-
- main
-      - name: Node Linting (ESLint)
-
           cache: 'npm'
 
       - name: Install Dependencies
@@ -220,36 +135,6 @@ jobs:
           # Ensure PyYAML is available
           pip install pyyaml
 
-          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
-            if [ -f "$file" ]; then
-              echo "Checking: $file"
-              if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
-                echo "❌ Invalid YAML: $file"
-                exit 1
-              fi
-            fi
-          done
-          echo "✅ All workflow files have valid YAML syntax"
-
-      - name: Run ESLint
- fix/remove-youtube-api
-
-      - name: Validate JSON Files
- feat/crisis-monetization-workflow
-        run: |
-          echo "🔍 Validating all JSON files..."
-          find . -name "*.json" \
-            -not -path "*/node_modules/*" \
-            -not -path "*/.next/*" \
-            -not -path "*/dist/*" \
-            -not -path "*/build/*" \
-            -exec echo "Checking: {}" \; \
-            -exec node -e "try { require('{}'); console.log('✅ Valid'); } catch(e) { console.error('❌ Invalid:', e.message); process.exit(1); }" \;
-          echo "✅ All JSON files valid"
-
-      - name: Validate YAML Workflow Files
-        run: |
-          echo "🔍 Validating GitHub workflow YAML files..."
           for file in .github/workflows/*.yml .github/workflows/*.yaml; do
             if [ -f "$file" ]; then
               echo "Checking: $file"
@@ -326,17 +211,20 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
- bolt-db-connection-pooling-16386782449900478470
-
-      - name: Run Tests
 
       - name: Run Node.js Tests
- main
         run: |
           echo "🧪 Running Node.js tests..."
           npm test || echo "⚠️  No tests configured or tests failed"
- bolt-db-connection-pooling-16386782449900478470
 
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install AI Empire Dependencies
+        run: pip install -r vaal-ai-empire/requirements.txt
 
       - name: Run Python Tests
         env:
@@ -345,7 +233,7 @@ jobs:
           echo "🐍 Running Python tests..."
           pip install pytest
           python -m pytest vaal-ai-empire/tests/
- main
+
       - name: Build Project
         run: |
           echo "🏗️  Building project..."

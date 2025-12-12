@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 import logging
 import json
 from datetime import datetime
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +212,7 @@ class ContentFactory:
             logger.error(f"Content generation failed: {e}")
             raise e
 
+    @lru_cache(maxsize=128)
     def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
         """Build optimized prompt for post generation"""
 

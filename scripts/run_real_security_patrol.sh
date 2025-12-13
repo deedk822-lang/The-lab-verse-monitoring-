@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # --- 1. STRICT CREDENTIAL VALIDATION ---
-if [[ "$PERSONAL_ACCESS_TOKEN" == *"placeholder"* ]] || [ -z "$PERSONAL_ACCESS_TOKEN" ]; then
+if [[ "$PERSONAL_ACCESS_TOKEN" == *"placeholder"* ]] || [ -z "$PERSONAL_ACCESS_T
+OKEN" ]; then
     echo "❌ CRITICAL ERROR: Invalid PERSONAL_ACCESS_TOKEN."
     exit 1
 fi
@@ -38,18 +39,18 @@ try:
     raw = os.getenv('RAW_SCAN_DATA', '{}')
     data = json.loads(raw)
     total_count = data.get('TotalCount', 0)
-    
+
     if total_count == 0:
         print('✅ STATUS: SECURE. Alibaba SAS reports 0 active vulnerabilities.')
         sys.exit(0)
-        
+
     print(f'🚨 THREAT LEVEL RED: Found {total_count} active vulnerabilities.')
     print('🚑 INITIATING QWEN REMEDIATION PROTOCOL...')
-    
+
     # Import Qwen Security Engineer
     from vaal_ai_empire.src.core.alibaba_sysadmin_core import MasterController
     admin = MasterController()
-    
+
     # Qwen fixes the code based on the CVE report
     report = admin.patch_security_vulnerability(json.dumps(data, indent=2))
     print(report)

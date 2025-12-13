@@ -15,7 +15,7 @@ run_protected_job() {
     LOG_FILE="$LOG_DIR/${JOB_NAME}_${TODAY}.log"
 
     echo "   ▶ Running $JOB_NAME..."
-    
+
     # 1. EXECUTE (Capture stdout and stderr)
     python3 $SCRIPT_PATH > "$LOG_FILE" 2>&1
     EXIT_CODE=$?
@@ -24,9 +24,10 @@ run_protected_job() {
     if [ $EXIT_CODE -ne 0 ]; then
         echo "   ⚠️ $JOB_NAME CRASHED (Exit Code: $EXIT_CODE)."
         echo "   🚑 ACTIVATING QWEN SYSADMIN (Auto-Repair)..."
-        
+
         # 3. SELF-HEALING PROTOCOL
-        # We pass the *path* to the log file so Qwen can read the traceback safely.
+        # We pass the *path* to the log file so Qwen can read the traceback safe
+ly.
         export PYTHONPATH=$PYTHONPATH:$(pwd)
         python3 -c "
 import sys
@@ -49,6 +50,7 @@ run_protected_job "JSE_Analysis" "vaal-ai-empire/src/agents/jse_specialist.py"
 run_protected_job "Tax_Compliance" "vaal-ai-empire/src/agents/tax_collector.py"
 
 # 3. SYSTEM AUDIT (Dependency Security)
-run_protected_job "System_Audit" "vaal-ai-empire/scripts/maintenance/audit_system.py"
+run_protected_job "System_Audit" "vaal-ai-empire/scripts/maintenance/audit_syste
+m.py"
 
 echo "🌙 OPERATIONS COMPLETE."

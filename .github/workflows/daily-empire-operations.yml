@@ -1,0 +1,37 @@
+# .github/workflows/daily-empire-operations.yml
+name: Daily Empire Operations
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 6 AM SAST daily
+  workflow_dispatch:
+
+jobs:
+  run-daily-ops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+
+      - name: Run Daily Operations
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          DATABRICKS_API_KEY: ${{ secrets.DATABRICKS_API_KEY }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: |
+          chmod +x scripts/run_daily_operations.sh
+          ./scripts/run_daily_operations.sh
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: empire-logs
+          path: logs/

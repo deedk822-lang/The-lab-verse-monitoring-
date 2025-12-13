@@ -3,46 +3,52 @@ name: Kaggle Intelligence Pipeline
 on:
   schedule:
     - cron: '0 4 * * *'  # Daily at 6 AM SAST
-  workflow_dispatch:
+  workflow_dispatch:     # Allows you to click 'Run' manually
 
 jobs:
-  data-intelligence:
+  run-intelligence:
     runs-on: ubuntu-latest
     name: "Sync Kaggle Data"
     
     env:
-      # SECURE MAPPING (No Hardcoding)
+      # KAGGLE IDENTITY (Mapped from Secrets)
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}
       
-      # JIRA & CLOUD
+      # JIRA IDENTITY (Dimakatso)
       JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
-      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+      # STORAGE
       OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
       OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
       OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
       OSS_BUCKET: vaal-vault
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Install Drivers
+      - name: Install Dependencies
         run: |
           pip install -r vaal-ai-empire/requirements.txt
           pip install -e vaal-ai-empire/
           pip install kaggle jira notion-client oss2
 
-      - name: Configure Auth
+      - name: 📊 Execute Kaggle Sync
         run: |
-          # Create kaggle.json from Secrets
-          mkdir -p ~/.kaggle
-          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
-          chmod 600 ~/.kaggle/kaggle.json
+          # This executes the Python logic
+          python3 vaal-ai-empire/scripts/kaggle_intelligence.py
 
-      - name: 🚀 Execute Sync
-        run: python3 vaal-ai-empire/scripts/kaggle_intelligence.py
+      - name: 📝 Summary
+        if: always()
+        run: |
+          echo "## Kaggle Intelligence Report 📊" >> $GITHUB_STEP_SUMMARY
+          echo "Sync executed via Dimakatso Identity." >> $GITHUB_STEP_SUMMARY

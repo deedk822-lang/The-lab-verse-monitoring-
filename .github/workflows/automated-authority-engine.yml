@@ -60,19 +60,9 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies..."
-          python -m pip install --upgrade pip setuptools wheel
-
-          # Core dependencies
-          pip install qwen-agent==0.0.6
-          pip install oss2==2.18.4
-          pip install mistralai==1.0.0
-          pip install cohere==5.11.0
-          pip install pandas==2.2.0
-          pip install python-dotenv==1.0.1
-          pip install dashscope==1.20.0
-
-          # Optional dependencies (won't fail if not needed)
-          pip install notion-client jira requests || echo "Optional deps skipped"
+ bolt-db-connection-pooling-16386782449900478470
+          python -m pip install --upgrade pip
+          pip install -r vaal-ai-empire/requirements-ci.txt
 
       - name: Verify Installation
         run: |
@@ -104,6 +94,41 @@ jobs:
 
           simulator = VanHackCRSSimulator()
 
+
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r vaal-ai-empire/requirements.txt
+
+      - name: Verify Installation
+        run: |
+          echo "✓ Verifying installation..."
+          python -c "import qwen_agent; print('✓ qwen-agent')"
+          python -c "import oss2; print('✓ oss2')"
+          python -c "import pandas; print('✓ pandas')"
+          python -c "import sys; print(f'Python: {sys.version}')"
+
+      - name: Run Tax Agent (SARS Revenue Detection)
+        id: tax_agent
+        run: |
+          echo "💰 Executing Tax Revenue Search..."
+          python src/agents/tax_collector.py > tax_report.json
+
+          # Extract and display revenue
+          REVENUE=$(python -c "import json; data=json.load(open('tax_report.json')); print(data.get('total_revenue_zar', 0))")
+          echo "revenue=$REVENUE" >> $GITHUB_OUTPUT
+          echo "💰 Revenue Detected: R$REVENUE"
+
+      - name: Run VanHack CRS Simulator
+        id: vanhack
+        continue-on-error: true
+        run: |
+          echo "🎯 Running VanHack CRS calculations..."
+          python -c "
+          from src.tools.vanhack_crs import VanHackCRSSimulator
+          import json
+
+          simulator = VanHackCRSSimulator()
+
+ main
           # Test resume (replace with OSS fetch in production)
           test_resume = '''
           Age: 28

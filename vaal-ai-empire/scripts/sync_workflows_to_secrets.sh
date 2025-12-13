@@ -1,0 +1,120 @@
+#!/bin/bash
+set -e
+
+echo "🔐 SYNCING WORKFLOWS TO REPOSITORY SECRETS..."
+
+mkdir -p .github/workflows
+
+# 1. UPDATE KAGGLE PIPELINE (Remove Hardcoded Username)
+cat << 'EOF' > .github/workflows/kaggle-intelligence.yml
+name: Kaggle Intelligence Pipeline
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 6 AM SAST
+  workflow_dispatch:
+
+jobs:
+  data-intelligence:
+    runs-on: ubuntu-latest
+    name: "Sync Kaggle Data"
+
+    env:
+      # SECURE MAPPING (No Hardcoding)
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_TOKEN }}
+
+      # JIRA & CLOUD
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Drivers
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install kaggle jira notion-client oss2
+
+      - name: Configure Auth
+        run: |
+          # Create kaggle.json from Secrets
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: 🚀 Execute Sync
+        run: python3 vaal-ai-empire/scripts/kaggle_intelligence.py
+EOF
+
+# 2. UPDATE AUTHORITY ENGINE (Enable Mailchimp & WP)
+cat << 'EOF' > .github/workflows/authority-engine.yml
+name: Authority Engine - Content Pipeline
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      notion_page_id:
+        description: 'Notion Page ID'
+        required: true
+        default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+
+jobs:
+  broadcast_content:
+    runs-on: ubuntu-latest
+    name: "Run Authority Pipeline"
+
+    env:
+      # BRAINS
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+
+      # SOURCE
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+
+      # DESTINATIONS
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}  # Uses the new App Password
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}    # Uses the new Key
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+
+      # REPORTING
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Stack
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+
+      - name: 🚀 Run Omnichannel Pipeline
+        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+EOF
+
+echo "✅ ALL PIPELINES SYNCED TO SECRETS."
+echo "   - Kaggle: Using 'KAGGLE_USERNAME'"
+echo "   - WordPress: Using 'WORDPRESS_PASSWORD'"
+echo "   - MailChimp: Using 'MAILCHIMP_API_KEY'"

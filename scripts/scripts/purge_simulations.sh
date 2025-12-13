@@ -59,11 +59,11 @@ class TaxAgentMaster:
         """
         logger.info(f"--- TAX AGENT EXECUTING (Model: {self.active_model}) ---")
         real_revenue = 0.00
-        
+
         if self.active_model in ["deepseek-v3", "qwen-max"] and self.titan:
             logger.info("   > Engaging Titan Brain...")
             try:
-                pass 
+                pass
             except:
                 pass
 
@@ -71,11 +71,11 @@ class TaxAgentMaster:
             logger.info("   > Running Low-Cost Scan...")
             scan_result = self.hf_lab.analyze_sentiment("Market Audit")
             logger.info(f"   > HF Sentiment: {scan_result}")
-            
+
         if self.home:
             logger.info("   > Querying Internal Ledger (Glean)...")
             internal_data = self.home.search_enterprise_memory("Unclaimed Tax Credits", "finance")
-            
+
             if internal_data and "No summary" not in str(internal_data):
                 logger.info(f"   > Glean found records: {str(internal_data)[:50]}...")
             else:

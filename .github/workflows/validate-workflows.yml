@@ -1,0 +1,26 @@
+name: Validate Workflows
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate-workflows:
+    name: Validate Workflow Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install pyyaml
+
+      - name: Run Workflow Validation Script
+        run: |
+          chmod +x scripts/validate_workflows.sh
+          ./scripts/validate_workflows.sh

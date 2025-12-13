@@ -1,9 +1,30 @@
 import os
 import logging
+from functools import lru_cache
 from huggingface_hub import InferenceClient
 from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
+
+# ⚡ Bolt Optimization: Cached expensive model/client initializations
+# These functions are now cached, so the expensive objects are created only once.
+@lru_cache(maxsize=None)
+def get_inference_client(token):
+    """Initializes and returns a cached HuggingFace InferenceClient."""
+    if not token:
+        return None
+    return InferenceClient(token=token)
+
+@lru_cache(maxsize=None)
+def get_seo_model():
+    """Initializes and returns a cached SentenceTransformer model."""
+    try:
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("✅ HF Lab: Local SEO Model Loaded.")
+        return model
+    except Exception:
+        logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+        return None
 
 class HuggingFaceLab:
     """
@@ -12,15 +33,9 @@ class HuggingFaceLab:
     """
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_KEY")
-        self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
-
-        # Load Local SEO Model (CPU-friendly)
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-            logger.info("✅ HF Lab: Local SEO Model Loaded.")
-        except Exception:
-            self.seo_model = None
-            logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+        # Call the cached functions instead of initializing directly
+        self.client = get_inference_client(self.hf_token)
+        self.seo_model = get_seo_model()
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""

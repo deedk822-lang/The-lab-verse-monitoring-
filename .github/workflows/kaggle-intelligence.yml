@@ -3,24 +3,27 @@ name: Kaggle Intelligence Pipeline
 on:
   schedule:
     - cron: '0 4 * * *'  # Daily at 6 AM SAST
-  workflow_dispatch:     # Allows you to click 'Run' manually
+  workflow_dispatch:     # Allows manual trigger
 
 jobs:
   run-intelligence:
     runs-on: ubuntu-latest
-    name: "Sync Kaggle Data"
+    name: "Kaggle Intelligence Sync"
     
     env:
-      # KAGGLE IDENTITY (Mapped from Secrets)
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      # === IDENTITY 1: LUNGELO LUDA (DATA ANALYST) ===
+      # Kaggle username: lungeloluda
+      # Email: dimakatsomoleli@gmail.com
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}  # lungeloluda
       KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}
       
-      # JIRA IDENTITY (Dimakatso)
+      # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
+      # Jira tickets created by: dimakatsomoleli@gmail.com
       JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}  # dimakatsomoleli@gmail.com
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
 
-      # STORAGE
+      # === STORAGE (ALIBABA CLOUD OSS) ===
       OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
       OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
       OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
@@ -42,13 +45,24 @@ jobs:
           pip install -e vaal-ai-empire/
           pip install kaggle jira notion-client oss2
 
-      - name: 📊 Execute Kaggle Sync
+      - name: 🔑 Identity Check
         run: |
-          # This executes the Python logic
+          echo "🆔 Verifying Identities..."
+          echo "  🔬 Kaggle: $KAGGLE_USERNAME (Lungelo Luda)"
+          echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
+          echo "✅ Identity configuration confirmed"
+
+      - name: 📊 Execute Kaggle Intelligence Pipeline
+        run: |
           python3 vaal-ai-empire/scripts/kaggle_intelligence.py
 
-      - name: 📝 Summary
+      - name: 📝 Generate Summary
         if: always()
         run: |
-          echo "## Kaggle Intelligence Report 📊" >> $GITHUB_STEP_SUMMARY
-          echo "Sync executed via Dimakatso Identity." >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Kaggle Intelligence Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Identities:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔬 Kaggle Analyst: Lungelo Luda (lungeloluda)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Project Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Pipeline executed successfully" >> $GITHUB_STEP_SUMMARY

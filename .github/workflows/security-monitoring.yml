@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 env:
-  # FIX 1: Quotes added around the value containing colons
   SECURITY_ANALYZER: "acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer"
 
 jobs:
@@ -67,7 +66,6 @@ jobs:
           echo "Security scan complete: $TOTAL_COUNT findings ($CRITICAL_COUNT critical, $HIGH_COUNT high, $MEDIUM_COUNT medium)"
       
       - name: Alert on Critical Findings
-        # FIX 2: Quotes added around the condition containing '>'
         if: "steps.security_check.outputs.critical_count > 0"
         continue-on-error: true
         run: |
@@ -86,7 +84,6 @@ jobs:
             }' || echo "Asana alert skipped"
       
       - name: Alert on High Findings
-        # FIX 2: Quotes added around the condition containing '>' and '&&'
         if: "steps.security_check.outputs.high_count > 0 && steps.security_check.outputs.critical_count == 0"
         continue-on-error: true
         run: |

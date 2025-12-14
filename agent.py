@@ -54,41 +54,54 @@ def _google_creds() -> tuple:
 
 # --- Discover Available Google Services ---
 def _discover_services(creds) -> Dict[str, bool]:
-    """Detect which Google services are available and accessible."""
+    """
+    Detect which Google services are available and accessible using parallel checks.
+    ⚡ Bolt Optimization: API calls are now concurrent, reducing startup latency.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     from googleapiclient.discovery import build
+
+    def _check_gmail():
+        """Check for Gmail API access."""
+        try:
+            build("gmail", "v1", credentials=creds).users().getProfile(userId="me").execute()
+            return "Gmail", True
+        except Exception:
+            return "Gmail", False
+
+    def _check_google_business():
+        """Check for Google Business Profile API access."""
+        try:
+            gbp = build("mybusinessbusinessinformation", "v1", credentials=creds)
+            accounts = gbp.accounts().list().execute()
+            return "GoogleBusiness", bool(accounts.get("accounts"))
+        except Exception:
+            return "GoogleBusiness", False
+
+    def _check_youtube():
+        """Check for YouTube API access."""
+        try:
+            build("youtube", "v3", credentials=creds).channels().list(mine=True, part="id").execute()
+            return "YouTube", True
+        except Exception:
+            return "YouTube", False
+
+    def _check_calendar():
+        """Check for Calendar API access."""
+        try:
+            build("calendar", "v3", credentials=creds).calendarList().list(maxResults=1).execute()
+            return "Calendar", True
+        except Exception:
+            return "Calendar", False
+
     services = {}
+    tasks = [_check_gmail, _check_google_business, _check_youtube, _check_calendar]
 
-    # Check Gmail
-    try:
-        gmail = build("gmail", "v1", credentials=creds)
-        gmail.users().getProfile(userId="me").execute()
-        services["Gmail"] = True
-    except Exception:
-        services["Gmail"] = False
-
-    # Check Google Business Profile
-    try:
-        gbp = build("mybusinessbusinessinformation", "v1", credentials=creds)
-        accounts = gbp.accounts().list().execute()
-        services["GoogleBusiness"] = bool(accounts.get("accounts"))
-    except Exception:
-        services["GoogleBusiness"] = False
-
-    # Check YouTube
-    try:
-        yt = build("youtube", "v3", credentials=creds)
-        yt.channels().list(mine=True, part="id").execute()
-        services["YouTube"] = True
-    except Exception:
-        services["YouTube"] = False
-
-    # Check Calendar
-    try:
-        cal = build("calendar", "v3", credentials=creds)
-        cal.calendarList().list(maxResults=1).execute()
-        services["Calendar"] = True
-    except Exception:
-        services["Calendar"] = False
+    with ThreadPoolExecutor(max_workers=len(tasks)) as executor:
+        futures = [executor.submit(task) for task in tasks]
+        for future in as_completed(futures):
+            name, status = future.result()
+            services[name] = status
 
     LOG.info("Discovered Google services: %s", [k for k, v in services.items() if v])
     return services

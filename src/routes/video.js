@@ -10,7 +10,7 @@ const schema = Joi.object({
   prompt: Joi.string().min(3).max(2000).required(),
   duration: Joi.number().integer().min(5).max(60).default(10),
   resolution: Joi.string().valid('720p', '1080p').default('1080p'),
-  style: Joi.string().valid('cinematic', 'animated').default('cinematic')
+  style: Joi.string().valid('cinematic', 'animated').default('cinematic'),
 });
 
 router.post('/generate', validate(schema), async (req, res) => {

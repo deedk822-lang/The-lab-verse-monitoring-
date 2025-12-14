@@ -11,7 +11,7 @@ const contentGenerator = new ContentGenerator();
 
 router.post('/ayr', [
   body('topic').notEmpty().withMessage('Topic is required'),
-  body('platforms').notEmpty().withMessage('Platforms are required')
+  body('platforms').notEmpty().withMessage('Platforms are required'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -19,7 +19,7 @@ router.post('/ayr', [
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
-        details: errors.array()
+        details: errors.array(),
       });
     }
 
@@ -32,7 +32,7 @@ router.post('/ayr', [
       keywords = [],
       length = 'medium',
       includeEmail = false,
-      emailSubject
+      emailSubject,
     } = req.body;
 
     const startTime = Date.now();
@@ -42,7 +42,7 @@ router.post('/ayr', [
     io.emit('ayrshare_progress', {
       status: 'started',
       message: 'Content generation started',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Generate content
@@ -56,8 +56,8 @@ router.post('/ayr', [
       options: {
         optimizeForSocial: true,
         optimizeForEmail: includeEmail,
-        platforms: platforms.split(',').map(p => p.trim())
-      }
+        platforms: platforms.split(',').map(p => p.trim()),
+      },
     };
 
     logger.info('Generating content...');
@@ -65,7 +65,7 @@ router.post('/ayr', [
     io.emit('ayrshare_progress', {
       status: 'generating',
       message: 'Generating content with AI',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     const contentResult = await contentGenerator.generateContent(contentRequest);
@@ -80,22 +80,22 @@ router.post('/ayr', [
 
     const results = {
       social: null,
-      email: null
+      email: null,
     };
 
     // Post to social media
     io.emit('ayrshare_progress', {
       status: 'posting_social',
       message: 'Posting to social media',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     const postResult = await ayrshareService.post({
       post: content,
       platforms: platforms,
       options: {
-        shortenLinks: true
-      }
+        shortenLinks: true,
+      },
     });
 
     results.social = postResult;
@@ -105,7 +105,7 @@ router.post('/ayr', [
       io.emit('ayrshare_progress', {
         status: 'sending_email',
         message: 'Sending email campaign',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       const emailResult = await mailchimpService.createAndSendCampaign({
@@ -113,7 +113,7 @@ router.post('/ayr', [
         content: content,
         fromName: process.env.EMAIL_FROM_NAME || 'AI Content Suite',
         replyTo: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
-        sendNow: true
+        sendNow: true,
       });
 
       results.email = emailResult;
@@ -128,14 +128,14 @@ router.post('/ayr', [
       logger.info('Distribution completed:', {
         social: postResult.data?.id,
         email: results.email?.data?.campaignId,
-        time: `${totalTime}ms`
+        time: `${totalTime}ms`,
       });
 
       io.emit('ayrshare_progress', {
         status: 'completed',
         message: 'Content distributed successfully',
         totalTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       res.json({
@@ -149,14 +149,14 @@ router.post('/ayr', [
             social: {
               success: socialSuccess,
               postId: postResult.data?.id,
-              platforms: postResult.platforms
+              platforms: postResult.platforms,
             },
             email: includeEmail ? {
               success: emailSuccess,
-              campaignId: results.email?.data?.campaignId
-            } : null
-          }
-        }
+              campaignId: results.email?.data?.campaignId,
+            } : null,
+          },
+        },
       });
     } else {
       const errors = [];
@@ -175,13 +175,13 @@ router.post('/ayr', [
     io.emit('ayrshare_progress', {
       status: 'error',
       message: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     res.status(500).json({
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -195,13 +195,13 @@ router.get('/test', async (req, res) => {
       success: isConnected,
       message: isConnected ? 'Ayrshare connected' : 'Ayrshare not connected',
       profile: profile?.data || null,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error('Test failed:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -218,14 +218,14 @@ router.get('/test/mailchimp', async (req, res) => {
       configured: {
         apiKey: !!process.env.MAILCHIMP_API_KEY,
         serverPrefix: !!process.env.MAILCHIMP_SERVER_PREFIX,
-        listId: !!process.env.MAILCHIMP_LIST_ID
+        listId: !!process.env.MAILCHIMP_LIST_ID,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -241,24 +241,24 @@ router.get('/test/workflow', async (req, res) => {
       services: {
         ayrshare: {
           connected: ayrshareConnected,
-          configured: !!process.env.AYRSHARE_API_KEY
+          configured: !!process.env.AYRSHARE_API_KEY,
         },
         mailchimp: {
           connected: mailchimpConnected,
           configured: {
             apiKey: !!process.env.MAILCHIMP_API_KEY,
             serverPrefix: !!process.env.MAILCHIMP_SERVER_PREFIX,
-            listId: !!process.env.MAILCHIMP_LIST_ID
-          }
-        }
+            listId: !!process.env.MAILCHIMP_LIST_ID,
+          },
+        },
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error('Workflow test failed:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });

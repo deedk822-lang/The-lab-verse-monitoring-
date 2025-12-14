@@ -36,8 +36,8 @@ export class EviIntegration {
         'content_generation',
         'streaming_response',
         'multi_provider_fallback',
-        'error_handling'
-      ]
+        'error_handling',
+      ],
     };
   }
 
@@ -52,7 +52,7 @@ export class EviIntegration {
         maxTokens: options.maxTokens || 1000,
         temperature: options.temperature || 0.8,
         timeout: this.timeout,
-        provider: options.provider
+        provider: options.provider,
       });
 
       return {
@@ -61,8 +61,8 @@ export class EviIntegration {
           provider: options.provider || 'auto-selected',
           tokens: result.length,
           timestamp: new Date().toISOString(),
-          enhanced: true
-        }
+          enhanced: true,
+        },
       };
 
     } catch (error) {
@@ -89,8 +89,8 @@ export class EviIntegration {
           metadata: {
             chunkIndex: chunkCount,
             totalLength: totalContent.length,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
 
@@ -99,8 +99,8 @@ export class EviIntegration {
         summary: {
           totalChunks: chunkCount,
           totalLength: totalContent.length,
-          completed: true
-        }
+          completed: true,
+        },
       };
 
     } catch (error) {
@@ -123,7 +123,7 @@ export class EviIntegration {
 
         const result = await this.enhancedGenerate(prompt, {
           ...options,
-          provider
+          provider,
         });
 
         end({ status: 'success' });
@@ -132,7 +132,7 @@ export class EviIntegration {
         return {
           ...result,
           providerUsed: provider,
-          fallbackAttempts: providers.indexOf(provider)
+          fallbackAttempts: providers.indexOf(provider),
         };
 
       } catch (error) {
@@ -187,14 +187,14 @@ export class EviIntegration {
     try {
       const testResult = await generateContent('Test message: respond with "OK"', {
         maxTokens: 10,
-        timeout: 5000
+        timeout: 5000,
       });
 
       return {
         status: 'healthy',
         response: testResult,
         timestamp: new Date().toISOString(),
-        providers: hasAvailableProvider()
+        providers: hasAvailableProvider(),
       };
 
     } catch (error) {
@@ -202,7 +202,7 @@ export class EviIntegration {
         status: 'unhealthy',
         error: error.message,
         timestamp: new Date().toISOString(),
-        providers: hasAvailableProvider()
+        providers: hasAvailableProvider(),
       };
     }
   }

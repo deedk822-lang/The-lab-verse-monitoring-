@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Checklist - Jira Setup Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+        .checklist-item { transition: all 0.3s ease; }
+        .checklist-item.completed { opacity: 0.7; }
+        .checklist-item.completed .item-text { text-decoration: line-through; }
+        .progress-ring { transition: stroke-dasharray 0.5s ease; }
+        .category-card { transition: all 0.3s ease; }
+        .category-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); }
+        .expandable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .expandable-content.expanded { max-height: 500px; }
+    </style>
+<base target="_blank">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">Jira Setup Guide</h1>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="index.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                        <a href="templates.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Templates</a>
+                        <a href="workflows.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Workflows</a>
+                        <a href="#" class="text-gray-900 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Checklist</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg pt-24 pb-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                    Setup
+                    <span class="text-teal-600">Checklist</span>
+                </h1>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                    Track your Jira setup progress with our comprehensive 50+ item checklist. Get completion certificates and ensure nothing is missed.
+                </p>
+                <div class="flex justify-center items-center space-x-8 text-sm text-gray-500">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Progress Tracking
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        Detailed Guides
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Completion Certificate
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Progress Overview -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Progress Chart -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Overall Progress</h3>
+                        <div id="progressChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Completion Status</h3>
+                            <div class="relative w-16 h-16">
+                                <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                                    <path class="text-gray-200" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                    <path id="progressRing" class="text-teal-600 progress-ring" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="progressPercent" class="text-sm font-semibold text-gray-900">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Completed</span>
+                                <span id="completedCount" class="font-medium text-teal-600">0</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Total Items</span>
+                                <span id="totalCount" class="font-medium">56</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Time Estimate</span>
+                                <span id="timeEstimate" class="font-medium text-orange-600">2-4 hours</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button onclick="markAllComplete()" class="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                                Mark All Complete
+                            </button>
+                            <button onclick="resetProgress()" class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                                Reset Progress
+                            </button>
+                            <button onclick="exportProgress()" class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                                Export Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Checklist Categories -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="space-y-8">
+                <!-- Instance Setup -->
+                <div class="category-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Instance Setup</h3>
+                                    <p class="text-sm text-gray-600">8 items • Core Jira configuration and installation</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <span class="category-completed">0</span> / <span class="category-total">8</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="category-progress bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="toggleCategory('instance')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="instance-content" class="expandable-content">
+                        <div class="p-6 space-y-4">
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Create Atlassian account</div>
+                                    <div class="text-sm text-gray-600 mt-1">Sign up at atlassian.com with your business email</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 5 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Choose Jira product (Software, Service Management, Work Management)</div>
+                                    <div class="text-sm text-gray-600 mt-1">Select based on your team's primary use case</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up site name and URL</div>
+                                    <div class="text-sm text-gray-600 mt-1">Choose a professional site name (e.g., yourcompany.atlassian.net)</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 5 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure site administration settings</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set time zone, language, and other global settings</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up billing and subscription</div>
+                                    <div class="text-sm text-gray-600 mt-1">Choose appropriate plan and set up payment method</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure security settings</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set up password policies, 2FA, and session timeout</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up email notifications</div>
+                                    <div class="text-sm text-gray-600 mt-1">Configure SMTP settings and notification preferences</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Test instance accessibility</div>
+                                    <div class="text-sm text-gray-600 mt-1">Verify that the instance is accessible and functioning</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Configuration -->
+                <div class="category-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Project Configuration</h3>
+                                    <p class="text-sm text-gray-600">12 items • Set up projects, workflows, and issue types</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <span class="category-completed">0</span> / <span class="category-total">12</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="category-progress bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="toggleCategory('project')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="project-content" class="expandable-content">
+                        <div class="p-6 space-y-4">
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Create first project</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set up your initial project with appropriate template</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure project details</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set project name, key, description, and lead</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up custom issue types</div>
+                                    <div class="text-sm text-gray-600 mt-1">Create issue types specific to your workflow needs</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure workflow</div>
+                                    <div class="text-sm text-gray-600 mt-1">Design status transitions and automation rules</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 30 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up screens and fields</div>
+                                    <div class="text-sm text-gray-600 mt-1">Configure issue screens and custom fields</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 25 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure project permissions</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set up permission scheme for project access</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up notification scheme</div>
+                                    <div class="text-sm text-gray-600 mt-1">Configure who receives notifications for different events</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure components and versions</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set up project components and version management</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up project categories</div>
+                                    <div class="text-sm text-gray-600 mt-1">Organize projects into logical categories</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure issue linking</div>
+                                    <div class="text-sm text-gray-600 mt-1">Set up issue relationship types and linking rules</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up priorities and resolutions</div>
+                                    <div class="text-sm text-gray-600 mt-1">Configure priority levels and resolution types</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Test project functionality</div>
+                                    <div class="text-sm text-gray-600 mt-1">Create test issues and verify workflow functions correctly</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management -->
+                <div class="category-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">User Management</h3>
+                                    <p class="text-sm text-gray-600">10 items • Team setup and access control</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <span class="category-completed">0</span> / <span class="category-total">10</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="category-progress bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="toggleCategory('user')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="user-content" class="expandable-content">
+                        <div class="p-6 space-y-4">
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Invite team members</div>
+                                    <div class="text-sm text-gray-600 mt-1">Add users to your Jira instance via email invitation</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 10 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Create user groups</div>
+                                    <div class="text-sm text-gray-600 mt-1">Organize users into logical groups (e.g., Developers, QA, Product)</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Assign user roles and permissions</div>
+                                    <div class="text-sm text-gray-600 mt-1">Define what each user/group can access and modify</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up project roles</div>
+                                    <div class="text-sm text-gray-600 mt-1">Define project-specific roles and responsibilities</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure user directory integration</div>
+                                    <div class="text-sm text-gray-600 mt-1">Connect to LDAP/Active Directory if applicable</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 30 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up SSO integration</div>
+                                    <div class="text-sm text-gray-600 mt-1">Configure single sign-on if required by your organization</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 45 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Configure user avatars and profiles</div>
+                                    <div class="text-sm text-gray-600 mt-1">Encourage users to set up their profiles and avatars</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 15 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up user training materials</div>
+                                    <div class="text-sm text-gray-600 mt-1">Prepare documentation and training resources for users</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 60 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Conduct user onboarding sessions</div>
+                                    <div class="text-sm text-gray-600 mt-1">Train users on Jira basics and your specific setup</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 120 minutes</div>
+                                </div>
+                            </div>
+                            <div class="checklist-item flex items-start p-4 bg-gray-50 rounded-lg">
+                                <input type="checkbox" class="mt-1 mr-4 w-5 h-5 text-teal-600 rounded focus:ring-teal-500" onchange="updateProgress()">
+                                <div class="flex-1">
+                                    <div class="item-text font-medium text-gray-900">Set up user access reviews</div>
+                                    <div class="text-sm text-gray-600 mt-1">Establish process for regular user access reviews</div>
+                                    <div class="text-xs text-gray-500 mt-2">⏱️ 20 minutes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional categories would continue here... -->
+                <!-- For brevity, I'll include the remaining categories in a condensed format -->
+                
+                <!-- Integrations & Add-ons -->
+                <div class="category-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Integrations & Add-ons</h3>
+                                    <p class="text-sm text-gray-600">15 items • Third-party integrations and marketplace apps</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <span class="category-completed">0</span> / <span class="category-total">15</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="category-progress bg-orange-600 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="toggleCategory('integrations')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="integrations-content" class="expandable-content">
+                        <div class="p-6">
+                            <div class="text-center text-gray-500 py-8">
+                                <p>Integration checklist items would be displayed here</p>
+                                <p class="text-sm mt-2">Including Slack, GitHub, Confluence, and other popular integrations</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Configuration -->
+                <div class="category-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Advanced Configuration</h3>
+                                    <p class="text-sm text-gray-600">11 items • Performance, security, and enterprise features</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <span class="category-completed">0</span> / <span class="category-total">11</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="category-progress bg-red-600 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="toggleCategory('advanced')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="advanced-content" class="expandable-content">
+                        <div class="p-6">
+                            <div class="text-center text-gray-500 py-8">
+                                <p>Advanced configuration items would be displayed here</p>
+                                <p class="text-sm mt-2">Including performance tuning, custom CSS, and enterprise features</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">Jira Setup Guide</h3>
+                <p class="text-gray-400 mb-8">Your comprehensive resource for Jira configuration and best practices</p>
+                <div class="border-t border-gray-800 pt-8">
+                    <p class="text-gray-500">&copy; 2025 Jira Setup Guide. Built with modern web technologies for optimal performance.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize progress tracking
+        let completedItems = 0;
+        const totalItems = 56;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProgressChart();
+            loadProgress();
+            updateProgress();
+        });
+
+        function initializeProgressChart() {
+            const chartDom = document.getElementById('progressChart');
+            const myChart = echarts.init(chartDom);
+            
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: ['Completed', 'Remaining']
+                },
+                series: [
+                    {
+                        name: 'Progress',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '18',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: [
+                            {
+                                value: 0,
+                                name: 'Completed',
+                                itemStyle: { color: '#008DA8' }
+                            },
+                            {
+                                value: totalItems,
+                                name: 'Remaining',
+                                itemStyle: { color: '#e5e7eb' }
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            myChart.setOption(option);
+            window.progressChart = myChart;
+        }
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+            completedItems = Array.from(checkboxes).filter(cb => cb.checked).length;
+            
+            const percentage = Math.round((completedItems / totalItems) * 100);
+            
+            // Update progress ring
+            const progressRing = document.getElementById('progressRing');
+            const circumference = 2 * Math.PI * 15.9155;
+            const strokeDasharray = (percentage / 100) * circumference;
+            progressRing.style.strokeDasharray = `${strokeDasharray}, ${circumference}`;
+            
+            // Update text
+            document.getElementById('progressPercent').textContent = `${percentage}%`;
+            document.getElementById('completedCount').textContent = completedItems;
+            
+            // Update chart
+            if (window.progressChart) {
+                window.progressChart.setOption({
+                    series: [{
+                        data: [
+                            {
+                                value: completedItems,
+                                name: 'Completed',
+                                itemStyle: { color: '#008DA8' }
+                            },
+                            {
+                                value: totalItems - completedItems,
+                                name: 'Remaining',
+                                itemStyle: { color: '#e5e7eb' }
+                            }
+                        ]
+                    }]
+                });
+            }
+            
+            // Update category progress
+            updateCategoryProgress();
+            
+            // Save progress
+            saveProgress();
+            
+            // Check for completion
+            if (completedItems === totalItems) {
+                showCompletionCelebration();
+            }
+        }
+
+        function updateCategoryProgress() {
+            const categories = ['instance', 'project', 'user', 'integrations', 'advanced'];
+            
+            categories.forEach(category => {
+                const categoryItems = document.querySelectorAll(`#${category}-content .checklist-item input[type="checkbox"]`);
+                const completedCategoryItems = Array.from(categoryItems).filter(cb => cb.checked).length;
+                const totalCategoryItems = categoryItems.length;
+                
+                const categoryProgress = document.querySelector(`#${category}-content`).previousElementSibling.querySelector('.category-progress');
+                const categoryCompleted = document.querySelector(`#${category}-content`).previousElementSibling.querySelector('.category-completed');
+                
+                if (categoryProgress && categoryCompleted) {
+                    const percentage = totalCategoryItems > 0 ? (completedCategoryItems / totalCategoryItems) * 100 : 0;
+                    categoryProgress.style.width = `${percentage}%`;
+                    categoryCompleted.textContent = completedCategoryItems;
+                }
+            });
+        }
+
+        function toggleCategory(categoryId) {
+            const content = document.getElementById(`${categoryId}-content`);
+            const button = event.target.closest('button');
+            const icon = button.querySelector('svg');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('expanded');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function markAllComplete() {
+            if (confirm('Are you sure you want to mark all items as complete?')) {
+                const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = true);
+                updateProgress();
+                showNotification('All items marked as complete!', 'success');
+            }
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = false);
+                updateProgress();
+                showNotification('Progress reset successfully', 'info');
+            }
+        }
+
+        function exportProgress() {
+            const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+            const progressData = {
+                completed: Array.from(checkboxes).filter(cb => cb.checked).length,
+                total: totalItems,
+                percentage: Math.round((completedItems / totalItems) * 100),
+                completedAt: new Date().toISOString(),
+                items: Array.from(checkboxes).map((cb, index) => ({
+                    id: index,
+                    completed: cb.checked,
+                    text: cb.closest('.checklist-item').querySelector('.item-text').textContent
+                }))
+            };
+
+            const dataStr = JSON.stringify(progressData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'jira-setup-progress.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showNotification('Progress report exported successfully!', 'success');
+        }
+
+        function saveProgress() {
+            const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+            const progress = Array.from(checkboxes).map(cb => cb.checked);
+            localStorage.setItem('jiraSetupProgress', JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('jiraSetupProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                const checkboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+                progress.forEach((isCompleted, index) => {
+                    if (checkboxes[index]) {
+                        checkboxes[index].checked = isCompleted;
+                    }
+                });
+            }
+        }
+
+        function showCompletionCelebration() {
+            const celebration = document.createElement('div');
+            celebration.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            celebration.innerHTML = `
+                <div class="bg-white rounded-2xl p-8 max-w-md mx-4 text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+                    <p class="text-gray-600 mb-6">You've completed the Jira setup checklist. Your instance is ready for production use!</p>
+                    <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                        Continue to Jira
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(celebration);
+
+            // Animate celebration
+            anime({
+                targets: celebration.querySelector('.bg-white'),
+                scale: [0.8, 1],
+                opacity: [0, 1],
+                duration: 500,
+                easing: 'easeOutBack'
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'warning' ? 'bg-yellow-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            anime({
+                targets: notification,
+                translateX: [300, 0],
+                opacity: [0, 1],
+                duration: 300,
+                easing: 'easeOutQuad'
+            });
+            
+            setTimeout(() => {
+                anime({
+                    targets: notification,
+                    translateX: [0, 300],
+                    opacity: [1, 0],
+                    duration: 300,
+                    easing: 'easeInQuad',
+                    complete: () => notification.remove()
+                });
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

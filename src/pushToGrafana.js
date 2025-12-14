@@ -14,8 +14,8 @@ export async function pushMetrics() {
       metrics,
       {
         headers: { 'Content-Type': 'text/plain' },
-        auth: { username: GRAFANA_CLOUD_PROM_USER, password: GRAFANA_CLOUD_API_KEY }
-      }
+        auth: { username: GRAFANA_CLOUD_PROM_USER, password: GRAFANA_CLOUD_API_KEY },
+      },
     );
   } catch (err) {
     console.error('Error pushing metrics to Grafana Cloud:', err.message);

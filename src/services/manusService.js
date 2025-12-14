@@ -35,7 +35,7 @@ class ManusService {
         creativity = 0.8,
         length = 'medium',
         audience = 'general',
-        tone = 'engaging'
+        tone = 'engaging',
       } = params;
 
       const payload = {
@@ -49,10 +49,10 @@ class ManusService {
           target_audience: audience,
           tone,
           enhance_readability: true,
-          optimize_engagement: true
+          optimize_engagement: true,
         },
         max_tokens: this.getMaxTokensForLength(length),
-        temperature: creativity
+        temperature: creativity,
       };
 
       logger.info('Generating content with Manus AI:', {
@@ -60,15 +60,15 @@ class ManusService {
         style,
         creativity,
         length,
-        promptLength: prompt.length
+        promptLength: prompt.length,
       });
 
       const response = await axios.post(`${this.baseURL}/generate`, payload, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        timeout: 90000 // 90 second timeout for creative generation
+        timeout: 90000, // 90 second timeout for creative generation
       });
 
       const result = response.data;
@@ -79,7 +79,7 @@ class ManusService {
         contentType,
         style,
         readabilityScore: result.metrics?.readability_score,
-        engagementScore: result.metrics?.engagement_score
+        engagementScore: result.metrics?.engagement_score,
       });
 
       return {
@@ -92,23 +92,23 @@ class ManusService {
           creativity,
           metrics: result.metrics || {},
           suggestions: result.suggestions || [],
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        provider: 'manus'
+        provider: 'manus',
       };
 
     } catch (error) {
       logger.error('Manus AI content generation failed:', {
         error: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
 
       return {
         success: false,
         error: error.message,
         details: error.response?.data,
-        provider: 'manus'
+        provider: 'manus',
       };
     }
   }
@@ -132,7 +132,7 @@ class ManusService {
         platforms = ['social'],
         optimizeFor = 'engagement',
         targetAudience = 'general',
-        preserveLength = false
+        preserveLength = false,
       } = params;
 
       const payload = {
@@ -145,23 +145,23 @@ class ManusService {
           preserve_original_length: preserveLength,
           enhance_readability: true,
           add_hooks: platforms.includes('social'),
-          improve_flow: true
-        }
+          improve_flow: true,
+        },
       };
 
       logger.info('Optimizing content with Manus AI:', {
         originalLength: content.length,
         platforms,
         optimizeFor,
-        preserveLength
+        preserveLength,
       });
 
       const response = await axios.post(`${this.baseURL}/optimize`, payload, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        timeout: 60000
+        timeout: 60000,
       });
 
       const result = response.data;
@@ -171,7 +171,7 @@ class ManusService {
         originalLength: content.length,
         optimizedLength: optimizedContent.length,
         improvementScore: result.metrics?.improvement_score,
-        changes: result.changes?.length || 0
+        changes: result.changes?.length || 0,
       });
 
       return {
@@ -184,23 +184,23 @@ class ManusService {
           metrics: result.metrics || {},
           changes: result.changes || [],
           suggestions: result.suggestions || [],
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        provider: 'manus'
+        provider: 'manus',
       };
 
     } catch (error) {
       logger.error('Manus AI content optimization failed:', {
         error: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
 
       return {
         success: false,
         error: error.message,
         details: error.response?.data,
-        provider: 'manus'
+        provider: 'manus',
       };
     }
   }
@@ -223,7 +223,7 @@ class ManusService {
         includeHashtags = true,
         includeEmojis = true,
         callToAction = true,
-        multiVariant = false
+        multiVariant = false,
       } = params;
 
       let prompt = `Create engaging social media content about: ${topic}\n\n`;
@@ -252,7 +252,7 @@ class ManusService {
         creativity: 0.9,
         length: 'short',
         audience: 'social_media_users',
-        tone: 'engaging'
+        tone: 'engaging',
       });
 
       if (result.success && multiVariant) {
@@ -266,7 +266,7 @@ class ManusService {
             creativity: 0.9,
             length: 'short',
             audience: 'social_media_users',
-            tone: 'engaging'
+            tone: 'engaging',
           });
           if (variant.success) {
             variants.push(variant.content);
@@ -282,7 +282,7 @@ class ManusService {
           hashtags: includeHashtags,
           emojis: includeEmojis,
           callToAction,
-          multiVariant
+          multiVariant,
         };
       }
 
@@ -292,7 +292,7 @@ class ManusService {
       return {
         success: false,
         error: error.message,
-        provider: 'manus'
+        provider: 'manus',
       };
     }
   }
@@ -314,7 +314,7 @@ class ManusService {
         audience = 'subscribers',
         tone = 'friendly',
         includePersonalization = true,
-        length = 'medium'
+        length = 'medium',
       } = params;
 
       let prompt = `Create compelling email content for: ${purpose}\n\n`;
@@ -343,7 +343,7 @@ class ManusService {
         creativity: 0.7,
         length,
         audience,
-        tone
+        tone,
       });
 
       if (result.success) {
@@ -351,7 +351,7 @@ class ManusService {
         result.metadata.emailFeatures = {
           personalization: includePersonalization,
           mobileOptimized: true,
-          deliverabilityOptimized: true
+          deliverabilityOptimized: true,
         };
       }
 
@@ -361,7 +361,7 @@ class ManusService {
       return {
         success: false,
         error: error.message,
-        provider: 'manus'
+        provider: 'manus',
       };
     }
   }
@@ -381,7 +381,7 @@ class ManusService {
         contentType: 'test',
         style: 'simple',
         creativity: 0.1,
-        length: 'short'
+        length: 'short',
       });
 
       return result.success;
@@ -410,28 +410,28 @@ class ManusService {
         content,
         analysis_type: 'comprehensive',
         purpose,
-        metrics: ['readability', 'engagement', 'sentiment', 'structure']
+        metrics: ['readability', 'engagement', 'sentiment', 'structure'],
       };
 
       const response = await axios.post(`${this.baseURL}/analyze`, payload, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        timeout: 30000
+        timeout: 30000,
       });
 
       return {
         success: true,
         analysis: response.data,
-        provider: 'manus'
+        provider: 'manus',
       };
     } catch (error) {
       logger.error('Manus AI content analysis failed:', error.message);
       return {
         success: false,
         error: error.message,
-        provider: 'manus'
+        provider: 'manus',
       };
     }
   }
@@ -446,7 +446,7 @@ class ManusService {
       'short': 500,
       'medium': 1500,
       'long': 3000,
-      'very_long': 5000
+      'very_long': 5000,
     };
 
     return lengthMap[length] || lengthMap['medium'];

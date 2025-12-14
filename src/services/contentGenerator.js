@@ -34,7 +34,7 @@ export async function generateContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7
+      temperature: options.temperature || 0.7,
     });
 
     // Create timeout promise with cleanup
@@ -79,7 +79,7 @@ export async function* streamContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7
+      temperature: options.temperature || 0.7,
     });
 
     for await (const chunk of textStream) {
@@ -94,5 +94,5 @@ export async function* streamContent(prompt, options = {}) {
 
 export default {
   generateContent,
-  streamContent
+  streamContent,
 };

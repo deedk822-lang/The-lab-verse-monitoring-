@@ -20,12 +20,12 @@ const httpDur = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
 });
 const httpTot = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total HTTP requests',
-  labelNames: ['method', 'route', 'status_code']
+  labelNames: ['method', 'route', 'status_code'],
 });
 register.registerMetric(httpDur);
 register.registerMetric(httpTot);
@@ -34,7 +34,7 @@ const createRateLimiter = (win, max) => rateLimit({
   store: new RedisStore({ sendCommand: (...a) => redis.call(...a) }),
   windowMs: win,
   max,
-  standardHeaders: true
+  standardHeaders: true,
 });
 
 async function createApp() {

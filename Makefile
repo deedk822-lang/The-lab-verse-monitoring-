@@ -1,3 +1,102 @@
+<<<<<<< HEAD
+# AI Content Creation Suite Makefile
+
+.PHONY: help install start dev test build clean docker-build docker-run docker-stop setup
+
+# Default target
+help:
+	@echo "AI Content Creation Suite - Available Commands:"
+	@echo ""
+	@echo "  install     - Install dependencies"
+	@echo "  setup       - Run initial setup"
+	@echo "  start       - Start production server"
+	@echo "  dev         - Start development server with nodemon"
+	@echo "  test        - Run test suite"
+	@echo "  build       - Build for production"
+	@echo "  clean       - Clean build artifacts"
+	@echo ""
+	@echo "Docker Commands:"
+	@echo "  docker-build - Build Docker image"
+	@echo "  docker-run   - Run Docker container"
+	@echo "  docker-stop  - Stop Docker container"
+	@echo "  docker-up    - Start all services with docker-compose"
+	@echo "  docker-down  - Stop all services"
+	@echo ""
+	@echo "Development:"
+	@echo "  install-localai - Install LocalAI"
+	@echo "  health-check    - Run health check"
+
+# Install dependencies
+install:
+	npm install
+
+# Run setup script
+setup:
+	node scripts/setup.js
+
+# Start production server
+start:
+	npm start
+
+# Start development server
+dev:
+	npm run dev
+
+# Run tests
+test:
+	npm test
+
+# Build for production
+build:
+	npm run build
+
+# Clean build artifacts
+clean:
+	rm -rf node_modules
+	rm -rf logs
+	rm -rf uploads
+	rm -rf .env
+
+# Docker commands
+docker-build:
+	docker build -t ai-content-suite .
+
+docker-run:
+	docker run -p 3000:3000 --env-file .env ai-content-suite
+
+docker-stop:
+	docker stop $$(docker ps -q --filter ancestor=ai-content-suite)
+
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+
+# Install LocalAI
+install-localai:
+	chmod +x scripts/install-localai.sh
+	./scripts/install-localai.sh
+
+# Health check
+health-check:
+	node healthcheck.js
+
+# Development helpers
+logs:
+	docker-compose logs -f
+
+restart:
+	docker-compose restart
+
+# Full setup for new environment
+full-setup: install setup
+	@echo "Full setup completed!"
+	@echo "Next steps:"
+	@echo "1. Configure your API keys in .env file"
+	@echo "2. Run 'make start' to start the server"
+	@echo "3. Open http://localhost:3000 in your browser"
+=======
 # Makefile — LabVerse Monitoring Stack + Kimi Instruct (Enterprise Edition)
 # Enhanced with production hardening, safety nets, and rival-proof features
 
@@ -43,7 +142,7 @@ define safety_check
 	@if [ "$(FORCE)" != "true" ]; then \
 		read -p "$1 Continue? [y/N] " -n 1 -r; \
 		echo; \
-		if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
+		if [[ ! $REPLY =~ ^[Yy]$$ ]]; then \
 			echo "Aborted."; \
 			exit 1; \
 		fi; \
@@ -255,50 +354,4 @@ help:
 info:
 	$(call echoblue,"ℹ️ System Info")
 	@$(COMPOSE) $(COMPOSE_FILES) ps
-
-
-# === Security Automation (Moonshot AI Integration) ===
-secure: ## 🔒 Harden a single file (usage: make secure FILE=path/to/file)
-	$(call echoblue,"🔒 Security hardening with Moonshot AI...")
-	@if [ -z "$(FILE)" ]; then $(call echoerror,"FILE parameter required"); exit 1; fi
-	@python3 scripts/security/secure_file.py "$(FILE)"
-	$(call echogreen,"✅ File hardened")
-
-secure-bulk: ## 🔒 Harden all security-critical files in repository
-	$(call echoblue,"🔒 Bulk security hardening...")
-	@python3 scripts/security/bulk_harden.py . --workers 8
-	$(call echogreen,"✅ Bulk hardening complete")
-
-secure-bulk-dry: ## 🔍 Dry-run bulk hardening (see what would be changed)
-	$(call echoblue,"🔍 Dry-run bulk hardening...")
-	@python3 scripts/security/bulk_harden.py . --dry-run
-
-secure-pr: ## 🔒 Harden changed files in current branch (for PR)
-	$(call echoblue,"🔒 PR security hardening...")
-	@bash scripts/security/harden_pr.sh
-	$(call echogreen,"✅ PR hardening complete")
-
-generate-artifact: ## 🔧 Generate security artifact (usage: make generate-artifact TYPE=trivy-scan)
-	$(call echoblue,"🔧 Generating security artifact...")
-	@if [ -z "$(TYPE)" ]; then $(call echoerror,"TYPE parameter required"); exit 1; fi
-	@python3 scripts/security/generate_artifact.py "$(TYPE)"
-	$(call echogreen,"✅ Artifact generated")
-
-generate-all-artifacts: ## 🔧 Generate all security artifacts
-	$(call echoblue,"🔧 Generating all security artifacts...")
-	@python3 scripts/security/generate_artifact.py --all
-	$(call echogreen,"✅ All artifacts generated")
-
-list-artifacts: ## 📋 List available security artifacts
-	$(call echoblue,"📋 Available security artifacts:")
-	@python3 scripts/security/generate_artifact.py --list
-
-security-setup: ## 🛡️ Complete security setup (generate artifacts + harden files)
-	$(call echoblue,"🛡️ Running complete security setup...")
-	@$(MAKE) generate-all-artifacts
-	@$(MAKE) secure-bulk-dry
-	$(call echogreen,"✅ Security setup complete")
-	$(call echoyellow,"Review the changes and run 'make secure-bulk' to apply hardening")
-
-.PHONY: secure secure-bulk secure-bulk-dry secure-pr generate-artifact generate-all-artifacts list-artifacts security-setup
-
+>>>>>>> origin/feat/ai-connectivity-layer

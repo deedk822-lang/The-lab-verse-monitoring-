@@ -1,9 +1,6 @@
-# =============================================================================
-#   The Lab Verse Monitoring Stack - Git Ignore Configuration
-# =============================================================================
-
 # ======================================================================
-#   🔐  Sensitive Data - NEVER commit credentials
+#   🔐  Sensitive data – make sure nothing with credentials ever gets
+#        checked in.  A rival would never risk a leaked key!
 # ======================================================================
 
 # Generic secret files
@@ -26,8 +23,7 @@
 .env.*.local
 .env.local
 .envrc
-
-# Keep example for newcomers (explicitly allow)
+# Keep an example for newcomers, but never the real values
 !.env.example
 
 # Cloud provider credentials
@@ -35,40 +31,41 @@
 .gcloud/
 .kube/
 .terraform/
+# (If you *do* need a local copy, store it outside the repo!)
 
-# NPM / Yarn / PNPM auth tokens
+# NPM / Yarn / PNPM auth tokens (never commit)
 .npmrc
 .yarnrc
 .yarnrc.yml
 .pnpmrc
 
-# ======================================================================
-#   📦  Dependencies / Packages
-# ======================================================================
+# Other credential stores
+# .ssh/  # <– usually not part of a repo, but keep here if ever added
+# .git-credentials  # Git credential helper – keep out of VCS
 
+# ----------------------------------------------------------------------
+#   🤖  LocalAI / LLM Models – large files that should not be committed
+# ----------------------------------------------------------------------
+localai-data/
+models/*.gguf
+models/*.bin
+models/*.safetensors
+# Keep model configs but not downloaded models
+!models/*.yaml
+!models/*.json
+
+# ----------------------------------------------------------------------
+#   📦  Dependencies / Packages – generated code you never edit
+# ----------------------------------------------------------------------
 node_modules/
 vendor/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Python virtual environments
-venv/
-ENV/
-env/
-.venv/
-__pypackages__/
-
 # Ruby gems
 /.bundle
-
 # Go module cache
 /pkg/
-
 # Rust build folder
 /target/
-
 # Java / Gradle / Maven artifacts
 /gradle
 /build/
@@ -78,22 +75,24 @@ target/
 *.jar
 *.war
 *.ear
-
+# Python virtual environments (optional – if you keep them local)
+venv/
+ENV/
+env/
+.venv/
+__pypackages__/
 # Composer / PHP vendor folder
 /vendor/
-
 # .NET / C# binaries
 /bin/
 /obj/
-
 # Elixir / Erlang
 /_build/
 /deps/
 
-# ======================================================================
-#   🛠️  Build Artifacts
-# ======================================================================
-
+# ----------------------------------------------------------------------
+#   🛠️  Build artefacts – everything that can be recreated
+# ----------------------------------------------------------------------
 dist/
 build/
 *.tar.gz
@@ -110,80 +109,200 @@ build/
 *.obj
 *.a
 *.lib
+*.pyc
+*.pyo
+*.pyd
+*.class
+*.apk
+*.ipa
+*.app
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.msi
+*.pdb
+*.sym
+*.pch
+*.idb
+*.sdf
+*.suo
+*.cache
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.old
+*.orig
 
-# ======================================================================
-#   📊  Test & Coverage Artifacts
-# ======================================================================
-
+# ----------------------------------------------------------------------
+#   📊  Test & coverage artefacts – can be regenerated locally
+# ----------------------------------------------------------------------
 coverage/
 .nyc_output/
 *.lcov
+*.codecov.yml
+.jest/
+.jest-cache/
+.mocha/
+# Python
 htmlcov/
 .coverage
 .coverage.*
 pytest_cache/
-.jest/
-.jest-cache/
+# Go
+*.out
+*.test
+# .NET
+TestResult.xml
+TestResults/
+*.trx
+# Java
+surefire-reports/
+jacoco/
+# Cypress / Playwright
+cypress/screenshots/
+cypress/videos/
+playwright-report/
 
-# ======================================================================
-#   📦  Editor / IDE / OS Files
-# ======================================================================
-
+# ----------------------------------------------------------------------
+#   📦  Editor / IDE / OS cruft – noisy files that add no value
+# ----------------------------------------------------------------------
 # OS generated
 .DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+Icon?
 ._*
 .Spotlight-V100
 .Trashes
+# Windows
 $RECYCLE.BIN/
+# Linux
+*~
+.#*
+.#*.
+# macOS
+.AppleDouble/
+.LSOverride
 
 # IDEs / Editors
 .vscode/
 .idea/
 *.sublime-workspace
 *.sublime-project
+*.user
+*.sw?
+*.suo
+*.ncb
+*.opt
+*.plg
+*.tmp
+*.orig
+*.rej
+*.sbr
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.tlog
+*.vcxproj.*
+# JetBrains
+*.iml
+*.iws
+*.ipr
+# Vim/Neovim
 *.swp
 *.swo
-*.iml
+*.vim
+# Emacs
+*~
+\#*\#
+/\#*\#
+# Eclipse / Android Studio
+.project
+.classpath
+.csettings
+.settings/
+bin/
+gen/
+out/
+.gradle/
+# Xcode / iOS / macOS
+*.xcworkspace
+*.xcuserstate
+*.xcodeproj/*
+DerivedData/
+xcuserdata/
+*.moved-aside
+*.xcuserdatad
+*.hmap
+*.ipa
+*.dSYM/
+*.xctest/
+# Android
+*.apk
+*.aar
+*.ap_
+*.dex
+*.class
+*.jar
+*.keystore
 
-# ======================================================================
-#   🐳  Docker & Kubernetes
-# ======================================================================
+# === Add‑ons (comment‑out if not used) ===
 
+# Next.js / React
+.next/
+out/
+.vercel/
+# SvelteKit
+.svelte-kit/
+# Nuxt.js
+.nuxt/
+.dist/
+# Angular
+.angular/
+.angular/cache/
+# Nx workspace
+/nx/
+# Yarn Berry (Berry-specific caches)
+.yarn/cache/
+.yarn/unplugged/
+.yarn/install-state.gz
+.yarn/build-state.yml
+.yarn/patches/
+# PNPM
+.pnpm-store/
+# Deno
+.deno/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
 # Docker
 .docker/
+Dockerfile.*
 docker-compose.override.yml
-
 # Kubernetes / Helm
 helm/
 *.tgz
 charts/
+# VS Code Server
+.vscode-server/
+# Jupyter notebooks
+.ipynb_checkpoints/
 
-# ======================================================================
-#   📝  Logs & Temporary Files
-# ======================================================================
-
-*.log
-*.tmp
-*.temp
-*.bak
-*.old
-*.orig
-logs/
-*.pid
-*.seed
-
-# ======================================================================
-#   🔒  Secrets Directory
-# ======================================================================
-
+# Secrets directory for Docker
 secrets/
 
-# ======================================================================
-#   💾  Backup Files
-# ======================================================================
+# Generated workflow artifacts
+*-state.json
+*-results.json
+g20-workflow-verified-state.json
 
-*.backup.*
-backup/
+# Generated validation reports
+env-validation-report.json

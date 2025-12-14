@@ -1,115 +1,89 @@
 // File: src/api/generate-article.ts
-// This is the Vercel App's "Intelligent Router" function with the GLM-4 Fallback.
+// Simplified article generation using GLM-4 API directly
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Assume these are set as environment variables in Vercel
-const CDATA_API_ENDPOINT = process.env.CDATA_CONNECT_API;
-const CDATA_API_KEY = process.env.CDATA_API_KEY;
-const GLM4_API_ENDPOINT = 'https://api.glm-4.com/v1/chat/completions'; // Placeholder URL
+const GLM4_API_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const GLM4_API_KEY = process.env.GLM4_API_KEY;
 
-// Helper function to call the primary model via CData Connect
-async function callPrimaryModel(prompt: string, primaryModel: string) {
-    if (!CDATA_API_ENDPOINT || !CDATA_API_KEY) {
-        throw new Error("CData API configuration missing.");
-    }
-
-    const query = `SELECT content FROM ${primaryModel} WHERE prompt = '${prompt.replace(/'/g, "''")}'`;
-    
-    const response = await fetch(CDATA_API_ENDPOINT, {
-        method: 'POST',
-        headers: { 
-            'Authorization': `Bearer ${CDATA_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query })
-    });
-
-    if (!response.ok) {
-        // Throwing an error here triggers the fallback in the catch block
-        const errorText = await response.text();
-        throw new Error(`Primary model (${primaryModel}) failed via CData: ${errorText}`);
-    }
-    
-    const result = await response.json();
-    // Assuming CData returns a structured result with data array
-    if (result.data && result.data.length > 0) {
-        return { content: result.data[0].content, source: primaryModel };
-    }
-    
-    throw new Error(`Primary model (${primaryModel}) returned empty content.`);
-}
-
-// Helper function for the GLM-4 direct fallback
-async function callGLM4Fallback(prompt: string) {
+// Helper function to call GLM-4 API
+async function callGLM4(prompt: string, model: string = 'glm-4-plus') {
     if (!GLM4_API_KEY) {
-        throw new Error("GLM-4 Fallback API key missing.");
+        throw new Error("GLM-4 API key missing. Please set GLM4_API_KEY environment variable.");
     }
 
-    console.warn(`Primary model failed. Initiating fallback to GLM-4.`);
+    console.log(`Calling GLM-4 model: ${model}`);
     
-    // Direct GLM-4 API call (using a standard OpenAI-like payload structure)
-    const glm4Response = await fetch(GLM4_API_ENDPOINT, {
+    const response = await fetch(GLM4_API_ENDPOINT, {
         method: 'POST',
         headers: { 
             'Authorization': `Bearer ${GLM4_API_KEY}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-            model: 'glm-4',
-            messages: [{ role: 'user', content: prompt }]
+            model: model,
+            messages: [
+                { 
+                    role: 'user', 
+                    content: prompt 
+                }
+            ],
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 2000
         })
     });
 
-    if (!glm4Response.ok) {
-        const errorText = await glm4Response.text();
-        throw new Error(`FATAL: Primary and Fallback (GLM-4) models both failed. Error: ${errorText}`);
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GLM-4 API call failed (${response.status}): ${errorText}`);
     }
 
-    const glm4Result = await glm4Response.json();
-    // Assuming the response structure is standard chat completion
-    const content = glm4Result.choices[0].message.content;
+    const result = await response.json();
     
-    return { content: content, source: 'GLM-4 (Fallback)' };
+    // Extract content from response
+    if (result.choices && result.choices.length > 0) {
+        const content = result.choices[0].message.content;
+        return { 
+            content: content, 
+            source: model,
+            usage: result.usage || null
+        };
+    }
+    
+    throw new Error('GLM-4 returned empty content.');
 }
-
 
 export default async function generateArticle(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return res.status(405).send('Method Not Allowed');
+        return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { prompt, primaryModel = 'mistral' } = req.body;
+    const { prompt, model = 'glm-4-plus' } = req.body;
 
     if (!prompt) {
         return res.status(400).json({ error: 'Missing required field: prompt' });
     }
 
     try {
-        // 1. PRIMARY ATTEMPT: Use CData Connect to call the preferred model
-        const result = await callPrimaryModel(prompt, primaryModel);
+        // Call GLM-4 API
+        const result = await callGLM4(prompt, model);
         
-        // 2. SUCCESS: Return the result
-        return res.status(200).json(result);
+        // Return successful result
+        return res.status(200).json({
+            success: true,
+            ...result,
+            timestamp: new Date().toISOString()
+        });
 
-    } catch (error) {
-        console.error("Primary attempt failed:", error);
+    } catch (error: any) {
+        console.error("Content generation failed:", error);
         
-        try {
-            // 3. FALLBACK: If the primary attempt fails, call GLM-4 directly.
-            const fallbackResult = await callGLM4Fallback(prompt);
-            
-            // 4. FALLBACK SUCCESS: Return the fallback result
-            return res.status(200).json(fallbackResult);
-
-        } catch (fallbackError) {
-            // 5. FATAL FAILURE: If even the fallback fails
-            console.error("Fatal error: Fallback also failed.", fallbackError);
-            return res.status(500).json({ 
-                error: 'Content generation failed after primary and fallback attempts.',
-                details: fallbackError.message
-            });
-        }
+        return res.status(500).json({ 
+            success: false,
+            error: 'Content generation failed',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 }

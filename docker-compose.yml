@@ -45,6 +45,42 @@ services:
     networks:
       - lab-verse-network
 
+  anomaly-detection:
+    build:
+      context: .
+      dockerfile: src/anomaly_detection/Dockerfile
+    container_name: anomaly-detection-service
+    ports:
+      - "8085:8085"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - lab-verse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ayrshare:
+    build:
+      context: ./ayrshare
+      dockerfile: Dockerfile
+    container_name: ayrshare-service
+    ports:
+      - "8086:8086"
+    networks:
+      - lab-verse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 networks:
   lab-verse-network:
     driver: bridge

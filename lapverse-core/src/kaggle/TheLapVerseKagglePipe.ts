@@ -1,4 +1,5 @@
 import { Queue, Worker } from 'bullmq';
+<<<<<<< HEAD
 import { KaggleService } from './KaggleService';
 
 export class TheLapVerseKagglePipe {
@@ -8,6 +9,13 @@ export class TheLapVerseKagglePipe {
   constructor(private deps: any){
     this.service = new KaggleService();
   }
+=======
+
+export class TheLapVerseKagglePipe {
+  private queue = new Queue('lapverse-kaggle');
+
+  constructor(private deps: any){}
+>>>>>>> origin/feat/ai-connectivity-layer
 
   start(){
     new Worker('lapverse-kaggle', async job=>{
@@ -26,10 +34,18 @@ export class TheLapVerseKagglePipe {
     return this.queue.add('sync', { compId }, { jobId: `sync:${compId}` });
   }
 
+<<<<<<< HEAD
   private async sync(compId: string) {
     const ds = await this.service.syncCompetitionData(compId);
     await this.deps.cost.tagResource(ds, { costCenter: 'lapverse-kaggle' });
     await this.deps.slo.recordApiCall('kaggle', 1);
+=======
+  private async sync(compId: string){
+    // placeholder Kaggle data sync
+    const ds = { datasetId: `ds-${compId}`, rows: 1000 };
+    await this.deps.cost?.tagResource?.(ds, { costCenter: 'lapverse-kaggle' });
+    await this.deps.slo?.recordApiCall?.('kaggle', 1);
+>>>>>>> origin/feat/ai-connectivity-layer
     return ds;
   }
 

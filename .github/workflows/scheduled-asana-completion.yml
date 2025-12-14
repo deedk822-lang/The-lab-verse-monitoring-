@@ -1,0 +1,115 @@
+# File: .github/workflows/scheduled-asana-cleanup.yml
+name: Scheduled Asana Completion
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (true/false)'
+        required: true
+        default: 'true'
+        type: boolean
+      completion_criteria:
+        description: 'Which tasks to complete'
+        required: true
+        default: 'overdue_tasks'
+        type: choice
+        options:
+          - overdue_tasks
+          - tagged_ready
+          - low_priority
+          - old_completed_projects
+      send_notifications:
+        description: 'Send Slack/Teams notifications (true/false)'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  run-completion:
+    runs-on: ubuntu-latest
+    outputs:
+      completed-count: ${{ steps.run-script.outputs.completed-count }}
+      skipped-count: ${{ steps.run-script.outputs.skipped-count }}
+      total-processed: ${{ steps.run-script.outputs.total-processed }}
+      criteria: ${{ inputs.completion_criteria || 'overdue_tasks' }}
+      dry-run: ${{ inputs.dry_run || 'true' }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Python Dependencies
+        run: pip install asana python-dateutil
+
+      - name: Run Asana Completion Script
+        id: run-script
+        env:
+          ASANA_PAT: ${{ secrets.ASANA_PAT }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          COMPLETION_CRITERIA: ${{ inputs.completion_criteria }}
+        run: python scripts/scheduled_completion.py
+
+      - name: Upload Results Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: completion-results
+          path: completion_results.json
+
+      - name: Generate Job Summary
+        run: |
+          COMPLETED=$(jq -r '.summary.completed' completion_results.json)
+          SKIPPED=$(jq -r '.summary.skipped' completion_results.json)
+          TOTAL=$(jq -r '.summary.total' completion_results.json)
+          CRITERIA=$(jq -r '.criteria' completion_results.json)
+          DRY_RUN_MODE=$(jq -r '.dry_run' completion_results.json)
+          
+          ACTION_TEXT="Completed"
+          if [[ "$DRY_RUN_MODE" == "true" ]]; then
+            ACTION_TEXT="Would Complete"
+          fi
+
+          echo "## 📊 Asana Completion Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Criteria:** \`$CRITERIA\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** $(if [[ "$DRY_RUN_MODE" == "true" ]]; then echo 'Dry Run'; else echo 'Live Run'; fi)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **$ACTION_TEXT:** $COMPLETED tasks" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ **Skipped:** $SKIPPED tasks" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 **Total Processed:** $TOTAL tasks" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    needs: run-completion
+    if: always() && (github.event.inputs.send_notifications == 'true' || github.event_name == 'schedule')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        if: secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "🤖 Asana Scheduled Completion Report",
+              "blocks": [
+                { "type": "header", "text": { "type": "plain_text", "text": "📊 Asana Completion Report" } },
+                { "type": "section", "fields": [
+                    { "type": "mrkdwn", "text": "*Criteria:*\n`${{ needs.run-completion.outputs.criteria }}`" },
+                    { "type": "mrkdwn", "text": "*Mode:*\n${{ needs.run-completion.outputs.dry-run == 'true' ? 'Dry Run' : 'Live Run' }}" }
+                  ]
+                },
+                { "type": "section", "fields": [
+                    { "type": "mrkdwn", "text": "*✅ ${{ needs.run-completion.outputs.dry-run == 'true' ? 'Would Complete' : 'Completed' }}:*\n${{ needs.run-completion.outputs.completed-count }} tasks" },
+                    { "type": "mrkdwn", "text": "*⏭️ Skipped:*\n${{ needs.run-completion.outputs.skipped-count }} tasks" }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

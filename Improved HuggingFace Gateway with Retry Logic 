@@ -1,0 +1,334 @@
+#!/usr/bin/env node
+/**
+ * Enhanced MCP stdio server for HuggingFace Hub & Inference API
+ * - Added retry logic with exponential backoff
+ * - Better error messages and logging
+ * - Request validation
+ * - Health checks
+ */
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Configuration
+const CONFIG = {
+  gatewayUrl: process.env.GATEWAY_URL || 
+              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+  gatewayKey: process.env.GATEWAY_KEY || process.env.HF_API_TOKEN,
+  maxRetries: 3,
+  retryDelay: 1000, // ms
+  timeout: 30000 // ms
+};
+
+// Validate configuration
+if (!CONFIG.gatewayKey) {
+  console.error('❌ Missing GATEWAY_KEY or HF_API_TOKEN environment variable');
+  console.error('💡 Set one of these in your .env file');
+  process.exit(1);
+}
+
+console.error(`🔧 Configuration loaded:`);
+console.error(`   Gateway URL: ${CONFIG.gatewayUrl}`);
+console.error(`   Token: ${CONFIG.gatewayKey.substring(0, 8)}...`);
+
+// ==================== Utility Functions ====================
+
+/**
+ * Retry a function with exponential backoff
+ */
+async function retryWithBackoff(fn, maxRetries = CONFIG.maxRetries) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on auth errors (401, 403) or client errors (400)
+      if (error.message.includes('401') || 
+          error.message.includes('403') || 
+          error.message.includes('400')) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = CONFIG.retryDelay * Math.pow(2, attempt);
+      console.error(`⚠️ Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
+ * Make authenticated request to gateway
+ */
+async function callGateway(toolName, args) {
+  return retryWithBackoff(async () => {
+    const body = {
+      model: 'hf-mcp',
+      messages: [{
+        role: 'user',
+        content: `${toolName} ${JSON.stringify(args)}`
+      }],
+      stream: false
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+
+    try {
+      const response = await fetch(`${CONFIG.gatewayUrl}/mcp/huggingface/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.gatewayKey}`
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gateway ${response.status}: ${errorText}`);
+      }
+
+      const json = await response.json();
+      return json.choices?.[0]?.message?.content || JSON.stringify(json);
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timeout after ${CONFIG.timeout}ms`);
+      }
+      throw error;
+    }
+  });
+}
+
+/**
+ * Validate tool arguments against schema
+ */
+function validateArgs(toolName, args, requiredFields = []) {
+  for (const field of requiredFields) {
+    if (!(field in args)) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
+  return true;
+}
+
+// ==================== MCP Server Setup ====================
+
+const server = new Server(
+  {
+    name: 'huggingface-gateway-mcp',
+    version: '2.0.0'
+  },
+  {
+    capabilities: { 
+      tools: {},
+      logging: {}
+    }
+  }
+);
+
+// Tool definitions with enhanced descriptions
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
+    {
+      name: 'hf_list_models',
+      description: 'Search HuggingFace models by keyword. Returns model metadata including downloads, likes, and tags.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          search: { 
+            type: 'string', 
+            description: 'Search query (e.g., "gpt2", "bert", "stable-diffusion")',
+            default: ''
+          },
+          limit: { 
+            type: 'number', 
+            description: 'Maximum number of results (1-100)',
+            default: 10,
+            minimum: 1,
+            maximum: 100
+          }
+        }
+      }
+    },
+    {
+      name: 'hf_model_info',
+      description: 'Get detailed information about a specific model including architecture, training data, and performance metrics.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { 
+            type: 'string', 
+            description: 'Model ID (e.g., "gpt2", "facebook/bart-large-cnn")',
+            pattern: '^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?$'
+          }
+        },
+        required: ['model']
+      }
+    },
+    {
+      name: 'hf_list_datasets',
+      description: 'Search HuggingFace datasets for training and fine-tuning.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          search: { 
+            type: 'string', 
+            description: 'Search query (e.g., "squad", "imagenet")',
+            default: ''
+          },
+          limit: { 
+            type: 'number', 
+            default: 10,
+            minimum: 1,
+            maximum: 100
+          }
+        }
+      }
+    },
+    {
+      name: 'hf_list_spaces',
+      description: 'Search HuggingFace Spaces - interactive ML demos and applications.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          search: { 
+            type: 'string', 
+            description: 'Search query (e.g., "text generation", "image classification")',
+            default: ''
+          },
+          limit: { 
+            type: 'number', 
+            default: 10,
+            minimum: 1,
+            maximum: 100
+          }
+        }
+      }
+    },
+    {
+      name: 'hf_run_inference',
+      description: 'Run serverless inference on any HuggingFace model. Supports text generation, classification, translation, and more.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { 
+            type: 'string', 
+            description: 'Model ID to use for inference'
+          },
+          inputs: { 
+            type: 'string', 
+            description: 'Input text or data for the model'
+          },
+          parameters: { 
+            type: 'object',
+            description: 'Model-specific parameters (e.g., max_length, temperature, top_p)',
+            properties: {
+              max_length: { type: 'number', description: 'Maximum length of generated text' },
+              temperature: { type: 'number', description: 'Sampling temperature (0.0-2.0)' },
+              top_p: { type: 'number', description: 'Nucleus sampling threshold' },
+              top_k: { type: 'number', description: 'Top-k sampling parameter' }
+            }
+          }
+        },
+        required: ['model', 'inputs']
+      }
+    }
+  ]
+}));
+
+// Tool execution handler with validation
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  
+  console.error(`📞 Tool call: ${name}`, JSON.stringify(args, null, 2));
+
+  try {
+    // Validate required fields
+    switch (name) {
+      case 'hf_model_info':
+        validateArgs(name, args, ['model']);
+        break;
+      case 'hf_run_inference':
+        validateArgs(name, args, ['model', 'inputs']);
+        break;
+    }
+
+    // Execute tool
+    const text = await callGateway(name, args);
+    
+    console.error(`✅ Tool ${name} completed successfully`);
+
+    return {
+      content: [{ 
+        type: 'text', 
+        text 
+      }]
+    };
+
+  } catch (error) {
+    console.error(`❌ Tool execution failed: ${error.message}`);
+    
+    // Provide helpful error context
+    let errorMessage = `Error executing ${name}: ${error.message}`;
+    
+    if (error.message.includes('401')) {
+      errorMessage += '\n💡 Check your GATEWAY_KEY or HF_API_TOKEN';
+    } else if (error.message.includes('timeout')) {
+      errorMessage += '\n💡 Try again or check network connectivity';
+    } else if (error.message.includes('404')) {
+      errorMessage += '\n💡 The model/dataset/space may not exist';
+    }
+    
+    return {
+      content: [{
+        type: 'text',
+        text: errorMessage
+      }],
+      isError: true
+    };
+  }
+});
+
+// ==================== Server Startup ====================
+
+async function main() {
+  try {
+    // Test gateway connectivity
+    console.error('🔍 Testing gateway connection...');
+    await callGateway('hf_list_models', { search: 'gpt2', limit: 1 });
+    console.error('✅ Gateway connection successful');
+    
+    // Start MCP server
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('✅ HuggingFace MCP Gateway started');
+    console.error('📡 Listening for MCP requests...');
+    
+  } catch (error) {
+    console.error('💥 Startup failed:', error.message);
+    console.error('');
+    console.error('Troubleshooting steps:');
+    console.error('1. Verify GATEWAY_URL is accessible');
+    console.error('2. Check GATEWAY_KEY or HF_API_TOKEN is valid');
+    console.error('3. Ensure API endpoint /mcp/huggingface/messages exists');
+    console.error('4. Check network connectivity');
+    process.exit(1);
+  }
+}
+
+main();

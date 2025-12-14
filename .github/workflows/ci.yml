@@ -114,16 +114,7 @@ jobs:
       - name: Validate YAML Workflow Files
         run: |
           echo "🔍 Validating GitHub workflow YAML files..."
-          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
-            if [ -f "$file" ]; then
-              echo "Checking: $file"
-              if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
-                echo "❌ Invalid YAML: $file"
-                exit 1
-              fi
-            fi
-          done
-          echo "✅ All workflow files have valid YAML syntax"
+          python3 scripts/validate_workflows.py
       - name: Run ESLint
         run: |
           echo "🔍 Running ESLint..."

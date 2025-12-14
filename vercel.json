@@ -1,18 +1,32 @@
 {
+  "version": 2,
   "builds": [
     {
-      "src": "apps/web/package.json",
-      "use": "@vercel/next",
+      "src": "src/api/generate-article.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
       "config": {
-        "installCommand": "pnpm install",
-        "buildCommand": "pnpm turbo run build --filter=web"
+        "distDir": "public"
       }
     }
   ],
-  "functions": {
-    "pages/api/gateway/v1/chat/completions.js": {
-      "runtime": "edge"
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
-  },
-  "regions": ["iad1", "fra1", "hnd1"]
+  ],
+  "env": {
+    "CDATA_CONNECT_API": "disabled",
+    "CDATA_API_KEY": "disabled",
+    "AIRTABLE_BASE_ID": "@airtable_base_id",
+    "AIRTABLE_API_KEY": "@airtable_api_key"
+  }
 }

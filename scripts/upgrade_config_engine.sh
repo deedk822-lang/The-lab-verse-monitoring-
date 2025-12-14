@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: Optional[str] = None
     COHERE_API_KEY: Optional[str] = None
     HUGGINGFACE_API_KEY: Optional[str] = None
-    
+
     # EXTERNAL TOOLS
     JIRA_API_TOKEN: Optional[str] = None
     JIRA_USER_EMAIL: Optional[str] = None

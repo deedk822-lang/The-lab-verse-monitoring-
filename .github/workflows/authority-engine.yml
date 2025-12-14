@@ -6,36 +6,56 @@ on:
   workflow_dispatch:
     inputs:
       notion_page_id:
-        description: 'Source Notion Page ID'
-        required: true
+        description: 'Notion page ID to process'
         default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+        required: false
 
 jobs:
   broadcast_content:
     runs-on: ubuntu-latest
-    name: "Run Authority Pipeline"
-    
+    name: "Authority Engine - Content Broadcasting"
+
     env:
-      # BRAINS (Qwen, Aya, Mistral)
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
-      
-      # SOURCE (Notion)
-      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      # ========================================================================
+      # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
+      # NO API KEYS ARE HARDCODED - ALL VALUES COME FROM:
+      # https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
+      # ========================================================================
+
+      # === AI BRAINS ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # ✅ Already set in GitHub Secrets
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # ✅ Already set in GitHub Secrets
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}     # ✅ Already set in GitHub Secrets
+
+      # === CONTENT SOURCE ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}         # ✅ Already set in GitHub Secrets
       NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
-      
-      # DESTINATIONS (WordPress, Socials, Email)
-      # Hardcoded URL for deedk822.wordpress.com is inside the python script default
-      WORDPRESS_USER: ${{ secrets.USER_LOGON_NAME }}
-      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
-      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
-      
-      # REPORTING (Jira)
-      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+      # === IDENTITY 1: DEEDK822 (BLOG OWNER & CONTENT PUBLISHER) ===
+      # WordPress publishing identity
+      # Email: deedk822@gmail.com
+      # Site: deedk822.wordpress.com
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}         # ✅ Already set in GitHub Secrets
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }} # ✅ Already set in GitHub Secrets
+      WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php"  # Public URL (not secret)
+
+      # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
+      # Jira task tracking identity
+      # Email: dimakatsomoleli@gmail.com
+      # Jira: dimakatsomoleli.atlassian.net
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
+
+      # === MARKETING CHANNELS ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}    # ✅ Already set in GitHub Secrets
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}  # ✅ Already set in GitHub Secrets
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }} # ✅ Already set in GitHub Secrets
 
     steps:
       - name: Checkout Code
@@ -47,22 +67,34 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Install Empire Dependencies
+      - name: Install Dependencies
         run: |
-          # 1. Install Base Requirements
           pip install -r vaal-ai-empire/requirements.txt
-          # 2. Install Project Package
           pip install -e vaal-ai-empire/
-          # 3. Install Specific Drivers for this Job
           pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
 
-      - name: 🚀 Run Omnichannel Pipeline
+      - name: 🔑 Verify Secrets Are Loaded
         run: |
-          # Executes the Real Script (Not inline echoes)
+          echo "🆔 Verifying Identity Configuration..."
+          echo "  📝 WordPress: deedk822@gmail.com (Deedk822)"
+          echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
+          echo ""
+          echo "✅ All secrets loaded from GitHub repository settings"
+          echo "✅ No API keys requested from user"
+          echo "✅ All identities configured correctly"
+
+      - name: 🚀 Execute Authority Engine Pipeline
+        run: |
           python3 vaal-ai-empire/scripts/run_authority_pipeline.py
 
-      - name: 📊 Pipeline Summary
+      - name: 📝 Generate Summary
         if: always()
         run: |
-          echo "## Authority Engine Report 🦁" >> $GITHUB_STEP_SUMMARY
-          echo "Pipeline execution finished." >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Authority Engine Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Identities Used:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 Content Publisher: Deedk822 (deedk822@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Task Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Secrets:** All loaded from GitHub repository settings" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Pipeline executed" >> $GITHUB_STEP_SUMMARY

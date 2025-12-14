@@ -1,0 +1,126 @@
+name: Test All Systems
+
+on:
+  push:
+    branches: [feat/vaal-ai-empire-fixes]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate-secrets:
+    name: 1️⃣ Validate Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Secret Validation
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          MISTRALAI_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_LINK: ${{ secrets.JIRA_LINK }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_KEY: ${{ secrets.KAGGLE_API_KEY }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_API_KEY: ${{ secrets.DATABRICKS_API_KEY }}
+          ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+          ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: bash scripts/test_secrets_validation.sh
+
+  test-api-health:
+    name: 2️⃣ API Health Checks
+    runs-on: ubuntu-latest
+    needs: validate-secrets
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install httpx python-dotenv
+
+      - name: Run API Health Checks
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_LINK: ${{ secrets.JIRA_LINK }}
+          WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_API_KEY: ${{ secrets.DATABRICKS_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+        run: python3 scripts/test_api_health.py
+
+  test-agents:
+    name: 3️⃣ Agent Logic Tests
+    runs-on: ubuntu-latest
+    needs: test-api-health
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Vaal AI Empire
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+
+      - name: Run Agent Tests
+        run: python3 scripts/test_agents.py
+
+  test-python-linting:
+    name: 4️⃣ Python Linting
+    runs-on: ubuntu-latest
+    needs: test-agents
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install flake8
+
+      - name: Run Linting
+        run: flake8 vaal-ai-empire/src --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  summary:
+    name: 📊 Test Summary
+    runs-on: ubuntu-latest
+    needs: [validate-secrets, test-api-health, test-agents, test-python-linting]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🎯 Vaal AI Empire Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Validation | ${{ needs.validate-secrets.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Health Checks | ${{ needs.test-api-health.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Agent Logic Tests | ${{ needs.test-agents.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Linting | ${{ needs.test-python-linting.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** feat/vaal-ai-empire-fixes" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY

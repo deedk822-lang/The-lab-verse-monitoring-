@@ -20,7 +20,7 @@ export class TheLapVerseCore {
   private readonly cost     = new FinOpsTagger();
   private readonly slo      = new SloErrorBudget();
   private readonly flags    = new OpenFeatureFlags();
-  private readonly validator= new OpenApiValidator();
+  private readonly validator = new OpenApiValidator();
   private readonly idempotency = new IdempotencyManager();
   private readonly kagglePipe: TheLapVerseKagglePipe;
 

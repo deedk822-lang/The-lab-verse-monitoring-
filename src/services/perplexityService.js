@@ -6,7 +6,7 @@ class PerplexityService {
     this.apiKey = process.env.PERPLEXITY_API_KEY;
     this.baseURL = 'https://api.perplexity.ai';
     this.model = process.env.PERPLEXITY_MODEL || 'llama-3.1-sonar-large-128k-online';
-    
+
     if (!this.apiKey) {
       logger.warn('PERPLEXITY_API_KEY not found in environment variables');
     }
@@ -27,16 +27,16 @@ class PerplexityService {
         throw new Error('Perplexity API key not configured');
       }
 
-      const { 
-        prompt, 
-        searchEnabled = true, 
+      const {
+        prompt,
+        searchEnabled = true,
         maxTokens = 2000,
         temperature = 0.7,
-        systemPrompt = 'You are a helpful AI assistant that provides accurate, well-researched content.'
+        systemPrompt = 'You are a helpful AI assistant that provides accurate, well-researched content.',
       } = params;
 
       // Use Sonar models for web search, regular models for offline generation
-      const selectedModel = searchEnabled 
+      const selectedModel = searchEnabled
         ? (this.model.includes('sonar') ? this.model : 'llama-3.1-sonar-large-128k-online')
         : 'llama-3.1-8b-instruct';
 
@@ -45,44 +45,44 @@ class PerplexityService {
         messages: [
           {
             role: 'system',
-            content: systemPrompt
+            content: systemPrompt,
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         max_tokens: maxTokens,
         temperature: temperature,
         top_p: 0.9,
         search_domain_filter: searchEnabled ? ['news', 'academic', 'social'] : undefined,
         return_citations: searchEnabled,
-        return_images: false
+        return_images: false,
       };
 
       logger.info('Generating content with Perplexity:', {
         model: selectedModel,
         searchEnabled,
         promptLength: prompt.length,
-        maxTokens
+        maxTokens,
       });
 
       const response = await axios.post(`${this.baseURL}/chat/completions`, payload, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        timeout: 60000 // 60 second timeout for web search
+        timeout: 60000, // 60 second timeout for web search
       });
 
       const generatedContent = response.data.choices[0].message.content;
       const citations = response.data.citations || [];
-      
+
       logger.info('Perplexity content generated successfully:', {
         contentLength: generatedContent.length,
         citationsCount: citations.length,
         model: selectedModel,
-        usage: response.data.usage
+        usage: response.data.usage,
       });
 
       return {
@@ -93,23 +93,23 @@ class PerplexityService {
           searchEnabled,
           citations,
           usage: response.data.usage,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        provider: 'perplexity'
+        provider: 'perplexity',
       };
 
     } catch (error) {
       logger.error('Perplexity content generation failed:', {
         error: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
 
       return {
         success: false,
         error: error.message,
         details: error.response?.data,
-        provider: 'perplexity'
+        provider: 'perplexity',
       };
     }
   }
@@ -125,9 +125,9 @@ class PerplexityService {
   async researchTopic(params) {
     try {
       const { query, domains = [], focusArea = 'comprehensive' } = params;
-      
+
       let researchPrompt = `Research and provide comprehensive information about: ${query}\n\n`;
-      
+
       if (focusArea === 'recent') {
         researchPrompt += 'Focus on the most recent developments, news, and updates. ';
       } else if (focusArea === 'trends') {
@@ -135,7 +135,7 @@ class PerplexityService {
       } else if (focusArea === 'technical') {
         researchPrompt += 'Focus on technical details, specifications, and expert analysis. ';
       }
-      
+
       researchPrompt += 'Provide accurate, well-sourced information with proper citations.';
 
       const result = await this.generateContent({
@@ -143,7 +143,7 @@ class PerplexityService {
         searchEnabled: true,
         maxTokens: 3000,
         temperature: 0.3, // Lower temperature for factual research
-        systemPrompt: 'You are a research assistant that provides accurate, well-sourced information with proper citations. Always fact-check information and provide multiple perspectives when relevant.'
+        systemPrompt: 'You are a research assistant that provides accurate, well-sourced information with proper citations. Always fact-check information and provide multiple perspectives when relevant.',
       });
 
       if (result.success) {
@@ -158,7 +158,7 @@ class PerplexityService {
       return {
         success: false,
         error: error.message,
-        provider: 'perplexity'
+        provider: 'perplexity',
       };
     }
   }
@@ -174,30 +174,30 @@ class PerplexityService {
    */
   async generateSocialContent(params) {
     try {
-      const { 
-        topic, 
-        platforms = ['twitter', 'linkedin'], 
+      const {
+        topic,
+        platforms = ['twitter', 'linkedin'],
         tone = 'professional',
         includeTrends = true,
-        hashtags = true
+        hashtags = true,
       } = params;
 
       let prompt = `Create engaging social media content about: ${topic}\n\n`;
       prompt += `Target platforms: ${platforms.join(', ')}\n`;
       prompt += `Tone: ${tone}\n\n`;
-      
+
       if (includeTrends) {
         prompt += 'Research current trends and news related to this topic and incorporate relevant insights. ';
       }
-      
+
       prompt += 'Requirements:\n';
       prompt += '- Make it engaging and shareable\n';
       prompt += '- Keep within platform character limits\n';
-      
+
       if (hashtags) {
         prompt += '- Include relevant hashtags\n';
       }
-      
+
       prompt += '- Ensure accuracy and credibility\n';
       prompt += '- Adapt tone and style for the target platforms';
 
@@ -206,7 +206,7 @@ class PerplexityService {
         searchEnabled: includeTrends,
         maxTokens: 1500,
         temperature: 0.8,
-        systemPrompt: `You are a social media content creator specializing in ${tone} content for ${platforms.join(' and ')}. Create engaging, platform-optimized content that drives engagement while maintaining accuracy.`
+        systemPrompt: `You are a social media content creator specializing in ${tone} content for ${platforms.join(' and ')}. Create engaging, platform-optimized content that drives engagement while maintaining accuracy.`,
       });
 
       if (result.success) {
@@ -222,7 +222,7 @@ class PerplexityService {
       return {
         success: false,
         error: error.message,
-        provider: 'perplexity'
+        provider: 'perplexity',
       };
     }
   }
@@ -241,7 +241,7 @@ class PerplexityService {
         prompt: 'Hello, this is a connection test.',
         searchEnabled: false,
         maxTokens: 50,
-        temperature: 0.1
+        temperature: 0.1,
       });
 
       return result.success;
@@ -263,19 +263,19 @@ class PerplexityService {
 
       const response = await axios.get(`${this.baseURL}/models`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
       });
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       logger.error('Failed to get Perplexity models:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -290,17 +290,17 @@ class PerplexityService {
   async generateFactCheckedContent(params) {
     try {
       const { topic, includeCounterpoints = true } = params;
-      
+
       let prompt = `Research and write fact-checked content about: ${topic}\n\n`;
       prompt += 'Requirements:\n';
       prompt += '- Verify all facts with multiple reliable sources\n';
       prompt += '- Include proper citations for all claims\n';
       prompt += '- Present information objectively\n';
-      
+
       if (includeCounterpoints) {
         prompt += '- Include different perspectives and viewpoints where relevant\n';
       }
-      
+
       prompt += '- Clearly distinguish between facts and opinions\n';
       prompt += '- Use recent and authoritative sources';
 
@@ -309,7 +309,7 @@ class PerplexityService {
         searchEnabled: true,
         maxTokens: 2500,
         temperature: 0.2, // Very low temperature for factual accuracy
-        systemPrompt: 'You are a fact-checking journalist who provides accurate, well-researched content with proper citations. Always verify information with multiple sources and present balanced viewpoints.'
+        systemPrompt: 'You are a fact-checking journalist who provides accurate, well-researched content with proper citations. Always verify information with multiple sources and present balanced viewpoints.',
       });
 
       if (result.success) {
@@ -324,7 +324,7 @@ class PerplexityService {
       return {
         success: false,
         error: error.message,
-        provider: 'perplexity'
+        provider: 'perplexity',
       };
     }
   }

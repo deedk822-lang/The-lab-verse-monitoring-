@@ -8,34 +8,34 @@ class MCPService {
       apiKey: process.env.CLAUDE_API_KEY,
       baseURL: 'https://api.anthropic.com',
       model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
-      version: '2023-06-01'
+      version: '2023-06-01',
     };
-    
+
     // Mistral API configuration
     this.mistral = {
       apiKey: process.env.MISTRAL_API_KEY,
       baseURL: 'https://api.mistral.ai/v1',
-      model: process.env.MISTRAL_MODEL || 'mistral-large-latest'
+      model: process.env.MISTRAL_MODEL || 'mistral-large-latest',
     };
-    
+
     // MCP servers configuration
     this.servers = {
       primary: {
         url: process.env.MCP_PRIMARY_URL || 'http://localhost:3001',
-        apiKey: process.env.MCP_PRIMARY_API_KEY
+        apiKey: process.env.MCP_PRIMARY_API_KEY,
       },
       secondary: {
         url: process.env.MCP_SECONDARY_URL,
-        apiKey: process.env.MCP_SECONDARY_API_KEY
-      }
+        apiKey: process.env.MCP_SECONDARY_API_KEY,
+      },
     };
-    
+
     this.defaultTimeout = 60000;
-    
+
     if (!this.claude.apiKey) {
       logger.warn('CLAUDE_API_KEY not found in environment variables');
     }
-    
+
     if (!this.mistral.apiKey) {
       logger.warn('MISTRAL_API_KEY not found in environment variables');
     }
@@ -61,7 +61,7 @@ class MCPService {
         systemPrompt = 'You are a helpful AI assistant that generates high-quality content.',
         maxTokens = 4000,
         temperature = 0.7,
-        useComputerUse = false
+        useComputerUse = false,
       } = params;
 
       const payload = {
@@ -71,9 +71,9 @@ class MCPService {
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
-        ]
+            content: prompt,
+          },
+        ],
       };
 
       // Add system prompt if provided
@@ -89,8 +89,8 @@ class MCPService {
             name: 'computer',
             display_width_px: 1024,
             display_height_px: 768,
-            display_number: 1
-          }
+            display_number: 1,
+          },
         ];
       }
 
@@ -98,7 +98,7 @@ class MCPService {
         model: this.claude.model,
         promptLength: prompt.length,
         maxTokens,
-        useComputerUse
+        useComputerUse,
       });
 
       const response = await axios.post(
@@ -108,18 +108,18 @@ class MCPService {
           headers: {
             'x-api-key': this.claude.apiKey,
             'anthropic-version': this.claude.version,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          timeout: this.defaultTimeout
-        }
+          timeout: this.defaultTimeout,
+        },
       );
 
       const content = response.data.content[0].text;
-      
+
       logger.info('Claude content generated successfully:', {
         contentLength: content.length,
         model: this.claude.model,
-        usage: response.data.usage
+        usage: response.data.usage,
       });
 
       return {
@@ -129,20 +129,20 @@ class MCPService {
           model: this.claude.model,
           usage: response.data.usage,
           provider: 'claude',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
 
     } catch (error) {
       logger.error('Claude content generation failed:', {
         error: error.message,
-        response: error.response?.data
+        response: error.response?.data,
       });
 
       return {
         success: false,
         error: error.message,
-        provider: 'claude'
+        provider: 'claude',
       };
     }
   }
@@ -167,21 +167,21 @@ class MCPService {
         systemPrompt = 'You are a helpful AI assistant that generates high-quality content.',
         maxTokens = 4000,
         temperature = 0.7,
-        stream = false
+        stream = false,
       } = params;
 
       const messages = [];
-      
+
       if (systemPrompt) {
         messages.push({
           role: 'system',
-          content: systemPrompt
+          content: systemPrompt,
         });
       }
-      
+
       messages.push({
         role: 'user',
-        content: prompt
+        content: prompt,
       });
 
       const payload = {
@@ -189,13 +189,13 @@ class MCPService {
         messages,
         max_tokens: maxTokens,
         temperature,
-        stream
+        stream,
       };
 
       logger.info('Generating content with Mistral:', {
         model: this.mistral.model,
         promptLength: prompt.length,
-        maxTokens
+        maxTokens,
       });
 
       const response = await axios.post(
@@ -204,18 +204,18 @@ class MCPService {
         {
           headers: {
             'Authorization': `Bearer ${this.mistral.apiKey}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          timeout: this.defaultTimeout
-        }
+          timeout: this.defaultTimeout,
+        },
       );
 
       const content = response.data.choices[0].message.content;
-      
+
       logger.info('Mistral content generated successfully:', {
         contentLength: content.length,
         model: this.mistral.model,
-        usage: response.data.usage
+        usage: response.data.usage,
       });
 
       return {
@@ -225,20 +225,20 @@ class MCPService {
           model: this.mistral.model,
           usage: response.data.usage,
           provider: 'mistral',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
 
     } catch (error) {
       logger.error('Mistral content generation failed:', {
         error: error.message,
-        response: error.response?.data
+        response: error.response?.data,
       });
 
       return {
         success: false,
         error: error.message,
-        provider: 'mistral'
+        provider: 'mistral',
       };
     }
   }
@@ -259,11 +259,11 @@ class MCPService {
       } = params;
 
       let result;
-      
+
       // Try preferred provider first
       if (preferredProvider === 'claude') {
         result = await this.generateWithClaude(otherParams);
-        
+
         // Fallback to Mistral if Claude fails and failover is enabled
         if (!result.success && useFailover && this.mistral.apiKey) {
           logger.info('Claude failed, attempting Mistral failover');
@@ -271,7 +271,7 @@ class MCPService {
         }
       } else if (preferredProvider === 'mistral') {
         result = await this.generateWithMistral(otherParams);
-        
+
         // Fallback to Claude if Mistral fails and failover is enabled
         if (!result.success && useFailover && this.claude.apiKey) {
           logger.info('Mistral failed, attempting Claude failover');
@@ -287,7 +287,7 @@ class MCPService {
       logger.error('MCP content generation failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -307,34 +307,34 @@ class MCPService {
         context = {},
         tone = 'professional',
         includeSteps = true,
-        maxTokens = 2000
+        maxTokens = 2000,
       } = params;
 
       let systemPrompt = `You are a helpful customer support agent. Provide clear, accurate, and ${tone} responses to customer inquiries. `;
-      
+
       if (includeSteps) {
         systemPrompt += 'When appropriate, provide step-by-step instructions. ';
       }
-      
+
       systemPrompt += 'Always aim to resolve the customer\'s issue completely and offer additional help if needed.';
 
       let prompt = `Customer Query: ${customerQuery}\n\n`;
-      
+
       if (context.knowledgeBase) {
         prompt += `Knowledge Base Information:\n${context.knowledgeBase}\n\n`;
       }
-      
+
       if (context.customerHistory) {
         prompt += `Customer History:\n${context.customerHistory}\n\n`;
       }
-      
+
       prompt += 'Please provide a helpful response to the customer.';
 
       const result = await this.generateWithClaude({
         prompt,
         systemPrompt,
         maxTokens,
-        temperature: 0.3 // Lower temperature for consistent support responses
+        temperature: 0.3, // Lower temperature for consistent support responses
       });
 
       if (result.success) {
@@ -348,7 +348,7 @@ class MCPService {
       logger.error('Support response generation failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -368,22 +368,22 @@ class MCPService {
         analysisType = 'comprehensive',
         metrics = [],
         timeframe = 'current',
-        includeRecommendations = true
+        includeRecommendations = true,
       } = params;
 
       let systemPrompt = 'You are a financial data analyst. Provide accurate, insightful analysis of financial data. ';
       systemPrompt += 'Focus on trends, patterns, and actionable insights. Present information clearly and professionally.';
 
-      let prompt = `Financial Data Analysis Request:\n\n`;
+      let prompt = 'Financial Data Analysis Request:\n\n';
       prompt += `Analysis Type: ${analysisType}\n`;
       prompt += `Timeframe: ${timeframe}\n\n`;
-      
+
       if (metrics.length > 0) {
         prompt += `Focus Metrics: ${metrics.join(', ')}\n\n`;
       }
-      
+
       prompt += `Data:\n${JSON.stringify(data, null, 2)}\n\n`;
-      
+
       if (includeRecommendations) {
         prompt += 'Please include actionable recommendations based on your analysis.';
       }
@@ -392,7 +392,7 @@ class MCPService {
         prompt,
         systemPrompt,
         maxTokens: 3000,
-        temperature: 0.2 // Low temperature for factual financial analysis
+        temperature: 0.2, // Low temperature for factual financial analysis
       });
 
       if (result.success) {
@@ -407,7 +407,7 @@ class MCPService {
       logger.error('Financial analysis failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -428,7 +428,7 @@ class MCPService {
         targetLanguages = ['es', 'fr', 'de'],
         tone = 'professional',
         culturalAdaptation = true,
-        provider = 'mistral' // Mistral excels at multilingual
+        provider = 'mistral', // Mistral excels at multilingual
       } = params;
 
       const results = {
@@ -437,31 +437,31 @@ class MCPService {
         metadata: {
           targetLanguages,
           culturalAdaptation,
-          tone
-        }
+          tone,
+        },
       };
 
       for (const language of targetLanguages) {
         let prompt = `Translate the following content to ${language}:\n\n${content}\n\n`;
         prompt += `Tone: ${tone}\n`;
-        
+
         if (culturalAdaptation) {
           prompt += 'Please adapt the content for the target culture and market, not just literal translation.';
         } else {
           prompt += 'Please provide an accurate, literal translation.';
         }
 
-        const translationResult = provider === 'mistral' 
-          ? await this.generateWithMistral({ 
-              prompt, 
-              maxTokens: 2000,
-              temperature: 0.3
-            })
-          : await this.generateWithClaude({ 
-              prompt, 
-              maxTokens: 2000,
-              temperature: 0.3 
-            });
+        const translationResult = provider === 'mistral'
+          ? await this.generateWithMistral({
+            prompt,
+            maxTokens: 2000,
+            temperature: 0.3,
+          })
+          : await this.generateWithClaude({
+            prompt,
+            maxTokens: 2000,
+            temperature: 0.3,
+          });
 
         if (translationResult.success) {
           results.translations[language] = translationResult.content;
@@ -472,22 +472,22 @@ class MCPService {
 
       logger.info('Multi-lingual content generation completed:', {
         targetLanguages,
-        successful: Object.keys(results.translations).filter(lang => 
-          !results.translations[lang].startsWith('Translation failed')
-        ).length
+        successful: Object.keys(results.translations).filter(lang =>
+          !results.translations[lang].startsWith('Translation failed'),
+        ).length,
       });
 
       return {
         success: true,
         results,
-        provider
+        provider,
       };
 
     } catch (error) {
       logger.error('Multi-lingual generation failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -501,7 +501,7 @@ class MCPService {
       const results = {
         claude: { configured: !!this.claude.apiKey, connected: false },
         mistral: { configured: !!this.mistral.apiKey, connected: false },
-        mcpServers: {}
+        mcpServers: {},
       };
 
       // Test Claude connection
@@ -509,7 +509,7 @@ class MCPService {
         const claudeTest = await this.generateWithClaude({
           prompt: 'Hello, this is a connection test.',
           maxTokens: 50,
-          temperature: 0.1
+          temperature: 0.1,
         });
         results.claude.connected = claudeTest.success;
         if (!claudeTest.success) {
@@ -522,7 +522,7 @@ class MCPService {
         const mistralTest = await this.generateWithMistral({
           prompt: 'Hello, this is a connection test.',
           maxTokens: 50,
-          temperature: 0.1
+          temperature: 0.1,
         });
         results.mistral.connected = mistralTest.success;
         if (!mistralTest.success) {
@@ -537,10 +537,10 @@ class MCPService {
             await axios.get(`${server.url}/health`, { timeout: 5000 });
             results.mcpServers[serverName] = { configured: true, connected: true };
           } catch (error) {
-            results.mcpServers[serverName] = { 
-              configured: true, 
-              connected: false, 
-              error: error.message 
+            results.mcpServers[serverName] = {
+              configured: true,
+              connected: false,
+              error: error.message,
             };
           }
         } else {
@@ -552,14 +552,14 @@ class MCPService {
 
       return {
         success: true,
-        results
+        results,
       };
 
     } catch (error) {
       logger.error('MCP connection tests failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }

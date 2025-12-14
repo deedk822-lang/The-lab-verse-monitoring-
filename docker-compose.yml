@@ -1,172 +1,89 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  app:
-    build: .
-<<<<<<< HEAD
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - ZAI_API_KEY=${ZAI_API_KEY}
-      - LOCALAI_URL=http://localai:8080
-      - API_KEY=${API_KEY:-your-secure-api-key}
-    depends_on:
-      - redis
-      - localai
-    volumes:
-      - ./src:/app/src
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-
   localai:
-    image: localai/localai:latest
+    image: localai/localai:v2.16.0
+    container_name: localai-mistral
     ports:
       - "8080:8080"
     environment:
       - MODELS_PATH=/models
       - THREADS=4
-      - CONTEXT_SIZE=512
+      - CONTEXT_SIZE=4096
       - DEBUG=true
+      - API_KEY=local-ai-key-optional
     volumes:
-      - localai_models:/models
+      - ./models:/models
+      - ./localai-data:/models/localai-data
     restart: unless-stopped
-    command: local-ai run --models-path /models --threads 4 --context-size 512
-
-  nginx:
-    image: nginx:alpine
-=======
-    container_name: lapverse-app
-    image: lapverse-monitoring:2.0.0
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
-      - REDIS_URL=redis://redis:6379
-      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - COST_CENTER=lapverse-core
-    ports:
-      - "3000:3000"
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/models"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     networks:
-      - lapverse-network
-    user: "lapverse"
-    volumes:
-      - ./logs:/app/logs
+      - lab-verse-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: lapverse-redis
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-redis123}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
+  mcp-server:
+    image: python:3.12-slim
+    container_name: mcp-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./mcp-server:/app
+      - ./mcp-data:/data
+    working_dir: /app
+    command: ["python", "-m", "mcp.server.fastmcp"]
+    depends_on:
+      - localai
+    environment:
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - CONNECTOR_MOD=${CONNECTOR_MOD:-}
+      - CONNECTION_STRING=${CONNECTION_STRING:-}
+    restart: unless-stopped
+    networks:
+      - lab-verse-network
+
+  anomaly-detection:
+    build:
+      context: .
+      dockerfile: src/anomaly_detection/Dockerfile
+    container_name: anomaly-detection-service
+    ports:
+      - "8085:8085"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - lab-verse-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
       retries: 5
-    volumes:
-      - redis_data:/data
-    networks:
-      - lapverse-network
+      start_period: 60s
 
-  nginx:
-    image: nginx:alpine
-    container_name: lapverse-nginx
->>>>>>> origin/feat/ai-connectivity-layer
+  ayrshare:
+    build:
+      context: ./ayrshare
+      dockerfile: Dockerfile
+    container_name: ayrshare-service
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-<<<<<<< HEAD
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-=======
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
->>>>>>> origin/feat/ai-connectivity-layer
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
-    restart: unless-stopped
-<<<<<<< HEAD
-
-volumes:
-  redis_data:
-  localai_models:
-=======
+      - "8086:8086"
     networks:
-      - lapverse-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: lapverse-prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - lab-verse-network
     restart: unless-stopped
-    networks:
-      - lapverse-network
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: lapverse-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    restart: unless-stopped
-    networks:
-      - lapverse-network
-
-volumes:
-  redis_data:
-  prometheus_data:
-  grafana_data:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 networks:
-  lapverse-network:
+  lab-verse-network:
     driver: bridge
 
->>>>>>> origin/feat/ai-connectivity-layer
+volumes:
+  mcp-data:

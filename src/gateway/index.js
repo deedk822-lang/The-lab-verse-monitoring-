@@ -20,12 +20,12 @@ const httpDur = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
 });
 const httpTot = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total HTTP requests',
-  labelNames: ['method', 'route', 'status_code']
+  labelNames: ['method', 'route', 'status_code'],
 });
 register.registerMetric(httpDur);
 register.registerMetric(httpTot);
@@ -34,10 +34,10 @@ const createRateLimiter = (win, max) => rateLimit({
   store: new RedisStore({ sendCommand: (...a) => redis.call(...a) }),
   windowMs: win,
   max,
-  standardHeaders: true
+  standardHeaders: true,
 });
 
-function createApp() {
+async function createApp() {
   const app = express();
   app.use(helmet());
   app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
@@ -62,7 +62,7 @@ function createApp() {
   const strict  = createRateLimiter(15 * 60 * 1000, 100);
   app.use(general);
 
-  import auth from '../middleware/auth.js';
+  const auth = (await import('../middleware/auth.js')).default;
   app.use('/api/video',      strict, auth, (await import('../routes/video.js')).default);
   app.use('/api/text-to-speech', strict, auth, (await import('../routes/tts.js')).default);
   app.use('/api/alerts',     (await import('../routes/alerts.js')).default);
@@ -77,8 +77,13 @@ function createApp() {
 if (cluster.isPrimary) {
   const cpus = os.cpus().length;
   logger.info(`Master ${process.pid} forking ${cpus}`);
-  for (let i = 0; i < cpus; i++) cluster.fork();
-  cluster.on('exit', (w) => { logger.warn(`Worker ${w.process.pid} died`); cluster.fork(); });
+  for (let i = 0; i < cpus; i++) {
+    cluster.fork();
+  }
+  cluster.on('exit', (w) => {
+    logger.warn(`Worker ${w.process.pid} died`);
+    cluster.fork();
+  });
 } else {
   const app = createApp();
   app.listen(process.env.PORT, () => logger.info(`Worker ${process.pid} started`));

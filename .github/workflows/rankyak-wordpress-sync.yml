@@ -1,3 +1,4 @@
+# File: .github/workflows/rankyak-wordpress-sync.yml
 name: RankYak → WordPress sync
 
 on:
@@ -27,17 +28,18 @@ jobs:
   sync-to-wordpress:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install deps
-        run: npm i node-fetch@3 @octokit/rest
+      - name: Install Dependencies
+        run: npm install @octokit/rest
 
-      - name: Run sync
+      - name: Run Sync Script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WP_SITE_ID: ${{ secrets.WP_SITE_ID }}
@@ -45,28 +47,9 @@ jobs:
           WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
           WP_PUBLISH_STATUS: ${{ vars.WP_PUBLISH_STATUS }}
           WP_FEATURED_IMAGE: ${{ vars.WP_FEATURED_IMAGE }}
-        run: |
-          node -e "
-          import { Octokit } from '@octokit/rest';
-          import syncWordPress from './scripts/sync-wordpress.js';
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-          const isPush = process.env.GITHUB_EVENT_NAME === 'push';
-          const payload = JSON.parse(process.env.GITHUB_EVENT_PATH ? require('fs').readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8') : '{}');
-          const pathFromPush = (payload.commits?.[0]?.modified || payload.commits?.[0]?.added || []).find(p => p.startsWith('_posts/'));
-          const postPath = isPush ? pathFromPush : process.env.INPUT_POST_PATH;
-          const slug = process.env.INPUT_SLUG || (postPath?.split('/').pop().replace(/\.md$/, '').split('-').slice(3).join('-'));
-          const title = process.env.INPUT_TITLE || slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          const tags = (process.env.INPUT_TAGS || '').split(',').map(s => s.trim()).filter(Boolean);
-          if (!postPath || !slug) { console.error('Missing post_path or slug'); process.exit(1); }
-          const ownerRepo = process.env.GITHUB_REPOSITORY.split('/');
-          const owner = ownerRepo[0];
-          const repo = ownerRepo[1];
-          // Load file content and extract HTML block if present; fallback to markdown converted minimal
-          const { data: file } = await octokit.rest.repos.getContent({ owner, repo, path: postPath, ref: process.env.GITHUB_REF_NAME || 'main' });
-          const md = Buffer.from(file.content, 'base64').toString('utf8');
-          const htmlMatch = md.match(/<!-- HTML START -->([\s\S]*?)<!-- HTML END -->/);
-          const html = htmlMatch ? htmlMatch[1].trim() : md; // send md if no HTML, WP will wrap as HTML block
-          const briaAssets = {}; // bridge can be extended to pass images via artifacts in future
-          await syncWordPress({ octokit, owner, repo, postPath, slug, title, html, tags, briaAssets });
-          console.log('Sync complete');
-          "
+          # Pass workflow inputs to the script via environment variables
+          INPUT_POST_PATH: ${{ inputs.post_path }}
+          INPUT_SLUG: ${{ inputs.slug }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_TAGS: ${{ inputs.tags }}
+        run: node .github/workflows/rankyak-sync-script.js

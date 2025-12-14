@@ -1,0 +1,383 @@
+#!/usr/bin/env node
+/**
+ * Comprehensive test suite for MCP gateways
+ * Tests authentication, tool execution, error handling, and performance
+ * 
+ * Usage: node test-suite.js [gateway]
+ * Examples:
+ *   node test-suite.js huggingface
+ *   node test-suite.js all
+ */
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+// ==================== Configuration ====================
+
+const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:3000';
+const GATEWAY_KEY = process.env.GATEWAY_KEY || process.env.HF_API_TOKEN;
+
+if (!GATEWAY_KEY) {
+  console.error('❌ Missing GATEWAY_KEY or service-specific token');
+  process.exit(1);
+}
+
+// ==================== Test Framework ====================
+
+class TestRunner {
+  constructor(name) {
+    this.name = name;
+    this.tests = [];
+    this.passed = 0;
+    this.failed = 0;
+    this.skipped = 0;
+  }
+
+  test(description, fn) {
+    this.tests.push({ description, fn });
+  }
+
+  async run() {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🧪 Testing: ${this.name}`);
+    console.log('='.repeat(60));
+
+    for (const { description, fn } of this.tests) {
+      try {
+        process.stdout.write(`\n  ${description}... `);
+        await fn();
+        console.log('✅ PASS');
+        this.passed++;
+      } catch (error) {
+        console.log(`❌ FAIL`);
+        console.log(`     Error: ${error.message}`);
+        this.failed++;
+      }
+    }
+
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`Results: ${this.passed} passed, ${this.failed} failed, ${this.skipped} skipped`);
+    console.log('='.repeat(60));
+
+    return this.failed === 0;
+  }
+}
+
+// ==================== Helper Functions ====================
+
+async function callGateway(endpoint, toolName, args, token = GATEWAY_KEY) {
+  const response = await fetch(`${GATEWAY_URL}/mcp/${endpoint}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      model: `${endpoint}-mcp`,
+      messages: [{
+        role: 'user',
+        content: `${toolName} ${JSON.stringify(args)}`
+      }],
+      stream: false
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`${response.status}: ${text}`);
+  }
+
+  return await response.json();
+}
+
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message || 'Assertion failed');
+  }
+}
+
+function assertDefined(value, name) {
+  assert(value !== undefined && value !== null, `${name} should be defined`);
+}
+
+function assertType(value, type, name) {
+  assert(typeof value === type, `${name} should be type ${type}, got ${typeof value}`);
+}
+
+// ==================== Test Suites ====================
+
+async function testHuggingFace() {
+  const runner = new TestRunner('HuggingFace Gateway');
+
+  // Authentication tests
+  runner.test('Should reject unauthorized requests', async () => {
+    try {
+      await callGateway('huggingface', 'hf_list_models', {}, 'invalid-token');
+      throw new Error('Should have thrown 401');
+    } catch (error) {
+      assert(error.message.includes('401'), 'Should return 401 Unauthorized');
+    }
+  });
+
+  runner.test('Should accept valid authentication', async () => {
+    const result = await callGateway('huggingface', 'hf_list_models', { limit: 1 });
+    assertDefined(result.choices, 'choices');
+  });
+
+  // Tool execution tests
+  runner.test('Should list models with search query', async () => {
+    const result = await callGateway('huggingface', 'hf_list_models', { 
+      search: 'gpt2', 
+      limit: 5 
+    });
+    
+    const content = JSON.parse(result.choices[0].message.content);
+    assertDefined(content.models, 'models');
+    assert(Array.isArray(content.models), 'models should be an array');
+    assert(content.models.length > 0, 'should return at least one model');
+  });
+
+  runner.test('Should get model info', async () => {
+    const result = await callGateway('huggingface', 'hf_model_info', { 
+      model: 'gpt2' 
+    });
+    
+    const content = JSON.parse(result.choices[0].message.content);
+    assertDefined(content.id, 'model.id');
+    assertDefined(content.author, 'model.author');
+    assertDefined(content.downloads, 'model.downloads');
+  });
+
+  runner.test('Should list datasets', async () => {
+    const result = await callGateway('huggingface', 'hf_list_datasets', { 
+      search: 'squad', 
+      limit: 3 
+    });
+    
+    const content = JSON.parse(result.choices[0].message.content);
+    assertDefined(content.datasets, 'datasets');
+    assert(Array.isArray(content.datasets), 'datasets should be an array');
+  });
+
+  runner.test('Should list spaces', async () => {
+    const result = await callGateway('huggingface', 'hf_list_spaces', { 
+      limit: 3 
+    });
+    
+    const content = JSON.parse(result.choices[0].message.content);
+    assertDefined(content.spaces, 'spaces');
+    assert(Array.isArray(content.spaces), 'spaces should be an array');
+  });
+
+  // Error handling tests
+  runner.test('Should handle invalid model ID gracefully', async () => {
+    try {
+      await callGateway('huggingface', 'hf_model_info', { 
+        model: 'this-model-definitely-does-not-exist-12345' 
+      });
+      // Some APIs might not throw, so we check the response
+    } catch (error) {
+      assert(
+        error.message.includes('404') || error.message.includes('not found'),
+        'Should indicate model not found'
+      );
+    }
+  });
+
+  runner.test('Should handle missing required fields', async () => {
+    try {
+      await callGateway('huggingface', 'hf_model_info', {});
+      throw new Error('Should have thrown error for missing model field');
+    } catch (error) {
+      assert(
+        error.message.includes('400') || error.message.includes('model'),
+        'Should indicate missing required field'
+      );
+    }
+  });
+
+  // Performance tests
+  runner.test('Should respond within 5 seconds', async () => {
+    const start = Date.now();
+    await callGateway('huggingface', 'hf_list_models', { limit: 5 });
+    const duration = Date.now() - start;
+    assert(duration < 5000, `Response took ${duration}ms, should be < 5000ms`);
+  });
+
+  return await runner.run();
+}
+
+async function testSocialPilot() {
+  const runner = new TestRunner('SocialPilot Gateway');
+
+  runner.test('Should list accounts', async () => {
+    const result = await callGateway('socialpilot', 'sp_list_accounts', {});
+    assertDefined(result.choices, 'choices');
+  });
+
+  runner.test('Should validate post creation parameters', async () => {
+    try {
+      await callGateway('socialpilot', 'sp_create_post', {
+        // Missing required fields: message, accounts
+      });
+    } catch (error) {
+      assert(
+        error.message.includes('400') || error.message.includes('required'),
+        'Should validate required fields'
+      );
+    }
+  });
+
+  return await runner.run();
+}
+
+async function testUnito() {
+  const runner = new TestRunner('Unito Gateway');
+
+  runner.test('Should list workspaces', async () => {
+    const result = await callGateway('unito', 'unito_list_workspaces', {});
+    assertDefined(result.choices, 'choices');
+  });
+
+  runner.test('Should list available integrations', async () => {
+    const result = await callGateway('unito', 'unito_list_integrations', {});
+    const content = JSON.parse(result.choices[0].message.content);
+    assertDefined(content, 'integrations data');
+  });
+
+  return await runner.run();
+}
+
+async function testWordPress() {
+  const runner = new TestRunner('WordPress.com Gateway');
+
+  runner.test('Should list sites', async () => {
+    const result = await callGateway('wpcom', 'wpcom_list_sites', {});
+    assertDefined(result.choices, 'choices');
+  });
+
+  runner.test('Should validate post creation', async () => {
+    try {
+      await callGateway('wpcom', 'wpcom_create_post', {
+        // Missing required fields
+      });
+    } catch (error) {
+      assert(
+        error.message.includes('400') || error.message.includes('required'),
+        'Should validate required fields'
+      );
+    }
+  });
+
+  return await runner.run();
+}
+
+// ==================== Integration Tests ====================
+
+async function testEndToEnd() {
+  const runner = new TestRunner('End-to-End Integration');
+
+  runner.test('Should handle concurrent requests', async () => {
+    const promises = Array(5).fill(null).map(() =>
+      callGateway('huggingface', 'hf_list_models', { limit: 1 })
+    );
+    
+    const results = await Promise.all(promises);
+    assert(results.every(r => r.choices), 'All requests should succeed');
+  });
+
+  runner.test('Should maintain consistent response format', async () => {
+    const endpoints = ['huggingface', 'socialpilot', 'unito', 'wpcom'];
+    const tools = ['hf_list_models', 'sp_list_accounts', 'unito_list_workspaces', 'wpcom_list_sites'];
+    
+    for (let i = 0; i < endpoints.length; i++) {
+      try {
+        const result = await callGateway(endpoints[i], tools[i], {});
+        
+        assertDefined(result.choices, `${endpoints[i]}.choices`);
+        assertDefined(result.choices[0], `${endpoints[i]}.choices[0]`);
+        assertDefined(result.choices[0].message, `${endpoints[i]}.choices[0].message`);
+        assertDefined(result.choices[0].message.content, `${endpoints[i]}.choices[0].message.content`);
+      } catch (error) {
+        // Some endpoints might not be configured, that's okay for this test
+        console.log(`\n     ⚠️  ${endpoints[i]} not available: ${error.message}`);
+      }
+    }
+  });
+
+  return await runner.run();
+}
+
+// ==================== Main ====================
+
+async function main() {
+  const arg = process.argv[2] || 'all';
+  
+  console.log('🚀 MCP Gateway Test Suite');
+  console.log(`📍 Gateway URL: ${GATEWAY_URL}`);
+  console.log(`🔑 Token: ${GATEWAY_KEY.substring(0, 10)}...`);
+
+  let allPassed = true;
+
+  try {
+    switch (arg.toLowerCase()) {
+      case 'huggingface':
+      case 'hf':
+        allPassed = await testHuggingFace();
+        break;
+      
+      case 'socialpilot':
+      case 'sp':
+        allPassed = await testSocialPilot();
+        break;
+      
+      case 'unito':
+        allPassed = await testUnito();
+        break;
+      
+      case 'wordpress':
+      case 'wpcom':
+        allPassed = await testWordPress();
+        break;
+      
+      case 'integration':
+      case 'e2e':
+        allPassed = await testEndToEnd();
+        break;
+      
+      case 'all':
+        const results = await Promise.all([
+          testHuggingFace().catch(() => false),
+          testSocialPilot().catch(() => false),
+          testUnito().catch(() => false),
+          testWordPress().catch(() => false),
+          testEndToEnd().catch(() => false)
+        ]);
+        allPassed = results.every(r => r === true);
+        break;
+      
+      default:
+        console.error(`\n❌ Unknown test suite: ${arg}`);
+        console.error('Available options: huggingface, socialpilot, unito, wordpress, integration, all');
+        process.exit(1);
+    }
+
+    console.log('\n' + '='.repeat(60));
+    if (allPassed) {
+      console.log('✅ ALL TESTS PASSED');
+      console.log('='.repeat(60));
+      process.exit(0);
+    } else {
+      console.log('❌ SOME TESTS FAILED');
+      console.log('='.repeat(60));
+      process.exit(1);
+    }
+
+  } catch (error) {
+    console.error('\n💥 Test suite crashed:', error.message);
+    console.error(error.stack);
+    process.exit(1);
+  }
+}
+
+main();

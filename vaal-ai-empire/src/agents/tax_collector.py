@@ -30,22 +30,20 @@ class TaxAgentMaster:
         # 1. TAX MISSION (SARS)
         # We instruct the Supervisor (Qwen) to use the SARS tool
         logger.info("💰 Phase 1: SARS Tax Audit...")
-        payroll_file = os.getenv("PAYROLL_FILE_PATH", "oss://vaal-vault/payroll/latest.json")
         tax_result = self.supervisor.run(
-            f"Check for ETI claims on the payroll file '{payroll_file}' using sars_cash_flow_miner."
+            "Check for ETI claims on the payroll file 'oss://vaal-vault/payroll/latest.json' using sars_cash_flow_miner."
         )
         logger.info(f"   > Result: {tax_result}")
 
         # 2. TALENT MISSION (VanHack)
         # We instruct the Supervisor to check the resume queue
         logger.info("🌍 Phase 2: VanHack Talent Scan...")
-        resume_file = os.getenv("RESUME_FILE_PATH", "oss://vaal-vault/resumes/pending.pdf")
         talent_result = self.supervisor.run(
-            f"Check the resume '{resume_file}' for Canada eligibility using vanhack_crs_simulator."
+            "Check the resume 'oss://vaal-vault/resumes/pending.pdf' for Canada eligibility using vanhack_crs_simulator."
         )
         logger.info(f"   > Result: {talent_result}")
 
-        return tax_result, talent_result
+        return True
 
 if __name__ == "__main__":
     agent = TaxAgentMaster()

@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload Task Backup
         if: steps.set-task-id.outputs.task-id != '' && env.DRY_RUN != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: task-backups
           path: task_backup_*.json
@@ -329,7 +329,7 @@ jobs:
           python complete_project_tasks.py
 
       - name: Upload Project Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: project-reports
           path: project_completion_*.json

@@ -11,7 +11,7 @@
 const https = require('https');
 
 // Configuration
-const AYRSHARE_API_KEY = process.env.ARYSHARE_API_KEY;
+const AYRSHARE_API_KEY = process.env.AYRSHARE_API_KEY;
 const API_URL = 'api.ayrshare.com';
 const API_PATH = '/api/post';
 

@@ -1,0 +1,3 @@
+# Netlify redirects
+/demo /#demo 200
+/blog/* /blog/:splat 200

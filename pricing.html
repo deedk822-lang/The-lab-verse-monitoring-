@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Vaal AI Empire</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚡ Vaal AI Empire</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#engines">Engines</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="pricing.html">Pricing</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero" style="min-height: 60vh;">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">Choose Your Empire</span>
+            </h1>
+            <p class="hero-subtitle">
+                7-day free trial. No credit card required. Cancel anytime.
+            </p>
+        </div>
+    </section>
+
+    <section style="padding: 4rem 2rem;">
+        <div class="pricing-cards" style="max-width: 1000px; margin: 0 auto;">
+            <!-- Vaal Starter -->
+            <div class="pricing-card">
+                <h3>Vaal Starter</h3>
+                <div class="price">R999<span>/month</span></div>
+                <p class="plan-desc">Essential AI for growing SMEs</p>
+                <ul class="plan-features">
+                    <li>✅ Financial Sentinel (Basic)</li>
+                    <li>✅ Tax recovery monitoring</li>
+                    <li>✅ Guardian Engine alerts</li>
+                    <li>✅ Monthly reports</li>
+                    <li>✅ Email support</li>
+                </ul>
+                <button class="btn-pricing" data-plan="starter">Start Free Trial</button>
+                <p style="margin-top: 1rem; font-size: 0.875rem; color: #999;">
+                    7-day trial, then R999/month
+                </p>
+            </div>
+
+            <!-- Vaal Empire -->
+            <div class="pricing-card featured">
+                <div class="popular-badge">🔥 Most Popular</div>
+                <h3>Vaal Empire</h3>
+                <div class="price">R2,999<span>/month</span></div>
+                <p class="plan-desc">Full autonomous AI empire</p>
+                <ul class="plan-features">
+                    <li>✅ All Starter features</li>
+                    <li>✅ Financial Sentinel (Advanced)</li>
+                    <li>✅ Guardian Engine (Real-time)</li>
+                    <li>✅ Talent Accelerator (Full)</li>
+                    <li>✅ Self-healing infrastructure</li>
+                    <li>✅ Priority support</li>
+                    <li>✅ Custom integrations</li>
+                    <li>✅ Dedicated success manager</li>
+                </ul>
+                <button class="btn-pricing primary" data-plan="empire">Start Free Trial</button>
+                <p style="margin-top: 1rem; font-size: 0.875rem; color: #999;">
+                    7-day trial, then R2,999/month
+                </p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem; padding: 2rem; background: rgba(0,255,136,0.05); border-radius: 12px; max-width: 800px; margin-left: auto; margin-right: auto;">
+            <h3 style="color: #00ff88; margin-bottom: 1rem;">All Plans Include:</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>🔒 Secure payments via Stripe</div>
+                <div>📊 Real-time analytics</div>
+                <div>🚫 No setup fees</div>
+                <div>✅ Cancel anytime</div>
+                <div>🇿🇦 Built for South Africa</div>
+                <div>💸 Money-back guarantee</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-bottom">
+            <p>⚡ Built in the Vaal. Built for Africa. 🇿🇦</p>
+        </div>
+    </footer>
+
+    <script>
+        let stripe;
+        let priceIds = {};
+
+        // Load Stripe config
+        fetch('/config')
+            .then(res => res.json())
+            .then(config => {
+                stripe = Stripe(config.publishableKey);
+                priceIds = config.prices;
+            })
+            .catch(err => {
+                console.error('Config error:', err);
+                alert('Error loading payment system. Please refresh.');
+            });
+
+        // Handle checkout
+        document.querySelectorAll('.btn-pricing').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const plan = e.target.dataset.plan;
+                const priceId = priceIds[plan];
+
+                if (!priceId) {
+                    alert('Configuration error. Contact support.');
+                    return;
+                }
+
+                e.target.disabled = true;
+                e.target.textContent = 'Loading...';
+
+                try {
+                    const response = await fetch('/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ priceId }),
+                    });
+
+                    const session = await response.json();
+                    const result = await stripe.redirectToCheckout({ sessionId: session.sessionId });
+
+                    if (result.error) {
+                        throw new Error(result.error.message);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Payment error: ' + error.message);
+                    e.target.disabled = false;
+                    e.target.textContent = 'Start Free Trial';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

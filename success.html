@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success - Vaal AI Empire</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+        <div>
+            <div style="font-size: 5rem; margin-bottom: 2rem; animation: scaleIn 0.5s ease;">✅</div>
+            <h1 style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;">Welcome to the Vaal AI Empire!</h1>
+            <p style="font-size: 1.25rem; color: var(--text-gray); max-width: 600px; margin: 0 auto 3rem;">
+                Your subscription is now active. Check your email for login credentials and next steps.
+            </p>
+
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(247,183,49,0.2); border-radius: 12px; padding: 2rem; max-width: 500px; margin: 0 auto 2rem;" id="details">
+                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: #999;">Status:</span>
+                    <span style="color: #fff; font-weight: 600;">✅ Active</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: #999;">Plan:</span>
+                    <span style="color: #fff; font-weight: 600;" id="plan-name">Loading...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0;">
+                    <span style="color: #999;">Amount:</span>
+                    <span style="color: #fff; font-weight: 600;" id="amount">Loading...</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="/dashboard.html" class="btn-primary">Go to Dashboard →</a>
+                <a href="/" class="btn-secondary">Return Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+
+        if (sessionId) {
+            fetch(`/checkout-session?sessionId=${sessionId}`)
+                .then(res => res.json())
+                .then(session => {
+                    const planName = session.metadata?.product || 'Vaal Empire';
+                    const amount = (session.amount_total / 100).toFixed(2);
+                    document.getElementById('plan-name').textContent = planName;
+                    document.getElementById('amount').textContent = `R${amount}`;
+                })
+                .catch(err => console.error('Error:', err));
+        }
+    </script>
+
+    <style>
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+    </style>
+</body>
+</html>

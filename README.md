@@ -1,226 +1,204 @@
-# ⚡ Vaal AI Empire - Official Launch Website
+# ⚡ Vaal AI Empire
 
-> **Digital Sovereignty for South African SMEs**
+**Digital Sovereignty for South African SMEs**
 
-The first fully autonomous AI empire built for South African businesses. This repository contains the official launch website for the Vaal AI Empire.
-
----
-
-## 🚀 Live Site
-
-**Repository:** https://github.com/deedk822-lang/vaal-ai-empire-site
-
-**Deploy to Netlify:** Click the button below to deploy instantly
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/deedk822-lang/vaal-ai-empire-site)
+Complete autonomous AI platform with Stripe subscription billing.
 
 ---
 
-## 🎯 What We Built
-
-### The Council of Titans: Three Autonomous Engines
-
-#### 🔍 Financial Sentinel
-- Autonomous SARS tax compliance auditing
-- **R500k+ recovered** in unclaimed incentives (real results)
-- Section 12H, ETI, corporate tax relief automation
-
-#### ⚠️ Guardian Engine  
-- GDELT global crisis monitoring
-- **72-hour early warning** system
-- Load-shedding, strikes, supply chain disruptions
-
-#### 🎯 Talent Accelerator
-- Developer skill benchmarking (global standards)
-- VanHack integration for international placement
-- Competitive local retention strategies
-
----
-
-## 🛠️ Quick Start
-
-### Deploy to Netlify (Recommended)
-
-1. Go to [app.netlify.com](https://app.netlify.com)
-2. Click **"Add new site"** → **"Import an existing project"**  
-3. Choose **GitHub** → Select `vaal-ai-empire-site`
-4. Click **Deploy**
-
-**Your site is live in 60 seconds!**
-
-### Local Development
+## 🚀 Quick Start
 
 ```bash
 # Clone repository
 git clone https://github.com/deedk822-lang/vaal-ai-empire-site.git
 cd vaal-ai-empire-site
 
-# Open in browser
-open index.html
+# Run installer
+chmod +x INSTALL.sh
+./INSTALL.sh
+
+# Configure Stripe
+cd server
+cp .env.example .env
+# Edit .env with your keys
+
+# Start server
+npm start
+```
+
+**Open:** http://localhost:4242
+
+---
+
+## 📦 What's Included
+
+### Complete Website:
+- ✅ Professional homepage
+- ✅ Pricing page with 2 tiers
+- ✅ Success/cancel pages
+- ✅ Responsive design
+- ✅ Mobile-first approach
+
+### Stripe Integration:
+- ✅ Subscription checkout
+- ✅ Webhook handling
+- ✅ Customer portal
+- ✅ ZAR currency
+- ✅ 7-day free trials
+
+### Backend:
+- ✅ Node.js/Express server
+- ✅ Complete API
+- ✅ Environment config
+- ✅ Production ready
+
+---
+
+## 💰 Pricing Plans
+
+| Plan | Price | Features |
+|------|-------|----------|
+| **Vaal Starter** | R999/mo | Financial Sentinel, Guardian alerts, Email support |
+| **Vaal Empire** | R2,999/mo | All features + Talent Accelerator + Priority support |
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend:** HTML5, CSS3, Vanilla JS
+- **Backend:** Node.js, Express
+- **Payments:** Stripe
+- **Hosting:** Alibaba Cloud Singapore
+- **Currency:** ZAR (South African Rand)
+
+---
+
+## ⚙️ Configuration
+
+### Required Environment Variables:
+
+```env
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STARTER_PRICE_ID=price_...
+EMPIRE_PRICE_ID=price_...
+DOMAIN=http://localhost:4242
+```
+
+See `server/.env.example` for complete list.
+
+---
+
+## 🧪 Testing
+
+### Stripe Test Cards:
+
+```
+Success: 4242 4242 4242 4242
+3D Secure: 4000 0025 0000 3155
+Declined: 4000 0000 0000 0002
+```
+
+### Test Flow:
+
+1. Visit http://localhost:4242/pricing.html
+2. Click "Start Free Trial"
+3. Enter test card details
+4. Verify redirect to success page
+
+---
+
+## 🚀 Deployment
+
+### Production Checklist:
+
+- [ ] Switch to live Stripe keys
+- [ ] Update DOMAIN in .env
+- [ ] Set up webhooks
+- [ ] Configure SSL
+- [ ] Test real payment
+- [ ] Set up monitoring
+
+### Deploy Commands:
+
+```bash
+cd server
+npm install --production
+npm start
 ```
 
 ---
 
-## 📝 Site Structure
+## 📁 Project Structure
 
 ```
 vaal-ai-empire-site/
-├── index.html         # Main landing page (hero, features, demo form)
+├── index.html          # Homepage
+├── pricing.html        # Pricing page
+├── success.html        # Payment success
+├── canceled.html       # Checkout canceled
 ├── css/
-│   └── styles.css     # Professional dark/gold theme
+│   └── styles.css      # All styles
 ├── js/
-│   └── main.js        # Smooth scroll, form tracking
-├── netlify.toml      # Netlify configuration
-├── _redirects        # URL routing  
-└── README.md         # This file
+│   └── main.js         # Frontend JS
+├── server/
+│   ├── server.js       # Express server
+│   ├── package.json    # Dependencies
+│   └── .env.example    # Config template
+├── INSTALL.sh          # Auto-installer
+└── README.md           # This file
 ```
 
 ---
 
-## ⚙️ Features Included
+## 📚 Documentation
 
-✅ **Netlify Forms Integration** - Demo requests automatically captured  
-✅ **Responsive Design** - Mobile-first (critical for SA market)  
-✅ **SEO Optimized** - Meta tags, Open Graph, structured data ready  
-✅ **Security Headers** - X-Frame-Options, CSP, HTTPS enforced  
-✅ **Auto SSL** - Let's Encrypt certificate (free, automatic)  
-✅ **Smooth Animations** - Professional transitions and hover effects  
-✅ **Form Spam Protection** - Honeypot field included  
+- **Installation:** See INSTALL.sh output
+- **Server API:** server/README.md
+- **Stripe Setup:** server/.env.example
 
 ---
 
-## 📧 Demo Form Configuration
+## 🐛 Troubleshooting
 
-The form captures:
-- Company name
-- Email
-- Phone (WhatsApp)
-- Annual revenue bracket  
-- Biggest business challenge
+### "Node.js not found"
+→ Install from https://nodejs.org/
 
-**Submissions go to:**
-1. Netlify Forms dashboard
-2. Email notifications (configure in Netlify settings)
+### "Cannot find module"
+→ Run `npm install` in server/
 
----
+### "Missing API keys"
+→ Check server/.env file
 
-## 🌍 Custom Domain Setup
-
-### Add vaalai.co.za to Netlify
-
-1. Netlify dashboard → **Domain management**
-2. Click **"Add custom domain"**
-3. Enter: `vaalai.co.za`
-
-### Configure DNS (at your registrar)
-
-```dns
-Type:  A       Name: @       Value: 75.2.60.5
-Type:  CNAME  Name: www     Value: [your-site].netlify.app
-```
-
-SSL certificate generates automatically in 5 minutes.
+### "Port in use"
+→ Change PORT in .env
 
 ---
 
-## 📊 Analytics Setup
-
-### Option 1: Netlify Analytics (Recommended)
-
-- Server-side tracking (accurate)
-- No cookies required (POPIA compliant)
-- Included in Netlify dashboard
-
-### Option 2: Google Analytics
-
-Add before `</head>` in index.html:
-
-```html
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'GA_MEASUREMENT_ID');
-</script>
-```
-
----
-
-## 🔄 Making Updates
-
-```bash
-# 1. Make changes to files
-vim index.html
-
-# 2. Commit
-git add .
-git commit -m "Update: Added testimonials section"
-
-# 3. Push
-git push origin main
-
-# Netlify auto-deploys in 30 seconds!
-```
-
----
-
-## 📅 Launch Timeline
-
-- **Week 1 (Dec 16-22):** Teaser campaign  
-- **Week 2 (Dec 23-27):** Launch week
-  - **Friday, Dec 27, 6 AM SAST:** Official launch
-- **Week 3 (Dec 28-Jan 3):** Social proof phase  
-- **Week 4 (Jan 4-10):** Urgency phase (closes Dec 31)
-
----
-
-## ✅ Pre-Launch Checklist
-
-- [x] GitHub repository created
-- [x] Website files deployed
-- [x] Netlify configuration added
-- [ ] Deploy to Netlify
-- [ ] Test demo form submission
-- [ ] Add custom domain
-- [ ] Enable analytics
-- [ ] Test on mobile devices
-- [ ] Share preview URL with team
-- [ ] Set up email notifications
-- [ ] Final review before Dec 27 launch
-
----
-
-## 💻 Tech Stack
-
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript  
-- **Hosting:** Netlify (Free tier)  
-- **Forms:** Netlify Forms (built-in, free)  
-- **SSL:** Let's Encrypt (automatic)  
-- **Deployment:** Continuous (GitHub → Netlify)
-
-**No build process. No dependencies. Just deploy.**
-
----
-
-## 🚀 Next Steps
-
-1. **Deploy to Netlify** (use button above)
-2. **Test demo form** (submit test request)
-3. **Add custom domain** (optional for now)
-4. **Share preview URL** for team feedback
-5. **Prepare for launch** (Dec 27, 2025)
-
----
-
-## 📧 Contact
+## 📧 Support
 
 - **Email:** founders@vaalai.co.za
-- **Social:** DM "EMPIRE" on Instagram/Facebook
-- **Early Access:** Closes December 31, 2025
+- **GitHub:** [Issues](https://github.com/deedk822-lang/vaal-ai-empire-site/issues)
+- **Stripe:** https://stripe.com/docs
 
 ---
 
-**Built in the Vaal Triangle. Built for Africa. Built to dominate.** ⚡
+## 🇿🇦 About
 
-© 2025 Vaal AI Empire. All rights reserved.
+**Vaal AI Empire** provides digital sovereignty for South African SMEs through three autonomous AI engines:
+
+1. **Financial Sentinel** - Tax recovery & compliance
+2. **Guardian Engine** - Infrastructure monitoring
+3. **Talent Accelerator** - Automated hiring
+
+**Launch:** December 27, 2025
+
+---
+
+## 📝 License
+
+Proprietary © 2025 Vaal AI Empire, Inc.
+
+---
+
+**⚡ Built in the Vaal. Built for Africa. Built to dominate.** 🇿🇦

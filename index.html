@@ -3,184 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vaal AI Empire - Digital Sovereignty for South African SMEs</title>
-    <meta name="description" content="The first fully autonomous AI empire built for South African businesses. Recover R500k+ in tax incentives. Predict crises 72 hours early.">
-    <meta property="og:title" content="Vaal AI Empire - Digital Sovereignty for SA SMEs">
-    <meta property="og:description" content="R2.8 billion left on the table every year. We just changed that.">
-    <meta property="og:type" content="website">
+    <title>The Vaal AI Empire - Where Digital Sovereignty Begins</title>
+    <meta name="description" content="South Africa's first autonomous AI empire. Built in the Vaal Triangle, rewriting the rules of business automation and digital sovereignty.">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.16"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- SEO & Social -->
+    <meta property="og:title" content="Vaal AI Empire - Digital Sovereignty for South Africa">
+    <meta property="og:description" content="R2.8B left on the table every year. We just changed that. South Africa's first autonomous AI empire.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/images/og-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <style>
+        /* Minimal critical CSS for immediate rendering */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e27; color: #ffffff; }
+        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; position: relative; }
+        #neuralNetwork { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.15; }
+        .hero-content { position: relative; z-index: 1; max-width: 1200px; }
+    </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="nav-container">
-                <h1>⚡ Vaal AI Empire</h1>
-                <ul>
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#proof">Results</a></li>
-                    <li><a href="#demo">Demo</a></li>
-                </ul>
-            </div>
-        </nav>
-    </header>
+    <!-- Neural Network Background -->
+    <div id="neuralNetwork"></div>
 
+    <!-- Hero Section -->
     <section class="hero">
-        <h1>The Vaal AI Empire Launches</h1>
-        <p class="subtitle">Why South African SMEs Just Got Their Edge Back</p>
-        <p class="stat">💰 R2.8 Billion left on the table every year</p>
-        <p class="hero-text">Every year, South African SMEs leave billions in unclaimed tax incentives, operate blind to supply chain crises, and lose top talent to international recruiters.</p>
-        <p class="hero-text"><strong>Until now.</strong></p>
-        <a href="#demo" class="cta-button">Request Early Access →</a>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Built in the <span class="highlight">Vaal Triangle</span>.<br>
+                For <span id="typed-text"></span>
+            </h1>
+            <p class="hero-subtitle">South Africa's first autonomous AI empire is rewriting the rules of business automation</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number" data-target="28">0</div>
+                    <div class="stat-label">Billion Rand</div>
+                    <div class="stat-note">Left on table annually</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-target="72">0</div>
+                    <div class="stat-label">Hour Warning</div>
+                    <div class="stat-note">Crisis detection time</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-target="500">0</div>
+                    <div class="stat-label">K+ Recovered</div>
+                    <div class="stat-note">Real tax incentives</div>
+                </div>
+            </div>
+            <a href="#demo" class="cta-button">Request Early Access →</a>
+        </div>
     </section>
 
-    <section id="features" class="features">
-        <h2>The Council of Titans</h2>
-        <p class="section-intro">Three autonomous engines designed specifically for South African business realities</p>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🔍</div>
-                <h3>Financial Sentinel</h3>
-                <p>Continuously audits your taxes against SARS regulations. Recovers <strong>R500k+ in unclaimed incentives</strong> automatically. Section 12H, ETI, corporate tax relief—all recovered without human labor.</p>
-                <ul>
-                    <li>24/7 autonomous auditing</li>
-                    <li>SARS compliance guaranteed</li>
-                    <li>Real money recovered</li>
-                </ul>
+    <!-- Council of Titans -->
+    <section class="council" id="features">
+        <div class="container">
+            <h2 class="section-title">The Council of Titans</h2>
+            <p class="section-subtitle">Forget single-model limitations. The Vaal AI Empire deploys a <strong>Model Arbitrage architecture</strong> that combines the world's most powerful open-weight AI systems.</p>
+            
+            <div class="titans-grid">
+                <div class="titan-card">
+                    <div class="titan-icon">👑</div>
+                    <h3>Qwen-Max</h3>
+                    <p class="titan-role">The Orchestrator</p>
+                    <p>Like a CEO, Qwen-Max coordinates the entire AI empire, making strategic decisions and overseeing autonomous operations.</p>
+                </div>
+                
+                <div class="titan-card">
+                    <div class="titan-icon">📊</div>
+                    <h3>Mistral Large</h3>
+                    <p class="titan-role">The Communicator</p>
+                    <p>Ensures SARS compliance precision and handles all regulatory communications with flawless accuracy.</p>
+                </div>
+                
+                <div class="titan-card">
+                    <div class="titan-icon">👁️</div>
+                    <h3>Aya Vision</h3>
+                    <p class="titan-role">The Seer</p>
+                    <p>Multimodal analysis of everything from tax receipts to crisis alerts, providing predictive intelligence before mainstream news.</p>
+                </div>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚠️</div>
-                <h3>Guardian Engine</h3>
-                <p>Monitors GDELT global data streams. Detects <strong>supply chain crises, load-shedding impacts, and labor strikes 72 hours before they hit</strong> your business. No more WhatsApp surprises.</p>
-                <ul>
-                    <li>Real-time crisis detection</li>
-                    <li>72-hour early warnings</li>
-                    <li>Autonomous response protocols</li>
-                </ul>
+            
+            <p class="emphasis">This isn't AI assisting humans; it's AI executing complete business operations autonomously. Watch the empire work in real-time.</p>
+        </div>
+    </section>
+
+    <!-- Three Engines -->
+    <section class="engines">
+        <div class="container">
+            <h2 class="section-title">Three Engines That Generate Real Revenue</h2>
+            
+            <div class="engine-card">
+                <div class="engine-header">
+                    <div class="engine-icon">🔍</div>
+                    <div>
+                        <h3>Financial Sentinel</h3>
+                        <p class="engine-tagline">Transforms tax compliance from burden to profit center</p>
+                    </div>
+                </div>
+                <div class="engine-body">
+                    <p>Autonomously scanning ledgers against SARS regulations to uncover unclaimed Section 12H and ETI incentives. South African SMEs leave millions on the table annually—this engine recovers it automatically.</p>
+                    <div class="chart-container">
+                        <div id="taxChart" style="width: 100%; height: 200px;"></div>
+                    </div>
+                    <div class="engine-stats">
+                        <div class="stat"><strong>R573K</strong> recovered in 45 days</div>
+                        <div class="stat"><strong>24/7</strong> autonomous monitoring</div>
+                        <div class="stat"><strong>100%</strong> SARS compliant</div>
+                    </div>
+                </div>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3>Talent Accelerator</h3>
-                <p>Audits your developers against international standards. Prepares them for <strong>global opportunities via platforms like VanHack</strong>—either for placement abroad or competitive local retention.</p>
-                <ul>
-                    <li>Global skill benchmarking</li>
-                    <li>Personalized upskilling paths</li>
-                    <li>Competitive advantage retention</li>
-                </ul>
+
+            <div class="engine-card">
+                <div class="engine-header">
+                    <div class="engine-icon">⚠️</div>
+                    <div>
+                        <h3>Guardian Engine</h3>
+                        <p class="engine-tagline">72-hour early warning system for business disruptions</p>
+                    </div>
+                </div>
+                <div class="engine-body">
+                    <p>Monitors GDELT global data streams, detecting supply chain disruptions and humanitarian crises before mainstream news catches wind. When load-shedding hits or strikes threaten operations, you'll know first—and respond faster.</p>
+                    <div class="chart-container">
+                        <div id="crisisChart" style="width: 100%; height: 200px;"></div>
+                    </div>
+                    <div class="engine-stats">
+                        <div class="stat"><strong>72hrs</strong> early detection</div>
+                        <div class="stat"><strong>Global</strong> crisis monitoring</div>
+                        <div class="stat"><strong>Real-time</strong> alerts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="engine-card">
+                <div class="engine-header">
+                    <div class="engine-icon">🎯</div>
+                    <div>
+                        <h3>Talent Accelerator</h3>
+                        <p class="engine-tagline">Global skill benchmarking for South African developers</p>
+                    </div>
+                </div>
+                <div class="engine-body">
+                    <p>Audits local developers against international standards, preparing South African tech talent for global placement via platforms like VanHack. We're not just filling jobs—we're positioning the Vaal region as a net exporter of elite technological skill.</p>
+                    <div class="chart-container">
+                        <div id="talentChart" style="width: 100%; height: 200px;"></div>
+                    </div>
+                    <div class="engine-stats">
+                        <div class="stat"><strong>Global</strong> standards</div>
+                        <div class="stat"><strong>Career</strong> pathways</div>
+                        <div class="stat"><strong>Retention</strong> strategies</div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="reality-first">
-        <h2>Reality First: No Simulations. No Mock Data.</h2>
-        <p>Every AI company has impressive demos with polished charts and perfect data. <strong>None of it is real.</strong></p>
-        <p>The Vaal AI Empire operates on actual SARS regulations, live financial transactions, real crisis feeds, and genuine developer assessments.</p>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-number">R573,000</div>
-                <div class="stat-label">Recovered in 45 days</div>
-                <div class="stat-note">Not a projection. Real money.</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">72 hours</div>
-                <div class="stat-label">Early crisis detection</div>
-                <div class="stat-note">Tested against actual events</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">Autonomous operation</div>
-                <div class="stat-note">Self-healing infrastructure</div>
-            </div>
-        </div>
-    </section>
-
-    <section id="proof" class="social-proof">
-        <h2>Real Results from Real SMEs</h2>
-        <div class="testimonials">
-            <blockquote>
-                <p>"We recovered R573,000 in 45 days. Not a projection. Not a simulation. Real money back from SARS."</p>
-                <cite>— Johannesburg SME, Financial Services</cite>
-            </blockquote>
-            <blockquote>
-                <p>"The Guardian Engine alerted us to a port strike 3 days before our shipment was due. We rerouted and saved our Q4 inventory."</p>
-                <cite>— Durban Manufacturer</cite>
-            </blockquote>
-        </div>
-    </section>
-
+    <!-- Self-Healing Infrastructure -->
     <section class="immune-system">
-        <h2>The Immune System: Self-Healing Infrastructure</h2>
-        <p>Most enterprise systems break. Ours fixes itself.</p>
-        <p>When an API changes, a dependency breaks, or a module fails, the <strong>Qwen System Administrator</strong> activates automatically:</p>
-        <ol>
-            <li>Diagnoses the error within seconds</li>
-            <li>Locates faulty code in the repository</li>
-            <li>Patches it via GitHub API</li>
-            <li>Redeploys the system</li>
-        </ol>
-        <p class="highlight">All before your team notices anything was wrong. This is digital sovereignty.</p>
-    </section>
-
-    <section id="demo" class="demo-section">
-        <h2>Join 500 Early Access Founders</h2>
-        <p class="urgency">🔥 Closing December 31, 2025</p>
-        <p>The 500 companies who join now will define the narrative for the next 2 years of South African AI adoption.</p>
-        
-        <form name="demo-request" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-            <input type="hidden" name="form-name" value="demo-request" />
+        <div class="container">
+            <h2 class="section-title">The Immune System: Self-Healing Infrastructure</h2>
+            <p class="section-intro">Here's what separates sovereign AI from dependency: when the Vaal AI Empire encounters a failure, the <strong>Qwen System Administrator</strong> activates.</p>
             
-            <p class="hidden">
-                <label>Don't fill this out: <input name="bot-field" /></label>
-            </p>
-            
-            <div class="form-row">
-                <input type="text" name="company" placeholder="Company Name *" required />
-                <input type="email" name="email" placeholder="Email *" required />
+            <div class="healing-process">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Error Detection</h4>
+                        <p>System monitors for API changes, outdated dependencies, or module crashes</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Auto-Diagnosis</h4>
+                        <p>Locates faulty code in repository and identifies root cause</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Instant Patching</h4>
+                        <p>Patches code via GitHub API and triggers redeployment</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Zero Downtime</h4>
+                        <p>All before a human operator opens their laptop</p>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-row">
-                <input type="tel" name="phone" placeholder="Phone (WhatsApp)" />
-                <select name="revenue" required>
-                    <option value="">Estimated Annual Revenue *</option>
-                    <option value="under-1m">Under R1 million</option>
-                    <option value="1m-5m">R1-5 million</option>
-                    <option value="5m-20m">R5-20 million</option>
-                    <option value="20m-plus">R20 million+</option>
-                </select>
-            </div>
-            
-            <textarea name="challenge" placeholder="Biggest Business Challenge (e.g., tax compliance, load-shedding, talent retention) *" rows="4" required></textarea>
-            
-            <button type="submit">Request Demo →</button>
-            
-            <p class="form-note">Early adopter pricing available for serious founders. Email founders@vaalai.co.za</p>
-        </form>
-    </section>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-brand">
-                <h3>⚡ Vaal AI Empire</h3>
-                <p>Built in the Vaal Triangle. Built for Africa. Built to dominate.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Connect</h4>
-                <ul>
-                    <li><a href="mailto:founders@vaalai.co.za">founders@vaalai.co.za</a></li>
-                    <li><a href="/blog">Blog</a></li>
-                    <li><a href="#demo">Request Demo</a></li>
-                </ul>
-            </div>
-            <div class="footer-social">
-                <h4>Follow the Launch</h4>
-                <p>Instagram • Facebook • LinkedIn • X</p>
-                <p>DM "EMPIRE" for updates</p>
+            <div class="healing-log">
+                <div class="log-header">Live System Log</div>
+                <div id="healingLog" class="log-content">
+                    [20:45:12] System health check completed. All systems nominal.
+                </div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Vaal AI Empire. Digital sovereignty begins here.</p>
+    </section>
+
+    <!-- Reality First Section -->
+    <section class="reality-first">
+        <div class="container">
+            <h2 class="section-title">Reality First: Real Results from Real South African SMEs</h2>
+            <p class="section-intro">The 2025 PwC AI Job Barometer shows AI skill demand grew from 2.91% to 3.68% in postings. But skills aren't enough—we need <strong>infrastructure sovereignty</strong>. The Vaal AI Empire proves that with the right architecture, South African businesses can leapfrog traditional development hurdles and operate at enterprise scale immediately.</p>
+            
+            <div class="testimonials">
+                <div class="testimonial-card">
+                    <div class="quote">"We recovered R573,000 in 45 days. Not a projection. Not a simulation. Real money back from SARS."</div>
+                    <div class="author">— Johannesburg SME, Financial Services</div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="quote">"The Guardian Engine alerted us to a port strike 3 days before our shipment was due. We rerouted and saved our Q4 inventory."</div>
+                    <div class="author">— Durban Manufacturer</div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="quote">"For the first time, my 5-person company has the intelligence of a Fortune 500."</div>
+                    <div class="author">— Early Beta User, Vaal Manufacturing SME</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Request Form -->
+    <section id="demo" class="demo-section">
+        <div class="container">
+            <h2 class="section-title">Join the Vanguard</h2>
+            <p class="urgency">🔥 Early Access Closes December 31, 2025</p>
+            <p class="section-intro">Be among the first 500 South African businesses to experience true digital sovereignty. Make December 2025 the month South African AI stopped following—and started leading.</p>
+            
+            <form name="demo-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="demo-form">
+                <input type="hidden" name="form-name" value="demo-request" />
+                
+                <p class="hidden">
+                    <label>Don't fill this out: <input name="bot-field" /></label>
+                </p>
+                
+                <div class="form-group">
+                    <input type="text" name="company" placeholder="Company Name *" required />
+                </div>
+                
+                <div class="form-row">
+                    <input type="email" name="email" placeholder="Email *" required />
+                    <input type="tel" name="phone" placeholder="Phone (WhatsApp)" />
+                </div>
+                
+                <div class="form-group">
+                    <select name="revenue" required>
+                        <option value="">Estimated Annual Revenue *</option>
+                        <option value="under-1m">Under R1 million</option>
+                        <option value="1m-5m">R1-5 million</option>
+                        <option value="5m-20m">R5-20 million</option>
+                        <option value="20m-plus">R20 million+</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <textarea name="challenge" placeholder="Biggest Business Challenge (e.g., tax compliance, load-shedding, talent retention) *" rows="4" required></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">Request Early Access →</button>
+                
+                <p class="form-note">For enterprise inquiries: <a href="mailto:founders@vaalai.co.za">founders@vaalai.co.za</a></p>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>⚡ Vaal AI Empire</h3>
+                    <p>Digital sovereignty for South African businesses</p>
+                    <p class="tagline"><em>This is about leading from the South.</em></p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="/blog">Blog</a></li>
+                        <li><a href="/reels">Reels</a></li>
+                        <li><a href="/payment-infrastructure">Payment Infrastructure</a></li>
+                        <li><a href="/legal-compliance">Legal Compliance</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="mailto:founders@vaalai.co.za">founders@vaalai.co.za</a></li>
+                        <li>DM "EMPIRE" on Instagram</li>
+                        <li>WhatsApp: +27 XX XXX XXXX</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Vaal AI Empire. Built in the Vaal Triangle. Built for Africa. Built to dominate.</p>
+            </div>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="/js/main.js"></script>
 </body>
 </html>

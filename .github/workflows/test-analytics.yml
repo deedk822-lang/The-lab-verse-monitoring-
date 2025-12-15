@@ -39,7 +39,7 @@ jobs:
       
       - name: Upload test metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-metrics-${{ github.run_number }}
           path: |
@@ -50,7 +50,7 @@ jobs:
       
       - name: Upload coverage to artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ github.run_number }}
           path: coverage/

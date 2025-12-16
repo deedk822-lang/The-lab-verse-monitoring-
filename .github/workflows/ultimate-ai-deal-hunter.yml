@@ -36,6 +36,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Wix CLI
+        run: npm install wix-cli
+
+      - name: Authenticate Wix CLI
+        run: npx wix login --api-key ${{ secrets.WIX_CLI_API_KEY }}
+
+      - name: Run Wix CLI Commands
+        run: |
+          # Add your Wix CLI commands here
+          echo "Wix CLI commands would run here."
+
       - name: Install Playwright Browsers & Deps
         run: |
           npx playwright install chromium

@@ -1,9 +1,26 @@
 import os
 import logging
+from functools import lru_cache
 from huggingface_hub import InferenceClient
 from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
+
+
+@lru_cache(maxsize=1)
+def _load_seo_model():
+    """
+    Loads the SentenceTransformer model.
+    This is cached to prevent reloading on every HuggingFaceLab instantiation.
+    """
+    try:
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("✅ HF Lab: Local SEO Model Loaded.")
+        return model
+    except Exception as e:
+        logger.warning(f"⚠️ HF Lab: Could not load local SEO model. Error: {e}")
+        return None
+
 
 class HuggingFaceLab:
     """
@@ -15,12 +32,7 @@ class HuggingFaceLab:
         self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
 
         # Load Local SEO Model (CPU-friendly)
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-            logger.info("✅ HF Lab: Local SEO Model Loaded.")
-        except Exception:
-            self.seo_model = None
-            logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+        self.seo_model = _load_seo_model()
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""

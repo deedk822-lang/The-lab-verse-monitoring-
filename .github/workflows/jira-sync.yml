@@ -1,52 +1,145 @@
-name: Jira Sync
+
+name: Jira Sync & Authority Engine
 
 on:
   pull_request:
     types: [opened, reopened, closed]
 
 jobs:
-  sync-jira-on-pr:
+  sync-and-judge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Allow The Auditor to comment on PRs
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract Jira issue key from branch name
-        id: extract_jira_key
-        run: |
-          # The branch name is available in the GITHUB_HEAD_REF environment variable
-          echo "Branch name: ${{ github.head_ref }}"
+      - name: Setup Node.js (For Authority Engine)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-          # Regex to find key like TC-123 (Change 'TC' if your project key is different)
-          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E 'TC-[0-9]+' | head -1)
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Extract Jira Key & Intent
+        id: extract_metadata
+        run: |
+          echo "Branch: ${{ github.head_ref }}"
+          
+          # Extract Jira Key (Case Insensitive, converts to Upper)
+          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E -i '[a-zA-Z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]')
+          
+          # Extract Intent from PR Title for the Router
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          INTENT="general"
+          
+          if [[ "$PR_TITLE" == *"feat"* ]]; then INTENT="code_generation"; fi
+          if [[ "$PR_TITLE" == *"fix"* ]]; then INTENT="audit"; fi
+          if [[ "$PR_TITLE" == *"docs"* ]]; then INTENT="content"; fi
+          if [[ "$PR_TITLE" == *"tax"* ]]; then INTENT="tax_collector"; fi
 
           if [ -z "$JIRA_KEY" ]; then
-            echo "Jira key not found in branch name. Skipping."
+            echo "⚠️ Jira key not found."
             echo "issue_key=" >> $GITHUB_OUTPUT
           else
-            echo "Found Jira key: $JIRA_KEY"
+            echo "✅ Found Jira key: $JIRA_KEY"
             echo "issue_key=$JIRA_KEY" >> $GITHUB_OUTPUT
           fi
+          
+          echo "intent=$INTENT" >> $GITHUB_OUTPUT
 
-      # FIX: Added Login Step (Required for gajira-transition to work)
+      # --- JIRA SYNC LOGIC ---
       - name: Login to Jira
-        if: steps.extract_jira_key.outputs.issue_key != ''
+        if: steps.extract_metadata.outputs.issue_key != ''
         uses: atlassian/gajira-login@v3
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        with:
+          baseUrl: ${{ secrets.JIRA_BASE_URL }}
+          email: ${{ secrets.JIRA_USER_EMAIL }}
+          token: ${{ secrets.JIRA_API_TOKEN }}
 
-      - name: Transition Jira issue to In Progress
-        if: (github.event.action == 'opened' || github.event.action == 'reopened') && steps.extract_jira_key.outputs.issue_key != ''
+      - name: Transition Jira to In Progress
+        if: (github.event.action == 'opened' || github.event.action == 'reopened') && steps.extract_metadata.outputs.issue_key != ''
         uses: atlassian/gajira-transition@v3
         with:
-          issue: ${{ steps.extract_jira_key.outputs.issue_key }}
+          issue: ${{ steps.extract_metadata.outputs.issue_key }}
           transition: "In Progress"
 
-      - name: Transition Jira issue to Done
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && steps.extract_jira_key.outputs.issue_key != ''
+      - name: Transition Jira to Done
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && steps.extract_metadata.outputs.issue_key != ''
         uses: atlassian/gajira-transition@v3
         with:
-          issue: ${{ steps.extract_jira_key.outputs.issue_key }}
+          issue: ${{ steps.extract_metadata.outputs.issue_key }}
           transition: "Done"
+
+      # --- AUTHORITY ENGINE / JUDGE LOGIC ---
+      
+      - name: "The Auditor: Verify PR (On Open)"
+        if: github.event.action == 'opened'
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+        run: |
+          echo "⚖️ Summoning The Auditor..."
+          
+          # Create a temporary script to bridge the Workflow -> MCP Router
+          cat << 'EOF' > run_auditor.js
+          import { MCPHandoffRouter } from './src/services/mcpHandoffRouter.js';
+          
+          const payload = {
+            topic: "${{ github.event.pull_request.title }}",
+            intent: "${{ steps.extract_metadata.outputs.intent }}",
+            evidenceUrl: "${{ github.event.pull_request.html_url }}", // PR URL as evidence
+            type: "audit_request"
+          };
+
+          async function run() {
+            try {
+              console.log("🚀 Router invoked for:", payload.topic);
+              const result = await MCPHandoffRouter.route(payload);
+              console.log("✅ Judge Verdict:", JSON.stringify(result, null, 2));
+            } catch (error) {
+              console.error("❌ Judge Execution Failed:", error);
+              process.exit(1);
+            }
+          }
+          run();
+          EOF
+          
+          # Execute the script
+          node run_auditor.js
+
+      - name: "The Visionary: Announce Completion (On Merge)"
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # Optional: If Visionary posts to Slack
+        run: |
+          echo "👁️ Summoning The Visionary..."
+          
+          cat << 'EOF' > run_visionary.js
+          import { MCPHandoffRouter } from './src/services/mcpHandoffRouter.js';
+          
+          const payload = {
+            topic: "Merged: ${{ github.event.pull_request.title }}",
+            intent: "content", // Visionary handles content
+            type: "release_announcement"
+          };
+
+          async function run() {
+            try {
+              console.log("🚀 Router invoked for release:", payload.topic);
+              const result = await MCPHandoffRouter.route(payload);
+              console.log("✅ Visionary Output:", JSON.stringify(result, null, 2));
+            } catch (error) {
+              console.error("❌ Judge Execution Failed:", error);
+              process.exit(1);
+            }
+          }
+          run();
+          EOF
+          
+          node run_visionary.js

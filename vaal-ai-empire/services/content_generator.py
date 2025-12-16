@@ -2,73 +2,77 @@ from typing import Dict, List, Optional
 import logging
 import json
 from datetime import datetime
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
+
+
+from typing import Tuple
+
+@lru_cache(maxsize=1)
+def _get_cached_providers() -> Tuple[Dict, Optional['BusinessImageGenerator']]:
+    """
+    Initialize and cache all content and image generation providers.
+    This function is executed only once, and its result is cached.
+    """
+    # --- Initialize Text Providers ---
+    providers = {
+        "cohere": None,
+        "groq": None,
+        "mistral": None,
+        "huggingface": None
+    }
+    # (Existing provider initialization logic remains the same)
+    try:
+        from api.cohere import CohereAPI
+        providers["cohere"] = CohereAPI()
+        logger.info("✅ Cohere provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Cohere unavailable: {e}")
+    try:
+        from api.groq_api import GroqAPI
+        providers["groq"] = GroqAPI()
+        logger.info("✅ Groq provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Groq unavailable: {e}")
+    try:
+        from api.mistral import MistralAPI
+        providers["mistral"] = MistralAPI()
+        logger.info("✅ Mistral provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Mistral unavailable: {e}")
+    try:
+        from api.huggingface_api import HuggingFaceAPI
+        providers["huggingface"] = HuggingFaceAPI()
+        logger.info("✅ HuggingFace provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+
+    available = [k for k, v in providers.items() if v is not None]
+    if available:
+        logger.info(f"Available text providers: {', '.join(available)}")
+    else:
+        logger.error("❌ No content generation providers available!")
+
+    # --- Initialize Image Generator ---
+    image_generator = None
+    try:
+        from api.image_generation import BusinessImageGenerator
+        image_generator = BusinessImageGenerator()
+        logger.info("✅ Image generation provider initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Image generation disabled: {e}")
+
+    return providers, image_generator
+
 
 class ContentFactory:
     """Enhanced content generation with multiple provider support"""
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
-        self.image_generator = None
-
-        # Initialize image generation if available
-        try:
-            from api.image_generation import BusinessImageGenerator
-            self.image_generator = BusinessImageGenerator()
-            logger.info("✅ Image generation enabled")
-        except Exception as e:
-            logger.warning(f"⚠️  Image generation disabled: {e}")
-
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
-
-        # Try Cohere
-        try:
-            from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
-
-        # Try Groq
-        try:
-            from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
-
-        # Try Mistral (local via Ollama)
-        try:
-            from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
-
-        # Try HuggingFace
-        try:
-            from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
-
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
-
-        return providers
+        # Unpack the cached providers and image generator
+        self.providers, self.image_generator = _get_cached_providers()
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""

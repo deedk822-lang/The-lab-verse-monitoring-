@@ -8,6 +8,7 @@ import schedule
 import time
 import logging
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.database import Database
 from services.content_generator import ContentFactory
 from services.content_scheduler import ContentScheduler
@@ -34,32 +35,47 @@ class DailyAutomation:
         self.poster = SocialPoster()
         self.revenue = RevenueTracker(self.db)
 
-    def generate_content_for_all_clients(self):
-        """Generate content for all active clients"""
-        logger.info("=== CONTENT GENERATION STARTED ===")
+    def _generate_for_client(self, client):
+        """Generate and schedule content for a single client."""
+        try:
+            logger.info(f"Generating content for {client['name']}...")
+            pack = self.factory.generate_social_pack(
+                client["business_type"],
+                client["language"]
+            )
+            self.scheduler.schedule_pack(client["id"], pack["posts"])
+            logger.info(f"✅ Successfully processed {client['name']}")
+            return client['name'], True
+        except Exception as e:
+            logger.error(f"❌ Failed to process {client['name']}: {e}")
+            return client['name'], False
 
+    def generate_content_for_all_clients(self):
+        """
+        Generate content for all active clients in parallel using a thread pool.
+        This is much faster than the sequential approach for I/O-bound tasks.
+        """
+        logger.info("=== PARALLEL CONTENT GENERATION STARTED ===")
         clients = self.db.get_active_clients()
         logger.info(f"Found {len(clients)} active clients")
 
-        for client in clients:
-            try:
-                # Check if client needs content this week
-                # (simplified - in production, check last_delivery date)
+        success_count = 0
+        failure_count = 0
 
-                pack = self.factory.generate_social_pack(
-                    client["business_type"],
-                    client["language"]
-                )
+        # Use a ThreadPoolExecutor to run tasks concurrently
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Submit all client processing tasks to the executor
+            future_to_client = {executor.submit(self._generate_for_client, client): client for client in clients}
 
-                # Schedule the posts
-                self.scheduler.schedule_pack(client["id"], pack["posts"])
-
-                logger.info(f"Generated and scheduled content for {client['name']}")
-
-            except Exception as e:
-                logger.error(f"Failed for {client['name']}: {e}")
+            for future in as_completed(future_to_client):
+                client_name, success = future.result()
+                if success:
+                    success_count += 1
+                else:
+                    failure_count += 1
 
         logger.info("=== CONTENT GENERATION COMPLETED ===")
+        logger.info(f"Summary: {success_count} succeeded, {failure_count} failed.")
 
     def post_scheduled_content(self):
         """Post all due content"""

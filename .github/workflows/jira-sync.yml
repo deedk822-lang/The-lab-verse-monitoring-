@@ -1,145 +1,124 @@
 
-name: Jira Sync & Authority Engine
+#!/bin/bash
+set -e
+
+echo "🔐 SYNCING WORKFLOWS TO REPOSITORY SECRETS..."
+echo "   - Mapping: KAGGLE_USERNAME -> ${{ secrets.KAGGLE_USERNAME }}"
+echo "   - Mapping: WORDPRESS_PASSWORD -> ${{ secrets.WORDPRESS_PASSWORD }}"
+echo "   - Mapping: MAILCHIMP -> ${{ secrets.MAILCHIMP_API_KEY }}"
+
+mkdir -p .github/workflows
+
+# 1. UPDATE KAGGLE PIPELINE (Remove Hardcoded Username)
+cat << 'EOF' > .github/workflows/kaggle-intelligence.yml
+name: Kaggle Intelligence Pipeline
 
 on:
-  pull_request:
-    types: [opened, reopened, closed]
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 6 AM SAST
+  workflow_dispatch:
 
 jobs:
-  sync-and-judge:
+  data-intelligence:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write # Allow The Auditor to comment on PRs
+    name: "Sync Kaggle Data"
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js (For Authority Engine)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Extract Jira Key & Intent
-        id: extract_metadata
-        run: |
-          echo "Branch: ${{ github.head_ref }}"
-          
-          # Extract Jira Key (Case Insensitive, converts to Upper)
-          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E -i '[a-zA-Z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]')
-          
-          # Extract Intent from PR Title for the Router
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          INTENT="general"
-          
-          if [[ "$PR_TITLE" == *"feat"* ]]; then INTENT="code_generation"; fi
-          if [[ "$PR_TITLE" == *"fix"* ]]; then INTENT="audit"; fi
-          if [[ "$PR_TITLE" == *"docs"* ]]; then INTENT="content"; fi
-          if [[ "$PR_TITLE" == *"tax"* ]]; then INTENT="tax_collector"; fi
-
-          if [ -z "$JIRA_KEY" ]; then
-            echo "⚠️ Jira key not found."
-            echo "issue_key=" >> $GITHUB_OUTPUT
-          else
-            echo "✅ Found Jira key: $JIRA_KEY"
-            echo "issue_key=$JIRA_KEY" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "intent=$INTENT" >> $GITHUB_OUTPUT
-
-      # --- JIRA SYNC LOGIC ---
-      - name: Login to Jira
-        if: steps.extract_metadata.outputs.issue_key != ''
-        uses: atlassian/gajira-login@v3
-        with:
-          baseUrl: ${{ secrets.JIRA_BASE_URL }}
-          email: ${{ secrets.JIRA_USER_EMAIL }}
-          token: ${{ secrets.JIRA_API_TOKEN }}
-
-      - name: Transition Jira to In Progress
-        if: (github.event.action == 'opened' || github.event.action == 'reopened') && steps.extract_metadata.outputs.issue_key != ''
-        uses: atlassian/gajira-transition@v3
-        with:
-          issue: ${{ steps.extract_metadata.outputs.issue_key }}
-          transition: "In Progress"
-
-      - name: Transition Jira to Done
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && steps.extract_metadata.outputs.issue_key != ''
-        uses: atlassian/gajira-transition@v3
-        with:
-          issue: ${{ steps.extract_metadata.outputs.issue_key }}
-          transition: "Done"
-
-      # --- AUTHORITY ENGINE / JUDGE LOGIC ---
+    env:
+      # SECURE MAPPING (No Hardcoding)
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_TOKEN }}
       
-      - name: "The Auditor: Verify PR (On Open)"
-        if: github.event.action == 'opened'
-        env:
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
+      # JIRA & CLOUD
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Drivers
         run: |
-          echo "⚖️ Summoning The Auditor..."
-          
-          # Create a temporary script to bridge the Workflow -> MCP Router
-          cat << 'EOF' > run_auditor.js
-          import { MCPHandoffRouter } from './src/services/mcpHandoffRouter.js';
-          
-          const payload = {
-            topic: "${{ github.event.pull_request.title }}",
-            intent: "${{ steps.extract_metadata.outputs.intent }}",
-            evidenceUrl: "${{ github.event.pull_request.html_url }}", // PR URL as evidence
-            type: "audit_request"
-          };
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install kaggle jira notion-client oss2
 
-          async function run() {
-            try {
-              console.log("🚀 Router invoked for:", payload.topic);
-              const result = await MCPHandoffRouter.route(payload);
-              console.log("✅ Judge Verdict:", JSON.stringify(result, null, 2));
-            } catch (error) {
-              console.error("❌ Judge Execution Failed:", error);
-              process.exit(1);
-            }
-          }
-          run();
-          EOF
-          
-          # Execute the script
-          node run_auditor.js
-
-      - name: "The Visionary: Announce Completion (On Merge)"
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true
-        env:
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # Optional: If Visionary posts to Slack
+      - name: Configure Auth
         run: |
-          echo "👁️ Summoning The Visionary..."
-          
-          cat << 'EOF' > run_visionary.js
-          import { MCPHandoffRouter } from './src/services/mcpHandoffRouter.js';
-          
-          const payload = {
-            topic: "Merged: ${{ github.event.pull_request.title }}",
-            intent: "content", // Visionary handles content
-            type: "release_announcement"
-          };
+          # Create kaggle.json from Secrets
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
 
-          async function run() {
-            try {
-              console.log("🚀 Router invoked for release:", payload.topic);
-              const result = await MCPHandoffRouter.route(payload);
-              console.log("✅ Visionary Output:", JSON.stringify(result, null, 2));
-            } catch (error) {
-              console.error("❌ Judge Execution Failed:", error);
-              process.exit(1);
-            }
-          }
-          run();
-          EOF
-          
-          node run_visionary.js
+      - name: 🚀 Execute Sync
+        run: python3 vaal-ai-empire/scripts/kaggle_intelligence.py
+EOF
+
+# 2. UPDATE AUTHORITY ENGINE (Enable Mailchimp & WP)
+cat << 'EOF' > .github/workflows/authority-engine.yml
+name: Authority Engine - Content Pipeline
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      notion_page_id:
+        description: 'Notion Page ID'
+        required: true
+        default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+
+jobs:
+  broadcast_content:
+    runs-on: ubuntu-latest
+    name: "Run Authority Pipeline"
+    
+    env:
+      # BRAINS
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+      
+      # SOURCE
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+      
+      # DESTINATIONS
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}  # Uses the new App Password
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}    # Uses the new Key
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+      
+      # REPORTING
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Stack
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+
+      - name: 🚀 Run Omnichannel Pipeline
+        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+EOF
+
+echo "✅ ALL PIPELINES SYNCED TO SECRETS."
+echo "   - Kaggle: Using 'KAGGLE_USERNAME'"
+echo "   - WordPress: Using 'WORDPRESS_PASSWORD'"
+echo "   - MailChimp: Using 'MAILCHIMP_API_KEY'"

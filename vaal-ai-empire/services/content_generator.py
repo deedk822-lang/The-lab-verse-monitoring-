@@ -3,9 +3,21 @@ from typing import Dict, List, Optional
 import logging
 import json
 from datetime import datetime
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
+
+ bolt-cache-content-factory-9532460564606021076
+from typing import Tuple, Any
+
+@lru_cache(maxsize=1)
+def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
+    """
+    Initialize and cache all content and image generation providers.
+    This function is executed only once, and its result is cached.
+    """
+    # --- Initialize Text Providers ---
 
 # ⚡ Bolt Optimization: Cache provider initialization
 # This function is decorated with lru_cache to ensure that the expensive
@@ -13,38 +25,52 @@ logger = logging.getLogger(__name__)
 @lru_cache(maxsize=1)
 def _get_providers() -> Dict:
     """Initialize and return all available content generation providers."""
+ main
     providers = {
         "cohere": None,
         "groq": None,
         "mistral": None,
         "huggingface": None
     }
+ bolt-cache-content-factory-9532460564606021076
+    # (Existing provider initialization logic remains the same)
+
 
     # Try Cohere
+ main
     try:
         from api.cohere import CohereAPI
         providers["cohere"] = CohereAPI()
         logger.info("✅ Cohere provider initialized")
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Cohere unavailable: {e}")
+ bolt-cache-content-factory-9532460564606021076
+
 
     # Try Groq
+ main
     try:
         from api.groq_api import GroqAPI
         providers["groq"] = GroqAPI()
         logger.info("✅ Groq provider initialized")
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Groq unavailable: {e}")
+ bolt-cache-content-factory-9532460564606021076
+
 
     # Try Mistral (local via Ollama)
+ main
     try:
         from api.mistral import MistralAPI
         providers["mistral"] = MistralAPI()
         logger.info("✅ Mistral provider initialized")
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Mistral unavailable: {e}")
+ bolt-cache-content-factory-9532460564606021076
+
 
     # Try HuggingFace
+ main
     try:
         from api.huggingface_api import HuggingFaceAPI
         providers["huggingface"] = HuggingFaceAPI()
@@ -54,11 +80,28 @@ def _get_providers() -> Dict:
 
     available = [k for k, v in providers.items() if v is not None]
     if available:
+ bolt-cache-content-factory-9532460564606021076
+        logger.info(f"Available text providers: {', '.join(available)}")
+    else:
+        logger.error("❌ No content generation providers available!")
+
+    # --- Initialize Image Generator ---
+    image_generator = None
+    try:
+        from api.image_generation import BusinessImageGenerator
+        image_generator = BusinessImageGenerator()
+        logger.info("✅ Image generation provider initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Image generation disabled: {e}")
+
+    return providers, image_generator
+
         logger.info(f"Available providers: {', '.join(available)}")
     else:
         logger.error("❌ No content generation providers available!")
 
     return providers
+ main
 
 
 class ContentFactory:
@@ -66,6 +109,10 @@ class ContentFactory:
 
     def __init__(self, db=None):
         self.db = db
+ bolt-cache-content-factory-9532460564606021076
+        # Unpack the cached providers and image generator
+        self.providers, self.image_generator = _get_cached_providers()
+
         # ⚡ Use the cached provider factory instead of re-initializing
         self.providers = _get_providers()
         self.image_generator = None
@@ -77,6 +124,7 @@ class ContentFactory:
             logger.info("✅ Image generation enabled")
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
+ main
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""

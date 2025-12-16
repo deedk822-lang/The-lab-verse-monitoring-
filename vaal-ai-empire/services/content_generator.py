@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 
  bolt-cache-content-factory-9532460564606021076
-from typing import Tuple
+from typing import Tuple, Any
 
 @lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict, Optional['BusinessImageGenerator']]:
+def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     """
     Initialize and cache all content and image generation providers.
     This function is executed only once, and its result is cached.

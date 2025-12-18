@@ -1,0 +1,97 @@
+version: '3.8'
+
+networks:
+  vaal-monitoring:
+    driver: bridge
+
+services:
+  # Main Application (Next.js)
+  app:
+    build: .
+    container_name: vaal-app
+    networks:
+      - vaal-monitoring
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # GDELT Monitor (Python)
+  gdelt-monitor:
+    image: python:3.11-slim
+    container_name: vaal-gdelt-monitor
+    networks:
+      - vaal-monitoring
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./services:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install -q requests prometheus-client &&
+             python gdelt_monitor.py"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/metrics"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: vaal-prometheus
+    networks:
+      - vaal-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: vaal-grafana
+    networks:
+      - vaal-monitoring
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-VaalEmpire2025!}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Node Exporter
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: vaal-node-exporter
+    networks:
+      - vaal-monitoring
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:

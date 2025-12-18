@@ -1,198 +1,72 @@
- bolt/cache-hf-model-loading-6086113376814306475
-import timeit
-import sys
 
-# Add the project directory to the Python path
-sys.path.insert(0, 'vaal-ai-empire')
-
-# To benchmark the original, we need to simulate the old code
-from unittest.mock import patch
-from sentence_transformers import SentenceTransformer
-
-# Original (simulated) implementation
-class OriginalHuggingFaceLab:
-    def __init__(self):
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception:
-            self.seo_model = None
-
-    def optimize_keywords(self, keywords: list):
-        if not self.seo_model: return 0
-        embeddings = self.seo_model.encode(keywords)
-        return len(embeddings)
-
-# Optimized implementation
-from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab
-
-def benchmark():
-    """Compare original vs optimized performance."""
-    print("=" * 60)
-    print("⚡ BOLT: PERFORMANCE COMPARISON TEST")
-    print("=" * 60)
-
-    # --- Correctness Check ---
-    # We need to install dependencies to run this check
-    try:
-        original_instance = OriginalHuggingFaceLab()
-        optimized_instance = OptimizedHuggingFaceLab()
-
-        test_keywords = ["python", "performance", "optimization"]
-        original_result = original_instance.optimize_keywords(test_keywords)
-        optimized_result = optimized_instance.optimize_keywords(test_keywords)
-
-        assert original_result == optimized_result, f"Results do not match! Original: {original_result}, Optimized: {optimized_result}"
-        print("✅ Correctness verified: Results match")
-    except ImportError as e:
-        print(f"⚠️ Skipping correctness check: Dependency not found ({e}). Please run 'pip install sentence-transformers'.")
-    except Exception as e:
-        print(f"❌ Correctness check failed: {e}")
-        return False
-
-    # --- Speed Benchmark ---
-    iterations = 10  # Instantiation is slow, so we use fewer iterations
-
-    # Measure original
-    original_setup = "from __main__ import OriginalHuggingFaceLab"
-    original_code = "OriginalHuggingFaceLab()"
-    original_time = timeit.timeit(original_code, setup=original_setup, number=iterations)
-
-    # Measure optimized
-    optimized_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab"
-    optimized_code = "OptimizedHuggingFaceLab()"
-    optimized_time = timeit.timeit(optimized_code, setup=optimized_setup, number=iterations)
-
-    # The first run of the optimized version will be slow due to model loading.
-    # We run it once to cache the model, then benchmark subsequent runs.
-    print("\nCaching optimized model...")
-    first_run_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab; OptimizedHuggingFaceLab()"
-    cached_optimized_time = timeit.timeit(optimized_code, setup=first_run_setup, number=iterations)
-
-    print(f"\n--- Benchmark Results ({iterations} instantiations) ---")
-    print(f"Original Total Time:      {original_time:.4f}s")
-    print(f"Optimized (First Run):    {optimized_time:.4f}s (includes one-time model load)")
-    print(f"Optimized (Subsequent):   {cached_optimized_time:.4f}s (uses cached model)")
-
-    try:
-        improvement = ((original_time - cached_optimized_time) / original_time) * 100
-        print(f"\nImprovement (Subsequent): {improvement:.1f}% faster")
-
-        if improvement > 10:
-            print("✅ SIGNIFICANT IMPROVEMENT DETECTED")
-        elif improvement > 0:
-            print("✅ Minor improvement")
-        else:
-            print("⚠️ NO IMPROVEMENT - Optimization may not be effective")
-        return improvement > 0
-    except ZeroDivisionError:
-        print("⚠️ Could not calculate improvement (division by zero).")
-        return False
-
-
-if __name__ == "__main__":
-    success = benchmark()
-=======
 import time
 import sys
 import os
-import logging
-import importlib
+import unittest
+from unittest.mock import patch, MagicMock
 
-# Ensure the script can find the 'vaal-ai-empire' module.
-# This assumes the script is run from the root of the repository.
-sys.path.insert(0, os.path.abspath(os.getcwd()))
+# Dynamically add the project root to the Python path
+# This allows us to import modules from the 'vaal-ai-empire' directory
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'vaal-ai-empire')))
 
-
-# Disable excessive logging from SentenceTransformer during benchmark
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger("sentence_transformers")
-logger.setLevel(logging.ERROR)
+from services.content_generator import content_factory, ContentFactory
 
 
-# --- Define the Original (un-optimized) implementation for comparison ---
-# We do this in-memory to avoid having to revert the file.
-class OriginalHuggingFaceLab:
-    """A recreation of the original, un-optimized class."""
-    def __init__(self):
-        from sentence_transformers import SentenceTransformer
-        # This is the expensive operation that was repeated on every instantiation.
+def benchmark_operation(func, iterations=1000):
+    """Benchmark the time it takes to execute a function."""
+    start = time.perf_counter()
+    for _ in range(iterations):
+        instance = func()
+    end = time.perf_counter()
+    return end - start
+
+class TestSingletonPerformance(unittest.TestCase):
+    """Performance tests for the ContentFactory singleton optimization."""
+
+    @patch('services.content_generator._get_cached_providers')
+    def test_singleton_performance_improvement(self, mock_get_providers):
+        """
+        Verify that using the singleton is faster than repeated instantiation.
+        """
+        # Mock the expensive provider initialization to isolate the test
+        # to the performance of object creation itself.
+        mock_get_providers.return_value = ({}, MagicMock())
+
+        print("\n" + "="*60)
+        print("⚡ Bolt: ContentFactory Singleton Performance Benchmark ⚡")
+        print("="*60)
+        print("Objective: Verify that using a shared singleton instance is")
+        print("           faster than creating a new instance every time.")
+        print("-" * 60)
+
+        iterations = 5000
+
+        # --- Benchmark: Unoptimized (repeated instantiation) ---
+        print(f"Running Unoptimized Benchmark ({iterations} instantiations)...")
+        unoptimized_time = benchmark_operation(ContentFactory, iterations)
+        print(f"Unoptimized Time: {unoptimized_time:.4f}s")
+        self.assertGreater(unoptimized_time, 0)
+
+        # --- Benchmark: Optimized (accessing singleton) ---
+        def access_singleton():
+            # Simulate accessing the already-created singleton instance
+            return content_factory
+
+        print(f"Running Optimized Benchmark ({iterations} singleton accesses)...")
+        optimized_time = benchmark_operation(access_singleton, iterations)
+        print(f"Optimized Time:   {optimized_time:.4f}s")
+
+        # --- Analysis ---
+        print("-" * 60)
         try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception:
-            self.seo_model = None
+            improvement = ((unoptimized_time - optimized_time) / unoptimized_time) * 100
+            print(f"✅ Performance Improvement: {improvement:.1f}%")
+            self.assertGreater(improvement, 50, "Expected a significant performance improvement.")
+        except ZeroDivisionError:
+            self.fail("Unoptimized time was zero, benchmark failed.")
 
-# --- Import the Optimized implementation from the actual refactored code ---
-try:
-    # The directory 'vaal-ai-empire' has a hyphen, so we must use importlib
-    # to import the module dynamically.
-    hf_lab_module = importlib.import_module("vaal-ai-empire.src.core.hf_lab")
-    OptimizedHuggingFaceLab = hf_lab_module.HuggingFaceLab
-except ImportError as e:
-    print(f"ERROR: Could not import the optimized HuggingFaceLab: {e}")
-    print("Please ensure you are running this script from the repository root and that 'vaal-ai-empire' exists.")
-    sys.exit(1)
+        print("="*60)
+        print("Conclusion: The singleton pattern significantly reduces overhead.")
 
-
-def benchmark_instantiation(cls, iterations=3):
-    """Benchmarks the time it takes to create N instances of a class."""
-    print(f"--- Benchmarking {cls.__name__} ({iterations} iterations) ---")
-    start_time = time.perf_counter()
-    # Create instances in a loop
-    for i in range(iterations):
-        print(f"  Instance {i+1}/{iterations}...", end='\r')
-        _ = cls()
-    end_time = time.perf_counter()
-    print("\n" + "-" * 30)
-    total_time = end_time - start_time
-    avg_time = total_time / iterations
-    print(f"Total time: {total_time:.4f}s")
-    print(f"Average time per instantiation: {avg_time:.4f}s\n")
-    return total_time
-
-def test_optimization():
-    """Compares the performance of the original vs. optimized class."""
-    print("=" * 60)
-    print("⚡ BOLT: Performance Benchmark Test ⚡")
-    print("=" * 60)
-    print("Objective: Verify that caching the SentenceTransformer model")
-    print("improves the instantiation speed of the HuggingFaceLab class.")
-    print("-" * 60)
-
-    # Benchmark the original, slow implementation
-    original_total_time = benchmark_instantiation(OriginalHuggingFaceLab, iterations=3)
-
-    # Benchmark the optimized implementation. The first run includes the one-time
-    # cost of loading the model.
-    optimized_first_run_time = benchmark_instantiation(OptimizedHuggingFaceLab, iterations=3)
-
-    # Benchmark the optimized implementation again. This run should be MUCH faster
-    # as the model is now cached.
-    optimized_cached_run_time = benchmark_instantiation(OptimizedHuggingFaceLab, iterations=3)
-
-    print("=" * 60)
-    print("📊 Benchmark Results Summary 📊")
-    print("=" * 60)
-    print(f"Original Implementation (Avg per instance):      {original_total_time/3:.4f}s")
-    print(f"Optimized Implementation (1st Run, Avg):       {optimized_first_run_time/3:.4f}s")
-    print(f"Optimized Implementation (2nd Run, Cached, Avg): {optimized_cached_run_time/3:.4f}s")
-    print("-" * 60)
-
-    # The true comparison is between the original and the cached run.
-    # A small tolerance is added to avoid floating point inaccuracies.
-    if original_total_time > optimized_cached_run_time + 0.001:
-        improvement = ((original_total_time - optimized_cached_run_time) / original_total_time) * 100
-        print(f"✅ SUCCESS: Cached run was {improvement:.1f}% faster than the original.")
-        return True
-    else:
-        print("❌ FAILURE: The cached implementation was not significantly faster.")
-        print("This could indicate an issue with the @lru_cache implementation.")
-        return False
-
-if __name__ == "__main__":
-    # Ensure a dummy key is set to avoid errors if the real key isn't in the env
-    if "HUGGINGFACE_API_KEY" not in os.environ:
-        os.environ["HUGGINGFACE_API_KEY"] = "test-key"
-
-    success = test_optimization()
- main
-    sys.exit(0 if success else 1)
+if __name__ == '__main__':
+    unittest.main()

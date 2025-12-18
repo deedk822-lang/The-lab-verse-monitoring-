@@ -361,58 +361,46 @@ Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 
 ---
 
-## 📊 Live Production Dashboard
-
-### Vaal AI Empire - Command Center
-View the actual production dashboard monitoring our Model Arbitrage Gateway:
-
-#### 🌍 Live Dashboard Access
-**URL:** [View Live Dashboard →](YOUR_GRAFANA_CLOUD_DASHBOARD_URL)
-*Updates every 30 seconds | Last 6 hours of data*
-
-### Dashboard Features
-
-#### 🎯 Gateway Overview
-- ✅ Total Request Rate (req/s)
-- ✅ Error Rate with SLO tracking
-- ✅ Latency p95 monitoring
-- ✅ Gateway uptime percentage
-
-#### 🤖 Model Arbitrage
-- ✅ Qwen Orchestrator metrics
-- ✅ DeepSeek SARS compliance
-- ✅ Qwen VL Seer monitoring
-- ✅ Request distribution
-
-#### 🇿🇦 SARS Compliance
-- ✅ Queue size tracking
-- ✅ Processing time metrics
-- ✅ Tax analysis rate
-- ✅ Alert at 100+ items
-
-#### 🚨 Crisis Monitoring
-- ✅ GDELT data freshness
-- ✅ Event processing rate
-- ✅ Crisis categorization
-- ✅ 15-min alert threshold
-
-### Download Dashboard
-Clone our dashboard for your own Grafana instance:
+## 🚀 Quick Start Commands
 
 ```bash
-# Clone the dashboard JSON
-curl -O https://raw.githubusercontent.com/deedk822-lang/The-lab-verse-monitoring-/main/examples/grafana-dashboards/vaal-empire-production.json
+# 1. Create directory structure
+mkdir -p services monitoring/{grafana,rules}
 
-# Import to your Grafana
-# Dashboards → Import → Upload JSON file
+# 2. Copy all files above into correct locations
+
+# 3. Start the entire stack
+docker-compose -f docker-compose.monitoring.yml up -d
+
+# 4. Verify services
+docker-compose -f docker-compose.monitoring.yml ps
+
+# 5. Check GDELT monitor logs
+docker logs -f vaal-gdelt-monitor
+
+# 6. Access dashboards
+# - Grafana: http://localhost:3001 (admin/VaalEmpire2025!)
+# - Prometheus: http://localhost:9090
+# - GDELT Metrics: http://localhost:9091/metrics
+# - App Metrics: http://localhost:3000/api/metrics
 ```
 
-#### Quick Import via Dashboard ID
+---
+
+## ✅ Verification Checklist
 
 ```bash
-# In Grafana:
-# Dashboards → Import → Enter ID: vaal-empire-2025
-# Or use our public dashboard link
+# Check GDELT metrics are being collected
+curl http://localhost:9091/metrics | grep gdelt
+
+# Check Prometheus is scraping
+curl http://localhost:9090/api/v1/targets | jq
+
+# Check app metrics
+curl http://localhost:3000/api/metrics
+
+# View Grafana dashboards
+open http://localhost:3001
 ```
 =======
 # MCP Gateway Setup Guide

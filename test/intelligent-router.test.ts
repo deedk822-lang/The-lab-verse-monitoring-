@@ -6,7 +6,7 @@ import {
 } from '../src/ai-connections/intelligent-router';
 import { MISTRAL_MODELS, AI_CONNECTIONS } from '../src/ai-connections/mistral-config';
 
-let nock;
+let nock: typeof import('nock').default | undefined;
 
 beforeAll(async () => {
   const nockModule = await import('nock');

@@ -11,13 +11,6 @@ jobs:
     name: "Kaggle Intelligence Sync"
     
     env:
-      # ========================================================================
-      # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
-      # NO API KEYS ARE HARDCODED - ALL VALUES COME FROM:
-      # https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
-      # ========================================================================
- feat/implement-authority-engine
-
       # === IDENTITY 1: LUNGELO LUDA (DATA ANALYST) ===
       # Kaggle username: lungeloluda
       # Email: dimakatsomoleli@gmail.com
@@ -25,16 +18,6 @@ jobs:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}      # ✅ Already set in GitHub Secrets
       KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
       
-
-      
-      # === IDENTITY 1: LUNGELO LUDA (DATA ANALYST) ===
-      # Kaggle username: lungeloluda
-      # Email: dimakatsomoleli@gmail.com
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}      # ✅ Already set in GitHub Secrets
-      KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
-      
- main
       # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
       # Jira tickets created by: dimakatsomoleli@gmail.com
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
@@ -42,21 +25,12 @@ jobs:
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
 
- feat/implement-authority-engine
-      # === STORAGE (ALIBABA CLOUD OSS) ===
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}      # ✅ Already set in GitHub Secrets
-      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}  # ✅ Already set in GitHub Secrets
-      OSS_ENDPOINT: https://oss-ap-southeast-1.aliyuncs.com     # Public endpoint (not secret)
-      OSS_BUCKET: vaal-vault                                # Bucket name (not secret)
-
       # === STORAGE (ALIBABA CLOUD OSS - SINGAPORE REGION) ===
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}      # ✅ Already set in GitHub Secrets
       OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}  # ✅ Already set in GitHub Secrets
       OSS_ENDPOINT: https://oss-ap-southeast-1.aliyuncs.com    # Singapore region (production)
       OSS_BUCKET: vaal-vault                                    # Production bucket name
- main
 
     steps:
       - name: Checkout Code
@@ -79,10 +53,7 @@ jobs:
           echo "🆔 Verifying Identity Configuration..."
           echo "  🔬 Kaggle: $KAGGLE_USERNAME (Lungelo Luda)"
           echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
- feat/implement-authority-engine
-
           echo "  ☁️  OSS: Singapore region (oss-ap-southeast-1)"
- main
           echo ""
           echo "✅ All secrets loaded from GitHub repository settings"
           echo "✅ No API keys requested from user"
@@ -100,10 +71,7 @@ jobs:
           echo "**Identities:**" >> $GITHUB_STEP_SUMMARY
           echo "- 🔬 Kaggle Analyst: Lungelo Luda (lungeloluda)" >> $GITHUB_STEP_SUMMARY
           echo "- 📊 Project Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
- feat/implement-authority-engine
-
           echo "- ☁️  Storage: Alibaba OSS Singapore (vaal-vault)" >> $GITHUB_STEP_SUMMARY
- main
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Secrets:** All loaded from GitHub repository settings" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** Pipeline executed successfully" >> $GITHUB_STEP_SUMMARY

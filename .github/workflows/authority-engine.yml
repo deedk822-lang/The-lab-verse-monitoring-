@@ -14,28 +14,6 @@ jobs:
   broadcast_content:
     runs-on: ubuntu-latest
     name: "Authority Engine - Content Broadcasting"
- feat/implement-authority-engine
-
-    env:
-      # ========================================================================
-      # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
-      # NO API KEYS ARE HARDCODED - ALL VALUES COME FROM:
-      # https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
-      # ========================================================================
-
-      # === AI BRAINS ===
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # ✅ Already set in GitHub Secrets
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # ✅ Already set in GitHub Secrets
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}     # ✅ Already set in GitHub Secrets
-
-      # === CONTENT SOURCE ===
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}         # ✅ Already set in GitHub Secrets
-      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
-
-
-    
     env:
       # === AI BRAINS ===
       DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
@@ -46,39 +24,17 @@ jobs:
       NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
       NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
 
- main
       # === IDENTITY 1: DEEDK822 (BLOG OWNER & CONTENT PUBLISHER) ===
-      # WordPress publishing identity
-      # Email: deedk822@gmail.com
+      # WordPress publishing identity: deedk822@gmail.com
       # Site: deedk822.wordpress.com
- feat/implement-authority-engine
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}         # ✅ Already set in GitHub Secrets
-      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }} # ✅ Already set in GitHub Secrets
-      WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php"  # Public URL (not secret)
-
-      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}           # deedk822@gmail.com
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
       WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
       WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php"
- main
 
       # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
-      # Jira task tracking identity
-      # Email: dimakatsomoleli@gmail.com
+      # Jira task tracking identity: dimakatsomoleli@gmail.com
       # Jira: dimakatsomoleli.atlassian.net
- feat/implement-authority-engine
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
-      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
-      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
-
-      # === MARKETING CHANNELS ===
-      # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}    # ✅ Already set in GitHub Secrets
-      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}  # ✅ Already set in GitHub Secrets
-      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }} # ✅ Already set in GitHub Secrets
-
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}        # dimakatsomoleli@gmail.com
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
       JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
 
@@ -86,7 +42,6 @@ jobs:
       ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
       MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
       MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
- main
 
     steps:
       - name: Checkout Code
@@ -101,41 +56,31 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r vaal-ai-empire/requirements.txt
-          pip install -e vaal-ai-empire/
+          pip install -e vaal-ai-empire
           pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
 
- feat/implement-authority-engine
-      - name: 🔑 Verify Secrets Are Loaded
-
-      - name: 🔑 Verify Identities
- main
+      - name: "Verify Identities"
         run: |
-          echo "🆔 Verifying Identity Configuration..."
-          echo "  📝 WordPress: deedk822@gmail.com (Deedk822)"
-          echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
- feat/implement-authority-engine
+          echo "Verifying Identity Configuration..."
+          echo "  WordPress: deedk822@gmail.com (Deedk822)"
+          echo "  Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
           echo ""
-          echo "✅ All secrets loaded from GitHub repository settings"
-          echo "✅ No API keys requested from user"
+          echo "All secrets loaded from GitHub repository settings"
+          echo "No API keys requested from user"
+          echo "All identities configured correctly"
 
- main
-          echo "✅ All identities configured correctly"
-
-      - name: 🚀 Execute Authority Engine Pipeline
+      - name: "Execute Authority Engine Pipeline"
         run: |
           python3 vaal-ai-empire/scripts/run_authority_pipeline.py
 
-      - name: 📝 Generate Summary
+      - name: "Generate Summary"
         if: always()
         run: |
-          echo "## 🚀 Authority Engine Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Authority Engine Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Identities Used:**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📝 Content Publisher: Deedk822 (deedk822@gmail.com)" >> $GITHUB_STEP_SUMMARY
-          echo "- 📊 Task Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- Content Publisher: Deedk822 (deedk822@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- Task Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
- feat/implement-authority-engine
           echo "**Secrets:** All loaded from GitHub repository settings" >> $GITHUB_STEP_SUMMARY
-
- main
           echo "**Status:** Pipeline executed" >> $GITHUB_STEP_SUMMARY

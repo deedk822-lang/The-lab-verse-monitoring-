@@ -2,47 +2,28 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: 'labverse-production'
-
-rule_files:
-  - "alert_rules.yml"
-
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - alertmanager:9093
+    cluster: 'vaal-ai-empire'
+    environment: 'production'
 
 scrape_configs:
-  - job_name: 'lab-verse-gateway'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics'
-
-  - job_name: 'kimi-instruct'
-    static_configs:
-      - targets: ['kimi-project-manager:8084']
-    scrape_interval: 10s
-    metrics_path: '/metrics'
-    
-  - job_name: 'lapverse-core'
+  # Next.js App Metrics
+  - job_name: 'vaal-gateway'
     static_configs:
       - targets: ['app:3000']
-    scrape_interval: 10s
-    metrics_path: '/metrics'
-    
+    metrics_path: '/api/metrics'
+
+  # GDELT Monitor
+  - job_name: 'gdelt-monitor'
+    static_configs:
+      - targets: ['gdelt-monitor:9091']
+    scrape_interval: 60s
+
+  # System Metrics
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
-    scrape_interval: 15s
-    
+
+  # Prometheus Self-Monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
-    scrape_interval: 30s
-    
-  - job_name: 'ollama'
-    static_configs:
-      - targets: ['ollama:11434']
-    scrape_interval: 30s
-    metrics_path: '/metrics'

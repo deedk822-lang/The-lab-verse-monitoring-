@@ -358,6 +358,62 @@ Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 🚀 **Ready to launch your $237K/year MCP gateway?**
 
 [Get Started Now](https://your-domain.vercel.app/pricing) | [Watch Demo](https://your-domain.vercel.app/demo) | [Read Docs](./MONETIZATION_GUIDE.md)
+
+---
+
+## 📊 Live Production Dashboard
+
+### Vaal AI Empire - Command Center
+View the actual production dashboard monitoring our Model Arbitrage Gateway:
+
+#### 🌍 Live Dashboard Access
+**URL:** [View Live Dashboard →](YOUR_GRAFANA_CLOUD_DASHBOARD_URL)
+*Updates every 30 seconds | Last 6 hours of data*
+
+### Dashboard Features
+
+#### 🎯 Gateway Overview
+- ✅ Total Request Rate (req/s)
+- ✅ Error Rate with SLO tracking
+- ✅ Latency p95 monitoring
+- ✅ Gateway uptime percentage
+
+#### 🤖 Model Arbitrage
+- ✅ Qwen Orchestrator metrics
+- ✅ DeepSeek SARS compliance
+- ✅ Qwen VL Seer monitoring
+- ✅ Request distribution
+
+#### 🇿🇦 SARS Compliance
+- ✅ Queue size tracking
+- ✅ Processing time metrics
+- ✅ Tax analysis rate
+- ✅ Alert at 100+ items
+
+#### 🚨 Crisis Monitoring
+- ✅ GDELT data freshness
+- ✅ Event processing rate
+- ✅ Crisis categorization
+- ✅ 15-min alert threshold
+
+### Download Dashboard
+Clone our dashboard for your own Grafana instance:
+
+```bash
+# Clone the dashboard JSON
+curl -O https://raw.githubusercontent.com/deedk822-lang/The-lab-verse-monitoring-/main/examples/grafana-dashboards/vaal-empire-production.json
+
+# Import to your Grafana
+# Dashboards → Import → Upload JSON file
+```
+
+#### Quick Import via Dashboard ID
+
+```bash
+# In Grafana:
+# Dashboards → Import → Enter ID: vaal-empire-2025
+# Or use our public dashboard link
+```
 =======
 # MCP Gateway Setup Guide
 

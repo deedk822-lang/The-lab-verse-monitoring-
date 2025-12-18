@@ -1,4 +1,6 @@
-import { register } from 'prom-client';
+import { register, collectDefaultMetrics } from 'prom-client';
+
+collectDefaultMetrics();
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

@@ -14,6 +14,11 @@ alerting:
           - alertmanager:9093
 
 scrape_configs:
+  - job_name: 'lab-verse-gateway'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+    metrics_path: '/api/metrics'
+
   - job_name: 'kimi-instruct'
     static_configs:
       - targets: ['kimi-project-manager:8084']

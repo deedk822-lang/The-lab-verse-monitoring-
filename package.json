@@ -27,7 +27,9 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "openai": "^4.20.1",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "prom-client": "^15.1.2",
+    "axios": "^1.13.2"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2.0.53",

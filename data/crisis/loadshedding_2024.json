@@ -1,0 +1,18 @@
+{
+  "title": "Loadshedding Intelligence 2024",
+  "data_sources": [
+    "Eskom Official",
+    "Loadshedding API",
+    "EskomSePush community monitoring"
+  ],
+  "performance_2024": {
+    "loadshedding_free_days": 352,
+    "as_of_date": "2024-12-17"
+  },
+  "predictive_indicators": {
+    "eaf_thresholds": {
+      "red_alert": 60.0,
+      "amber_alert": 65.0
+    }
+  }
+}

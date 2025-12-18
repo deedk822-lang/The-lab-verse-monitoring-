@@ -15,8 +15,8 @@ def get_seo_model():
         model = SentenceTransformer('all-MiniLM-L6-v2')
         logger.info("✅ HF Lab: Local SEO Model Loaded.")
         return model
-    except Exception:
-        logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+    except Exception as e:
+        logger.warning(f"⚠️ HF Lab: Local SEO Model missing: {e}")
         return None
 
 

@@ -304,3 +304,10 @@ Generate all {days} emails now:"""
 
     def get_provider_status(self) -> Dict:
         return {provider: "available" if client else "unavailable" for provider, client in self.providers.items()}
+
+
+# ⚡ Bolt Optimization: Singleton instance
+# Provide a single, shared instance of the ContentFactory to prevent
+# repeated and unnecessary object instantiation across the application.
+# This reduces memory overhead and improves performance.
+content_factory = ContentFactory()

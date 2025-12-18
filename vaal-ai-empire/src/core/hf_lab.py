@@ -6,13 +6,15 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
 
+SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
+
 
 # ⚡ Bolt Optimization: Cache the model loading
 @lru_cache(maxsize=None)
 def get_seo_model():
     """Loads and caches the SentenceTransformer model."""
     try:
-        model = SentenceTransformer('all-MiniLM-L6-v2')
+        model = SentenceTransformer(SEO_MODEL_NAME)
         logger.info("✅ HF Lab: Local SEO Model Loaded.")
         return model
     except Exception as e:

@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
 import io
+import concurrent.futures
 
 logger = logging.getLogger(__name__)
 
@@ -338,24 +339,28 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """Generate multiple images in parallel while preserving the original order."""
+        results = [None] * len(prompts)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Map futures to their original index to preserve order
+            future_to_index = {executor.submit(self.generate, prompt, style): i for i, prompt in enumerate(prompts)}
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
-
-            try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
-                    "image_url": self._create_placeholder(prompt),
-                    "provider": "error",
-                    "cost_usd": 0.0,
-                    "error": str(e)
-                })
-
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                prompt = prompts[index]
+                try:
+                    result = future.result()
+                    results[index] = result
+                    logger.info(f"✅ Successfully generated image for prompt: {prompt[:50]}...")
+                except Exception as e:
+                    logger.error(f"❌ Failed to generate image for prompt: {prompt[:50]} - {e}")
+                    results[index] = {
+                        "image_url": self._create_placeholder(prompt),
+                        "provider": "error",
+                        "cost_usd": 0.0,
+                        "error": str(e),
+                        "prompt": prompt
+                    }
         return results
 
     def get_status(self) -> Dict:

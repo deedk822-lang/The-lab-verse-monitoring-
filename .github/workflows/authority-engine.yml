@@ -73,7 +73,7 @@ jobs:
           pip install -e vaal-ai-empire/
           pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
 
-      - name: 🔑 Verify Secrets Are Loaded
+      - name: 🔑 Verify Identities
         run: |
           echo "🆔 Verifying Identity Configuration..."
           echo "  📝 WordPress: deedk822@gmail.com (Deedk822)"

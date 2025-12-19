@@ -13,7 +13,7 @@ export const validateApiKey = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'API key required',
-      message: 'Please provide an API key in the x-api-key header or Authorization header'
+      message: 'Please provide an API key in the x-api-key header or Authorization header',
     });
   }
 
@@ -22,7 +22,7 @@ export const validateApiKey = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Invalid API key',
-      message: 'The provided API key is invalid'
+      message: 'The provided API key is invalid',
     });
   }
 
@@ -43,7 +43,7 @@ export const validateWebhookSecret = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Webhook secret required',
-      message: 'Please provide a webhook secret in the x-webhook-secret header'
+      message: 'Please provide a webhook secret in the x-webhook-secret header',
     });
   }
 
@@ -52,7 +52,7 @@ export const validateWebhookSecret = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Invalid webhook secret',
-      message: 'The provided webhook secret is invalid'
+      message: 'The provided webhook secret is invalid',
     });
   }
 

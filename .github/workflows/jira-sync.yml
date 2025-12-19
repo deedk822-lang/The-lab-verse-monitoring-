@@ -1,52 +1,124 @@
-name: Jira Sync
+
+#!/bin/bash
+set -e
+
+echo "🔐 SYNCING WORKFLOWS TO REPOSITORY SECRETS..."
+echo "   - Mapping: KAGGLE_USERNAME -> ${{ secrets.KAGGLE_USERNAME }}"
+echo "   - Mapping: WORDPRESS_PASSWORD -> ${{ secrets.WORDPRESS_PASSWORD }}"
+echo "   - Mapping: MAILCHIMP -> ${{ secrets.MAILCHIMP_API_KEY }}"
+
+mkdir -p .github/workflows
+
+# 1. UPDATE KAGGLE PIPELINE (Remove Hardcoded Username)
+cat << 'EOF' > .github/workflows/kaggle-intelligence.yml
+name: Kaggle Intelligence Pipeline
 
 on:
-  pull_request:
-    types: [opened, reopened, closed]
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 6 AM SAST
+  workflow_dispatch:
 
 jobs:
-  sync-jira-on-pr:
+  data-intelligence:
     runs-on: ubuntu-latest
+    name: "Sync Kaggle Data"
+    
+    env:
+      # SECURE MAPPING (No Hardcoding)
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_TOKEN }}
+      
+      # JIRA & CLOUD
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
+      OSS_BUCKET: vaal-vault
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-      - name: Extract Jira issue key from branch name
-        id: extract_jira_key
+      - name: Install Drivers
         run: |
-          # The branch name is available in the GITHUB_HEAD_REF environment variable
-          echo "Branch name: ${{ github.head_ref }}"
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install kaggle jira notion-client oss2
 
-          # Regex to find key like TC-123 (Change 'TC' if your project key is different)
-          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E 'TC-[0-9]+' | head -1)
+      - name: Configure Auth
+        run: |
+          # Create kaggle.json from Secrets
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
 
-          if [ -z "$JIRA_KEY" ]; then
-            echo "Jira key not found in branch name. Skipping."
-            echo "issue_key=" >> $GITHUB_OUTPUT
-          else
-            echo "Found Jira key: $JIRA_KEY"
-            echo "issue_key=$JIRA_KEY" >> $GITHUB_OUTPUT
-          fi
+      - name: 🚀 Execute Sync
+        run: python3 vaal-ai-empire/scripts/kaggle_intelligence.py
+EOF
 
-      # FIX: Added Login Step (Required for gajira-transition to work)
-      - name: Login to Jira
-        if: steps.extract_jira_key.outputs.issue_key != ''
-        uses: atlassian/gajira-login@v3
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+# 2. UPDATE AUTHORITY ENGINE (Enable Mailchimp & WP)
+cat << 'EOF' > .github/workflows/authority-engine.yml
+name: Authority Engine - Content Pipeline
 
-      - name: Transition Jira issue to In Progress
-        if: (github.event.action == 'opened' || github.event.action == 'reopened') && steps.extract_jira_key.outputs.issue_key != ''
-        uses: atlassian/gajira-transition@v3
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      notion_page_id:
+        description: 'Notion Page ID'
+        required: true
+        default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+
+jobs:
+  broadcast_content:
+    runs-on: ubuntu-latest
+    name: "Run Authority Pipeline"
+    
+    env:
+      # BRAINS
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
+      
+      # SOURCE
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+      
+      # DESTINATIONS
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}  # Uses the new App Password
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}    # Uses the new Key
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }}
+      
+      # REPORTING
+      JIRA_USER_EMAIL: ${{ secrets.USER_LOGON_NAME }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          issue: ${{ steps.extract_jira_key.outputs.issue_key }}
-          transition: "In Progress"
+          python-version: '3.10'
+          cache: 'pip'
 
-      - name: Transition Jira issue to Done
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && steps.extract_jira_key.outputs.issue_key != ''
-        uses: atlassian/gajira-transition@v3
-        with:
-          issue: ${{ steps.extract_jira_key.outputs.issue_key }}
-          transition: "Done"
+      - name: Install Stack
+        run: |
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+
+      - name: 🚀 Run Omnichannel Pipeline
+        run: python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+EOF
+
+echo "✅ ALL PIPELINES SYNCED TO SECRETS."
+echo "   - Kaggle: Using 'KAGGLE_USERNAME'"
+echo "   - WordPress: Using 'WORDPRESS_PASSWORD'"
+echo "   - MailChimp: Using 'MAILCHIMP_API_KEY'"

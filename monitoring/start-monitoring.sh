@@ -23,7 +23,22 @@ docker-compose -f docker-compose.monitoring.yml up -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to start..."
-sleep 10
+echo "⏳ Waiting for services to become healthy..."
+for i in {1..24}; do
+  # There are 4 services with healthchecks
+  if [ "$(docker-compose -f docker-compose.monitoring.yml ps | grep -c '(healthy)')" -ge 4 ]; then
+    echo "✅ Services are healthy."
+    break
+  fi
+  echo "  ... waiting for services to be healthy ($i/24)"
+  sleep 5
+done
+
+if [ "$i" -ge 24 ]; then
+  echo "❌ Timeout waiting for services to become healthy."
+  docker-compose -f docker-compose.monitoring.yml ps
+  exit 1
+fi
 
 # Check health
 echo "🏥 Checking service health..."

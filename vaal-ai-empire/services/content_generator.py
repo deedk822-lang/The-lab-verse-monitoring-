@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 import logging
 import json
 from datetime import datetime
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -447,3 +448,13 @@ Generate all {days} emails now:"""
             provider: "available" if client else "unavailable"
             for provider, client in self.providers.items()
         }
+
+@lru_cache(maxsize=1)
+def get_content_factory(db=None):
+    """
+    Returns a cached singleton instance of the ContentFactory.
+    The `@lru_cache` decorator ensures the expensive initialization of API clients
+    happens only once.
+    """
+    logger.info("Initializing ContentFactory singleton...")
+    return ContentFactory(db)

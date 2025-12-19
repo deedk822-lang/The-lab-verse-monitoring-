@@ -86,8 +86,8 @@ def main():
     # --- Test services ---
     logger.info("\n🛠️  Testing Services...")
     try:
-        from services.content_generator import ContentFactory
-        factory = ContentFactory()
+        from services.content_generator import get_content_factory
+        factory = get_content_factory()
         logger.info("✅ Content Factory: Instantiated")
 
         logger.info("🧪 Testing content generation...")

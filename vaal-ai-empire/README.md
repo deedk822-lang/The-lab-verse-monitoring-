@@ -157,8 +157,8 @@ python scripts/client_onboarding.py demo +27821234567 "Test Business" butchery
 
 # Generate content
 python -c "
-from services.content_generator import ContentFactory
-factory = ContentFactory()
+from services.content_generator import get_content_factory
+factory = get_content_factory()
 pack = factory.generate_social_pack('butchery', 'afrikaans')
 print(f'Generated {len(pack[\"posts\"])} posts!')
 "
@@ -169,9 +169,9 @@ print(f'Generated {len(pack[\"posts\"])} posts!')
 ### Generate Social Media Content
 
 ```python
-from services.content_generator import ContentFactory
+from services.content_generator import get_content_factory
 
-factory = ContentFactory()
+factory = get_content_factory()
 
 # Generate 10 posts and 5 images for a butchery
 pack = factory.generate_social_pack(

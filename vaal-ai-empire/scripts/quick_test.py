@@ -12,7 +12,7 @@ def quick_test():
     # Test 1: Imports
     try:
         from api.cohere import CohereAPI
-        from services.content_generator import ContentFactory
+        from services.content_generator import get_content_factory
         print("✅ Core components imported successfully")
     except (ImportError, ValueError) as e:
         print(f"⚠️  Core component import failed: {e}")
@@ -25,7 +25,7 @@ def quick_test():
 
     # Test 2: API Initialization and Content Generation
     try:
-        factory = ContentFactory()
+        factory = get_content_factory()
         print("✅ ContentFactory initialized")
 
         result = factory.generate_social_pack("butchery", "afrikaans")

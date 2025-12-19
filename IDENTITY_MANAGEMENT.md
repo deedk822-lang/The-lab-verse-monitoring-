@@ -10,8 +10,8 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 
 ### 1️⃣ DEEDK822 (Blog Owner & Content Publisher)
 
-**Email:** `deedk822@gmail.com`  
-**WordPress:** `deedk822.wordpress.com`  
+**Email:** `<your-blog-owner-email>`  
+**WordPress:** `<your-wordpress-site>.wordpress.com`  
 **Purpose:** Content publishing & SEO
 
 **Services:**

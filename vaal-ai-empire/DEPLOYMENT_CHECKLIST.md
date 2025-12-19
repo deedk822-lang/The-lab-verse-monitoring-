@@ -116,8 +116,8 @@ Use this checklist to ensure your system is ready for production deployment.
 #### Test Content Generation
 ```python
 - [ ] Run test script:
-from services.content_generator import ContentFactory
-factory = ContentFactory()
+from services.content_generator import get_content_factory
+factory = get_content_factory()
 pack = factory.generate_social_pack('butchery', 'afrikaans')
 print(f"Generated {len(pack['posts'])} posts")
 
@@ -255,10 +255,10 @@ sqlite3 data/vaal_empire.db "SELECT * FROM clients;"
 ```bash
 - [ ] Generate content pack:
 python -c "
-from services.content_generator import ContentFactory
+from services.content_generator import get_content_factory
 from core.database import Database
 db = Database()
-factory = ContentFactory(db)
+factory = get_content_factory(db)
 pack = factory.generate_social_pack('butchery', 'afrikaans', 10, 5)
 print('Success!')
 "

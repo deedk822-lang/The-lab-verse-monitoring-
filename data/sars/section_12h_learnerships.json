@@ -1,0 +1,29 @@
+{
+  "title": "SARS Section 12H Learnership Allowances",
+  "official_sources": [
+    "SARS Legal Note IN-20",
+    "SARS Learnership Guide"
+  ],
+  "allowances": {
+    "annual_allowance": {
+      "nqf_1_to_6": {
+        "able_bodied": 40000,
+        "disability": 60000
+      },
+      "nqf_7_to_10": {
+        "able_bodied": 20000,
+        "disability": 50000
+      }
+    },
+    "completion_bonus": {
+      "nqf_1_to_6": {
+        "able_bodied": 40000,
+        "disability": 60000
+      },
+      "nqf_7_to_10": {
+        "able_bodied": 20000,
+        "disability": 50000
+      }
+    }
+  }
+}

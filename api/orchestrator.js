@@ -1,5 +1,12 @@
 import { MODEL_CATALOG } from '../models.config.js';
 import { sql } from '@vercel/postgres';
+import { Counter } from 'prom-client';
+
+const modelRequestCounter = new Counter({
+  name: 'model_requests_total',
+  help: 'Total number of requests for a specific model',
+  labelNames: ['model'],
+});
 
 export default async function handler(req, res) {
   const { task, location, language, student_id: client_id } = req.body;
@@ -43,7 +50,10 @@ export default async function handler(req, res) {
   // 3. Execute on the specific model
   const result = await executeOnModel(model_id, req.body);
 
-  // 4. Log cost for this query
+  // 4. Increment metrics counter
+  modelRequestCounter.inc({ model: model_id });
+
+  // 5. Log cost for this query
   await sql`
     INSERT INTO model_usage_logs
     (model_id, location, task, tokens_used, cost_usd, client_id)

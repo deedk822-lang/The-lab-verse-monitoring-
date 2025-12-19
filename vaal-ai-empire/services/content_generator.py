@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import json
 from datetime import datetime
@@ -11,8 +11,12 @@ logger = logging.getLogger(__name__)
 # This function is decorated with lru_cache to ensure that the expensive
 # process of initializing all API providers only happens once.
 @lru_cache(maxsize=1)
-def _get_providers() -> Dict:
-    """Initialize and return all available content generation providers."""
+def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
+    """
+    Initialize and cache all content and image generation providers.
+    This function is executed only once, and its result is cached.
+    """
+    # --- Initialize Text Providers ---
     providers = {
         "cohere": None,
         "groq": None,
@@ -54,11 +58,20 @@ def _get_providers() -> Dict:
 
     available = [k for k, v in providers.items() if v is not None]
     if available:
-        logger.info(f"Available providers: {', '.join(available)}")
+        logger.info(f"Available text providers: {', '.join(available)}")
     else:
         logger.error("❌ No content generation providers available!")
 
-    return providers
+    # --- Initialize Image Generator ---
+    image_generator = None
+    try:
+        from api.image_generation import BusinessImageGenerator
+        image_generator = BusinessImageGenerator()
+        logger.info("✅ Image generation provider initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Image generation disabled: {e}")
+
+    return providers, image_generator
 
 
 class ContentFactory:
@@ -66,17 +79,14 @@ class ContentFactory:
 
     def __init__(self, db=None):
         self.db = db
-        # ⚡ Use the cached provider factory instead of re-initializing
-        self.providers = _get_providers()
-        self.image_generator = None
+        # Unpack the cached providers and image generator
+        self.providers, self.image_generator = _get_cached_providers()
 
-        # Initialize image generation if available
-        try:
-            from api.image_generation import BusinessImageGenerator
-            self.image_generator = BusinessImageGenerator()
-            logger.info("✅ Image generation enabled")
-        except Exception as e:
-            logger.warning(f"⚠️  Image generation disabled: {e}")
+    def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
+        """
+        Public method to generate content using the best available provider.
+        """
+        return self._generate_with_fallback(prompt, max_tokens)
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
@@ -92,67 +102,24 @@ class ContentFactory:
 
                 if provider_name == "cohere":
                     result = provider.generate_content(prompt, max_tokens)
-
-                    # Log usage
                     if self.db:
-                        self.db.log_api_usage(
-                            "cohere",
-                            "generate_content",
-                            result.get("usage", {}).get("input_tokens", 0) +
-                            result.get("usage", {}).get("output_tokens", 0),
-                            result.get("usage", {}).get("cost_usd", 0.0)
-                        )
-
-                    return {
-                        "text": result["text"],
-                        "provider": provider_name,
-                        "cost_usd": result.get("usage", {}).get("cost_usd", 0.0),
-                        "tokens": result.get("usage", {}).get("output_tokens", 0)
-                    }
-
+                        self.db.log_api_usage("cohere", "generate_content", result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0), result.get("usage", {}).get("cost_usd", 0.0))
+                    return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("usage", {}).get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "groq":
                     result = provider.generate(prompt, max_tokens)
-
                     if self.db:
-                        self.db.log_api_usage(
-                            "groq",
-                            "generate",
-                            result.get("usage", {}).get("total_tokens", 0),
-                            result.get("cost_usd", 0.0)
-                        )
-
-                    return {
-                        "text": result["text"],
-                        "provider": provider_name,
-                        "cost_usd": result.get("cost_usd", 0.0),
-                        "tokens": result.get("usage", {}).get("completion_tokens", 0)
-                    }
-
+                        self.db.log_api_usage("groq", "generate", result.get("usage", {}).get("total_tokens", 0), result.get("cost_usd", 0.0))
+                    return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("completion_tokens", 0)}
                 elif provider_name == "mistral":
                     result = provider.query_local(prompt)
-
-                    return {
-                        "text": result["text"],
-                        "provider": provider_name,
-                        "cost_usd": 0.0,  # Local, no cost
-                        "tokens": 0
-                    }
-
+                    return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
                 elif provider_name == "huggingface":
                     result = provider.generate(prompt, max_tokens)
-
-                    return {
-                        "text": result["text"],
-                        "provider": provider_name,
-                        "cost_usd": 0.0,  # Free tier
-                        "tokens": 0
-                    }
-
+                    return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
             except Exception as e:
                 logger.warning(f"{provider_name} failed: {e}")
                 continue
 
-        # All providers failed
         raise Exception("All content generation providers failed")
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
@@ -162,21 +129,14 @@ class ContentFactory:
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
-            # Generate posts
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self._generate_with_fallback(posts_prompt, max_tokens=2000)
-
-            # Parse posts from response
+            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
             posts = self._parse_posts(posts_result["text"], num_posts)
 
-            # Generate images if available
             images = []
             if self.image_generator:
                 try:
-                    image_results = self.image_generator.generate_for_business(
-                        business_type,
-                        count=num_images
-                    )
+                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
                     images = image_results
                     logger.info(f"✅ Generated {len(images)} images")
                 except Exception as e:
@@ -185,62 +145,24 @@ class ContentFactory:
             else:
                 images = self._create_placeholder_images(num_images)
 
-            # Calculate total cost
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)
 
-            pack = {
-                "posts": posts,
-                "images": images,
-                "metadata": {
-                    "business_type": business_type,
-                    "language": language,
-                    "generated_at": datetime.now().isoformat(),
-                    "provider": posts_result.get("provider"),
-                    "cost_usd": total_cost,
-                    "tokens_used": posts_result.get("tokens", 0)
-                }
-            }
-
-            # Save to database if available
+            pack = {"posts": posts, "images": images, "metadata": {"business_type": business_type, "language": language, "generated_at": datetime.now().isoformat(), "provider": posts_result.get("provider"), "cost_usd": total_cost, "tokens_used": posts_result.get("tokens", 0)}}
             if self.db:
-                self.db.save_content_pack(
-                    client_id="system",
-                    pack_data=pack,
-                    posts_count=len(posts),
-                    images_count=len(images),
-                    cost_usd=total_cost
-                )
+                self.db.save_content_pack(client_id="system", pack_data=pack, posts_count=len(posts), images_count=len(images), cost_usd=total_cost)
 
             logger.info(f"✅ Generated {len(posts)} posts and {len(images)} images")
             return pack
-
         except Exception as e:
             logger.error(f"Content generation failed: {e}")
             raise e
 
     def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
-        """Build optimized prompt for post generation"""
-
-        language_instructions = {
-            "afrikaans": "Write in Afrikaans (South African dialect)",
-            "english": "Write in English (South African style)",
-            "both": "Write 50% in Afrikaans, 50% in English"
-        }
-
+        language_instructions = {"afrikaans": "Write in Afrikaans (South African dialect)", "english": "Write in English (South African style)", "both": "Write 50% in Afrikaans, 50% in English"}
         lang_instruction = language_instructions.get(language, language_instructions["afrikaans"])
-
-        business_contexts = {
-            "butchery": "a local butchery in Vaal Triangle, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
-            "auto_repair": "an auto repair shop in Vaal Triangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
-            "cafe": "a coffee shop in Vaal Triangle, South Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
-            "restaurant": "a restaurant in Vaal Triangle, South Africa. Focus on delicious food, specials, events, and dining experience.",
-            "salon": "a hair and beauty salon in Vaal Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
-            "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals."
-        }
-
+        business_contexts = {"butchery": "a local butchery in Vaal Triangle, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.", "auto_repair": "an auto repair shop in Vaal Triangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.", "cafe": "a coffee shop in Vaal Triangle, South Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.", "restaurant": "a restaurant in Vaal Triangle, South Africa. Focus on delicious food, specials, events, and dining experience.", "salon": "a hair and beauty salon in Vaal Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.", "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals."}
         context = business_contexts.get(business_type, f"a {business_type} business in Vaal Triangle, South Africa")
-
         prompt = f"""Generate {num_posts} engaging social media posts for {context}
 
 REQUIREMENTS:
@@ -259,55 +181,34 @@ Example format:
 ---
 
 Now generate {num_posts} unique posts:"""
-
         return prompt
 
     def _parse_posts(self, text: str, expected_count: int) -> List[str]:
-        """Parse generated text into individual posts"""
-        # Try splitting by separator
         if "---" in text:
             posts = [p.strip() for p in text.split("---") if p.strip()]
         else:
-            # Split by double newline
             posts = [p.strip() for p in text.split("\n\n") if p.strip()]
 
-        # Clean up posts
         cleaned_posts = []
         for post in posts:
-            # Remove numbering if present
             post = post.split(".", 1)[-1].strip() if post[0].isdigit() else post
-
-            # Remove "Post X:" prefix if present
             if post.lower().startswith("post "):
                 post = post.split(":", 1)[-1].strip() if ":" in post else post
-
-            if len(post) > 30:  # Ensure it's substantive
+            if len(post) > 30:
                 cleaned_posts.append(post)
 
-        # If we don't have enough posts, generate more or pad
         while len(cleaned_posts) < expected_count:
             if cleaned_posts:
-                # Slight variation of existing post
                 base_post = cleaned_posts[len(cleaned_posts) % len(cleaned_posts)]
                 cleaned_posts.append(base_post + " 🌟")
             else:
                 cleaned_posts.append("Coming soon! Stay tuned for exciting updates. 🎉")
-
         return cleaned_posts[:expected_count]
 
     def _create_placeholder_images(self, count: int) -> List[Dict]:
-        """Create placeholder image references"""
-        return [{
-            "prompt": f"Business image {i+1}",
-            "image_url": f"https://via.placeholder.com/800x600?text=Image+{i+1}",
-            "provider": "placeholder",
-            "cost_usd": 0.0
-        } for i in range(count)]
+        return [{"prompt": f"Business image {i+1}", "image_url": f"https://via.placeholder.com/800x600?text=Image+{i+1}", "provider": "placeholder", "cost_usd": 0.0} for i in range(count)]
 
-    def generate_email_sequence(self, business_name: str, business_type: str,
-                               days: int = 7) -> List[Dict]:
-        """Generate email sequence for MailChimp"""
-
+    def generate_email_sequence(self, business_name: str, business_type: str, days: int = 7) -> List[Dict]:
         prompt = f"""Generate a {days}-day email sequence for {business_name}, a {business_type} in South Africa.
 
 Each email should include:
@@ -322,79 +223,43 @@ BODY: [email content]
 ---
 
 Generate all {days} emails now:"""
-
         try:
-            result = self._generate_with_fallback(prompt, max_tokens=2000)
-            emails = self._parse_emails(result["text"], days)
-
-            return emails
-
+            result = self.generate_content(prompt, max_tokens=2000)
+            return self._parse_emails(result["text"], days)
         except Exception as e:
             logger.error(f"Email generation failed: {e}")
-            # Return basic template
             return self._create_template_emails(business_name, days)
 
     def _parse_emails(self, text: str, expected_count: int) -> List[Dict]:
-        """Parse email sequence from generated text"""
         emails = []
         current_email = {}
-
         lines = text.split("\n")
-
         for line in lines:
             line = line.strip()
-
             if line.startswith("DAY "):
                 if current_email:
                     emails.append(current_email)
                 current_email = {"day": len(emails) + 1}
-
             elif line.startswith("SUBJECT:"):
                 current_email["subject"] = line.replace("SUBJECT:", "").strip()
-
             elif line.startswith("BODY:"):
                 current_email["body"] = line.replace("BODY:", "").strip()
-
             elif current_email.get("body") and line and not line.startswith("---"):
                 current_email["body"] += "\n" + line
-
         if current_email:
             emails.append(current_email)
-
         return emails[:expected_count]
 
     def _create_template_emails(self, business_name: str, days: int) -> List[Dict]:
-        """Create template emails as fallback"""
-        templates = [
-            {
-                "subject": f"Welcome to {business_name}!",
-                "body": f"Thank you for connecting with {business_name}. We're excited to serve you!"
-            },
-            {
-                "subject": f"Special Offer from {business_name}",
-                "body": f"Check out our special offers this week at {business_name}!"
-            },
-            {
-                "subject": f"Tips & Tricks from {business_name}",
-                "body": f"Here are some expert tips from the team at {business_name}."
-            }
-        ]
-
+        templates = [{"subject": f"Welcome to {business_name}!", "body": f"Thank you for connecting with {business_name}. We're excited to serve you!"}, {"subject": f"Special Offer from {business_name}", "body": f"Check out our special offers this week at {business_name}!"}, {"subject": f"Tips & Tricks from {business_name}", "body": f"Here are some expert tips from the team at {business_name}."}]
         emails = []
         for i in range(days):
             template = templates[i % len(templates)]
-            emails.append({
-                "day": i + 1,
-                "subject": template["subject"],
-                "body": template["body"]
-            })
-
+            emails.append({"day": i + 1, "subject": template["subject"], "body": template["body"]})
         return emails
 
     def generate_mailchimp_campaign(self, business_name: str, pack: Dict) -> Dict:
-        """Create MailChimp campaign HTML from content pack"""
         subject = f"Your Weekly Content Pack - {business_name}"
-
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -412,8 +277,6 @@ Generate all {days} emails now:"""
             <h1>Your Weekly Content Pack 🎉</h1>
             <p>Hello from {business_name}! Here's your fresh content for this week:</p>
         """
-
-        # Add posts
         for i, post in enumerate(pack.get("posts", [])[:5], 1):
             html_content += f"""
             <div class="post">
@@ -421,8 +284,6 @@ Generate all {days} emails now:"""
                 <p>{post}</p>
             </div>
             """
-
-        # Add images section
         if pack.get("images"):
             html_content += "<h2>Your Images</h2>"
             for i, img in enumerate(pack["images"][:3], 1):
@@ -431,7 +292,6 @@ Generate all {days} emails now:"""
                     <p><strong>Image {i}:</strong> {img.get('prompt', 'Business image')}</p>
                 </div>
                 """
-
         html_content += """
             <div class="footer">
                 <p>Generated by Vaal AI Empire</p>
@@ -440,18 +300,7 @@ Generate all {days} emails now:"""
         </body>
         </html>
         """
-
-        return {
-            "subject": subject,
-            "html_content": html_content,
-            "status": "created",
-            "posts_included": len(pack.get("posts", [])),
-            "images_included": len(pack.get("images", []))
-        }
+        return {"subject": subject, "html_content": html_content, "status": "created", "posts_included": len(pack.get("posts", [])), "images_included": len(pack.get("images", []))}
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
-        }
+        return {provider: "available" if client else "unavailable" for provider, client in self.providers.items()}

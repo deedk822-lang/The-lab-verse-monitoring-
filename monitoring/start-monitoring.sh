@@ -15,7 +15,9 @@ echo "📁 Creating directories..."
 mkdir -p monitoring/config/{grafana/{provisioning/{datasources,dashboards},dashboards},rules}
 
 # Set permissions
-chmod -R 755 monitoring/
+# Set appropriate permissions
+find monitoring -type d -exec chmod 755 {} +
+find monitoring -type f -exec chmod 644 {} +
 
 # Start the stack
 echo "🐳 Starting Docker containers..."

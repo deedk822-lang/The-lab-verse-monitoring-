@@ -1,3 +1,4 @@
+import { retryWithBackoff } from '../utils/retryWithBackoff.js';
 import { MODEL_CATALOG } from '../models.config.js';
 import { sql } from '@vercel/postgres';
 
@@ -65,22 +66,22 @@ async function executeOnModel(modelId, payload) {
 
   // Route to correct provider
   if (model.provider === 'LocalAI') {
-    const res = await fetch(model.endpoint, {
-      method: 'POST',
-      body: JSON.stringify({
-        model: modelId,
-        prompt: payload.query,
-        max_tokens: 500,
-        temperature: 0.3
-      })
+    const response = await retryWithBackoff(async () => {
+      const res = await fetch(model.endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+          model: modelId,
+          prompt: payload.query,
+          max_tokens: 500,
+          temperature: 0.3
+        })
+      });
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
+      }
+      return res.json();
     });
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
-    }
-
-    const response = await res.json();
     return {
       output: response?.choices?.[0]?.text,
       usage: {
@@ -90,22 +91,22 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'OpenAI' || model.provider === 'Groq') {
-    const res = await fetch(model.endpoint, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
-      body: JSON.stringify({
-        model: modelId,
-        messages: [{ role: 'user', content: payload.query }],
-        max_tokens: 500
-      })
+    const response = await retryWithBackoff(async () => {
+      const res = await fetch(model.endpoint, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: payload.query }],
+          max_tokens: 500
+        })
+      });
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
+      }
+      return res.json();
     });
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
-    }
-
-    const response = await res.json();
     return {
       output: response?.choices?.[0]?.message?.content,
       usage: {
@@ -115,26 +116,26 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'Anthropic') {
-    const res = await fetch(model.endpoint, {
-      method: 'POST',
-      headers: {
-        'x-api-key': process.env[model.api_key_env],
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: 500,
-        messages: [{ role: 'user', content: payload.query }]
-      })
+    const response = await retryWithBackoff(async () => {
+      const res = await fetch(model.endpoint, {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env[model.api_key_env],
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          max_tokens: 500,
+          messages: [{ role: 'user', content: payload.query }]
+        })
+      });
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
+      }
+      return res.json();
     });
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
-    }
-
-    const response = await res.json();
     return {
       output: response?.content?.[0]?.text,
       usage: {
@@ -144,25 +145,25 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'Cohere') {
-    const res = await fetch(model.endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        texts: [payload.query],
-        model: modelId,
-        input_type: 'search_document'
-      })
+    const response = await retryWithBackoff(async () => {
+      const res = await fetch(model.endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          texts: [payload.query],
+          model: modelId,
+          input_type: 'search_document'
+        })
+      });
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`Cohere API error (${res.status}): ${errorBody}`);
+      }
+      return res.json();
     });
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`Cohere API error (${res.status}): ${errorBody}`);
-    }
-
-    const response = await res.json();
     return {
       output: response.embeddings,
       usage: {
@@ -178,26 +179,42 @@ async function checkModelHealth(modelId) {
     if (model.provider === 'LocalAI') {
         const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
         try {
-            const r = await fetch(`${baseUrl}/health`, { timeout: 2000 });
-            return r.ok;
+            return await retryWithBackoff(async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                try {
+                    const r = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+                    if (!r.ok) {
+                        throw new Error(`Health check failed: ${r.status}`);
+                    }
+                    return true;
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+            });
         } catch {
             return false;
         }
     } else {
         try {
-            const response = await fetch(model.endpoint, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: modelId,
-                    messages: [{ role: 'user', content: 'test' }],
-                    max_tokens: 1
-                })
+            return await retryWithBackoff(async () => {
+                const response = await fetch(model.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: [{ role: 'user', content: 'test' }],
+                        max_tokens: 1
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`Health check failed: ${response.status}`);
+                }
+                return true;
             });
-            return response.ok;
         } catch {
             return false;
         }

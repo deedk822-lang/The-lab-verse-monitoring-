@@ -48,7 +48,7 @@ export async function instrumentedProviderCall({
     // Execute the actual provider call within the span context
     const result = await context.with(
       trace.setSpan(context.active(), span),
-      async () => await callFunction()
+      async () => await callFunction(),
     );
 
     const duration = (Date.now() - startTime) / 1000;

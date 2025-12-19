@@ -17,7 +17,7 @@ class A2AService {
       zapier: process.env.A2A_ZAPIER_WEBHOOK,
       ifttt: process.env.A2A_IFTTT_WEBHOOK,
       n8n: process.env.A2A_N8N_WEBHOOK,
-      make: process.env.A2A_MAKE_WEBHOOK
+      make: process.env.A2A_MAKE_WEBHOOK,
     };
 
     if (!this.apiKey) {
@@ -60,7 +60,7 @@ class A2AService {
         metadata = {},
         priority = 'normal',
         includeAnalytics = true,
-        batchMode = true
+        batchMode = true,
       } = params;
 
       if (targets.length === 0) {
@@ -75,13 +75,13 @@ class A2AService {
           timestamp,
           priority,
           source: 'ai-content-suite',
-          version: '1.0.0'
+          version: '1.0.0',
         },
         targets,
         options: {
           includeAnalytics,
-          batchMode
-        }
+          batchMode,
+        },
       });
 
       const signature = this.generateSignature(payload, timestamp);
@@ -90,7 +90,7 @@ class A2AService {
         targets,
         contentLength: content.length,
         priority,
-        batchMode
+        batchMode,
       });
 
       const results = {};
@@ -98,16 +98,16 @@ class A2AService {
       if (batchMode && this.apiKey) {
         // Use A2A service for batch distribution
         const response = await axios.post(`${this.baseURL}/distribute`, {
-          payload: JSON.parse(payload)
+          payload: JSON.parse(payload),
         }, {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
             'X-A2A-Signature': `sha256=${signature}`,
             'X-A2A-Timestamp': timestamp,
             'X-A2A-Client-ID': this.clientId,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          timeout: 60000
+          timeout: 60000,
         });
 
         results.batch = response.data;
@@ -118,7 +118,7 @@ class A2AService {
           content,
           metadata,
           signature,
-          timestamp
+          timestamp,
         }));
 
         const targetResults = await Promise.allSettled(promises);
@@ -136,7 +136,7 @@ class A2AService {
       logger.info('A2A distribution completed:', {
         totalTargets: targets.length,
         successful: successCount,
-        failed: targets.length - successCount
+        failed: targets.length - successCount,
       });
 
       return {
@@ -145,21 +145,21 @@ class A2AService {
         summary: {
           total: targets.length,
           successful: successCount,
-          failed: targets.length - successCount
+          failed: targets.length - successCount,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
     } catch (error) {
       logger.error('A2A distribution failed:', {
         error: error.message,
-        targets: params.targets
+        targets: params.targets,
       });
 
       return {
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -182,7 +182,7 @@ class A2AService {
         text: content,
         metadata,
         timestamp,
-        source: 'ai-content-suite'
+        source: 'ai-content-suite',
       };
 
       // Customize payload based on target platform
@@ -193,16 +193,16 @@ class A2AService {
           'Content-Type': 'application/json',
           'X-A2A-Signature': `sha256=${signature}`,
           'X-A2A-Timestamp': timestamp,
-          'User-Agent': 'AI-Content-Suite/1.0'
+          'User-Agent': 'AI-Content-Suite/1.0',
         },
-        timeout: 30000
+        timeout: 30000,
       });
 
       return {
         success: true,
         target,
         response: response.data,
-        statusCode: response.status
+        statusCode: response.status,
       };
 
     } catch (error) {
@@ -210,7 +210,7 @@ class A2AService {
       return {
         success: false,
         target: params.target,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -225,57 +225,57 @@ class A2AService {
     const { text, metadata } = payload;
 
     switch (target.toLowerCase()) {
-    case 'slack':
-      return {
-        text,
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text
-            }
-          }
-        ],
-        metadata
-      };
-
-    case 'teams':
-      return {
-        '@type': 'MessageCard',
-        '@context': 'https://schema.org/extensions',
-        text,
-        themeColor: '0078D4',
-        sections: [{
+      case 'slack':
+        return {
           text,
-          metadata
-        }]
-      };
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text,
+              },
+            },
+          ],
+          metadata,
+        };
 
-    case 'discord':
-      return {
-        content: text,
-        embeds: [{
-          description: text.substring(0, 2048), // Discord embed limit
-          timestamp: new Date().toISOString(),
-          footer: {
-            text: 'AI Content Suite'
-          }
-        }]
-      };
+      case 'teams':
+        return {
+          '@type': 'MessageCard',
+          '@context': 'https://schema.org/extensions',
+          text,
+          themeColor: '0078D4',
+          sections: [{
+            text,
+            metadata,
+          }],
+        };
 
-    case 'zapier':
-    case 'ifttt':
-    case 'n8n':
-    case 'make':
-      return {
-        content: text,
-        metadata,
-        trigger_source: 'ai-content-suite'
-      };
+      case 'discord':
+        return {
+          content: text,
+          embeds: [{
+            description: text.substring(0, 2048), // Discord embed limit
+            timestamp: new Date().toISOString(),
+            footer: {
+              text: 'AI Content Suite',
+            },
+          }],
+        };
 
-    default:
-      return payload;
+      case 'zapier':
+      case 'ifttt':
+      case 'n8n':
+      case 'make':
+        return {
+          content: text,
+          metadata,
+          trigger_source: 'ai-content-suite',
+        };
+
+      default:
+        return payload;
     }
   }
 
@@ -299,26 +299,26 @@ class A2AService {
         target,
         callback_url: callbackUrl,
         events,
-        client_id: this.clientId
+        client_id: this.clientId,
       }, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       logger.info('A2A webhook registered:', { target, events });
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
 
     } catch (error) {
       logger.error('A2A webhook registration failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -342,23 +342,23 @@ class A2AService {
         params: {
           time_range: timeRange,
           targets: targets.join(','),
-          client_id: this.clientId
+          client_id: this.clientId,
         },
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
       });
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
 
     } catch (error) {
       logger.error('A2A analytics fetch failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -371,7 +371,7 @@ class A2AService {
     try {
       const results = {
         a2aService: false,
-        endpoints: {}
+        endpoints: {},
       };
 
       // Test A2A service connection
@@ -379,9 +379,9 @@ class A2AService {
         try {
           const response = await axios.get(`${this.baseURL}/health`, {
             headers: {
-              'Authorization': `Bearer ${this.apiKey}`
+              'Authorization': `Bearer ${this.apiKey}`,
             },
-            timeout: 10000
+            timeout: 10000,
           });
           results.a2aService = response.status === 200;
         } catch (error) {
@@ -398,14 +398,14 @@ class A2AService {
             const testPayload = {
               test: true,
               message: 'Connection test from AI Content Suite',
-              timestamp: Date.now()
+              timestamp: Date.now(),
             };
 
             await axios.post(endpoint, this.customizeForTarget(target, testPayload), {
               timeout: 10000,
               headers: {
-                'Content-Type': 'application/json'
-              }
+                'Content-Type': 'application/json',
+              },
             });
 
             results.endpoints[target] = { success: true, configured: true };
@@ -413,7 +413,7 @@ class A2AService {
             results.endpoints[target] = {
               success: false,
               configured: true,
-              error: error.message
+              error: error.message,
             };
           }
         });
@@ -431,14 +431,14 @@ class A2AService {
 
       return {
         success: true,
-        results
+        results,
       };
 
     } catch (error) {
       logger.error('A2A connection tests failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -463,17 +463,17 @@ class A2AService {
         metadata: {
           urgency: level,
           type: 'notification',
-          alert: true
+          alert: true,
         },
         priority: 'high',
-        batchMode: false // Send immediately to all targets
+        batchMode: false, // Send immediately to all targets
       });
 
     } catch (error) {
       logger.error('A2A urgent notification failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }

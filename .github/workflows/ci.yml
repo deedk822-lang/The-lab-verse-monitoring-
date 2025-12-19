@@ -1,142 +1,186 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, 'fix/**', 'feature/**' ]
+    branches: [ main, feature/**, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  actions: read
 
 jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint || echo "⚠️ Linting issues found"
+        continue-on-error: true
+
+      - name: Run Prettier check
+        run: npx prettier --check . || echo "⚠️ Formatting issues found"
+        continue-on-error: true
+
   build:
+    name: Build Application
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+    needs: lint
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22.x'
-        cache: 'npm'
-    
-    - name: Clear npm cache
-      run: npm cache clean --force
-    
-    - name: Install dependencies
-      run: |
-        echo "Installing dependencies with npm install..."
-        npm install
-        echo "✅ Dependencies installed successfully"
-    
-    - name: Validate API Keys Setup
-      run: node scripts/validate-api-keys.js
-      env:
-        # Map ALL GitHub Secrets to environment variables
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
-        MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        LOCALAI_API_KEY: ${{ secrets.LOCALAI_API_KEY }}
-        LOCALAI_HOST: ${{ vars.LOCALAI_HOST }}
-        # Debug flags
-        CI: true
-        NODE_ENV: test
-        DEBUG_PROVIDERS: true
-    
-    - name: Run tests with full API key access
-      run: |
-        echo "Running tests with complete API key mapping..."
-        npm test || echo "Tests completed with warnings"
-      env:
-        # Primary providers
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        
-        # Fallback providers
-        PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
-        MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        
-        # LocalAI configuration
-        LOCALAI_API_KEY: ${{ secrets.LOCALAI_API_KEY }}
-        LOCALAI_HOST: ${{ vars.LOCALAI_HOST || 'http://localhost:8080/v1' }}
-        
-        # Environment flags
-        CI: true
-        NODE_ENV: test
-        DEBUG_PROVIDERS: true
-      continue-on-error: true
-    
-    - name: Run lint (if configured)
-      run: |
-        if npm run lint --silent 2>/dev/null; then
-          echo "Running lint..."
-          npm run lint
-        else
-          echo "⚠️ Lint script not found or not properly configured, skipping"
-        fi
-      continue-on-error: true
-    
-    - name: Validate environment template
-      run: |
-        if [ -f ".env.example" ]; then
-          echo "✅ Environment template found (.env.example)"
-          echo "Lines in .env.example: $(wc -l < .env.example)"
-        else
-          echo "⚠️ No .env.example found"
-        fi
-      
-    - name: Check provider fallback chains
-      run: |
-        echo "Checking fallback chain configuration..."
-        if [ -f "src/config/providers.js" ]; then
-          echo "✅ Provider configuration found"
-          echo "Fallback chains:"
-          echo "  OpenAI → Perplexity"
-          echo "  Anthropic → Mistral → Gemini → Groq"
-        else
-          echo "⚠️ Provider configuration missing"
-        fi
-    
-    - name: Build validation
-      run: |
-        echo "Build validation completed successfully"
-        echo "Node.js version: $(node --version)"
-        echo "NPM version: $(npm --version)"
-        echo "✅ System ready for 100% functional operation"
-        
-  security-audit:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: |
+          if grep -q '"build"' package.json; then
+            npm run build
+          else
+            echo "⚠️ No build script found, skipping build"
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: |
+            dist/
+            build/
+            .next/
+          retention-days: 7
+
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: |
-        npm install
-        
-    - name: Run security audit
-      run: |
-        echo "Running security audit..."
-        npm audit --audit-level high || echo "Security audit completed with warnings"
-        
-    - name: Generate audit report
-      run: |
-        npm audit --json > audit-results.json 2>/dev/null || echo "Audit report generated"
-        if [ -s audit-results.json ]; then
-          echo "📋 Security audit results generated"
-        else
-          echo "✅ No security vulnerabilities found"
-        fi
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          if grep -q '"test"' package.json; then
+            npm test || echo "⚠️ Tests failed"
+          else
+            echo "⚠️ No test script found"
+          fi
+        continue-on-error: true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate || echo "⚠️ Security vulnerabilities found"
+        continue-on-error: true
+
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build, test, security]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (Preview)
+        uses: amondnet/vercel-action@v25
+        if: env.VERCEL_TOKEN != ''
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build, test, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+        continue-on-error: true
+
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        if: env.VERCEL_TOKEN != ''
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Health Check
+        if: success()
+        run: |
+          echo "⏳ Waiting for deployment..."
+          sleep 30
+          curl -f https://the-lab-verse-monitoring.vercel.app/api/health || echo "⚠️ Health check failed"
+        continue-on-error: true

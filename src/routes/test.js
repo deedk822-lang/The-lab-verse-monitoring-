@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
     message: 'AI Content Creation Suite is running!',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -22,20 +22,20 @@ router.get('/providers', async (req, res) => {
   try {
     const providers = getAvailableProviders();
     const testResults = await ProviderFactory.testAllProviders();
-    
+
     res.json({
       success: true,
       data: {
         available: providers,
-        testResults
-      }
+        testResults,
+      },
     });
   } catch (error) {
     logger.error('Provider test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Provider test failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -45,17 +45,17 @@ router.get('/providers/:provider', async (req, res) => {
   try {
     const { provider } = req.params;
     const result = await ProviderFactory.testProvider(provider);
-    
+
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     logger.error(`Provider ${req.params.provider} test failed:`, error);
     res.status(500).json({
       success: false,
       error: `Provider ${req.params.provider} test failed`,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -65,7 +65,7 @@ router.get('/ayrshare', async (req, res) => {
   try {
     const isConnected = await ayrshareService.testConnection();
     const profile = isConnected ? await ayrshareService.getUserProfile() : null;
-    
+
     res.json({
       success: isConnected,
       message: isConnected ? 'Ayrshare connection successful' : 'Ayrshare connection failed',
@@ -73,15 +73,15 @@ router.get('/ayrshare', async (req, res) => {
         connected: isConnected,
         profile: profile?.data || null,
         apiKeyConfigured: !!process.env.AYRSHARE_API_KEY,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
     logger.error('Ayrshare test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Ayrshare test failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -91,7 +91,7 @@ router.post('/generate', async (req, res) => {
   try {
     const { ContentGenerator } = await import('../services/ContentGenerator.js');
     const contentGenerator = new ContentGenerator();
-    
+
     const testRequest = {
       topic: 'Artificial Intelligence in Content Creation',
       audience: 'marketing professionals',
@@ -100,21 +100,21 @@ router.post('/generate', async (req, res) => {
       mediaType: 'text',
       provider: 'google',
       keywords: ['AI', 'content', 'marketing', 'automation'],
-      length: 'medium'
+      length: 'medium',
     };
 
     const result = await contentGenerator.generateContent(testRequest);
-    
+
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     logger.error('Test content generation failed:', error);
     res.status(500).json({
       success: false,
       error: 'Test content generation failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -123,11 +123,11 @@ router.post('/generate', async (req, res) => {
 router.post('/ayrshare-workflow', async (req, res) => {
   try {
     const { topic = 'AI Technology Trends', platforms = 'twitter,linkedin' } = req.body;
-    
+
     // Step 1: Generate content
     const { ContentGenerator } = await import('../services/ContentGenerator.js');
     const contentGenerator = new ContentGenerator();
-    
+
     const contentRequest = {
       topic,
       audience: 'tech professionals',
@@ -139,12 +139,12 @@ router.post('/ayrshare-workflow', async (req, res) => {
       options: {
         optimizeForSocial: true,
         includeTags: true,
-        platforms: platforms.split(',').map(p => p.trim())
-      }
+        platforms: platforms.split(',').map(p => p.trim()),
+      },
     };
 
     const contentResult = await contentGenerator.generateContent(contentRequest);
-    
+
     if (!contentResult.success) {
       throw new Error(`Content generation failed: ${contentResult.error}`);
     }
@@ -154,8 +154,8 @@ router.post('/ayrshare-workflow', async (req, res) => {
       post: contentResult.content,
       platforms: platforms,
       options: {
-        test: true // This would be a test mode if Ayrshare supports it
-      }
+        test: true, // This would be a test mode if Ayrshare supports it
+      },
     });
 
     res.json({
@@ -165,22 +165,22 @@ router.post('/ayrshare-workflow', async (req, res) => {
           success: contentResult.success,
           content: contentResult.content.substring(0, 200) + '...',
           provider: contentResult.provider,
-          metadata: contentResult.metadata
+          metadata: contentResult.metadata,
         },
         socialPosting: {
           success: postResult.success,
           platforms: postResult.platforms || platforms.split(','),
           postId: postResult.data?.id,
-          error: postResult.error
-        }
-      }
+          error: postResult.error,
+        },
+      },
     });
   } catch (error) {
     logger.error('Ayrshare workflow test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Ayrshare workflow test failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -188,11 +188,11 @@ router.post('/ayrshare-workflow', async (req, res) => {
 // Test webhook endpoint
 router.post('/webhook', (req, res) => {
   const { body, headers } = req;
-  
+
   logger.info('Webhook test received:', {
     headers: headers,
     body: body,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   res.json({
@@ -201,8 +201,8 @@ router.post('/webhook', (req, res) => {
     received: {
       headers: Object.keys(headers),
       bodyKeys: Object.keys(body),
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 });
 
@@ -216,7 +216,7 @@ router.get('/health', async (req, res) => {
       memory: process.memoryUsage(),
       environment: process.env.NODE_ENV || 'development',
       providers: {},
-      services: {}
+      services: {},
     };
 
     // Test each AI provider
@@ -226,12 +226,12 @@ router.get('/health', async (req, res) => {
         const testResult = await ProviderFactory.testProvider(provider.id);
         health.providers[provider.id] = {
           status: testResult.success ? 'healthy' : 'unhealthy',
-          message: testResult.success ? 'OK' : testResult.error
+          message: testResult.success ? 'OK' : testResult.error,
         };
       } catch (error) {
         health.providers[provider.id] = {
           status: 'unhealthy',
-          message: error.message
+          message: error.message,
         };
       }
     }
@@ -242,13 +242,13 @@ router.get('/health', async (req, res) => {
       health.services.ayrshare = {
         status: ayrshareHealthy ? 'healthy' : 'unhealthy',
         message: ayrshareHealthy ? 'OK' : 'Connection failed',
-        configured: !!process.env.AYRSHARE_API_KEY
+        configured: !!process.env.AYRSHARE_API_KEY,
       };
     } catch (error) {
       health.services.ayrshare = {
         status: 'unhealthy',
         message: error.message,
-        configured: !!process.env.AYRSHARE_API_KEY
+        configured: !!process.env.AYRSHARE_API_KEY,
       };
     }
 
@@ -262,7 +262,7 @@ router.get('/health', async (req, res) => {
     res.status(500).json({
       status: 'unhealthy',
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -272,23 +272,23 @@ router.get('/redis', async (req, res) => {
   try {
     const { connectRedis } = await import('../utils/redis.js');
     const redis = await connectRedis();
-    
+
     // Test basic operations
     await redis.set('test:key', 'test:value', 'EX', 10);
     const value = await redis.get('test:key');
     await redis.del('test:key');
-    
+
     res.json({
       success: true,
       message: 'Redis connection successful',
-      test: value === 'test:value'
+      test: value === 'test:value',
     });
   } catch (error) {
     logger.error('Redis test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Redis connection failed',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -299,44 +299,44 @@ router.post('/upload', (req, res) => {
   res.json({
     success: true,
     message: 'File upload test endpoint ready',
-    note: 'Use multipart/form-data with a file field'
+    note: 'Use multipart/form-data with a file field',
   });
 });
 
 // Performance test including Ayrshare
 router.get('/performance', async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     // Test AI providers
     const providers = getAvailableProviders();
-    const testPromises = providers.map(provider => 
-      ProviderFactory.testProvider(provider.id)
+    const testPromises = providers.map(provider =>
+      ProviderFactory.testProvider(provider.id),
     );
-    
+
     // Test Ayrshare
     testPromises.push(ayrshareService.testConnection());
-    
+
     await Promise.all(testPromises);
-    
+
     const endTime = Date.now();
     const duration = endTime - startTime;
-    
+
     res.json({
       success: true,
       performance: {
         duration: `${duration}ms`,
         providers: providers.length,
         services: 1, // Ayrshare
-        averagePerProvider: `${Math.round(duration / (providers.length + 1))}ms`
-      }
+        averagePerProvider: `${Math.round(duration / (providers.length + 1))}ms`,
+      },
     });
   } catch (error) {
     logger.error('Performance test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Performance test failed',
-      message: error.message
+      message: error.message,
     });
   }
 });

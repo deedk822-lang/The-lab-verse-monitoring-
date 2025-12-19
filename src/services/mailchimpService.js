@@ -6,9 +6,9 @@ class MailChimpService {
     this.apiKey = process.env.MAILCHIMP_API_KEY;
     this.serverPrefix = process.env.MAILCHIMP_SERVER_PREFIX;
     this.listId = process.env.MAILCHIMP_LIST_ID;
-    this.baseURL = this.serverPrefix ? 
+    this.baseURL = this.serverPrefix ?
       `https://${this.serverPrefix}.api.mailchimp.com/3.0` : null;
-    
+
     if (!this.apiKey || !this.serverPrefix || !this.listId) {
       logger.warn('MailChimp not fully configured');
     }
@@ -19,12 +19,12 @@ class MailChimpService {
       if (!this.apiKey || !this.baseURL || !this.listId) {
         return {
           success: false,
-          error: 'MailChimp not configured'
+          error: 'MailChimp not configured',
         };
       }
 
       const { subject, content, fromName, replyTo, sendNow = true } = params;
-      
+
       // Create campaign
       const campaign = await axios.post(
         `${this.baseURL}/campaigns`,
@@ -35,12 +35,12 @@ class MailChimpService {
             subject_line: subject,
             from_name: fromName || 'AI Content Suite',
             reply_to: replyTo || 'noreply@example.com',
-            title: `Campaign: ${subject}`
-          }
+            title: `Campaign: ${subject}`,
+          },
         },
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` }
-        }
+          headers: { Authorization: `Bearer ${this.apiKey}` },
+        },
       );
 
       const campaignId = campaign.data.id;
@@ -50,8 +50,8 @@ class MailChimpService {
         `${this.baseURL}/campaigns/${campaignId}/content`,
         { html: this.formatEmailContent(content) },
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` }
-        }
+          headers: { Authorization: `Bearer ${this.apiKey}` },
+        },
       );
 
       // Send if requested
@@ -60,21 +60,21 @@ class MailChimpService {
           `${this.baseURL}/campaigns/${campaignId}/actions/send`,
           {},
           {
-            headers: { Authorization: `Bearer ${this.apiKey}` }
-          }
+            headers: { Authorization: `Bearer ${this.apiKey}` },
+          },
         );
       }
 
       return {
         success: true,
-        data: { campaignId, sent: sendNow }
+        data: { campaignId, sent: sendNow },
       };
 
     } catch (error) {
       logger.error('MailChimp campaign failed:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -117,18 +117,18 @@ class MailChimpService {
       const response = await axios.get(
         `${this.baseURL}/lists/${this.listId}`,
         {
-          headers: { Authorization: `Bearer ${this.apiKey}` }
-        }
+          headers: { Authorization: `Bearer ${this.apiKey}` },
+        },
       );
 
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }

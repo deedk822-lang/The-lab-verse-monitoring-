@@ -1,11 +1,11 @@
-const { Queue, Worker } = require('bullmq');
-const axios = require('axios');
-const Redis = require('ioredis');
-const pino = require('pino');
+import { Queue, Worker } from 'bullmq';
+import axios from 'axios';
+import Redis from 'ioredis';
+import pino from 'pino';
 
-const logger = pino({ level: 'info' });
+const _logger = pino({ level: 'info' });
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
 });
 const slackQueue = new Queue('slack-alerts', { connection: redis });
 
@@ -14,7 +14,7 @@ new Worker('slack-alerts', async job => {
   const payload = {
     username: 'Lab-Verse',
     icon_emoji: ':robot_face:',
-    attachments: [{ color: severity === 'critical' ? 'danger' : 'warning', title, text: message }]
+    attachments: [{ color: severity === 'critical' ? 'danger' : 'warning', title, text: message }],
   };
   await axios.post(process.env.SLACK_WEBHOOK_URL, payload);
 }, { connection: redis });
@@ -25,4 +25,4 @@ class AlertService {
     return { queued: true };
   }
 }
-module.exports = AlertService;
+export default AlertService;

@@ -26,14 +26,14 @@ jobs:
       KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
       
 
-      
+
       # === IDENTITY 1: LUNGELO LUDA (DATA ANALYST) ===
       # Kaggle username: lungeloluda
       # Email: dimakatsomoleli@gmail.com
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}      # ✅ Already set in GitHub Secrets
       KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
-      
+
  main
       # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
       # Jira tickets created by: dimakatsomoleli@gmail.com

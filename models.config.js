@@ -77,5 +77,16 @@ export const MODEL_CATALOG = {
     specialization: 'rag_embeddings',
     languages: ['en', 'af', 'st', 'nso', 'zu'],
     location: 'All' // For multilingual search across Vaal
+  },
+
+  // ** TIER 4: CrewAI Agents **
+  'crewai-researcher': {
+    provider: 'CrewAI',
+    script: 'crewai/main.py',
+    cost_per_1k_tokens: 0.001, // Placeholder cost
+    capability: 7.0,
+    specialization: 'research',
+    languages: ['en'],
+    location: 'local'
   }
 };

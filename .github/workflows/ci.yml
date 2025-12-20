@@ -40,12 +40,10 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint || echo "⚠️ Linting issues found"
-        continue-on-error: true
+        run: npm run lint
 
       - name: Run Prettier check
-        run: npx prettier --check . || echo "⚠️ Formatting issues found"
-        continue-on-error: true
+        run: npx prettier --check .
 
   build:
     name: Build Application
@@ -182,5 +180,4 @@ jobs:
         run: |
           echo "⏳ Waiting for deployment..."
           sleep 30
-          curl -f https://the-lab-verse-monitoring.vercel.app/api/health || echo "⚠️ Health check failed"
-        continue-on-error: true
+          curl -f https://the-lab-verse-monitoring.vercel.app/api/health

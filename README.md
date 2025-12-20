@@ -379,7 +379,7 @@ docker-compose -f docker-compose.monitoring.yml ps
 docker logs -f vaal-gdelt-monitor
 
 # 6. Access dashboards
-# - Grafana: http://localhost:3001 (admin/VaalEmpire2025!)
+# - Grafana: http://localhost:3001 (credentials are set via environment variables)
 # - Prometheus: http://localhost:9090
 # - GDELT Metrics: http://localhost:9091/metrics
 # - App Metrics: http://localhost:3000/api/metrics

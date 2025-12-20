@@ -19,18 +19,14 @@ services:
 
   # GDELT Monitor (Python)
   gdelt-monitor:
-    image: python:3.11-slim
+    build:
+      context: ./services
+      dockerfile: Dockerfile.gdelt-monitor
     container_name: vaal-gdelt-monitor
     networks:
       - vaal-monitoring
     ports:
       - "9091:9091"
-    volumes:
-      - ./services:/app
-    working_dir: /app
-    command: >
-      sh -c "pip install -q requests prometheus-client &&
-             python gdelt_monitor.py"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091/metrics"]
@@ -65,7 +61,7 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-VaalEmpire2025!}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana

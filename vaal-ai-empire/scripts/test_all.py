@@ -86,12 +86,11 @@ def main():
     # --- Test services ---
     logger.info("\n🛠️  Testing Services...")
     try:
-        from services.content_generator import ContentFactory
-        factory = ContentFactory()
+        from services.content_generator import content_factory
         logger.info("✅ Content Factory: Instantiated")
 
         logger.info("🧪 Testing content generation...")
-        pack = factory.generate_social_pack("butchery", "afrikaans")
+        pack = content_factory.generate_social_pack("butchery", "afrikaans")
         if pack and "posts" in pack and len(pack['posts']) > 0:
             logger.info(f"✅ Generated {len(pack['posts'])} posts")
             results["services"].append("Content Generation")

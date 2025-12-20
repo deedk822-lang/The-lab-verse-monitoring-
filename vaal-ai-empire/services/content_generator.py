@@ -447,3 +447,8 @@ Generate all {days} emails now:"""
             provider: "available" if client else "unavailable"
             for provider, client in self.providers.items()
         }
+
+# Create a single, shared instance of the ContentFactory.
+# This ensures the expensive initialization runs only once.
+# Other modules should import this instance directly.
+content_factory = ContentFactory()

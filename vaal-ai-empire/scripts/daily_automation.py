@@ -9,7 +9,7 @@ import time
 import logging
 from datetime import datetime
 from core.database import Database
-from services.content_generator import ContentFactory
+from services.content_generator import content_factory
 from services.content_scheduler import ContentScheduler
 from services.social_poster import SocialPoster
 from services.revenue_tracker import RevenueTracker
@@ -29,7 +29,7 @@ class DailyAutomation:
 
     def __init__(self):
         self.db = Database()
-        self.factory = ContentFactory()
+        self.factory = content_factory
         self.scheduler = ContentScheduler(self.db)
         self.poster = SocialPoster()
         self.revenue = RevenueTracker(self.db)

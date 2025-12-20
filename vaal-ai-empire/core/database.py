@@ -5,47 +5,67 @@ from typing import Dict, List, Optional
 import logging
 from contextlib import contextmanager
 import os
-import threading
 import atexit
+import queue
 
 logger = logging.getLogger(__name__)
 
 class Database:
-    """SQLite database for persistent client data"""
+    """SQLite database for persistent client data with connection pooling"""
 
-    def __init__(self, db_path: str = "data/vaal_empire.db"):
+    def __init__(self, db_path: str = "data/vaal_empire.db", pool_size: int = 5):
         self.db_path = db_path
-        self.thread_local = threading.local()
-        # Ensure data directory exists, but not for in-memory databases or root-level dbs
+        self._pool = queue.Queue(maxsize=pool_size)
         if db_path != ":memory:":
             directory = os.path.dirname(db_path)
             if directory:
                 os.makedirs(directory, exist_ok=True)
+
+        for _ in range(pool_size):
+            self._pool.put(self._create_connection())
+
         self.init_database()
-        atexit.register(self.close_connection)
+        atexit.register(self.close_all_connections)
+
+    def _create_connection(self):
+        """Creates a new database connection."""
+        try:
+            connection = sqlite3.connect(self.db_path, check_same_thread=False)
+            connection.row_factory = sqlite3.Row
+            return connection
+        except sqlite3.Error as e:
+            logger.error(f"Error creating database connection: {e}")
+            return None
 
     def get_connection(self):
         """
-        Gets a thread-safe database connection from a pool.
-        Creates a new connection if one doesn't exist for the current thread.
+        Gets a thread-safe database connection from the pool.
+        Blocks until a connection is available.
         """
-        connection = getattr(self.thread_local, 'connection', None)
-        if connection is None:
-            connection = sqlite3.connect(self.db_path, check_same_thread=False)
-            connection.row_factory = sqlite3.Row
-            self.thread_local.connection = connection
-        return connection
+        try:
+            return self._pool.get(block=True, timeout=5)
+        except queue.Empty:
+            return self._create_connection()
 
-    def close_connection(self, _=None):
-        """Closes the connection for the current thread."""
-        connection = getattr(self.thread_local, 'connection', None)
-        if connection is not None:
+    def return_connection(self, connection):
+        """Returns a connection to the pool."""
+        try:
+            self._pool.put(connection, block=False)
+        except queue.Full:
             connection.close()
-            del self.thread_local.connection
+
+    def close_all_connections(self):
+        """Closes all connections in the pool."""
+        while not self._pool.empty():
+            try:
+                conn = self._pool.get(block=False)
+                conn.close()
+            except queue.Empty:
+                break
 
     @contextmanager
     def get_cursor(self):
-        """Provides a transactional cursor."""
+        """Provides a transactional cursor with pooled connections."""
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -55,6 +75,8 @@ class Database:
             conn.rollback()
             logger.error(f"Database transaction failed: {e}")
             raise
+        finally:
+            self.return_connection(conn)
 
     def init_database(self):
         """Create tables if they don't exist"""
@@ -225,29 +247,36 @@ class Database:
     def get_client(self, client_id: str) -> Optional[Dict]:
         """Get single client by ID"""
         conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM clients WHERE id = ?", (client_id,))
-        row = cursor.fetchone()
-        if row:
-            client = dict(row)
-            if client.get('metadata'):
-                client['metadata'] = json.loads(client['metadata'])
-            return client
-        return None
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM clients WHERE id = ?", (client_id,))
+            row = cursor.fetchone()
+            if row:
+                client = dict(row)
+                if client.get('metadata'):
+                    client['metadata'] = json.loads(client['metadata'])
+                return client
+            return None
+        finally:
+            self.return_connection(conn)
+
 
     def get_active_clients(self) -> List[Dict]:
         """Get all active clients"""
         conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM clients WHERE active = 1")
-        clients = [dict(row) for row in cursor.fetchall()]
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM clients WHERE active = 1")
+            clients = [dict(row) for row in cursor.fetchall()]
 
-        # Parse metadata
-        for client in clients:
-            if client.get('metadata'):
-                client['metadata'] = json.loads(client['metadata'])
+            # Parse metadata
+            for client in clients:
+                if client.get('metadata'):
+                    client['metadata'] = json.loads(client['metadata'])
 
-        return clients
+            return clients
+        finally:
+            self.return_connection(conn)
 
     def update_client(self, client_id: str, updates: Dict) -> bool:
         """Update client information"""
@@ -331,94 +360,100 @@ class Database:
     def get_revenue_summary(self, days: int = 30) -> Dict:
         """Get revenue summary for last N days"""
         conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT
-                COUNT(DISTINCT client_id) as client_count,
-                SUM(amount) as total_revenue,
-                AVG(amount) as avg_revenue,
-                service_type,
-                status
-            FROM revenue
-            WHERE date(payment_date) >= date('now', '-' || ? || ' days')
-            GROUP BY service_type, status
-        """, (days,))
-        results = cursor.fetchall()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    COUNT(DISTINCT client_id) as client_count,
+                    SUM(amount) as total_revenue,
+                    AVG(amount) as avg_revenue,
+                    service_type,
+                    status
+                FROM revenue
+                WHERE date(payment_date) >= date('now', '-' || ? || ' days')
+                GROUP BY service_type, status
+            """, (days,))
+            results = cursor.fetchall()
 
-        summary = {
-            "total_revenue": 0,
-            "paid_revenue": 0,
-            "pending_revenue": 0,
-            "client_count": 0,
-            "by_service": {}
-        }
+            summary = {
+                "total_revenue": 0,
+                "paid_revenue": 0,
+                "pending_revenue": 0,
+                "client_count": 0,
+                "by_service": {}
+            }
 
-        for row in results:
-            summary["total_revenue"] += row['total_revenue'] or 0
-            if row['status'] == 'paid':
-                summary["paid_revenue"] += row['total_revenue'] or 0
-            elif row['status'] == 'pending':
-                summary["pending_revenue"] += row['total_revenue'] or 0
+            for row in results:
+                summary["total_revenue"] += row['total_revenue'] or 0
+                if row['status'] == 'paid':
+                    summary["paid_revenue"] += row['total_revenue'] or 0
+                elif row['status'] == 'pending':
+                    summary["pending_revenue"] += row['total_revenue'] or 0
 
-            service = row['service_type']
-            if service not in summary["by_service"]:
-                summary["by_service"][service] = {
-                    "revenue": 0,
-                    "avg": 0,
-                    "count": 0
-                }
+                service = row['service_type']
+                if service not in summary["by_service"]:
+                    summary["by_service"][service] = {
+                        "revenue": 0,
+                        "avg": 0,
+                        "count": 0
+                    }
 
-            summary["by_service"][service]["revenue"] += row['total_revenue'] or 0
-            summary["by_service"][service]["avg"] = row['avg_revenue'] or 0
-            summary["by_service"][service]["count"] += row['client_count'] or 0
+                summary["by_service"][service]["revenue"] += row['total_revenue'] or 0
+                summary["by_service"][service]["avg"] = row['avg_revenue'] or 0
+                summary["by_service"][service]["count"] += row['client_count'] or 0
 
-        # Get unique client count
-        cursor.execute("""
-            SELECT COUNT(DISTINCT client_id) as total_clients
-            FROM revenue
-            WHERE date(payment_date) >= date('now', '-' || ? || ' days')
-        """, (days,))
-        summary["client_count"] = cursor.fetchone()['total_clients']
+            # Get unique client count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT client_id) as total_clients
+                FROM revenue
+                WHERE date(payment_date) >= date('now', '-' || ? || ' days')
+            """, (days,))
+            summary["client_count"] = cursor.fetchone()['total_clients']
 
-        return summary
+            return summary
+        finally:
+            self.return_connection(conn)
 
     def get_cost_summary(self, days: int = 30) -> Dict:
         """Get API and model cost summary"""
         conn = self.get_connection()
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # API costs
-        cursor.execute("""
-            SELECT api_name, SUM(cost_usd) as total_cost, COUNT(*) as call_count
-            FROM usage_logs
-            WHERE date(timestamp) >= date('now', '-' || ? || ' days')
-            GROUP BY api_name
-        """, (days,))
-        api_costs = {row['api_name']: {
-            'cost': row['total_cost'] or 0,
-            'calls': row['call_count']
-        } for row in cursor.fetchall()}
+            # API costs
+            cursor.execute("""
+                SELECT api_name, SUM(cost_usd) as total_cost, COUNT(*) as call_count
+                FROM usage_logs
+                WHERE date(timestamp) >= date('now', '-' || ? || ' days')
+                GROUP BY api_name
+            """, (days,))
+            api_costs = {row['api_name']: {
+                'cost': row['total_cost'] or 0,
+                'calls': row['call_count']
+            } for row in cursor.fetchall()}
 
-        # Model costs
-        cursor.execute("""
-            SELECT model_id, SUM(cost_usd) as total_cost, COUNT(*) as usage_count,
-                   SUM(tokens_used) as total_tokens
-            FROM model_usage_logs
-            WHERE date(timestamp) >= date('now', '-' || ? || ' days')
-            GROUP BY model_id
-        """, (days,))
-        model_costs = {row['model_id']: {
-            'cost': row['total_cost'] or 0,
-            'uses': row['usage_count'],
-            'tokens': row['total_tokens'] or 0
-        } for row in cursor.fetchall()}
+            # Model costs
+            cursor.execute("""
+                SELECT model_id, SUM(cost_usd) as total_cost, COUNT(*) as usage_count,
+                       SUM(tokens_used) as total_tokens
+                FROM model_usage_logs
+                WHERE date(timestamp) >= date('now', '-' || ? || ' days')
+                GROUP BY model_id
+            """, (days,))
+            model_costs = {row['model_id']: {
+                'cost': row['total_cost'] or 0,
+                'uses': row['usage_count'],
+                'tokens': row['total_tokens'] or 0
+            } for row in cursor.fetchall()}
 
-        return {
-            "api_costs": api_costs,
-            "model_costs": model_costs,
-            "total_cost": sum(c['cost'] for c in api_costs.values()) +
-                         sum(c['cost'] for c in model_costs.values())
-        }
+            return {
+                "api_costs": api_costs,
+                "model_costs": model_costs,
+                "total_cost": sum(c['cost'] for c in api_costs.values()) +
+                             sum(c['cost'] for c in model_costs.values())
+            }
+        finally:
+            self.return_connection(conn)
 
     def save_content_pack(self, client_id: str, pack_data: Dict,
                          posts_count: int, images_count: int,
@@ -435,11 +470,13 @@ class Database:
 
     def health_check(self) -> bool:
         """Check database health"""
+        conn = self.get_connection()
         try:
-            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT 1")
             return True
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
             return False
+        finally:
+            self.return_connection(conn)

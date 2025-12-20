@@ -1,7 +1,7 @@
-import { MODEL_CATALOG } from '../models.config.js';
-import { sql } from '@vercel/postgres';
+const { MODEL_CATALOG } = require('../models.config.js');
+const { sql } = require('@vercel/postgres');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { task, location, language, student_id: client_id } = req.body;
 
   // 1. Determine which model to use

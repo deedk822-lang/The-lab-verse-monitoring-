@@ -6,21 +6,6 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
 
- bolt/cache-hf-model-loading-6086113376814306475
-SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
-
-
-# ⚡ Bolt Optimization: Cache the model loading
-@lru_cache(maxsize=None)
-def get_seo_model():
-    """Loads and caches the SentenceTransformer model."""
-    try:
-        model = SentenceTransformer(SEO_MODEL_NAME)
-        logger.info("✅ HF Lab: Local SEO Model Loaded.")
-        return model
-    except Exception as e:
-        logger.warning(f"⚠️ HF Lab: Local SEO Model missing: {e}")
-
 
 @lru_cache(maxsize=1)
 def _load_seo_model():
@@ -34,7 +19,6 @@ def _load_seo_model():
         return model
     except Exception as e:
         logger.warning(f"⚠️ HF Lab: Could not load local SEO model. Error: {e}")
- main
         return None
 
 
@@ -48,12 +32,7 @@ class HuggingFaceLab:
         self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
 
         # Load Local SEO Model (CPU-friendly)
- bolt/cache-hf-model-loading-6086113376814306475
-        # ⚡ Bolt Optimization: Use the cached model loader
-        self.seo_model = get_seo_model()
-
         self.seo_model = _load_seo_model()
- main
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""

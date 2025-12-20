@@ -1,9 +1,9 @@
 // Check if your models.config.js is in a 'config' folder or root.
 // If in 'config' folder, use: '../../config/models.config.js'
 // If in root, use: '../../models.config.js'
-import { MODEL_CATALOG } from '../../models.config.js';
+const { MODEL_CATALOG } = require('../../models.config.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { location, monthly_budget_zar } = req.body;
 
   try {

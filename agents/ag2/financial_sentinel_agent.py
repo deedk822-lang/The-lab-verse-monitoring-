@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from autogen import ConversableAgent, LLMConfig
 
 class FinancialSentinelAgent:
@@ -29,9 +30,16 @@ class FinancialSentinelAgent:
         print("[Financial Sentinel] Ready to recover tax money! 💰")
 
     def _load_knowledge_base(self):
-        with open("data/sars/section_12h_learnerships.json", "r") as f:
+        # Construct path relative to this script's location
+        script_dir = os.path.dirname(__file__)
+        project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
+
+        section_12h_path = os.path.join(project_root, "data", "sars", "section_12h_learnerships.json")
+        with open(section_12h_path, "r") as f:
             self.sars_kb["section_12h"] = json.load(f)
-        with open("data/sars/eti_employment_incentive.json", "r") as f:
+
+        eti_path = os.path.join(project_root, "data", "sars", "eti_employment_incentive.json")
+        with open(eti_path, "r") as f:
             self.sars_kb["eti"] = json.load(f)
 
     def _register_tools(self):

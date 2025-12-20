@@ -1,4 +1,4 @@
-import { MODEL_CATALOG } from '../../models.config.js';
+const { MODEL_CATALOG } = require('../../models.config.js');
 
 async function getEskomStage(location) {
   // Placeholder implementation
@@ -10,7 +10,7 @@ async function getInternetUptime(location) {
   return 100;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { location, task, urgency } = req.body;
 
   // HRGPT decides which model to deploy based on location constraints

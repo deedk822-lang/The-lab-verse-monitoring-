@@ -358,50 +358,6 @@ Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 🚀 **Ready to launch your $237K/year MCP gateway?**
 
 [Get Started Now](https://your-domain.vercel.app/pricing) | [Watch Demo](https://your-domain.vercel.app/demo) | [Read Docs](./MONETIZATION_GUIDE.md)
-
----
-
-## 🚀 Quick Start Commands
-
-```bash
-# 1. Create directory structure
-mkdir -p services monitoring/{grafana,rules}
-
-# 2. Copy all files above into correct locations
-
-# 3. Start the entire stack
-docker-compose -f docker-compose.monitoring.yml up -d
-
-# 4. Verify services
-docker-compose -f docker-compose.monitoring.yml ps
-
-# 5. Check GDELT monitor logs
-docker logs -f vaal-gdelt-monitor
-
-# 6. Access dashboards
-# - Grafana: http://localhost:3001 (admin/VaalEmpire2025!)
-# - Prometheus: http://localhost:9090
-# - GDELT Metrics: http://localhost:9091/metrics
-# - App Metrics: http://localhost:3000/api/metrics
-```
-
----
-
-## ✅ Verification Checklist
-
-```bash
-# Check GDELT metrics are being collected
-curl http://localhost:9091/metrics | grep gdelt
-
-# Check Prometheus is scraping
-curl http://localhost:9090/api/v1/targets | jq
-
-# Check app metrics
-curl http://localhost:3000/api/metrics
-
-# View Grafana dashboards
-open http://localhost:3001
-```
 =======
 # MCP Gateway Setup Guide
 

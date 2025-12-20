@@ -1,12 +1,17 @@
-import express from 'express';
-import orchestrator from './api/orchestrator.js';
-import provision from './api/models/provision.js';
-import budgetAllocate from './api/hireborderless/budget-allocate.js';
+const express = require('express');
+const orchestrator = require('./api/orchestrator.js');
+const provision = require('./api/models/provision.js');
+const budgetAllocate = require('./api/hireborderless/budget-allocate.js');
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 
 app.post('/api/orchestrator', orchestrator);
 app.post('/api/models/provision', provision);

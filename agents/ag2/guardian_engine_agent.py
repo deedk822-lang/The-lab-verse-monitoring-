@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from autogen import ConversableAgent, LLMConfig
 
 class GuardianEngineAgent:
@@ -29,7 +30,10 @@ class GuardianEngineAgent:
         print("[Guardian Engine] Ready to protect businesses! 🛡️")
 
     def _load_knowledge_base(self):
-        with open("data/crisis/loadshedding_2024.json", "r") as f:
+        script_dir = os.path.dirname(__file__)
+        project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
+        kb_path = os.path.join(project_root, "data", "crisis", "loadshedding_2024.json")
+        with open(kb_path, "r") as f:
             self.crisis_kb["loadshedding"] = json.load(f)
 
     def _register_tools(self):

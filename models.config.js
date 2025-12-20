@@ -1,4 +1,4 @@
-export const MODEL_CATALOG = {
+module.exports.MODEL_CATALOG = {
   // ** TIER 1: LocalAI-Compatible (Loadshedding-Proof) **
   'mistral-7b-instruct-v0.2-q4': {
     provider: 'LocalAI',

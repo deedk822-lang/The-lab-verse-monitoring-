@@ -17,8 +17,8 @@ jobs:
           # The branch name is available in the GITHUB_HEAD_REF environment variable
           echo "Branch name: ${{ github.head_ref }}"
 
-          # Regex to find key like TC-123 (Change 'TC' if your project key is different)
-          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E 'TC-[0-9]+' | head -1)
+          # Regex to find key like LABINT-123 (Change 'LABINT' if your project key is different)
+          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E 'LABINT-[0-9]+' | head -1)
 
           if [ -z "$JIRA_KEY" ]; then
             echo "Jira key not found in branch name. Skipping."

@@ -9,8 +9,11 @@ class KimiIndustryAgent:
     An agent that uses the Kimi K2 model to organize industry information.
     """
     def __init__(self):
+        api_key = os.getenv("KIMI_API_KEY")
+        if not api_key:
+            raise ValueError("KIMI_API_KEY environment variable not set.")
         self.client = OpenAI(
-            api_key=os.getenv("KIMI_API_KEY"),
+            api_key=api_key,
             base_url="https://api.moonshot.ai/v1",
         )
 

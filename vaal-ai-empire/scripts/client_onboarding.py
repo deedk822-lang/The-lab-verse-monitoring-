@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 import sqlite3
 from core.database import Database
-from services.content_generator import ContentFactory
+from services.content_generator import get_content_factory
 from services.whatsapp_bot import WhatsAppBot
 from services.content_scheduler import ContentScheduler
 from services.revenue_tracker import RevenueTracker
@@ -19,7 +19,7 @@ class ClientOnboarding:
 
     def __init__(self):
         self.db = Database()
-        self.factory = ContentFactory()
+        self.factory = get_content_factory(self.db)
         self.whatsapp = WhatsAppBot(self.db)
         self.scheduler = ContentScheduler(self.db)
         self.revenue = RevenueTracker(self.db)

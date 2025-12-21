@@ -6,7 +6,12 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
+    """
+    Enhanced content generation with multiple provider support.
+
+    NOTE: This class is expensive to initialize. Use the singleton function
+    `get_content_factory()` instead of direct instantiation.
+    """
 
     def __init__(self, db=None):
         self.db = db
@@ -447,3 +452,23 @@ Generate all {days} emails now:"""
             provider: "available" if client else "unavailable"
             for provider, client in self.providers.items()
         }
+
+
+# --- Singleton Implementation ---
+_content_factory_instance: Optional[ContentFactory] = None
+
+def get_content_factory(db=None) -> ContentFactory:
+    """
+    Returns a singleton instance of the ContentFactory.
+    Avoids expensive re-initialization of providers.
+    """
+    global _content_factory_instance
+    if _content_factory_instance is None:
+        logger.info("Initializing ContentFactory singleton...")
+        _content_factory_instance = ContentFactory(db=db)
+    elif db and _content_factory_instance.db is None:
+        # If the factory was initialized without a db, attach it later
+        _content_factory_instance.db = db
+        logger.info("Attached database to existing ContentFactory singleton.")
+
+    return _content_factory_instance

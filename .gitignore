@@ -308,3 +308,4 @@ g20-workflow-verified-state.json
 env-validation-report.json
 
 digest.txt
+performance_test.py

@@ -34,12 +34,9 @@ class EducationTools:
                 "sellable_opportunity": ""
             }
 
-            # Perform a proper gap analysis by finding skills in global standards not in SA curriculum.
-            sa_all_skills = {skill for skills_list in sa_curr.values() for skill in skills_list}
-            global_all_skills = {skill for skills_list in global_curr.values() for skill in skills_list}
-            
-            missing_skills = list(global_all_skills - sa_all_skills)
-            gap_report["missing_critical_skills"] = sorted(missing_skills)
+            # Find the void
+            for category, skills in global_curr.items():
+                gap_report["missing_critical_skills"].extend(skills)
 
             gap_report["sellable_opportunity"] = f"Create a 'Term 1 Future Pack' covering: {', '.join(gap_report['missing_critical_skills'][:3])}"
 
@@ -52,6 +49,9 @@ class EducationTools:
         def _run(self, gap_analysis_json: str) -> str:
             data = json.loads(gap_analysis_json)
             skills = data['missing_critical_skills']
+
+            if len(skills) < 3:
+                return f"Error: At least 3 missing skills are required to generate a syllabus. Found {len(skills)}."
 
             # Create the product outline
             syllabus = f"""

@@ -1,8 +1,3 @@
- feature/monetization-supreme-tier-system
- feature/monetization-supreme-tier-system
-
- TheLapVerseCore.ts
- main
 # 🚀 Lab Verse Monitoring - Premium MCP Gateway
 
 > **Transform your AI workflows into a $237K/year SaaS business**
@@ -285,9 +280,9 @@ ROI: 10 months
 ## 📞 Support
 
 ### Documentation
-- [Monetization Guide](./MONETIZATION_GUIDE.md)
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-- [API Reference](./docs/API.md)
+- **[Monetization Guide](./MONETIZATION_GUIDE.md)** - Complete revenue implementation
+- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Setup and testing procedures
+- **[API Reference](./docs/API.md)** - Endpoint reference
 
 ### Community
 - GitHub Issues: [Report bugs](https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues)
@@ -358,7 +353,77 @@ Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 🚀 **Ready to launch your $237K/year MCP gateway?**
 
 [Get Started Now](https://your-domain.vercel.app/pricing) | [Watch Demo](https://your-domain.vercel.app/demo) | [Read Docs](./MONETIZATION_GUIDE.md)
-=======
+
+---
+
+## 🚀 Quick Start Commands
+
+```bash
+# 1. Create directory structure
+mkdir -p services monitoring/{grafana,rules}
+
+# 2. Copy all files above into correct locations
+
+# 3. Start the entire stack
+docker-compose -f docker-compose.monitoring.yml up -d
+
+# 4. Verify services
+docker-compose -f docker-compose.monitoring.yml ps
+
+# 5. Check GDELT monitor logs
+docker logs -f vaal-gdelt-monitor
+
+# 6. Access dashboards
+# - Grafana: http://localhost:3001 (admin/VaalEmpire2025!)
+# - Prometheus: http://localhost:9090
+# - GDELT Metrics: http://localhost:9091/metrics
+# - App Metrics: http://localhost:3000/api/metrics
+```
+
+---
+
+## ✅ Verification Checklist
+
+```bash
+# Check GDELT metrics are being collected
+curl http://localhost:9091/metrics | grep gdelt
+
+# Check Prometheus is scraping
+curl http://localhost:9090/api/v1/targets | jq
+
+# Check app metrics
+curl http://localhost:3000/api/metrics
+
+# View Grafana dashboards
+open http://localhost:3001
+```
+
+---
+
+## 🤖 Kimi CLI
+
+This project includes Kimi CLI, a powerful tool that combines a coding agent with a shell.
+
+### Launching Kimi CLI
+
+To launch the Kimi CLI, run the following command:
+
+```bash
+./scripts/launch-kimi.sh
+```
+
+You can also pass arguments to the `kimi` command. For example, to get help:
+
+```bash
+./scripts/launch-kimi.sh --help
+```
+
+### IDE Integration (Zed)
+
+Kimi CLI supports the Agent Client Protocol (ACP) for IDE integration. To use it with the Zed IDE, you can use the provided configuration file. The `.zed/settings.json` file is already configured for you.
+
+---
+
 # MCP Gateway Setup Guide
 
 ## 📋 Overview

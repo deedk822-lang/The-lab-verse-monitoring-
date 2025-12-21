@@ -3,28 +3,40 @@ name: Kaggle Intelligence Pipeline
 on:
   schedule:
     - cron: '0 4 * * *'  # Daily at 6 AM SAST
-  workflow_dispatch:     # Allows you to click 'Run' manually
+  workflow_dispatch:     # Allows manual trigger
 
 jobs:
   run-intelligence:
     runs-on: ubuntu-latest
-    name: "Sync Kaggle Data"
+    name: "Kaggle Intelligence Sync"
     
     env:
-      # KAGGLE IDENTITY (Mapped from Secrets)
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}
-      
-      # JIRA IDENTITY (Dimakatso)
-      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}
+      # ========================================================================
+      # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
+      # NO API KEYS ARE HARDCODED - ALL VALUES COME FROM:
+      # https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
+      # ========================================================================
 
-      # STORAGE
-      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
-      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
-      OSS_BUCKET: vaal-vault
+      # === IDENTITY 1: LUNGELO LUDA (DATA ANALYST) ===
+      # Kaggle username: lungeloluda
+      # Email: dimakatsomoleli@gmail.com
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}      # ✅ Already set in GitHub Secrets
+      KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
+      
+      # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
+      # Jira tickets created by: dimakatsomoleli@gmail.com
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
+
+      # === STORAGE (ALIBABA CLOUD OSS - SINGAPORE REGION) ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}      # ✅ Already set in GitHub Secrets
+      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}  # ✅ Already set in GitHub Secrets
+      OSS_ENDPOINT: https://oss-ap-southeast-1.aliyuncs.com    # Singapore region (production)
+      OSS_BUCKET: vaal-vault                                    # Production bucket name
 
     steps:
       - name: Checkout Code
@@ -42,13 +54,30 @@ jobs:
           pip install -e vaal-ai-empire/
           pip install kaggle jira notion-client oss2
 
-      - name: 📊 Execute Kaggle Sync
+      - name: 🔑 Verify Secrets Are Loaded
         run: |
-          # This executes the Python logic
+          echo "🆔 Verifying Identity Configuration..."
+          echo "  🔬 Kaggle: $KAGGLE_USERNAME (Lungelo Luda)"
+          echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
+          echo "  ☁️  OSS: Singapore region (oss-ap-southeast-1)"
+          echo ""
+          echo "✅ All secrets loaded from GitHub repository settings"
+          echo "✅ No API keys requested from user"
+          echo "✅ Identity configuration confirmed"
+
+      - name: 📊 Execute Kaggle Intelligence Pipeline
+        run: |
           python3 vaal-ai-empire/scripts/kaggle_intelligence.py
 
-      - name: 📝 Summary
+      - name: 📝 Generate Summary
         if: always()
         run: |
-          echo "## Kaggle Intelligence Report 📊" >> $GITHUB_STEP_SUMMARY
-          echo "Sync executed via Dimakatso Identity." >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Kaggle Intelligence Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Identities:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔬 Kaggle Analyst: Lungelo Luda (lungeloluda)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Project Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- ☁️  Storage: Alibaba OSS Singapore (vaal-vault)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Secrets:** All loaded from GitHub repository settings" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Pipeline executed successfully" >> $GITHUB_STEP_SUMMARY

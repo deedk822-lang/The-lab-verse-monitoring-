@@ -6,25 +6,37 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
 
-# ⚡ Bolt Optimization: Cached expensive model/client initializations
-# These functions are now cached, so the expensive objects are created only once.
-@lru_cache(maxsize=None)
-def get_inference_client(token):
-    """Initializes and returns a cached HuggingFace InferenceClient."""
-    if not token:
-        return None
-    return InferenceClient(token=token)
+ bolt/cache-hf-model-loading-6086113376814306475
+SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
 
+
+# ⚡ Bolt Optimization: Cache the model loading
 @lru_cache(maxsize=None)
 def get_seo_model():
-    """Initializes and returns a cached SentenceTransformer model."""
+    """Loads and caches the SentenceTransformer model."""
+    try:
+        model = SentenceTransformer(SEO_MODEL_NAME)
+        logger.info("✅ HF Lab: Local SEO Model Loaded.")
+        return model
+    except Exception as e:
+        logger.warning(f"⚠️ HF Lab: Local SEO Model missing: {e}")
+
+
+@lru_cache(maxsize=1)
+def _load_seo_model():
+    """
+    Loads the SentenceTransformer model.
+    This is cached to prevent reloading on every HuggingFaceLab instantiation.
+    """
     try:
         model = SentenceTransformer('all-MiniLM-L6-v2')
         logger.info("✅ HF Lab: Local SEO Model Loaded.")
         return model
-    except Exception:
-        logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+    except Exception as e:
+        logger.warning(f"⚠️ HF Lab: Could not load local SEO model. Error: {e}")
+ main
         return None
+
 
 class HuggingFaceLab:
     """
@@ -33,9 +45,15 @@ class HuggingFaceLab:
     """
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_KEY")
-        # Call the cached functions instead of initializing directly
-        self.client = get_inference_client(self.hf_token)
+        self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
+
+        # Load Local SEO Model (CPU-friendly)
+ bolt/cache-hf-model-loading-6086113376814306475
+        # ⚡ Bolt Optimization: Use the cached model loader
         self.seo_model = get_seo_model()
+
+        self.seo_model = _load_seo_model()
+ main
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""

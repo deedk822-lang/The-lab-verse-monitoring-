@@ -63,7 +63,7 @@ class DailyAutomation:
         failure_count = 0
 
         # Use a ThreadPoolExecutor to run tasks concurrently
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_WORKERS", "10"))) as executor:
             # Submit all client processing tasks to the executor
             future_to_client = {executor.submit(self._generate_for_client, client): client for client in clients}
 

@@ -402,6 +402,30 @@ curl http://localhost:3000/api/metrics
 # View Grafana dashboards
 open http://localhost:3001
 ```
+
+---
+
+## 🤖 Kimi CLI
+
+This project includes Kimi CLI, a powerful tool that combines a coding agent with a shell.
+
+### Launching Kimi CLI
+
+To launch the Kimi CLI, run the following command:
+
+```bash
+./scripts/launch-kimi.sh
+```
+
+You can also pass arguments to the `kimi` command. For example, to get help:
+
+```bash
+./scripts/launch-kimi.sh --help
+```
+
+### IDE Integration (Zed)
+
+Kimi CLI supports the Agent Client Protocol (ACP) for IDE integration. To use it with the Zed IDE, you can use the provided configuration file. The `.zed/settings.json` file is already configured for you.
 =======
 # MCP Gateway Setup Guide
 

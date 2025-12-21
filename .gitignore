@@ -303,3 +303,8 @@ secrets/
 *-state.json
 *-results.json
 g20-workflow-verified-state.json
+
+# Generated validation reports
+env-validation-report.json
+
+digest.txt

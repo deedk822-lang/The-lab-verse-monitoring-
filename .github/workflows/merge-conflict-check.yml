@@ -40,36 +40,7 @@ jobs:
       - name: Check for duplicate package.json keys
         run: |
           echo "🔍 Checking for duplicate keys in package.json..."
-          
-          if [ -f package.json ]; then
-            # Use Python to check for duplicate keys
-            python3 << 'EOF'
-import json
-import sys
-
-def check_duplicate_keys(pairs):
-    keys = {}
-    for key, value in pairs:
-        if key in keys:
-            print(f"❌ Duplicate key found: {key}")
-            sys.exit(1)
-        keys[key] = value
-    return keys
-
-try:
-    with open('package.json', 'r') as f:
-        json.load(f, object_pairs_hook=check_duplicate_keys)
-    print("✅ No duplicate keys in package.json")
-except json.JSONDecodeError as e:
-    print(f"❌ Invalid JSON in package.json: {e}")
-    sys.exit(1)
-except Exception as e:
-    print(f"❌ Error checking package.json: {e}")
-    sys.exit(1)
-EOF
-          else
-            echo "⚠️  package.json not found (skipping check)"
-          fi
+          python3 scripts/check_duplicate_keys.py
 
       - name: Validate JSON syntax
         run: |

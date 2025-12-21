@@ -8,7 +8,9 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "public" }
+      "config": {
+        "distDir": "public"
+      }
     }
   ],
   "routes": [
@@ -22,10 +24,9 @@
     }
   ],
   "env": {
-    "CDATA_CONNECT_API": "@cdata_connect_api",
-    "CDATA_API_KEY": "@cdata_api_key",
-    "GLM4_API_KEY": "@glm4_api_key",
-    "AIRTABLE_BASE_ID": "@airtable_base_id",
-    "AIRTABLE_API_KEY": "@airtable_api_key"
+    "CDATA_CONNECT_API": "disabled",
+    "CDATA_API_KEY": "disabled",
+    "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
+    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY"
   }
 }

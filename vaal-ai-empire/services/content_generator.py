@@ -1,105 +1,47 @@
-from functools import lru_cache
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 import logging
-import json
 from datetime import datetime
+import importlib
+
+# ⚡ Bolt Optimization: Import the new provider factory
+provider_factory = importlib.import_module("vaal-ai-empire.core.provider_factory")
 
 logger = logging.getLogger(__name__)
 
 
-# ⚡ Bolt Optimization: Cache provider initialization
-# This function is decorated with lru_cache to ensure that the expensive
-# process of initializing all API providers only happens once.
-@lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
-    """
-    Initialize and cache all content and image generation providers.
-    This function is executed only once, and its result is cached.
-    """
-    # --- Initialize Text Providers ---
-    providers = {
-        "cohere": None,
-        "groq": None,
-        "mistral": None,
-        "huggingface": None
-    }
-
-    # Try Cohere
-    try:
-        from api.cohere import CohereAPI
-        providers["cohere"] = CohereAPI()
-        logger.info("✅ Cohere provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Cohere unavailable: {e}")
-
-    # Try Groq
-    try:
-        from api.groq_api import GroqAPI
-        providers["groq"] = GroqAPI()
-        logger.info("✅ Groq provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Groq unavailable: {e}")
-
-    # Try Mistral (local via Ollama)
-    try:
-        from api.mistral import MistralAPI
-        providers["mistral"] = MistralAPI()
-        logger.info("✅ Mistral provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Mistral unavailable: {e}")
-
-    # Try HuggingFace
-    try:
-        from api.huggingface_api import HuggingFaceAPI
-        providers["huggingface"] = HuggingFaceAPI()
-        logger.info("✅ HuggingFace provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  HuggingFace unavailable: {e}")
-
-    available = [k for k, v in providers.items() if v is not None]
-    if available:
-        logger.info(f"Available text providers: {', '.join(available)}")
-    else:
-        logger.error("❌ No content generation providers available!")
-
-    # --- Initialize Image Generator ---
-    image_generator = None
-    try:
-        from api.image_generation import BusinessImageGenerator
-        image_generator = BusinessImageGenerator()
-        logger.info("✅ Image generation provider initialized")
-    except Exception as e:
-        logger.warning(f"⚠️  Image generation disabled: {e}")
-
-    return providers, image_generator
-
-
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
+    """
+    Enhanced content generation with multiple provider support.
+    Providers are now loaded lazily to improve startup performance.
+    """
 
-    def __init__(self, db=None):
+    def __init__(self, db: Optional[Any] = None):
         self.db = db
-        # Unpack the cached providers and image generator
-        self.providers, self.image_generator = _get_cached_providers()
+        # Providers are no longer initialized here. They will be loaded on-demand.
 
-    def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
+    def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict[str, Any]:
         """
         Public method to generate content using the best available provider.
         """
         return self._generate_with_fallback(prompt, max_tokens)
 
-    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
-        """Try providers in priority order until one succeeds"""
+    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict[str, Any]:
+        """Try providers in priority order until one succeeds, loading them on-demand."""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            # ⚡ Bolt Optimization: Lazily get the provider
+            provider_func = provider_factory.PROVIDER_FUNCTIONS.get(provider_name)
+            if not provider_func:
+                continue
+
+            provider = provider_func()
             if provider is None:
                 continue
 
             try:
                 logger.info(f"Trying {provider_name}...")
-
+                # The logic for each provider remains the same
                 if provider_name == "cohere":
                     result = provider.generate_content(prompt, max_tokens)
                     if self.db:
@@ -116,6 +58,7 @@ class ContentFactory:
                 elif provider_name == "huggingface":
                     result = provider.generate(prompt, max_tokens)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+
             except Exception as e:
                 logger.warning(f"{provider_name} failed: {e}")
                 continue
@@ -123,9 +66,8 @@ class ContentFactory:
         raise Exception("All content generation providers failed")
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
-                            num_posts: int = 10, num_images: int = 5) -> Dict:
+                             num_posts: int = 10, num_images: int = 5) -> Dict[str, Any]:
         """Generate complete social media pack with REAL content"""
-
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
@@ -133,10 +75,12 @@ class ContentFactory:
             posts_result = self.generate_content(posts_prompt, max_tokens=2000)
             posts = self._parse_posts(posts_result["text"], num_posts)
 
-            images = []
-            if self.image_generator:
+            images: List[Dict[str, Any]] = []
+            # ⚡ Bolt Optimization: Lazily get the image generator
+            image_generator = provider_factory.get_image_generator()
+            if image_generator:
                 try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
+                    image_results = image_generator.generate_for_business(business_type, count=num_images)
                     images = image_results
                     logger.info(f"✅ Generated {len(images)} images")
                 except Exception as e:
@@ -302,5 +246,14 @@ Generate all {days} emails now:"""
         """
         return {"subject": subject, "html_content": html_content, "status": "created", "posts_included": len(pack.get("posts", [])), "images_included": len(pack.get("images", []))}
 
-    def get_provider_status(self) -> Dict:
-        return {provider: "available" if client else "unavailable" for provider, client in self.providers.items()}
+    def get_provider_status(self) -> Dict[str, str]:
+        """Check status of providers by attempting to initialize them."""
+        status = {}
+        for name, func in provider_factory.PROVIDER_FUNCTIONS.items():
+            try:
+                # Calling the function will retrieve from cache or initialize
+                provider = func()
+                status[name] = "available" if provider else "unavailable"
+            except Exception:
+                status[name] = "unavailable"
+        return status

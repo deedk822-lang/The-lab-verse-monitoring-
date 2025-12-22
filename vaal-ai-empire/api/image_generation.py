@@ -338,23 +338,37 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """
+        Generate multiple images in parallel using a thread pool for efficiency.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        results = [None] * len(prompts)
+        # Using a dictionary to map futures to their original index
+        future_to_index = {}
 
-            try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
-                    "image_url": self._create_placeholder(prompt),
-                    "provider": "error",
-                    "cost_usd": 0.0,
-                    "error": str(e)
-                })
+        with ThreadPoolExecutor(max_workers=min(len(prompts), 10)) as executor:
+            logger.info(f"Submitting {len(prompts)} image generation tasks to thread pool.")
+
+            for i, prompt in enumerate(prompts):
+                future = executor.submit(self.generate, prompt, style=style)
+                future_to_index[future] = i
+
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                prompt = prompts[index]
+                try:
+                    result = future.result()
+                    results[index] = result
+                    logger.info(f"Successfully generated image for prompt: {prompt[:50]}...")
+                except Exception as e:
+                    logger.error(f"Failed to generate image for prompt '{prompt[:50]}...': {e}")
+                    results[index] = {
+                        "image_url": self._create_placeholder(prompt),
+                        "provider": "error",
+                        "cost_usd": 0.0,
+                        "error": str(e)
+                    }
 
         return results
 

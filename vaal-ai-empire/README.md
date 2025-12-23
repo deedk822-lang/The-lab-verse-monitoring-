@@ -12,6 +12,21 @@ An enterprise-grade AI automation system for managing social media content, What
 - **Bilingual**: Generates content in Afrikaans and English
 - **Cost Optimization**: Uses most cost-effective provider available
 
+### 🆕 New: Multimodal Content Generation with Aya Vision
+
+This system now supports multimodal inputs (images and text) using the `CohereLabs/aya-vision-32b` model.
+
+**Special Installation Note:** This model requires a specific version of the `transformers` library. Install it directly from GitHub:
+```bash
+pip uninstall -y transformers
+pip install 'git+https://github.com/huggingface/transformers.git@v4.49.0-AyaVision'
+```
+
+**To test this feature**, run the demonstration script:
+```bash
+python vaal-ai-empire/scripts/test_aya_vision.py
+```
+
 ##  sovereign AI Engine Setup
 
 This project is designed to run with a self-hosted, high-performance AI engine using vLLM to serve the Kimi-Linear model. This creates a private, sovereign AI circuit for all your business automation needs.

@@ -7,10 +7,36 @@ An enterprise-grade AI automation system for managing social media content, What
 ## ✨ Features
 
 ### 🤖 AI Content Generation
-- **Multi-Provider Support**: Cohere, Groq, Mistral (Ollama), HuggingFace
+- **Multi-Provider Support**: Cohere, Groq, Mistral (Ollama), HuggingFace, Kimi
 - **Automatic Fallback**: Seamlessly switches between providers if one fails
 - **Bilingual**: Generates content in Afrikaans and English
 - **Cost Optimization**: Uses most cost-effective provider available
+
+##  sovereign AI Engine Setup
+
+This project is designed to run with a self-hosted, high-performance AI engine using vLLM to serve the Kimi-Linear model. This creates a private, sovereign AI circuit for all your business automation needs.
+
+### 1. Start the vLLM Server
+
+First, you need to have a machine with a powerful GPU and the vLLM library installed. Run the following command to start the OpenAI-compatible server:
+
+```bash
+vllm serve moonshotai/Kimi-Linear-48B-A3B-Instruct \
+  --port 8000 \
+  --tensor-parallel-size 4 \
+  --max-model-len 1048576 \
+  --trust-remote-code
+```
+
+### 2. Configure the Endpoint
+
+In your `.env` file for the `vaal-ai-empire` project, set the following environment variable to point to your vLLM server:
+
+```env
+KIMI_VLLM_ENDPOINT="http://localhost:8000/v1"
+```
+
+The `KimiAPI` client will automatically use this endpoint to send requests to your sovereign AI engine.
 
 ### 🖼️ Real Image Generation
 - **Multiple Providers**: Stable Diffusion, DALL-E, Replicate, HuggingFace

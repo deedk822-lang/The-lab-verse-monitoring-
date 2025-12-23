@@ -21,7 +21,8 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
         "cohere": None,
         "groq": None,
         "mistral": None,
-        "huggingface": None
+        "huggingface": None,
+        "kimi": None
     }
 
     # Try Cohere
@@ -55,6 +56,14 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
         logger.info("✅ HuggingFace provider initialized")
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+
+    # Try Kimi
+    try:
+        from api.kimi import KimiAPI
+        providers["kimi"] = KimiAPI()
+        logger.info("✅ Kimi provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Kimi unavailable: {e}")
 
     available = [k for k, v in providers.items() if v is not None]
     if available:
@@ -90,7 +99,7 @@ class ContentFactory:
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
-        priority = ["groq", "cohere", "mistral", "huggingface"]
+        priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
 
         for provider_name in priority:
             provider = self.providers.get(provider_name)
@@ -113,6 +122,11 @@ class ContentFactory:
                 elif provider_name == "mistral":
                     result = provider.query_local(prompt)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+                elif provider_name == "kimi":
+                    result = provider.generate_content(prompt, max_tokens)
+                    if self.db:
+                        self.db.log_api_usage("kimi", "generate_content", result.get("usage", {}).get("total_tokens", 0), 0.0)
+                    return {"text": result["text"], "provider": "kimi", "cost_usd": 0.0, "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "huggingface":
                     result = provider.generate(prompt, max_tokens)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}

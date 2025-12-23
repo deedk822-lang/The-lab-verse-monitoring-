@@ -129,7 +129,7 @@ class Database:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS revenue (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    client_id TEXT NOT NULL,.
+                    client_id TEXT NOT NULL,
                     amount REAL NOT NULL,
                     currency TEXT DEFAULT 'ZAR',
                     service_type TEXT NOT NULL,
@@ -225,7 +225,7 @@ class Database:
         required_fields = ['name', 'business_type', 'phone']
         for field in required_fields:
             if field not in client_data:
-.                raise ValueError(f"Missing required field: {field}")
+                raise ValueError(f"Missing required field: {field}")
 
         with self.get_cursor() as cursor:
             # Store any additional metadata as JSON
@@ -462,7 +462,7 @@ class Database:
         finally:
             self.return_connection(conn)
 
-    def save_content_.pack(self, client_id: str, pack_data: Dict,
+    def save_content_pack(self, client_id: str, pack_data: Dict,
                          posts_count: int, images_count: int,
                          cost_usd: float) -> int:
         """Save generated content pack"""

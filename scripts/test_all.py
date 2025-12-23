@@ -48,7 +48,7 @@ class TestOrchestratorConfig(unittest.TestCase):
 
 class TestContentFactoryKimiVLLM(unittest.TestCase):
 
-    @patch.dict(os.environ, {"KIMI_VLLM_ENDPOINT": "http://mock-vllm-endpoint:8000/v1"})
+    @patch.dict(os.environ, {"KIMI_API_BASE": "http://mock-vllm-endpoint:8000/v1"})
     @patch("api.kimi.OpenAI") # Patch OpenAI where it's used in kimi.py
     def test_kimi_provider_uses_vllm_client(self, mock_openai_client):
         """
@@ -78,7 +78,7 @@ class TestContentFactoryKimiVLLM(unittest.TestCase):
 
         # Assert
         mock_openai_client.assert_called_once_with(
-            base_url="http://mock-vllm-endpoint:8000/v1", api_key="not-needed"
+            base_url="http://mock-vllm-endpoint:8000/v1", api_key="EMPTY"
         )
         mock_client.chat.completions.create.assert_called_once()
         self.assertEqual(result["provider"], "kimi")

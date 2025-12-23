@@ -8,4 +8,6 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/industrial_vault
     username: postgres
+    # WARNING: Do not use these credentials in production.
+    # Externalize these values using environment variables or a secrets management tool.
     password: password

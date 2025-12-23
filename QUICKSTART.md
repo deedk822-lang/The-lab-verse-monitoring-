@@ -5,7 +5,7 @@ bash
 Copy
 
 cd /mnt/okcomputer/output
-node kimi-cli-standalone.js status
+node kimi-cli-standalone.cjs status
 
 Step 2: Choose Your Deployment Method
 Option A: Docker (Recommended)
@@ -64,9 +64,9 @@ GET  /api/admin/analytics
 bash
 Copy
 
-node kimi-cli-standalone.js status    # System health
-node kimi-cli-standalone.js help      # All commands
-node kimi-cli-standalone.js info      # System info
+node kimi-cli-standalone.cjs status    # System health
+node kimi-cli-standalone.cjs help      # All commands
+node kimi-cli-standalone.cjs info      # System info
 
 🔗 Connect Your Frontend
 Your frontend at https://wj4wcpc76zi5k.ok.kimi.link/ can now connect to:
@@ -94,9 +94,9 @@ System Control
 bash
 Copy
 
-node kimi-cli-standalone.js status     # Complete system check
-node kimi-cli-standalone.js info       # System information
-node kimi-cli-standalone.js help       # Show all commands
+node kimi-cli-standalone.cjs status     # Complete system check
+node kimi-cli-standalone.cjs info       # System information
+node kimi-cli-standalone.cjs help       # Show all commands
 
 After Full Deployment
 bash
@@ -111,7 +111,7 @@ node kimi-cli.js ai analyze           # AI insights
 Health Checks
 API Health: GET http://localhost:3000/health
 Metrics: GET http://localhost:3000/metrics
-Status: node kimi-cli-standalone.js status
+Status: node kimi-cli-standalone.cjs status
 What to Monitor
 ✅ API response times
 ✅ Database connections
@@ -150,7 +150,7 @@ ETH - Ethereum
 ✅ Digital Wallet
 🎉 Success Indicators
 ✅ System is Working When:
-Kimi CLI responds: node kimi-cli-standalone.js status shows green
+Kimi CLI responds: node kimi-cli-standalone.cjs status shows green
 API responds: curl http://localhost:3000/health returns 200
 Database connects: No connection errors in logs
 Payments process: Test payment intents create successfully
@@ -195,7 +195,7 @@ chmod +x deploy.sh
 Complete Guide: VAAL_AI_EMPIRE_COMPLETE.md
 Deployment Status: DEPLOYMENT_STATUS.md
 API Documentation: Check /routes folder
-System Info: node kimi-cli-standalone.js info
+System Info: node kimi-cli-standalone.cjs info
 🏆 You're Ready!
 Your Vaal AI Empire backend is:
 ✅ Enterprise-grade - Production-ready architecture

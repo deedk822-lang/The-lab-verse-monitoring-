@@ -1,0 +1,11 @@
+spring:
+  ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW # High-performance index for large industrial datasets
+        dimension: 1536  # Standard for OpenAI embeddings
+        initialize-schema: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/industrial_vault
+    username: postgres
+    password: password

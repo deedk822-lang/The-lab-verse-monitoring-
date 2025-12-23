@@ -282,6 +282,13 @@ The system automatically selects providers in this order:
 
 ```env
 # === Core AI ===
+# For AutoGen Agents (used by the orchestrator)
+# You can provide a path to a JSON file (OAI_CONFIG_LIST)
+# or set the model and API key directly.
+# OAI_CONFIG_LIST="path/to/your/OAI_CONFIG_LIST.json"
+OPENAI_MODEL="your_model_name"
+OPENAI_API_KEY="your_openai_api_key"
+
 COHERE_API_KEY=          # Text generation (primary)
 GROQ_API_KEY=            # Text generation (fast)
 HUGGINGFACE_TOKEN=       # Models & inference

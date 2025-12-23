@@ -29,3 +29,6 @@ pytest-asyncio>=0.21.0
 
 # Kimi Model Dependencies (now served via vLLM)
 openai>=1.0.0
+
+# Aya Vision Model Dependencies
+torch>=2.6

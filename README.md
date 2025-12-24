@@ -976,4 +976,19 @@ docker run -d --env-file .env mcp-gateways
 - Environment (dev/prod)
 - Steps to reproduce
 - Gateway logs
- main
+
+---
+
+## 🏛️ The Thabo Mbeki Presidential Library Digital Archive
+
+This project includes the development of the digital infrastructure for the Thabo Mbeki Presidential Library, a landmark institution in Johannesburg dedicated to the preservation and dissemination of African history and knowledge.
+
+### Core Mission
+- **Cultural Reclamation**: To counter the colonial legacy of African history being held in foreign institutions by creating a sovereign, accessible digital archive.
+- **Knowledge Production**: To provide African scholars with the infrastructure to research and write their own history from primary sources.
+- **Cultural Preservation**: To digitize and preserve invaluable historical documents, from ancient manuscripts to 20th-century independence-era papers.
+
+### Digital Infrastructure Components
+- **`AfricanManuscriptTranscriber`**: An AI-powered service designed to transcribe handwritten documents in multiple African languages.
+- **`MetadataManager`**: A service for creating rich, multilingual, and searchable metadata for every document in the archive.
+- **Ingestion Pipeline**: A workflow that orchestrates the transcription and metadata creation process for newly digitized documents.

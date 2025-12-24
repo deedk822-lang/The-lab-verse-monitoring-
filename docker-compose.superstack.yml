@@ -1,0 +1,152 @@
+# docker-compose.superstack.yml
+networks:
+  ai-circuit:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  kimi-linear-data:
+  ollama-data:
+  webui-data:
+  prometheus-data:
+
+services:
+  # --- KIMI LINEAR (Your 1M Context Sovereign) ---
+  kimi-linear:
+    image: vllm/vllm-openai:latest
+    container_name: kimi-brain
+    ports:
+      - "8000:8000"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - CUDA_VISIBLE_DEVICES=0,1  # Keep Kimi on dedicated GPUs
+    volumes:
+      - kimi-linear-data:/root/.cache/huggingface
+    command: >
+      vllm serve moonshotai/Kimi-Linear-48B-A3B-Instruct
+      --tensor-parallel-size 2
+      --max-model-len 1048576
+      --gpu-memory-utilization 0.95
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 2
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.10
+
+  # --- OLLAMA (Your Multi-Model Workbench) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-engine
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_GPU_LAYERS=99  # Full GPU offload
+      - OLLAMA_KEEP_ALIVE=24h
+      - CUDA_VISIBLE_DEVICES=2,3  # Different GPUs than Kimi
+    volumes:
+      - ollama-data:/root/.ollama
+      - ./modelfiles:/modelfiles  # Mount for custom models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 2
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.20
+
+  # --- OPEN WEBUI (Unified Control Panel) ---
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ai-control-panel
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE_URL=http://kimi-linear:8000/v1
+      - OPENAI_API_KEY=sk-dummy
+      - ENABLE_OPENAI_API=true
+      - DEFAULT_MODELS=kimi-rainmaker:48b,deepseek-r1:32b,llama4:scout
+      - WEBUI_NAME="Rainmaker AI Command Center"
+    volumes:
+      - webui-data:/app/backend/data
+      - ./webui_config:/app/backend/config
+    depends_on:
+      ollama:
+        condition: service_healthy
+      kimi-linear:
+        condition: service_healthy
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.30
+
+  # --- PROMETHEUS (Monitor Everything) ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: metrics-collector
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.40
+
+  # --- GRAFANA (Visualize the Brain) ---
+  grafana:
+    image: grafana/grafana:latest
+    container_name: brain-visualizer
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=r41nm4k3r
+    volumes:
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.50
+
+  # --- MODEL ORCHESTRATOR (The Rainmaker Agent) ---
+  rainmaker-orchestrator:
+    build: ./rainmaker-orchestrator
+    container_name: task-router
+    environment:
+      - KIMI_URL=http://kimi-linear:8000
+      - OLLAMA_URL=http://ollama:11434
+      - PROMETHEUS_URL=http://prometheus:9090
+    volumes:
+      - ./orchestrator_config.yaml:/app/config.yaml
+    depends_on:
+      ollama:
+        condition: service_healthy
+      kimi-linear:
+        condition: service_healthy
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.60

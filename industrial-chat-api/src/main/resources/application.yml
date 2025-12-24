@@ -6,8 +6,6 @@ spring:
         dimension: 1536  # Standard for OpenAI embeddings
         initialize-schema: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/industrial_vault
-    username: postgres
-    # WARNING: Do not use these credentials in production.
-    # Externalize these values using environment variables or a secrets management tool.
-    password: password
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/industrial_vault}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}

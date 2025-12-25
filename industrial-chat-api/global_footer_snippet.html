@@ -1,0 +1,44 @@
+<div id="airo-chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+  <button onclick="toggleChat()" style="background: #007bff; color: white; border: none; padding: 15px; border-radius: 50%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
+    💬
+  </button>
+  <div id="chat-window" style="display: none; width: 300px; height: 400px; background: white; border: 1px solid #ccc; border-radius: 8px; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <div style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa;">Industrial Support</div>
+    <div id="chat-messages" style="flex: 1; padding: 10px; overflow-y: auto;"></div>
+    <input type="text" id="chat-input" placeholder="Ask about the manual..." style="width: 100%; padding: 10px; border: none; border-top: 1px solid #eee; box-sizing: border-box;" onkeypress="handleEnter(event)">
+  </div>
+</div>
+
+<script>
+  function toggleChat() {
+    const win = document.getElementById('chat-window');
+    win.style.display = win.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  function handleEnter(e) {
+    if (e.key === 'Enter') {
+      const input = e.target;
+      const msg = input.value;
+      input.value = '';
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
+      // Add user message to UI
+      document.getElementById('chat-messages').innerHTML += `<div style="text-align: right; margin: 5px; color: #333;">${msg}</div>`;
+
+      // Call your Spring Integration Backend
+      fetch('https://your-spring-app.com/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: msg
+      })
+      .then(res => res.text())
+      .then(text => {
+        // Add AI response to UI
+        document.getElementById('chat-messages').innerHTML += `<div style="text-align: left; margin: 5px; color: #007bff; background: #f0f8ff; padding: 5px; border-radius: 4px;">${text}</div>`;
+      });
+    }
+  }
+</script>

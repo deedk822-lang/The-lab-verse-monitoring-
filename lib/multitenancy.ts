@@ -38,7 +38,7 @@ export async function getTenantConfig(hostname: string): Promise<TenantConfig | 
 
   // In production, fetch from database
   // For now, use environment-based config
-  
+
   // Default tenant for main domain
   if (hostname === process.env.BASE_URL?.replace('https://', '')) {
     return {
@@ -72,7 +72,7 @@ export async function getTenantConfig(hostname: string): Promise<TenantConfig | 
   // Check for custom domain tenants
   // This would normally query your database
   // const tenant = await db.tenant.findUnique({ where: { customDomain: hostname }});
-  
+
   return null;
 }
 
@@ -103,7 +103,7 @@ export async function createTenant(config: Partial<TenantConfig>): Promise<Tenan
 
   // In production, save to database
   // await db.tenant.create({ data: tenant });
-  
+
   // Cache it
   if (tenant.customDomain) {
     tenants.set(tenant.customDomain, tenant);
@@ -123,7 +123,7 @@ export async function updateTenantBilling(
   // In production, update database
   // await db.tenant.update({
   //   where: { id: tenantId },
-  //   data: { 
+  //   data: {
   //     monthlyRevenue: { increment: cost },
   //     lastBilledAt: new Date()
   //   }

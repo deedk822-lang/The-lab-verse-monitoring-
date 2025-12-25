@@ -303,15 +303,15 @@ ROI: 10 months
 ## 🎉 Success Stories
 
 > "Migrated from Zapier and saved $240/month while getting better AI models. ROI in 3 months!"
-> 
+>
 > — Alex M., Marketing Agency
 
 > "White-label license generates $6K/month passive income. Best investment I've made."
-> 
+>
 > — Sarah K., SaaS Founder
 
 > "Setup took 30 minutes. Now processing 50K requests/month at 1/10th the cost."
-> 
+>
 > — David L., Tech Startup
 
 ---

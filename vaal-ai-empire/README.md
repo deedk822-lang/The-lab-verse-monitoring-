@@ -12,31 +12,59 @@ An enterprise-grade AI automation system for managing social media content, What
 - **Bilingual**: Generates content in Afrikaans and English
 - **Cost Optimization**: Uses most cost-effective provider available
 
-##  sovereign AI Engine Setup
+### 🆕 New: Multimodal Content Generation with Aya Vision
 
-This project is designed to run with a self-hosted, high-performance AI engine using vLLM to serve the Kimi-Linear model. This creates a private, sovereign AI circuit for all your business automation needs.
+This system now supports multimodal inputs (images and text) using the `CohereLabs/aya-vision-32b` model.
 
-### 1. Start the vLLM Server
-
-First, you need to have a machine with a powerful GPU and the vLLM library installed. Run the following command to start the OpenAI-compatible server:
-
+**Special Installation Note:** This model requires a specific version of the `transformers` library. Install it directly from GitHub:
 ```bash
-vllm serve moonshotai/Kimi-Linear-48B-A3B-Instruct \
+pip uninstall -y transformers
+pip install 'git+https://github.com/huggingface/transformers.git@v4.49.0-AyaVision'
+```
+
+**To test this feature**, run the demonstration script:
+```bash
+python vaal-ai-empire/scripts/test_aya_vision.py
+```
+
+# Kimi Linear Setup Guide (Production-Ready)
+
+## Quick Start
+```bash
+# 1. Install
+pip install vllm>=0.4.0
+
+# 2. Run (replace with actual model)
+vllm serve Qwen/Qwen-72B-Instruct \
   --port 8000 \
   --tensor-parallel-size 4 \
-  --max-model-len 1048576 \
+  --max-model-len 32768 \
   --trust-remote-code
+
+# 3. Test
+python test_client.py
 ```
 
-### 2. Configure the Endpoint
+## Requirements
+- 4x A100 80GB GPUs
+- Python 3.10+
+- CUDA 12.1+
 
-In your `.env` file for the `vaal-ai-empire` project, set the following environment variable to point to your vLLM server:
+## Client Example
+```python
+from openai import OpenAI
+import os
 
-```env
-KIMI_VLLM_ENDPOINT="http://localhost:8000/v1"
+client = OpenAI(
+    base_url=os.getenv("KIMI_API_BASE", "http://localhost:8000/v1"),
+    api_key=os.getenv("KIMI_API_KEY", "EMPTY")
+)
+
+response = client.chat.completions.create(
+    model="Qwen/Qwen-72B-Instruct",
+    messages=[{"role": "user", "content": "Your prompt"}]
+)
 ```
-
-The `KimiAPI` client will automatically use this endpoint to send requests to your sovereign AI engine.
 
 ### 🖼️ Real Image Generation
 - **Multiple Providers**: Stable Diffusion, DALL-E, Replicate, HuggingFace

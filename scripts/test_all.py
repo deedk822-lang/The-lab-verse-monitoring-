@@ -71,7 +71,11 @@ class TestContentFactoryKimiVLLM(unittest.TestCase):
         factory.providers["groq"] = None
         factory.providers["cohere"] = None
         factory.providers["mistral"] = None
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         self.assertIsNotNone(factory.providers.get("kimi"), "KimiAPI failed to initialize.")
 
         result = factory.generate_content("test prompt")

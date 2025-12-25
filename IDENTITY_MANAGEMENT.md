@@ -10,8 +10,8 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 
 ### 1️⃣ DEEDK822 (Blog Owner & Content Publisher)
 
-**Email:** `<your-blog-owner-email>`  
-**WordPress:** `<your-wordpress-site>.wordpress.com`  
+**Email:** `deedk822@gmail.com`
+**WordPress:** `deedk822.wordpress.com`
 **Purpose:** Content publishing & SEO
 
 **Services:**
@@ -63,7 +63,7 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 **GitHub Secrets Required:**
 - `JIRA_USER_EMAIL` = `dimakatsomoleli@gmail.com`
 - `JIRA_API_TOKEN` = Jira API Token
-- `JIRA_API_TOKEN` = Jira API Token
+- `JIRA_LINK` = Same as `JIRA_API_TOKEN` (legacy name)
 
 **Workflows Using This Identity:**
 - `.github/workflows/kaggle-intelligence.yml` (creates tickets)

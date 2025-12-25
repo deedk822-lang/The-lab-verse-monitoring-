@@ -13,15 +13,26 @@ from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
 async def main():
     """CLI for the Rainmaker Agent"""
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     if len(sys.argv) < 3:
         print("Usage: python rainmaker_cli.py <task_type> <file_or_text>")
         print("Task types: code_debugging, strategy, ingestion, extraction")
         sys.exit(1)
+<<<<<<< HEAD
 
     task_type = sys.argv[1]
     input_data = sys.argv[2]
 
+=======
+
+    task_type = sys.argv[1]
+    input_data = sys.argv[2]
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Load context
     if os.path.exists(input_data):
         with open(input_data, 'r') as f:
@@ -30,24 +41,37 @@ async def main():
     else:
         context = input_data
         print(f"📝 Using direct input: {context[:100]}...")
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Build task
     task = {
         "type": task_type,
         "context": context,
         "priority": "high"
     }
+<<<<<<< HEAD
 
     # Route and execute
     orchestrator = RainmakerOrchestrator()
     router = AdaptiveModelRouter(orchestrator)
 
+=======
+
+    # Route and execute
+    orchestrator = RainmakerOrchestrator()
+    router = AdaptiveModelRouter(orchestrator)
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     print(f"\n🧠 Routing task...")
     routing = orchestrator.route_task(task)
     print(f"   Model: {routing['model']}")
     print(f"   Reason: {routing['reason']}")
     print(f"   Estimated cost: ${routing['estimated_cost']:.4f}")
     print(f"   Context size: {routing['context_size']:,} tokens\n")
+<<<<<<< HEAD
 
     print("⚙️  Executing...")
     result = await router.execute_with_fallback(task)
@@ -56,6 +80,16 @@ async def main():
     if "fallback_from" in result:
         print(f"⚠️  Fallback from {result['fallback_from']}")
 
+=======
+
+    print("⚙️  Executing...")
+    result = await router.execute_with_fallback(task)
+
+    # Output
+    if "fallback_from" in result:
+        print(f"⚠️  Fallback from {result['fallback_from']}")
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     print("\n" + "="*50)
     print("RESPONSE:")
     print("="*50)

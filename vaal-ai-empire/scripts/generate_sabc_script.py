@@ -70,10 +70,17 @@ def main():
             generated_code = generated_code.strip()[9:]
             if generated_code.strip().endswith("```"):
                 generated_code = generated_code.strip()[:-3]
+<<<<<<< HEAD
 
         with open(args.output_file, "w") as f:
             f.write(generated_code)
 
+=======
+
+        with open(args.output_file, "w") as f:
+            f.write(generated_code)
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         print(f"\n✅ Successfully generated Playwright script and saved it to '{args.output_file}'")
         print("To run the script:")
         print(f"1. Install dependencies: pip install playwright && playwright install")

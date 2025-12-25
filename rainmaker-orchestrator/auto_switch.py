@@ -11,26 +11,43 @@ class AdaptiveModelRouter:
     Monitors task performance and auto-switches models
     if context explosions or latency issues occur
     """
+<<<<<<< HEAD
 
     def __init__(self, orchestrator: RainmakerOrchestrator):
         self.orchestrator = orchestrator
         self.performance_cache = {}
 
+=======
+
+    def __init__(self, orchestrator: RainmakerOrchestrator):
+        self.orchestrator = orchestrator
+        self.performance_cache = {}
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     async def execute_with_fallback(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
         Try the routed model, but fallback if it fails
         """
         routing = self.orchestrator.route_task(task)
+<<<<<<< HEAD
 
         try:
             # Attempt primary model
             result = await self.orchestrator.execute_task(task)
 
+=======
+
+        try:
+            # Attempt primary model
+            result = await self.orchestrator.execute_task(task)
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
             # Cache success metric
             self.performance_cache[routing["model"]] = {
                 "success": True,
                 "latency": result.get("latency", 0)
             }
+<<<<<<< HEAD
 
             return result
 
@@ -42,15 +59,34 @@ class AdaptiveModelRouter:
             # (Kimi is the "sovereign" - ultimate fallback)
             print("Falling back to Kimi-Linear Sovereign Engine...")
 
+=======
+
+            return result
+
+        except Exception as e:
+            # Log failure
+            print(f"Model {routing['model']} failed: {str(e)}")
+
+            # Fallback to Kimi-Linear for ANY failure
+            # (Kimi is the "sovereign" - ultimate fallback)
+            print("Falling back to Kimi-Linear Sovereign Engine...")
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
             fallback_task = task.copy()
             fallback_routing = {
                 "model": "kimi-linear-48b",
                 "endpoint": self.orchestrator.MODEL_PROFILES["kimi-linear-48b"].model,
                 "reason": "Fallback due to primary model failure"
             }
+<<<<<<< HEAD
 
             result = await self.orchestrator._call_kimi(fallback_task, fallback_routing)
 
+=======
+
+            result = await self.orchestrator._call_kimi(fallback_task, fallback_routing)
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
             return {
                 "routing": fallback_routing,
                 "response": result,
@@ -62,7 +98,11 @@ class AdaptiveModelRouter:
 async def main():
     orchestrator = RainmakerOrchestrator()
     router = AdaptiveModelRouter(orchestrator)
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Create a dummy file for the example
     with open("linear_backlog.txt", "w") as f:
         f.write("This is a very long text file." * 10000)
@@ -76,7 +116,11 @@ async def main():
 
     result = await router.execute_with_fallback(task)
     print(json.dumps(result, indent=2))
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Clean up the dummy file
     os.remove("linear_backlog.txt")
 

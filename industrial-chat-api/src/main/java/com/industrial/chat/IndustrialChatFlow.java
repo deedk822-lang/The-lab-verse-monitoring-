@@ -18,7 +18,11 @@ public class IndustrialChatFlow {
 
     @Bean
     public IntegrationFlow floatingWindowFlow(ChatClient.Builder chatClientBuilder, VectorStore vectorStore) {
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         // 1. Define the Chat Client with default "Expert" persona
         ChatClient chatClient = chatClientBuilder
                 .defaultSystem("You are an industrial support assistant named Airo. Answer strictly based on the provided technical manuals.")
@@ -28,11 +32,19 @@ public class IndustrialChatFlow {
                 .requestMapping(m -> m.methods(HttpMethod.POST))
                 .crossOrigin(cors -> cors.origin("*")) // Allow Global Footer access
                 .requestPayloadType(String.class))
+<<<<<<< HEAD
 
             // 2. "Enrich" the user's question with data from the Vault
             .handle((payload, headers) -> {
                 String userQuestion = (String) payload;
 
+=======
+
+            // 2. "Enrich" the user's question with data from the Vault
+            .handle((payload, headers) -> {
+                String userQuestion = (String) payload;
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
                 // Search for the 3 most relevant pages in your PDF manuals
                 List<Document> similarDocs = vectorStore.similaritySearch(
                     SearchRequest.query(userQuestion).withTopK(3)

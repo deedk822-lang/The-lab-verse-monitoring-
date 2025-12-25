@@ -21,7 +21,11 @@ class MetadataManager:
         # Basic validation for multilingual fields
         if "title" in metadata and isinstance(metadata["title"], str):
             metadata["title"] = {"en": metadata["title"]} # Default to English
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         if "description" in metadata and isinstance(metadata["description"], str):
             metadata["description"] = {"en": metadata["description"]}
 
@@ -38,17 +42,28 @@ class MetadataManager:
             # Simple text search in title and description for the specified language
             title = metadata.get("title", {}).get(language, "").lower()
             description = metadata.get("description", {}).get(language, "").lower()
+<<<<<<< HEAD
 
             if query.lower() in title or query.lower() in description:
                 results.append({"document_id": doc_id, "metadata": metadata})
 
+=======
+
+            if query.lower() in title or query.lower() in description:
+                results.append({"document_id": doc_id, "metadata": metadata})
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         logger.info(f"Found {len(results)} results.")
         return results
 
 # Example Usage:
 if __name__ == "__main__":
     manager = MetadataManager()
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Add metadata for a sample document
     sample_metadata = {
         "title": {
@@ -64,10 +79,18 @@ if __name__ == "__main__":
         "tags": ["anc", "correspondence", "1990s"]
     }
     manager.add_metadata("mbeki_letter_001", sample_metadata)
+<<<<<<< HEAD
 
     # Search for the document
     search_results_en = manager.search_metadata("anc")
     print("English search results:", search_results_en)
 
+=======
+
+    # Search for the document
+    search_results_en = manager.search_metadata("anc")
+    print("English search results:", search_results_en)
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     search_results_zu = manager.search_metadata("incwadi", language="zu")
     print("Zulu search results:", search_results_zu)

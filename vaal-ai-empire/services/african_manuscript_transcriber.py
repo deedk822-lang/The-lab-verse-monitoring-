@@ -25,7 +25,11 @@ class AfricanManuscriptTranscriber:
             logger.warning(f"No transcription model loaded. Returning placeholder text for '{image_path}'.")
             # Placeholder logic to simulate a transcription
             return f"Placeholder: Transcribed text from '{os.path.basename(image_path)}' in '{language}'."
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         # In a real implementation:
         # raw_image_data = self._load_image(image_path)
         # transcribed_text = self.model.predict(raw_image_data, language=language)
@@ -54,14 +58,24 @@ class AfricanManuscriptTranscriber:
 # Example Usage:
 if __name__ == "__main__":
     import os
+<<<<<<< HEAD
 
     transcriber = AfricanManuscriptTranscriber()
 
+=======
+
+    transcriber = AfricanManuscriptTranscriber()
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Single file example
     single_manuscript = "path/to/sample_manuscript_1.jpg"
     transcribed_text = transcriber.transcribe(single_manuscript, language="zulu")
     print(transcribed_text)
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Batch example
     manuscript_files = ["doc1.jpg", "doc2.png", "doc3.jpeg"]
     transcribed_batch = transcriber.batch_transcribe(manuscript_files, language="swahili")

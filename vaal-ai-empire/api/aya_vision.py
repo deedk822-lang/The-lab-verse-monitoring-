@@ -43,9 +43,15 @@ class AyaVisionAPI:
         try:
             logger.info("Generating content with Aya Vision...")
             outputs = self.pipe(messages, max_new_tokens=max_new_tokens, return_full_text=False)
+<<<<<<< HEAD
 
             generated_text = outputs[0]["generated_text"]
 
+=======
+
+            generated_text = outputs[0]["generated_text"]
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
             # The pipeline API doesn't expose token usage, so we return placeholders
             return {
                 "text": generated_text,

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Kaggle Intelligence Pipeline
-Identity: Data Analyst Persona
-Email: Associated with Data Analyst Persona
+Identity: Lungelo Luda (lungeloluda) - Data Analyst
+Email: dimakatsomoleli@gmail.com
 
 Syncs Kaggle datasets, creates market insights, and stores in OSS
 Part of Vaal AI Empire - Intelligence Division

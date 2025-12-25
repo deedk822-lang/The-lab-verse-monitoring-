@@ -38,7 +38,7 @@ jobs:
           echo "Checking required secrets..."
           
           # Check Grafana
-          if [ -n "${{ secrets.GRAFANA_API_KEY }}" ]; then
+          if [ -n "${{ secrets.GRAFANA_TOKEN }}" ]; then
             echo "grafana_available=true" >> $GITHUB_OUTPUT
           else
             echo "grafana_available=false" >> $GITHUB_OUTPUT

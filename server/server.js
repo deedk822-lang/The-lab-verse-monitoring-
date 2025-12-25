@@ -172,19 +172,6 @@ app.post('/create-portal-session', async (req, res) => {
   }
 });
 
-const omniController = require('../services/omni_controller');
-
-// This endpoint receives the "Signal" from your Frontend Dashboard
-app.post('/api/empire/execute', async (req, res) => {
-    const { signal, department } = req.body;
-
-    // signal = "SABC reports Maths Literacy failure"
-    // department = "Education"
-
-    const result = await omniController.executeSovereignCycle(signal, department);
-    res.json(result);
-});
-
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 

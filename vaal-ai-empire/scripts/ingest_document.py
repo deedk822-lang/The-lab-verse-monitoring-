@@ -18,28 +18,50 @@ def ingest_document(image_path: str, language: str, metadata: dict):
     Simulates a complete document ingestion pipeline.
     """
     print(f"--- Starting Ingestion for {image_path} ---")
+<<<<<<< HEAD
 
     # 1. Initialize services
     transcriber = AfricanManuscriptTranscriber()
     metadata_manager = MetadataManager()
 
+=======
+
+    # 1. Initialize services
+    transcriber = AfricanManuscriptTranscriber()
+    metadata_manager = MetadataManager()
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # 2. Transcribe the document
     print(f"Step 1: Transcribing document in {language}...")
     transcribed_text = transcriber.transcribe(image_path, language=language)
     print("   Transcription complete (placeholder).")
+<<<<<<< HEAD
 
     # 3. Add transcription to metadata
     metadata["transcribed_text"] = transcribed_text
     metadata["ingestion_date"] = datetime.now().isoformat()
 
+=======
+
+    # 3. Add transcription to metadata
+    metadata["transcribed_text"] = transcribed_text
+    metadata["ingestion_date"] = datetime.now().isoformat()
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # 4. Add metadata to the metadata store
     document_id = os.path.splitext(os.path.basename(image_path))[0]
     print(f"Step 2: Adding metadata for document ID '{document_id}'...")
     metadata_manager.add_metadata(document_id, metadata)
     print("   Metadata added successfully.")
+<<<<<<< HEAD
 
     print(f"--- Ingestion Complete for {document_id} ---")
 
+=======
+
+    print(f"--- Ingestion Complete for {document_id} ---")
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     # Verify by searching for the new document
     print("\nVerifying ingestion by searching for the document...")
     results = metadata_manager.search_metadata(query="ANC", language="en")
@@ -66,5 +88,9 @@ if __name__ == "__main__":
         "tags": ["anc", "correspondence", "1990s"]
     }
     sample_language = "zulu"
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
     ingest_document(sample_image_path, sample_language, sample_metadata)

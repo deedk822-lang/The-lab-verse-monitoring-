@@ -32,7 +32,11 @@ class KimiAPI:
                 temperature=0.7,
                 max_tokens=500
             )
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
             usage = response.usage
             return {
                 "text": response.choices[0].message.content,

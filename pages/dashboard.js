@@ -6,37 +6,6 @@ const VaalDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [clients, setClients] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
-  const [sovereignStatus, setSovereignStatus] = useState({});
-
-  const activateSovereignMode = async (department) => {
-    setSovereignStatus(prev => ({ ...prev, [department]: 'INITIATING...' }));
-
-    try {
-        const signal = "Current SABC Trend: Youth Digital Skills Gap";
-
-        const response = await fetch('/api/empire/execute', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                signal: signal,
-                department: department
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'success') {
-            setSovereignStatus(prev => ({ ...prev, [department]: 'REVENUE ACTIVE' }));
-            alert(`Empire Action Complete!\nProduct Live: ${data.link}`);
-        } else {
-            throw new Error(data.message);
-        }
-
-    } catch (e) {
-        console.error(e);
-        setSovereignStatus(prev => ({ ...prev, [department]: 'ERROR' }));
-    }
-  }
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -160,7 +129,7 @@ const VaalDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {['overview', 'clients', 'revenue', 'automation', 'sovereign'].map(tab => (
+            {['overview', 'clients', 'revenue', 'automation'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -414,40 +383,6 @@ const VaalDashboard = () => {
                   Backup Database
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'sovereign' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Sovereign Protocol</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {['Education', 'Finance', 'Security'].map(dept => (
-                <div key={dept} className="border p-4 rounded-lg">
-                  <h4 className="font-bold text-xl mb-2">{dept}</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Activate the full agent-to-revenue cycle for this department.
-                  </p>
-                  <button
-                    onClick={() => activateSovereignMode(dept)}
-                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
-                    disabled={sovereignStatus[dept] === 'INITIATING...'}
-                  >
-                    Activate {dept}
-                  </button>
-                  <p className="text-center mt-2 text-sm font-medium">
-                    Status: <span
-                      className={
-                        sovereignStatus[dept] === 'REVENUE ACTIVE' ? 'text-green-500' :
-                        sovereignStatus[dept] === 'ERROR' ? 'text-red-500' :
-                        'text-yellow-500'
-                      }
-                    >
-                      {sovereignStatus[dept] || 'Idle'}
-                    </span>
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
         )}

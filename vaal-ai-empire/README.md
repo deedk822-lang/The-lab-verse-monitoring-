@@ -337,7 +337,11 @@ The system automatically selects providers in this order:
 ```env
 # === Core AI ===
 # For AutoGen Agents (used by the orchestrator)
+<<<<<<< HEAD
 # You can provide a path to a JSON file (OAI_CONFIG_LIST)
+=======
+# You can provide a path to a JSON file (OAI_CONFIG_LIST)
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
 # or set the model and API key directly.
 # OAI_CONFIG_LIST="path/to/your/OAI_CONFIG_LIST.json"
 OPENAI_MODEL="your_model_name"

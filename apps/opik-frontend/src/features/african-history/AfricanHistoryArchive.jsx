@@ -32,11 +32,19 @@ const AfricanHistoryArchive = () => {
     "unisa-mbeki-collection",
     "maktaba-sudan-archive"
   ];
+<<<<<<< HEAD
 
   return (
     <FederatedSearch
       sources={sources}
       onAccessRequest={(doc) => negotiateAccess(doc)}
+=======
+
+  return (
+    <FederatedSearch
+      sources={sources}
+      onAccessRequest={(doc) => negotiateAccess(doc)}
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
       // Handles colonial access restrictions
     />
   );

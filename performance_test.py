@@ -1,6 +1,3 @@
- bolt/parallelize-daily-automation-8919749710849742159
-
-
  bolt/cache-hf-model-loading-6086113376814306475
 import timeit
 import sys
@@ -94,101 +91,108 @@ def benchmark():
 
 if __name__ == "__main__":
     success = benchmark()
-
- vercel/enable-vercel-speed-insights-o-6em3bz
+=======
 import time
 import sys
 import os
-from unittest.mock import patch, MagicMock
+import logging
+import importlib
 
-# Ensure the script can find the vaal-ai-empire modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'vaal-ai-empire')))
+# Ensure the script can find the 'vaal-ai-empire' module.
+# This assumes the script is run from the root of the repository.
+sys.path.insert(0, os.path.abspath(os.getcwd()))
 
-from scripts.daily_automation import DailyAutomation
 
-# Mock data for clients
-MOCK_CLIENTS = [
-    {"id": f"client_{i}", "name": f"Client {i}", "business_type": "butchery", "language": "afrikaans"}
-    for i in range(20)
-]
+# Disable excessive logging from SentenceTransformer during benchmark
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger("sentence_transformers")
+logger.setLevel(logging.ERROR)
 
-def benchmark_sequential(automation_instance):
-    """Benchmarks the original sequential method."""
-    print("\n--- Benchmarking OLD Sequential Method ---")
+
+# --- Define the Original (un-optimized) implementation for comparison ---
+# We do this in-memory to avoid having to revert the file.
+class OriginalHuggingFaceLab:
+    """A recreation of the original, un-optimized class."""
+    def __init__(self):
+        from sentence_transformers import SentenceTransformer
+        # This is the expensive operation that was repeated on every instantiation.
+        try:
+            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
+        except Exception:
+            self.seo_model = None
+
+# --- Import the Optimized implementation from the actual refactored code ---
+try:
+    # The directory 'vaal-ai-empire' has a hyphen, so we must use importlib
+    # to import the module dynamically.
+    hf_lab_module = importlib.import_module("vaal-ai-empire.src.core.hf_lab")
+    OptimizedHuggingFaceLab = hf_lab_module.HuggingFaceLab
+except ImportError as e:
+    print(f"ERROR: Could not import the optimized HuggingFaceLab: {e}")
+    print("Please ensure you are running this script from the repository root and that 'vaal-ai-empire' exists.")
+    sys.exit(1)
+
+
+def benchmark_instantiation(cls, iterations=3):
+    """Benchmarks the time it takes to create N instances of a class."""
+    print(f"--- Benchmarking {cls.__name__} ({iterations} iterations) ---")
     start_time = time.perf_counter()
-
-    for client in MOCK_CLIENTS:
-        automation_instance._generate_for_client(client)
-
+    # Create instances in a loop
+    for i in range(iterations):
+        print(f"  Instance {i+1}/{iterations}...", end='\r')
+        _ = cls()
     end_time = time.perf_counter()
-    return end_time - start_time
+    print("\n" + "-" * 30)
+    total_time = end_time - start_time
+    avg_time = total_time / iterations
+    print(f"Total time: {total_time:.4f}s")
+    print(f"Average time per instantiation: {avg_time:.4f}s\n")
+    return total_time
 
-def benchmark_parallel(automation_instance):
-    """Benchmarks the new parallelized method."""
-    print("\n--- Benchmarking NEW Parallel Method ---")
-    start_time = time.perf_counter()
-
-    with patch.object(automation_instance.db, 'get_active_clients', return_value=MOCK_CLIENTS):
-        automation_instance.generate_content_for_all_clients()
-
-    end_time = time.perf_counter()
-    return end_time - start_time
-
-@patch('scripts.daily_automation.ContentScheduler')
-@patch('scripts.daily_automation.ContentFactory')
-@patch('scripts.daily_automation.Database')
-def test_optimization(MockDatabase, MockFactory, MockScheduler):
-    """Compare original vs optimized performance."""
+def test_optimization():
+    """Compares the performance of the original vs. optimized class."""
     print("=" * 60)
-    print("⚡ Bolt: Performance Comparison Test ⚡")
+    print("⚡ BOLT: Performance Benchmark Test ⚡")
     print("=" * 60)
-    print(f"Simulating content generation for {len(MOCK_CLIENTS)} clients...")
-
-    # Mock the dependencies to isolate the concurrency logic
-    mock_db_instance = MockDatabase.return_value
-    mock_factory_instance = MockFactory.return_value
-    mock_scheduler_instance = MockScheduler.return_value
-
-    # Simulate a network delay in content generation
-    def fake_generation(business_type, language):
-        time.sleep(0.1)  # Simulate 100ms I/O delay
-        return {"posts": ["post1", "post2"]}
-
-    mock_factory_instance.generate_social_pack.side_effect = fake_generation
-    mock_scheduler_instance.schedule_pack.return_value = None
-
-    # Create an instance of the automation class with mocked dependencies
-    automation = DailyAutomation()
-    automation.db = mock_db_instance
-    automation.factory = mock_factory_instance
-    automation.scheduler = mock_scheduler_instance
-
-    # --- Benchmark Sequential ---
-    sequential_time = benchmark_sequential(automation)
-
-    # --- Benchmark Parallel ---
-    parallel_time = benchmark_parallel(automation)
-
-    # --- Report Results ---
-    improvement = ((sequential_time - parallel_time) / sequential_time) * 100
-
-    print("\n" + "=" * 60)
-    print("📊 RESULTS")
+    print("Objective: Verify that caching the SentenceTransformer model")
+    print("improves the instantiation speed of the HuggingFaceLab class.")
     print("-" * 60)
-    print(f"Sequential Time: {sequential_time:.4f}s")
-    print(f"Parallel Time:   {parallel_time:.4f}s")
-    print("-" * 60)
-    print(f"🚀 Improvement: {improvement:.2f}% faster")
-    print("=" * 60)
 
-    if improvement > 50:
-        print("✅ SUCCESS: Significant performance improvement verified!")
+    # Benchmark the original, slow implementation
+    original_total_time = benchmark_instantiation(OriginalHuggingFaceLab, iterations=3)
+
+    # Benchmark the optimized implementation. The first run includes the one-time
+    # cost of loading the model.
+    optimized_first_run_time = benchmark_instantiation(OptimizedHuggingFaceLab, iterations=3)
+
+    # Benchmark the optimized implementation again. This run should be MUCH faster
+    # as the model is now cached.
+    optimized_cached_run_time = benchmark_instantiation(OptimizedHuggingFaceLab, iterations=3)
+
+    print("=" * 60)
+    print("📊 Benchmark Results Summary 📊")
+    print("=" * 60)
+    print(f"Original Implementation (Avg per instance):      {original_total_time/3:.4f}s")
+    print(f"Optimized Implementation (1st Run, Avg):       {optimized_first_run_time/3:.4f}s")
+    print(f"Optimized Implementation (2nd Run, Cached, Avg): {optimized_cached_run_time/3:.4f}s")
+    print("-" * 60)
+
+    # The true comparison is between the original and the cached run.
+    # A small tolerance is added to avoid floating point inaccuracies.
+    if original_total_time > optimized_cached_run_time + 0.001:
+        improvement = ((original_total_time - optimized_cached_run_time) / original_total_time) * 100
+        print(f"✅ SUCCESS: Cached run was {improvement:.1f}% faster than the original.")
         return True
     else:
-        print("⚠️ FAILURE: No significant improvement. Optimization may not be effective.")
+        print("❌ FAILURE: The cached implementation was not significantly faster.")
+        print("This could indicate an issue with the @lru_cache implementation.")
         return False
 
 if __name__ == "__main__":
+    # Ensure a dummy key is set to avoid errors if the real key isn't in the env
+    if "HUGGINGFACE_API_KEY" not in os.environ:
+        os.environ["HUGGINGFACE_API_KEY"] = "test-key"
+
     success = test_optimization()
  main
     sys.exit(0 if success else 1)

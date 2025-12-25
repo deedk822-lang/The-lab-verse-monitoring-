@@ -7,12 +7,20 @@ scrape_configs:
     static_configs:
       - targets: ['kimi-linear:8000']
     metrics_path: '/metrics'
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
   - job_name: 'ollama'
     static_configs:
       - targets: ['ollama:11434']
     metrics_path: '/api/metrics'
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
   - job_name: 'rainmaker-orchestrator'
     static_configs:
       - targets: ['rainmaker-orchestrator:8080']

@@ -106,7 +106,11 @@ class ContentFactory:
         """
         if not self.multimodal_provider:
             raise RuntimeError("Aya Vision multimodal provider is not available.")
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> c00699664d3818edf437bf12f56f434451084e1b
         try:
             result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
             # You might want to log this usage to your database if needed

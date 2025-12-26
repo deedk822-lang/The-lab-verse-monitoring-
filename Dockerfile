@@ -1,14 +1,17 @@
-FROM node:20-alpine
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
+# Set the working directory in the container
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+# Copy the requirements file into the container at /app
+COPY requirements.txt .
 
-# Copy application
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application's code into the container at /app
 COPY . .
 
-# Expose port and start application
-EXPOSE 3001
-CMD ["node", "src/server.js"]
+# Run the API server when the container launches
+CMD ["uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "8080"]

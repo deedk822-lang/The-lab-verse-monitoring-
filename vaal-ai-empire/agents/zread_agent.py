@@ -24,7 +24,7 @@ class ZreadAgent:
         self.api_key = zai_api_key or os.getenv('ZAI_API_KEY')
         if not self.api_key:
             raise ValueError("ZAI_API_KEY environment variable not set.")
-        self.base_url = "https://api.z.ai/api/mcp/zread/mcp"
+        self.base_url = os.getenv('ZREAD_API_BASE', "https://api.z.ai/api/mcp/zread/mcp")
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"

@@ -9,7 +9,13 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "server.js"
+      "dest": "/server.js"
     }
-  ]
+  ],
+  "env": {
+    "CDATA_CONNECT_API": "disabled",
+    "CDATA_API_KEY": "disabled",
+    "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
+    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY"
+  }
 }

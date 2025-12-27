@@ -7,6 +7,14 @@ from prometheus_client import Histogram, Counter
 from datetime import datetime
 import json
 import os
+import re
+import sys
+import asyncio
+
+# Add vaal-ai-empire to path to import ZreadAgent
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
+from agents.zread_agent import ZreadAgent
+
 
 # Metrics for monitoring
 TASK_ROUTING_TIME = Histogram('rainmaker_routing_duration_seconds', 'Time to route task')
@@ -27,6 +35,8 @@ class RainmakerOrchestrator:
     Routes tasks between Kimi-Linear (1M context) and Ollama models
     based on actual requirements, not just "use the biggest model"
     """
+    def __init__(self):
+        self.zread_agent = ZreadAgent()
 
     MODEL_PROFILES = {
         "kimi-linear-48b": TaskProfile(
@@ -56,14 +66,31 @@ class RainmakerOrchestrator:
             cost_per_1k=0.001,
             speed="fastest",
             strength="simple"
+        ),
+        "zread": TaskProfile(
+            model="http://localhost:8000", # Or your Zread API URL
+            context_limit=1048576, # Zread needs full context
+            cost_per_1k=0.01, # Check Zread pricing
+            speed="medium",
+            strength="private_repo_access"
         )
+    }
+
+    TASK_TYPE_PATTERNS = {
+        "private_repo_search": re.compile(r'private|repo|github|git', re.I),
+        "billing_bug": re.compile(r'billing|stripe|subscription|charge|invoice', re.I),
+        "code_audit": re.compile(r'security|vulnerability|xss|injection', re.I)
     }
 
     def estimate_tokens(self, text: str) -> int:
         """Quick token estimation without full encoding"""
         return len(TOKEN_ESTIMATOR.encode(text))
 
-    def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    def _is_ip_task(self, context: str) -> bool:
+        """Check if the task is related to private repo search"""
+        return any(pattern.search(context) for pattern in self.TASK_TYPE_PATTERNS.values())
+
+    async def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
         The brain: decide which model to use
         task = {
@@ -75,6 +102,18 @@ class RainmakerOrchestrator:
         with TASK_ROUTING_TIME.time():
             context_size = self.estimate_tokens(task["context"])
             task_type = task.get("type", "general")
+
+            # Check if it's a private repo task
+            if self._is_ip_task(task.get("context", "")):
+                model = "zread" # Force Zread
+                reason = "Private repository access required. Using Zread MCP for deep search/reading."
+
+                return {
+                    "model": model,
+                    "reason": reason,
+                    "estimated_cost": context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
+                    "context_size": context_size
+                }
 
             # Routing logic based on actual facts
             if context_size > 100_000:
@@ -119,10 +158,14 @@ class RainmakerOrchestrator:
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Route and execute in one call"""
-        routing = self.route_task(task)
+        routing = await self.route_task(task)
 
-        # Call the appropriate model
-        if "ollama" in routing["model"]:
+        # Call the appropriate model or agent
+        if routing.get("model") == "zread":
+            repo_url = task.get("repo_url", "https://github.com/example/repo")
+            query = task.get("context", "")
+            response = await asyncio.to_thread(self.zread_agent.search_repo, repo_url, query)
+        elif "ollama" in routing["model"]:
             response = await self._call_ollama(task, routing)
         else:
             response = await self._call_kimi(task, routing)

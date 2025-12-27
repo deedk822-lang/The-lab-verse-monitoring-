@@ -1,17 +1,29 @@
-# Use an official Python runtime as a parent image
+# Dockerfile - 修复版
 FROM python:3.9-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container at /app
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file
 COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application's code into the container at /app
+# ⭐ 关键修复：设置全局 Python 路径
+ENV PYTHONPATH=/app:$PYTHONPATH
+
+# Copy application code
 COPY . .
 
-# Run the API server when the container launches
-CMD ["uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "8080"]
+# ⭐ 构建时验证导入（失败则构建失败）
+RUN python -c "import sys; sys.path.insert(0, '/app'); from rainmaker_orchestrator import RainmakerOrchestrator; print('✅ Import successful')" || \
+    (echo "❌ Import failed - rainmaker_orchestrator.py not found" && exit 1)
+
+# Run the API server
+CMD ["uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "info"]

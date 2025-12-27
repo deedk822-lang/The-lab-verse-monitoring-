@@ -2,41 +2,36 @@ import express from 'express';
 import orchestrator from './api/orchestrator.js';
 import provision from './api/models/provision.js';
 import budgetAllocate from './api/hireborderless/budget-allocate.js';
-import { register } from 'prom-client';
+
+// 添加错误处理和基础中间件
+import { createMiddleware } from '@vercel/analytics/server';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// JSON parser middleware
+// JSON 解析
 app.use(express.json());
 
-// Request logging (基础监控)
+// 请求日志
 app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
-  });
+  console.log(`${req.method} ${req.path}`);
   next();
 });
 
-// Routes
+// Vercel Analytics（可选）
+app.use(createMiddleware());
+
+// API 路由
 app.post('/api/orchestrator', orchestrator);
 app.post('/api/models/provision', provision);
 app.post('/api/hireborderless/budget-allocate', budgetAllocate);
 
-// Metrics endpoint (Prometheus)
-app.get('/api/metrics', async (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.end(await register.metrics());
-});
-
-// Health check
+// 健康检查
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Error handling (必须在所有路由之后)
+// 错误处理
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
@@ -45,8 +40,5 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Vercel 兼容
+export default app;

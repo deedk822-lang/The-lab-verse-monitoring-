@@ -10,72 +10,99 @@ class ContentFactory:
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
+        # ⚡ Bolt Optimization: Lazy loading for providers
+        # Instead of initializing all providers, we store their classes
+        # and a cache for instantiated clients.
+        self.provider_classes = self._initialize_provider_classes()
+        self.provider_instances = {}  # Cache for instantiated providers
         self.image_generator = None
 
-        # Initialize image generation if available
+        # Defer image generator initialization as well
+        self._image_generator_class = None
         try:
             from api.image_generation import BusinessImageGenerator
-            self.image_generator = BusinessImageGenerator()
+            self._image_generator_class = BusinessImageGenerator
             logger.info("✅ Image generation enabled")
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
 
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
-
+    def _initialize_provider_classes(self) -> Dict:
+        """
+        ⚡ Bolt Optimization: Store provider classes, not instances.
+        This avoids the overhead of initializing every provider API client
+        when the ContentFactory is created.
+        """
+        provider_classes = {}
         # Try Cohere
         try:
             from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
+            provider_classes["cohere"] = CohereAPI
         except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
-
+            logger.warning(f"⚠️ Cohere unavailable: {e}")
         # Try Groq
         try:
             from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
+            provider_classes["groq"] = GroqAPI
         except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
-
-        # Try Mistral (local via Ollama)
+            logger.warning(f"⚠️ Groq unavailable: {e}")
+        # Try Mistral
         try:
             from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
+            provider_classes["mistral"] = MistralAPI
         except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
-
+            logger.warning(f"⚠️ Mistral unavailable: {e}")
         # Try HuggingFace
         try:
             from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
+            provider_classes["huggingface"] = HuggingFaceAPI
         except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+            logger.warning(f"⚠️ HuggingFace unavailable: {e}")
 
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
+        logger.info(f"Available provider classes: {', '.join(provider_classes.keys())}")
+        return provider_classes
 
-        return providers
+    def get_provider(self, provider_name: str):
+        """
+        ⚡ Bolt Optimization: On-demand provider instantiation.
+        An instance is only created the first time a provider is requested.
+        The instance is then cached for subsequent use.
+        """
+        # Check cache first
+        if provider_name in self.provider_instances:
+            return self.provider_instances[provider_name]
+
+        # Not in cache, check if we have a class for it
+        if provider_name in self.provider_classes:
+            try:
+                logger.info(f"Instantiating {provider_name} provider...")
+                instance = self.provider_classes[provider_name]()
+                self.provider_instances[provider_name] = instance  # Cache it
+                return instance
+            except Exception as e:
+                logger.error(f"❌ Failed to instantiate {provider_name}: {e}")
+                # Remove class to prevent future instantiation attempts
+                del self.provider_classes[provider_name]
+                return None
+
+        return None
+
+    def _get_image_generator(self):
+        """Lazy-load the image generator"""
+        if self.image_generator is None and self._image_generator_class:
+            try:
+                self.image_generator = self._image_generator_class()
+            except Exception as e:
+                logger.error(f"Failed to instantiate BusinessImageGenerator: {e}")
+                self._image_generator_class = None # Avoid retrying
+        return self.image_generator
+
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            provider = self.get_provider(provider_name) # Use the lazy loader
             if provider is None:
                 continue
 
@@ -163,9 +190,10 @@ class ContentFactory:
 
             # Generate images if available
             images = []
-            if self.image_generator:
+            image_generator = self._get_image_generator()
+            if image_generator:
                 try:
-                    image_results = self.image_generator.generate_for_business(
+                    image_results = image_generator.generate_for_business(
                         business_type,
                         count=num_images
                     )
@@ -442,8 +470,8 @@ Generate all {days} emails now:"""
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
+        """Get status of all available provider classes"""
         return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
+            provider_name: "available"
+            for provider_name in self.provider_classes.keys()
         }

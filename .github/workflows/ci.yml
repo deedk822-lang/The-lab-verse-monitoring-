@@ -1,25 +1,20 @@
+# .github/workflows/ci.yml
+
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, feature/**, develop ]
+    branches:
+      - main
+      - 'feat/**'
+      - 'fix/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
-
-# Cancel in-progress runs for the same branch
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-  packages: write
-  pull-requests: write
-  actions: read
 
 jobs:
   lint:
@@ -40,12 +35,16 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
+ jules-audit-fixes-18339105614089813100
+        run: npm run lint
+
         run: npm run lint || echo "⚠️ Linting issues found (continuing)"
         continue-on-error: true
 
       - name: Run Prettier check
         run: npx prettier --check . || echo "⚠️ Formatting issues found (continuing)"
         continue-on-error: true
+ main
 
   build:
     name: Build Application
@@ -66,29 +65,12 @@ jobs:
         run: npm ci
 
       - name: Build project
-        run: |
-          if grep -q '"build"' package.json; then
-            npm run build
-          else
-            echo "⚠️ No build script found, skipping build"
-          fi
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: build-artifacts-${{ github.sha }}
-          path: |
-            dist/
-            build/
-            .next/
-          retention-days: 7
+        run: npm run build
 
   test:
     name: Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,17 +85,14 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: |
-          if grep -q '"test"' package.json; then
-            npm test || echo "⚠️ Tests failed"
-          else
-            echo "⚠️ No test script found"
-          fi
+        run: npm test || echo "⚠️ Tests failed"
         continue-on-error: true
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+ jules-audit-fixes-18339105614089813100
+
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -131,39 +110,37 @@ jobs:
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
+ main
     timeout-minutes: 15
-    needs: [build, test, security]
-    if: github.event_name == 'pull_request'
+    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Vercel (Preview)
-        uses: amondnet/vercel-action@v25
-        if: env.VERCEL_TOKEN != ''
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [build, test, security]
+    needs: [test, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts-${{ github.sha }}
-        continue-on-error: true
 
       - name: Deploy to Vercel (Production)
         uses: amondnet/vercel-action@v25
@@ -180,7 +157,10 @@ jobs:
       - name: Health Check
         if: success()
         run: |
-          echo "⏳ Waiting for deployment..."
           sleep 30
+ jules-audit-fixes-18339105614089813100
+          curl -f https://the-lab-verse-monitoring.vercel.app/health || echo "⚠️ Health check failed"
+
           curl -f https://the-lab-verse-monitoring.vercel.app/api/health || echo "⚠️ Health check failed"
+ main
         continue-on-error: true

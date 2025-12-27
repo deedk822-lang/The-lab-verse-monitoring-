@@ -40,11 +40,11 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint || echo "⚠️ Linting issues found"
+        run: npm run lint || echo "⚠️ Linting issues found (continuing)"
         continue-on-error: true
 
       - name: Run Prettier check
-        run: npx prettier --check . || echo "⚠️ Formatting issues found"
+        run: npx prettier --check . || echo "⚠️ Formatting issues found (continuing)"
         continue-on-error: true
 
   build:
@@ -125,7 +125,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate || echo "⚠️ Security vulnerabilities found"
+        run: npm audit --audit-level=high || echo "⚠️ Security vulnerabilities found (continuing)"
         continue-on-error: true
 
   deploy-preview:

@@ -2,68 +2,47 @@ import express from 'express';
 import orchestrator from './api/orchestrator.js';
 import provision from './api/models/provision.js';
 import budgetAllocate from './api/hireborderless/budget-allocate.js';
- jules-audit-fixes-18339105614089813100
-
-// Disabled: Vercel Speed Insights (@vercel/speed-insights)
-// This package is designed for browser-side Web Vitals tracking.
-// For server-side performance monitoring, consider:
-// - @vercel/analytics (for APM)
-// - prom-client (for Prometheus metrics)
-// - Custom middleware (for request timing)
-// import { initializeSpeedInsights, speedInsightsMiddleware } from './lib/speed-insights.js';
-// import metricsHandler from './pages/api/metrics.js';
- main
-
-// 添加错误处理和基础中间件
+import { requestLogger, logger } from './src/monitoring/logger.js';
 import { createMiddleware } from '@vercel/analytics/server';
+import { sql } from '@vercel/postgres';
 
- jules-audit-fixes-18339105614089813100
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize Vercel Speed Insights for performance tracking
-// initializeSpeedInsights();
- main
-
-// JSON 解析
+// JSON parser middleware
 app.use(express.json());
 
- jules-audit-fixes-18339105614089813100
-// 请求日志
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
+// Structured request logging
+app.use(requestLogger);
 
-// Vercel Analytics（可选）
+// Vercel Analytics (optional)
 app.use(createMiddleware());
 
-// Add Speed Insights middleware for request performance tracking
-// app.use(speedInsightsMiddleware);
- main
-
-// API 路由
+// API Routes
 app.post('/api/orchestrator', orchestrator);
 app.post('/api/models/provision', provision);
 app.post('/api/hireborderless/budget-allocate', budgetAllocate);
 
- jules-audit-fixes-18339105614089813100
-// 健康检查
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check
+app.get('/health', async (req, res) => {
+  try {
+    await sql`SELECT 1`;
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({ status: 'error', error: 'Database connection failed' });
+  }
 });
 
-// app.get('/api/metrics', metricsHandler);
- main
-
-// 错误处理
+// Error handling
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  logger.error('Unhandled error:', { message: err.message, stack: err.stack });
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: process.env.NODE_ENV !== 'production' ? err.message : undefined,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
   });
 });
 
-// Vercel 兼容
+// Vercel compatibility
 export default app;

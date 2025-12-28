@@ -14,6 +14,7 @@ import asyncio
 # Add vaal-ai-empire to path to import ZreadAgent
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
 from agents.zread_agent import ZreadAgent
+from .browser_agent import BrowserAgent
 
 
 # Metrics for monitoring
@@ -37,6 +38,7 @@ class RainmakerOrchestrator:
     """
     def __init__(self):
         self.zread_agent = ZreadAgent()
+        self.browser = BrowserAgent()
 
     MODEL_PROFILES = {
         "kimi-linear-48b": TaskProfile(
@@ -90,7 +92,7 @@ class RainmakerOrchestrator:
         """Check if the task is related to private repo search"""
         return any(pattern.search(context) for pattern in self.TASK_TYPE_PATTERNS.values())
 
-    async def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
         The brain: decide which model to use
         task = {
@@ -158,7 +160,23 @@ class RainmakerOrchestrator:
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Route and execute in one call"""
-        routing = await self.route_task(task)
+        routing = self.route_task(task)
+
+        # INTERCEPTION: Check if this is a web-research task
+        if routing["model"] == "perplexity-patents":
+            print("🚀 Routing to Browser Agent...")
+            web_data = await self.browser.fetch_patent_intelligence(task["context"])
+
+            if web_data["status"] == "error":
+                return {"error": web_data["message"]}
+
+            # CRITICAL STEP: Feed the web findings into Kimi for synthesis
+            # We don't just return raw HTML; we make Kimi explain it.
+            synthesis_task = {
+                "context": f"Analyze these patent search results and assess risk:\n\n{web_data['raw_text']}",
+                "type": "strategy" # Route to Llama or Kimi based on size
+            }
+            return await self._call_kimi(synthesis_task, {"endpoint": "http://kimi-linear:8000/v1/chat/completions"})
 
         # Call the appropriate model or agent
         if routing.get("model") == "zread":

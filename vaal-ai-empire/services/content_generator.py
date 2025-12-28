@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import logging
 import json
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -167,39 +168,72 @@ class ContentFactory:
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
+        """
+        Generate a complete social media pack with REAL content by running text
+        and image generation in parallel for improved performance.
+        """
+        logger.info(f"Generating social pack for {business_type} ({language}) using parallel execution.")
 
-        logger.info(f"Generating social pack for {business_type} ({language})")
+        posts_result = {}
+        image_results: List[Dict[str, Any]] = []
 
-        try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            # Submit the text generation task
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
+            posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
-                    images = self._create_placeholder_images(num_images)
+            # Submit the image generation task
+            if self.image_generator and num_images > 0:
+                image_future = executor.submit(self.image_generator.generate_for_business, business_type, count=num_images)
             else:
-                images = self._create_placeholder_images(num_images)
+                image_future = None
 
-            total_cost = posts_result.get("cost_usd", 0.0)
-            total_cost += sum(img.get("cost_usd", 0.0) for img in images)
+            # Retrieve results
+            try:
+                posts_result = posts_future.result()
+            except Exception as e:
+                logger.error(f"Content generation task failed: {e}")
+                raise  # Re-raise the exception to be handled by the caller
 
-            pack = {"posts": posts, "images": images, "metadata": {"business_type": business_type, "language": language, "generated_at": datetime.now().isoformat(), "provider": posts_result.get("provider"), "cost_usd": total_cost, "tokens_used": posts_result.get("tokens", 0)}}
-            if self.db:
-                self.db.save_content_pack(client_id="system", pack_data=pack, posts_count=len(posts), images_count=len(images), cost_usd=total_cost)
+            if image_future:
+                try:
+                    image_results = image_future.result()
+                    logger.info(f"✅ Generated {len(image_results)} images")
+                except Exception as e:
+                    logger.error(f"Image generation task failed: {e}")
+                    image_results = self._create_placeholder_images(num_images)
+            else:
+                image_results = self._create_placeholder_images(num_images)
 
-            logger.info(f"✅ Generated {len(posts)} posts and {len(images)} images")
-            return pack
-        except Exception as e:
-            logger.error(f"Content generation failed: {e}")
-            raise e
+        # Process the results after both tasks are complete
+        posts = self._parse_posts(posts_result.get("text", ""), num_posts)
+        total_cost = posts_result.get("cost_usd", 0.0)
+        total_cost += sum(img.get("cost_usd", 0.0) for img in image_results)
+
+        pack = {
+            "posts": posts,
+            "images": image_results,
+            "metadata": {
+                "business_type": business_type,
+                "language": language,
+                "generated_at": datetime.now().isoformat(),
+                "provider": posts_result.get("provider"),
+                "cost_usd": total_cost,
+                "tokens_used": posts_result.get("tokens", 0)
+            }
+        }
+
+        if self.db:
+            self.db.save_content_pack(
+                client_id="system",
+                pack_data=pack,
+                posts_count=len(posts),
+                images_count=len(image_results),
+                cost_usd=total_cost
+            )
+
+        logger.info(f"✅ Generated {len(posts)} posts and {len(image_results)} images")
+        return pack
 
     def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
         language_instructions = {"afrikaans": "Write in Afrikaans (South African dialect)", "english": "Write in English (South African style)", "both": "Write 50% in Afrikaans, 50% in English"}

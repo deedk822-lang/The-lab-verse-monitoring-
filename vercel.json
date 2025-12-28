@@ -3,21 +3,63 @@
   "builds": [
     {
       "src": "server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["**/*.js", "**/*.json", "**/*.txt"]
+      }
     }
   ],
   "routes": [
     {
+      "src": "/health",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
+      "src": "/ready",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
+      "src": "/live",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }
- jules-audit-fixes-18339105614089813100
   ],
   "env": {
     "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
-    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY"
-  }
-
+    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
+    "NODE_ENV": "production"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    }
   ]
- main
 }

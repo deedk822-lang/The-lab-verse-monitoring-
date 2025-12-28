@@ -1,15 +1,20 @@
-.PHONY: quickstart setup docker-up run
+# Makefile - FIXED
+.PHONY: test run-orchestrator validate
 
-quickstart: setup docker-up run
+# ✅ Use absolute path or check file existence
+run-orchestrator:
+	@if [ -f "rainmaker_orchestrator.py" ]; then \
+		python rainmaker_orchestrator.py; \
+	elif [ -f "api/rainmaker_orchestrator.py" ]; then \
+		python api/rainmaker_orchestrator.py; \
+	else \
+		echo "❌ Error: rainmaker_orchestrator.py not found"; \
+		exit 1; \
+	fi
 
-setup:
-	@echo "Setting up environment..."
-	pip install -r requirements.txt
+validate:
+	@echo "Validating project structure..."
+	@python scripts/validate_env.py
 
-docker-up:
-	@echo "Starting services with Docker Compose..."
-	docker-compose up -d
-
-run:
-	@echo "Running Rainmaker Orchestrator..."
-	python rainmaker-orchestrator/orchestrator.py
+test:
+	@python -m pytest tests/ -v

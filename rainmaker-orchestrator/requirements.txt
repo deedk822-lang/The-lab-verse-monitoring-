@@ -1,4 +1,4 @@
 requests
 tiktoken
 prometheus-client
-playwright
+aiohttp

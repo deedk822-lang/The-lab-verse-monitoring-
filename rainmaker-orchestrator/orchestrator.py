@@ -14,7 +14,7 @@ import asyncio
 # Add vaal-ai-empire to path to import ZreadAgent
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
 from agents.zread_agent import ZreadAgent
-from .browser_agent import BrowserAgent
+from .patent_agent import PatentAgent
 
 
 # Metrics for monitoring
@@ -38,7 +38,7 @@ class RainmakerOrchestrator:
     """
     def __init__(self):
         self.zread_agent = ZreadAgent()
-        self.browser = BrowserAgent()
+        self.patent = PatentAgent()
 
     MODEL_PROFILES = {
         "kimi-linear-48b": TaskProfile(
@@ -161,22 +161,39 @@ class RainmakerOrchestrator:
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Route and execute in one call"""
         routing = self.route_task(task)
+        task_id = task.get("id", "unknown")
 
-        # INTERCEPTION: Check if this is a web-research task
-        if routing["model"] == "perplexity-patents":
-            print("🚀 Routing to Browser Agent...")
-            web_data = await self.browser.fetch_patent_intelligence(task["context"])
+        # Add patent research routing
+        if task.get("type") == "patent_research":
+            subtype = task.get("subtype", "novelty_check")
 
-            if web_data["status"] == "error":
-                return {"error": web_data["message"]}
+            if subtype == "novelty_check":
+                patent_data = await self.patent.novelty_check(task["context"])
 
-            # CRITICAL STEP: Feed the web findings into Kimi for synthesis
-            # We don't just return raw HTML; we make Kimi explain it.
-            synthesis_task = {
-                "context": f"Analyze these patent search results and assess risk:\n\n{web_data['raw_text']}",
-                "type": "strategy" # Route to Llama or Kimi based on size
-            }
-            return await self._call_kimi(synthesis_task, {"endpoint": "http://kimi-linear:8000/v1/chat/completions"})
+                # Synthesize findings with LLM
+                synthesis_prompt = f"""
+Based on this patent landscape analysis:
+{json.dumps(patent_data['findings'], indent=2)}
+
+Provide a professional novelty assessment. Include:
+1. Novelty score (1-10)
+2. Key differentiators vs. existing patents
+3. Recommended claim strategy
+4. Risks and opportunities
+"""
+                synthesis_task = task.copy()
+                synthesis_task["context"] = synthesis_prompt
+
+                lm_response = await self._call_kimi(synthesis_task, routing)
+                synthesis = lm_response["choices"][0]["message"]["content"]
+
+                return {
+                    "status": "success",
+                    "task_id": task_id,
+                    "type": "patent_research",
+                    "patent_data": patent_data,
+                    "expert_assessment": synthesis
+                }
 
         # Call the appropriate model or agent
         if routing.get("model") == "zread":

@@ -1,209 +1,286 @@
-name: CI - Continuous Integration
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - 'feat/**'
+      - 'fix/**'
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
   workflow_dispatch:
 
+env:
+  NODE_VERSION: '20'
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  actions: read
+
+# Cancel old runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  dependency-check:
-    name: Dependency Validation
+  # ========== Quality Gate Phase ==========
+  lint:
+    name: 🔍 Code Quality & Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Validate package.json
-        run: |
-          echo "🔍 Validating package.json syntax..."
-          if [ -f package.json ]; then
-            jq empty package.json
-            echo "✅ package.json is valid JSON"
-          else
-            echo "❌ package.json not found!"
-            exit 1
-          fi
-      - name: Check for Duplicate Dependencies
-        run: |
-          echo "🔍 Checking for duplicate dependencies..."
-          if jq -e '(.dependencies // {}) + (.devDependencies // {}) | group_by(.) | map(select(length > 1))' package.json | grep -q '\['; then
-            echo "❌ Duplicate dependencies found!"
-            exit 1
-          else
-            echo "✅ No duplicate dependencies"
-          fi
-      - name: Install Dependencies
-        run: |
-          echo "📦 Installing dependencies..."
-          npm ci
-          echo "✅ Dependencies installed successfully"
-      - name: Verify Dependency Tree
-        run: |
-          echo "🌳 Checking dependency tree for issues..."
-          npm ls --depth=0 || true
-          echo "✅ Dependency tree verified"
-      - name: Check for Outdated Dependencies
-        run: |
-          echo "📊 Checking for outdated dependencies..."
-          npm outdated || true
-          echo "ℹ️  Outdated dependencies listed above (if any)"
 
-  env-validation:
-    name: Environment Validation
-    runs-on: ubuntu-latest
-    needs: dependency-check
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
-      GLM4_API_KEY: ${{ secrets.GLM4_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Install Dependencies
-        run: npm ci
-      - name: Create dummy .env file
-        run: if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
-      - name: Run Environment Validation Script
-        run: node scripts/validate-environment.cjs
 
-  syntax-validation:
-    name: Syntax & Linting
-    runs-on: ubuntu-latest
-    needs: dependency-check
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install Node Dependencies
+      - name: Install dependencies
         run: npm ci
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install YAML Validator
-        run: pip install pyyaml
-      - name: Validate JSON Files
-        run: |
-          echo "🔍 Validating all JSON files..."
-          find . -name "*.json" \
-            -not -path "*/node_modules/*" \
-            -not -path "*/.next/*" \
-            -not -path "*/dist/*" \
-            -not -path "*/build/*" \
-            -print0 | xargs -0 -I {} sh -c 'echo "Checking: {}"; jq empty "{}" || exit 255'
-          echo "✅ All JSON files valid"
-      - name: Validate YAML Workflow Files
-        run: |
-          echo "🔍 Validating GitHub workflow YAML files..."
-          python3 scripts/validate_workflows.py
+
       - name: Run ESLint
-        run: |
-          echo "🔍 Running ESLint..."
-          npm run lint || echo "⚠️  Linting issues found (non-blocking)"
-      - name: Check Code Formatting
-        run: |
-          echo "🔍 Checking code formatting with Prettier..."
-          npm run format -- --check || echo "⚠️  Formatting issues found (non-blocking)"
+        run: npm run lint
 
-  security-scan:
-    name: Security Audit
+      - name: Run Prettier check
+        run: npm run format:check
+
+  security:
+    name: 🔒 Security Scan
     runs-on: ubuntu-latest
-    needs: dependency-check
+    timeout-minutes: 15
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install Dependencies
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
         run: npm ci
+
       - name: Run npm audit
-        run: |
-          echo "🔒 Running security audit..."
-          npm audit --audit-level=moderate || echo "⚠️  Security vulnerabilities found (review required)"
-      - name: Check for Secrets in Code
-        run: |
-          echo "🔍 Scanning for accidentally committed secrets..."
-          if grep -r -E "(api[_-]?key|secret|token|password)\s*=\s*['\"][^'\"]{20,}" \
-            --exclude-dir=node_modules \
-            --exclude-dir=.git \
-            --exclude-dir=dist \
-            --exclude-dir=build \
-            --exclude="*.md" \
-            --exclude="*.yml" \
-            --exclude="*.yaml" .; then
-            echo "❌ WARNING: Potential secrets found in code!"
-            echo "Please review and remove any hardcoded secrets."
-            exit 1
-          else
-            echo "✅ No obvious secrets detected in code"
-          fi
+        run: npm audit --audit-level=high
 
-  build-test:
-    name: Build & Test
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: false
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ========== Testing Phase ==========
+  test:
+    name: 🧪 Run Tests
     runs-on: ubuntu-latest
-    needs: [dependency-check, syntax-validation]
+    timeout-minutes: 20
+    needs: [lint, security]
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Install Dependencies
-        run: npm ci
-      - name: Run Tests
-        run: |
-          echo "🧪 Running tests..."
-          npm test || echo "⚠️  No tests configured or tests failed"
-      - name: Build Project
-        run: |
-          echo "🏗️  Building project..."
-          if [ -f "next.config.js" ] || [ -f "next.config.mjs" ]; then
-            echo "Next.js project detected"
-            npx next build || echo "⚠️  Build failed (non-blocking for CI)"
-          else
-            echo "ℹ️  No build step configured"
-          fi
 
-  summary:
-    name: CI Summary
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: true
+
+  # ========== Build Phase ==========
+  build:
+    name: 🏗️ Build Application
     runs-on: ubuntu-latest
-    needs: [dependency-check, env-validation, syntax-validation, security-scan, build-test]
+    timeout-minutes: 20
+    needs: [test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: |
+            dist/
+            build/
+            .next/
+          retention-days: 7
+
+  # ========== Deploy: Preview Environment ==========
+  deploy-preview:
+    name: 🚀 Deploy Preview (PR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build]
+    if: github.event_name == 'pull_request'
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.preview-url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel Preview
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        if: env.VERCEL_TOKEN != ''
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Health Check (Preview)
+        if: success()
+        run: |
+          DEPLOYMENT_URL="${{ steps.deploy.outputs.preview-url }}"
+          echo "⏳ Waiting for deployment to propagate..."
+
+          for i in {1..10}; do
+            if curl -f "$DEPLOYMENT_URL/health" 2>/dev/null; then
+              echo "✅ Preview health check passed"
+              exit 0
+            fi
+            echo "⏳ Health check attempt $i/10 failed, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "❌ Preview health check failed after 10 attempts"
+          exit 1
+
+      - name: Comment PR with deployment URL
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}`
+            })
+
+  # ========== Deploy: Production Environment ==========
+  deploy-production:
+    name: 🚀 Deploy Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://the-lab-verse-monitoring.vercel.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+        continue-on-error: false
+
+      - name: Deploy to Vercel Production
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        if: env.VERCEL_TOKEN != ''
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Production Health Check
+        if: success()
+        run: |
+          echo "⏳ Waiting for production deployment to propagate..."
+          sleep 45
+
+          # Health check: up to 15 retries
+          for i in {1..15}; do
+            if curl -f https://the-lab-verse-monitoring.vercel.app/health  ; then
+              echo "✅ Production health check passed"
+              exit 0
+            fi
+            echo "⏳ Health check attempt $i/15 failed, retrying in 15s..."
+            sleep 15
+          done
+
+          echo "❌ Production health check failed after 15 attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: '${{ github.event.before }}',
+              auto_merge: false,
+              environment: 'production'
+            })
+
+  # ========== Notification Phase ==========
+  notify:
+    name: 📢 Notify Status
+    runs-on: ubuntu-latest
+    needs: [deploy-preview, deploy-production]
     if: always()
     steps:
-      - name: Generate Summary
+      - name: Send notification
         run: |
-          echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ✅ Dependencies | Validated |" >> $GITHUB_STEP_SUMMARY
-          echo "| ✅ Environment | Validated |" >> $GITHUB_STEP_SUMMARY
-          echo "| ✅ Syntax | Checked |" >> $GITHUB_STEP_SUMMARY
-          echo "| ✅ Security | Scanned |" >> $GITHUB_STEP_SUMMARY
-          echo "| ✅ Build | Tested |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All CI checks completed successfully! 🚀" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy-preview.result }}" = "failure" ] || [ "${{ needs.deploy-production.result }}" = "failure" ]; then
+            echo "❌ Pipeline failed: ${{ github.workflow }}"
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            exit 1
+          else
+            echo "✅ Pipeline completed successfully"
+          fi

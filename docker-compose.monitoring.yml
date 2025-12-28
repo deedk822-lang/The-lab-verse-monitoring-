@@ -5,7 +5,40 @@ networks:
     driver: bridge
 
 services:
-  # ============ METRICS COLLECTION ============
+  # Main Application (Next.js) - from incoming branch
+  app:
+    build: .
+    container_name: vaal-app
+    networks:
+      - vaal-monitoring
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # GDELT Monitor (Python) - from incoming branch
+  gdelt-monitor:
+    image: python:3.11-slim
+    container_name: vaal-gdelt-monitor
+    networks:
+      - vaal-monitoring
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./services:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install -q requests prometheus-client &&
+             python gdelt_monitor.py"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/metrics"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # ============ METRICS COLLECTION ============ # Prioritizing HEAD's detailed config
   prometheus:
     image: prom/prometheus:v2.48.0
     container_name: vaal-prometheus
@@ -30,7 +63,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ============ VISUALIZATION ============
+  # ============ VISUALIZATION ============ # Prioritizing HEAD's detailed config
   grafana:
     image: grafana/grafana:10.2.2
     container_name: vaal-grafana
@@ -59,7 +92,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ============ LOG AGGREGATION ============
+  # ============ LOG AGGREGATION ============ # From HEAD
   loki:
     image: grafana/loki:2.9.3
     container_name: vaal-loki
@@ -78,7 +111,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ============ SYSTEM METRICS ============
+  # ============ SYSTEM METRICS ============ # Combined commands, preferring HEAD's rootfs
   node-exporter:
     image: prom/node-exporter:v1.7.0
     container_name: vaal-node-exporter
@@ -97,7 +130,7 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     restart: unless-stopped
 
-  # ============ ALERTING ============
+  # ============ ALERTING ============ # From HEAD
   alertmanager:
     image: prom/alertmanager:v0.26.0
     container_name: vaal-alertmanager
@@ -118,7 +151,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ============ REDIS EXPORTER (for caching metrics) ============
+  # ============ REDIS EXPORTER (for caching metrics) ============ # From HEAD
   redis-exporter:
     image: oliver006/redis_exporter:v1.55.0
     container_name: vaal-redis-exporter
@@ -135,7 +168,7 @@ volumes:
     driver: local
   grafana-data:
     driver: local
-  loki-data:
+  loki-data: # From HEAD
     driver: local
-  alertmanager-data:
+  alertmanager-data: # From HEAD
     driver: local

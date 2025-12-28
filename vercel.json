@@ -2,31 +2,64 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/api/generate-article.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
+      "src": "server.js",
+      "use": "@vercel/node",
       "config": {
-        "distDir": "public"
+        "includeFiles": ["**/*.js", "**/*.json", "**/*.txt"]
       }
     }
   ],
   "routes": [
     {
+      "src": "/health",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
+      "src": "/ready",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
+      "src": "/live",
+      "dest": "/server.js",
+      "methods": ["GET", "HEAD"]
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "/src/api/$1"
+      "dest": "/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/server.js"
     }
   ],
   "env": {
-    "CDATA_CONNECT_API": "disabled",
-    "CDATA_API_KEY": "disabled",
     "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
-    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY"
-  }
+    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
+    "NODE_ENV": "production"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    }
+  ]
 }

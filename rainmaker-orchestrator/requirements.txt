@@ -2,8 +2,15 @@ requests
 tiktoken>=0.7.0
 prometheus-client
 aiohttp
+ feat/robust-token-estimation-13849698795088988745
+transformers>=4.36.0
+torch>=2.1.0
+tenacity==8.3.0
+python-dotenv==1.0.1
+
 tenacity==8.3.0
 python-dotenv==1.0.1
 dataclasses==0.8
 transformers>=4.36.0
 torch>=2.1.0
+ main

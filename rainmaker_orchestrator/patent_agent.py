@@ -3,6 +3,7 @@
 import aiohttp
 import json
 from typing import Dict, List, Any
+import os
 
 class PatentAgent:
     """
@@ -13,7 +14,7 @@ class PatentAgent:
     def __init__(self):
         self.google_patents_url = "https://patents.google.com/"
         self.patentsview_url = "https://www.patentsview.org/api/patents/query"
-        self.lens_api_url = "https://lens-api.lens.org/patent/search"
+        self.lens_api_url = "https://api.lens.org/patent/search"
 
     async def search_google_patents_via_structured_data(
         self,
@@ -124,11 +125,17 @@ class PatentAgent:
         }
 
         try:
+            token = os.getenv("LENS_API_TOKEN")  # store as secret env var
+            if not token:
+                return {"status": "error", "message": "Missing LENS_API_TOKEN"}
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{self.lens_api_url}",
                     json=payload,
-                    headers={"Content-Type": "application/json"}
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {token}"
+                    }
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()

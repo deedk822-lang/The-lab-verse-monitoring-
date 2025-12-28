@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import os
 import re
+from functools import partial
 import sys
 import asyncio
 
@@ -19,8 +20,13 @@ from .patent_agent import PatentAgent
 
 # Metrics for monitoring
 TASK_ROUTING_TIME = Histogram('rainmaker_routing_duration_seconds', 'Time to route task')
-TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['model'])
-TOKEN_ESTIMATOR = tiktoken.encoding_for_model("gpt-4")
+TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['provider', 'task_type'])
+ERROR_COUNTER = Counter('rainmaker_errors_total', 'Total errors encountered', ['error_type', 'provider'])
+LATENCY_HISTOGRAM = Histogram('rainmaker_task_latency_seconds', 'Task processing latency', ['provider', 'task_type'])
+try:
+    TOKEN_ESTIMATOR = tiktoken.encoding_for_model("gpt-4")
+except KeyError:
+    TOKEN_ESTIMATOR = tiktoken.get_encoding("cl100k_base")
 
 @dataclass
 class TaskProfile:
@@ -112,6 +118,7 @@ class RainmakerOrchestrator:
 
                 return {
                     "model": model,
+                    "provider": "zread",
                     "reason": reason,
                     "estimated_cost": context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
                     "context_size": context_size
@@ -148,11 +155,13 @@ class RainmakerOrchestrator:
                 model = "llama4-scout"
                 reason = "General task - defaulting to Llama4"
 
-            TASK_COUNT.labels(model=model).inc()
+            provider = "ollama" if "ollama" in self.MODEL_PROFILES[model].model.lower() else "kimi"
+            TASK_COUNT.labels(provider=provider, task_type=task.get("type", "general")).inc()
 
             return {
                 "model": model,
                 "endpoint": self.MODEL_PROFILES[model].model,
+                "provider": provider,
                 "reason": reason,
                 "estimated_cost": context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
                 "context_size": context_size
@@ -162,79 +171,105 @@ class RainmakerOrchestrator:
         """Route and execute in one call"""
         routing = self.route_task(task)
         task_id = task.get("id", "unknown")
+        provider = routing.get("provider", "unknown")
+        task_subtype = task.get("subtype", "general")
+        start_time = asyncio.get_event_loop().time()
 
-        # Add patent research routing
-        if task.get("type") == "patent_research":
-            subtype = task.get("subtype", "novelty_check")
+        try:
+            # Add patent research routing
+            if task.get("type") == "patent_research":
+                subtype = task.get("subtype", "novelty_check")
+                if subtype == "novelty_check":
+                    patent_data = await self.patent.novelty_check(task["context"])
+                    findings = patent_data.get("findings", patent_data)
+                    synthesis_prompt = f"""
+                    Based on this patent landscape analysis:
+                    {json.dumps(findings, indent=2)}
 
-            if subtype == "novelty_check":
-                patent_data = await self.patent.novelty_check(task["context"])
+                    Provide a professional novelty assessment. Include:
+                    1. Novelty score (1-10)
+                    2. Key differentiators vs. existing patents
+                    3. Recommended claim strategy
+                    4. Risks and opportunities
+                    """
+                    synthesis_task = task.copy()
+                    synthesis_task["context"] = synthesis_prompt
+                    lm_response = await self._call_kimi(synthesis_task, routing)
+                    synthesis = lm_response["choices"][0]["message"]["content"]
+                    return {
+                        "status": "success",
+                        "task_id": task_id,
+                        "type": "patent_research",
+                        "patent_data": patent_data,
+                        "expert_assessment": synthesis
+                    }
 
-                # Synthesize findings with LLM
-                synthesis_prompt = f"""
-Based on this patent landscape analysis:
-{json.dumps(patent_data['findings'], indent=2)}
+            # Call the appropriate model or agent
+            if routing.get("provider") == "zread":
+                repo_url = task.get("repo_url", "https://github.com/example/repo")
+                query = task.get("context", "")
+                response = await asyncio.to_thread(self.zread_agent.search_repo, repo_url, query)
+            elif routing.get("provider") == "ollama":
+                response = await self._call_ollama(task, routing)
+            else:
+                response = await self._call_kimi(task, routing)
 
-Provide a professional novelty assessment. Include:
-1. Novelty score (1-10)
-2. Key differentiators vs. existing patents
-3. Recommended claim strategy
-4. Risks and opportunities
-"""
-                synthesis_task = task.copy()
-                synthesis_task["context"] = synthesis_prompt
-
-                lm_response = await self._call_kimi(synthesis_task, routing)
-                synthesis = lm_response["choices"][0]["message"]["content"]
-
-                return {
-                    "status": "success",
-                    "task_id": task_id,
-                    "type": "patent_research",
-                    "patent_data": patent_data,
-                    "expert_assessment": synthesis
-                }
-
-        # Call the appropriate model or agent
-        if routing.get("model") == "zread":
-            repo_url = task.get("repo_url", "https://github.com/example/repo")
-            query = task.get("context", "")
-            response = await asyncio.to_thread(self.zread_agent.search_repo, repo_url, query)
-        elif "ollama" in routing["model"]:
-            response = await self._call_ollama(task, routing)
-        else:
-            response = await self._call_kimi(task, routing)
-
-        return {
-            "routing": routing,
-            "response": response,
-            "timestamp": datetime.now().isoformat()
-        }
+            return {
+                "routing": routing,
+                "response": response,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            error_type = type(e).__name__
+            ERROR_COUNTER.labels(error_type=error_type, provider=provider).inc()
+            raise
+        finally:
+            latency = asyncio.get_event_loop().time() - start_time
+            LATENCY_HISTOGRAM.labels(provider=provider, task_type=task_subtype).observe(latency)
 
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        """Call Ollama API"""
-        response = requests.post(
-            routing["endpoint"],
-            json={
-                "model": routing["model"],
-                "messages": [{"role": "user", "content": task["context"]}],
-                "stream": False
-            }
-        )
-        return response.json()
+        """Make async Ollama API call without blocking event loop"""
+        try:
+            # Critical fix: run blocking requests in thread pool
+            response = await asyncio.to_thread(
+                partial(
+                    requests.post,
+                    routing["endpoint"],
+                    json={
+                        "model": routing["model"],
+                        "messages": [{"role": "user", "content": task["context"]}],
+                        "stream": False
+                    },
+                    timeout=30.0
+                )
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise
 
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        """Call Kimi-Linear via OpenAI-compatible API"""
-        response = requests.post(
-            routing["endpoint"],
-            headers={"Authorization": "Bearer EMPTY"},
-            json={
-                "model": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
-                "messages": [{"role": "user", "content": task["context"]}],
-                "max_tokens": 2000
-            }
-        )
-        return response.json()
+        """Make async Kimi API call without blocking event loop"""
+        try:
+            # Critical fix: run blocking requests in thread pool
+            response = await asyncio.to_thread(
+                partial(
+                    requests.post,
+                    routing["endpoint"],
+                    headers={"Authorization": "Bearer EMPTY"},
+                    json={
+                        "model": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
+                        "messages": [{"role": "user", "content": task["context"]}],
+                        "max_tokens": 2000,
+                        "temperature": 0.7
+                    },
+                    timeout=45.0
+                )
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise
 
 # Usage example
 if __name__ == "__main__":

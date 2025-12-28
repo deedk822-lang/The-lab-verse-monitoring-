@@ -1,6 +1,5 @@
 # rainmaker_orchestrator/orchestrator.py
 import requests
-import tiktoken
 from typing import Dict, Any
 from dataclasses import dataclass
 from prometheus_client import Histogram, Counter
@@ -16,10 +15,12 @@ import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
 from agents.zread_agent import ZreadAgent
 from .patent_agent import PatentAgent
+from .token_estimator import TokenEstimator
 
 
 # Metrics for monitoring
 TASK_ROUTING_TIME = Histogram('rainmaker_routing_duration_seconds', 'Time to route task')
+ feat/enhance-orchestrator-logic-11371318690222704120
 TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['provider', 'task_type'])
 ERROR_COUNTER = Counter('rainmaker_errors_total', 'Total errors encountered', ['error_type', 'provider'])
 LATENCY_HISTOGRAM = Histogram('rainmaker_task_latency_seconds', 'Task processing latency', ['provider', 'task_type'])
@@ -27,6 +28,9 @@ try:
     TOKEN_ESTIMATOR = tiktoken.encoding_for_model("gpt-4")
 except KeyError:
     TOKEN_ESTIMATOR = tiktoken.get_encoding("cl100k_base")
+
+TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['model'])
+ main
 
 @dataclass
 class TaskProfile:
@@ -45,6 +49,7 @@ class RainmakerOrchestrator:
     def __init__(self):
         self.zread_agent = ZreadAgent()
         self.patent = PatentAgent()
+        self.token_estimator = TokenEstimator()
 
     MODEL_PROFILES = {
         "kimi-linear-48b": TaskProfile(
@@ -90,13 +95,29 @@ class RainmakerOrchestrator:
         "code_audit": re.compile(r'security|vulnerability|xss|injection', re.I)
     }
 
-    def estimate_tokens(self, text: str) -> int:
-        """Quick token estimation without full encoding"""
-        return len(TOKEN_ESTIMATOR.encode(text))
-
     def _is_ip_task(self, context: str) -> bool:
         """Check if the task is related to private repo search"""
         return any(pattern.search(context) for pattern in self.TASK_TYPE_PATTERNS.values())
+
+    def _select_model(self, task: Dict[str, Any], context_size: int) -> tuple[str, str]:
+        """Selects the best model based on task properties."""
+        task_type = task.get("type", "general")
+
+        if self._is_ip_task(task.get("context", "")):
+            return "zread", "Private repository access required. Using Zread MCP for deep search/reading."
+
+        if context_size > 100_000:
+            return "kimi-linear-48b", f"Context size ({context_size:,} tokens) exceeds Ollama limits"
+        elif task_type == "code_debugging":
+            return "deepseek-r1:32b", "Reasoning task - using DeepSeek-R1"
+        elif task_type == "strategy":
+            return "llama4-scout", "Strategy task - Llama4 provides optimal balance"
+        elif task_type == "extraction" and context_size < 8_000:
+            return "phi4-mini", "Simple extraction - Phi4 for minimal latency"
+        elif task_type == "ingestion":
+            return "kimi-linear-48b", "Ingestion requires 1M context window"
+        else:
+            return "llama4-scout", "General task - defaulting to Llama4"
 
     def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -108,22 +129,28 @@ class RainmakerOrchestrator:
         }
         """
         with TASK_ROUTING_TIME.time():
-            context_size = self.estimate_tokens(task["context"])
-            task_type = task.get("type", "general")
+            # First, get a rough estimate with a default model.
+            initial_context_size = self.token_estimator.count_tokens(task["context"], "llama4-scout")
 
-            # Check if it's a private repo task
-            if self._is_ip_task(task.get("context", "")):
-                model = "zread" # Force Zread
-                reason = "Private repository access required. Using Zread MCP for deep search/reading."
+            # Now, select the model based on the initial estimate.
+            model, reason = self._select_model(task, initial_context_size)
 
+            # Get the final, more accurate token count with the selected model.
+            final_context_size = self.token_estimator.count_tokens(task["context"], model)
+
+            TASK_COUNT.labels(model=model).inc()
+
+            # Special case for zread which doesn't have an endpoint
+            if model == "zread":
                 return {
                     "model": model,
                     "provider": "zread",
                     "reason": reason,
-                    "estimated_cost": context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
-                    "context_size": context_size
+                    "estimated_cost": final_context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
+                    "context_size": final_context_size
                 }
 
+ feat/enhance-orchestrator-logic-11371318690222704120
             # Routing logic based on actual facts
             if context_size > 100_000:
                 # Only Kimi can handle this
@@ -158,13 +185,15 @@ class RainmakerOrchestrator:
             provider = "ollama" if "ollama" in self.MODEL_PROFILES[model].model.lower() else "kimi"
             TASK_COUNT.labels(provider=provider, task_type=task.get("type", "general")).inc()
 
+
+ main
             return {
                 "model": model,
                 "endpoint": self.MODEL_PROFILES[model].model,
                 "provider": provider,
                 "reason": reason,
-                "estimated_cost": context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
-                "context_size": context_size
+                "estimated_cost": final_context_size * self.MODEL_PROFILES[model].cost_per_1k / 1000,
+                "context_size": final_context_size
             }
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:

@@ -150,16 +150,3 @@ services:
     networks:
       ai-circuit:
         ipv4_address: 172.20.0.60
-
-  # --- BROWSERLESS (The Eyes) ---
-  browser-engine:
-    image: browserless/chrome:latest
-    container_name: rainmaker-browser
-    ports:
-      - "3002:3000"
-    environment:
-      - MAX_CONCURRENT_SESSIONS=10
-      - CONNECTION_TIMEOUT=60000
-    networks:
-      ai-circuit:
-        ipv4_address: 172.20.0.70

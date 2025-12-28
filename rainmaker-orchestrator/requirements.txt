@@ -1,3 +1,4 @@
 requests
 tiktoken
 prometheus-client
+playwright

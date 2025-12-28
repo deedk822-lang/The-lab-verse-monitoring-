@@ -568,7 +568,8 @@ TASK: Provide a professional novelty assessment including:
 
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         """Call Kimi-Linear via OpenAI-compatible API"""
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             routing["endpoint"],
             headers={"Authorization": "Bearer EMPTY"},
             json={
@@ -579,6 +580,7 @@ TASK: Provide a professional novelty assessment including:
                 "top_p": 0.9
             }
         )
+        response.raise_for_status()
         return response.json()
 
 

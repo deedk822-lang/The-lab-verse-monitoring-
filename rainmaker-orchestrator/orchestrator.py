@@ -1,11 +1,6 @@
-# rainmaker_orchestrator/orchestrator.py
 import requests
- feat/robust-token-estimation-13849698795088988745
 import tiktoken
 from typing import Dict, Any, List, Optional
-
-from typing import Dict, Any
- main
 from dataclasses import dataclass
 from prometheus_client import Histogram, Counter
 from datetime import datetime
@@ -19,7 +14,6 @@ from functools import lru_cache
 import logging
 import time
 
-# Add these imports at the top of orchestrator.py
 try:
     from transformers import AutoTokenizer
     TRANSFORMERS_AVAILABLE = True
@@ -29,278 +23,25 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
-# Add vaal-ai-empire to path to import ZreadAgent
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
 from agents.zread_agent import ZreadAgent
- feat/robust-token-estimation-13849698795088988745
-from rainmaker_orchestrator.patent_agent import PatentAgent
-
 from .patent_agent import PatentAgent
 from .token_estimator import TokenEstimator
- main
 
-
-# Metrics for monitoring
 TASK_ROUTING_TIME = Histogram('rainmaker_routing_duration_seconds', 'Time to route task')
- feat/enhance-orchestrator-logic-11371318690222704120
-TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['provider', 'task_type'])
+TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['model'])
 ERROR_COUNTER = Counter('rainmaker_errors_total', 'Total errors encountered', ['error_type', 'provider'])
 LATENCY_HISTOGRAM = Histogram('rainmaker_task_latency_seconds', 'Task processing latency', ['provider', 'task_type'])
-try:
-    TOKEN_ESTIMATOR = tiktoken.encoding_for_model("gpt-4")
-except KeyError:
-    TOKEN_ESTIMATOR = tiktoken.get_encoding("cl100k_base")
-
-TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['model'])
- feat/robust-token-estimation-13849698795088988745
-
-class TokenEstimator:
-    """
-    Robust token estimator with fallbacks for multiple model families.
-    Handles OpenAI models (tiktoken) and open-source models (transformers).
-    """
-
-    # Model family to tokenizer mapping
-    MODEL_FAMILY_MAPPING = {
-        # OpenAI models
-        "gpt-4": "cl100k_base",
-        "gpt-3.5": "cl100k_base",
-        "gpt-3": "p50k_base",
-
-        # Meta Llama family
-        "llama": "meta-llama/Llama-2-7b-hf",
-        "llama2": "meta-llama/Llama-2-7b-hf",
-        "llama3": "meta-llama/Meta-Llama-3-8B",
-        "llama4": "meta-llama/Meta-Llama-3-8B",  # Fallback for llama4-scout
-
-        # DeepSeek family
-        "deepseek": "deepseek-ai/deepseek-coder-1.3b-base",
-        "deepseek-r1": "deepseek-ai/deepseek-coder-1.3b-base",
-
-        # Microsoft Phi family
-        "phi": "microsoft/phi-2",
-        "phi4": "microsoft/phi-2",  # Fallback for phi4-mini
-
-        # Mistral family (common fallback)
-        "mistral": "mistralai/Mistral-7B-v0.1",
-    }
-
-    def __init__(self):
-        self.tiktoken_encodings = {}
-        self.transformers_tokenizers = {}
-        self.fallback_encoder = self._get_safe_fallback_encoder()
-        self.last_tokenizer_load = {}
-
-    @lru_cache(maxsize=32)
-    def get_tokenizer_for_model(self, model_name: str):
-        """
-        Get appropriate tokenizer for a model with intelligent fallbacks.
-        Uses LRU cache to avoid repeated initialization.
-        """
-        model_name_lower = model_name.lower()
-
-        try:
-            # First try: direct model mapping
-            for family, tokenizer_name in self.MODEL_FAMILY_MAPPING.items():
-                if family in model_name_lower:
-                    if tokenizer_name.startswith(("cl100k_base", "p50k_base", "r50k_base")):
-                        return self._get_tiktoken_encoding(tokenizer_name)
-                    else:
-                        return self._get_transformers_tokenizer(tokenizer_name, model_name)
-
-            # Second try: OpenAI model detection
-            try:
-                return tiktoken.encoding_for_model(model_name)
-            except KeyError:
-                pass
-
-            # Third try: heuristic matching
-            if any(x in model_name_lower for x in ["gpt-4", "gpt-3.5", "chatgpt"]):
-                return self._get_tiktoken_encoding("cl100k_base")
-            elif any(x in model_name_lower for x in ["llama", "llama2", "llama3", "llama4"]):
-                return self._get_transformers_tokenizer("meta-llama/Meta-Llama-3-8B", model_name)
-            elif "deepseek" in model_name_lower:
-                return self._get_transformers_tokenizer("deepseek-ai/deepseek-coder-1.3b-base", model_name)
-            elif "phi" in model_name_lower:
-                return self._get_transformers_tokenizer("microsoft/phi-2", model_name)
-            elif "mistral" in model_name_lower or "mixtral" in model_name_lower:
-                return self._get_transformers_tokenizer("mistralai/Mistral-7B-v0.1", model_name)
-
-            # Fourth try: generic fallbacks
-            logger.warning(f"No specific tokenizer found for model '{model_name}'. Using cl100k_base fallback.")
-            return self._get_tiktoken_encoding("cl100k_base")
-
-        except Exception as e:
-            logger.error(f"Error getting tokenizer for model '{model_name}': {str(e)}")
-            return self.fallback_encoder
-
-    def count_tokens(self, text: str, model_name: str) -> int:
-        """
-        Count tokens in text for a specific model with robust fallbacks.
-        """
-        if not text or not isinstance(text, str):
-            return 0
-
-        tokenizer = self.get_tokenizer_for_model(model_name)
-
-        try:
-            # Handle tiktoken encodings
-            if hasattr(tokenizer, "encode"):
-                return len(tokenizer.encode(text))
-
-            # Handle transformers tokenizers
-            elif hasattr(tokenizer, "tokenize"):
-                return len(tokenizer.tokenize(text))
-
-            elif hasattr(tokenizer, "__call__"):
-                # For tokenizers that use __call__ directly
-                return len(tokenizer(text)["input_ids"])
-
-            else:
-                logger.warning(f"Unknown tokenizer type for model '{model_name}'. Using fallback estimation.")
-                return self._fallback_token_count(text)
-
-        except Exception as e:
-            logger.error(f"Error counting tokens for model '{model_name}': {str(e)}")
-            return self._fallback_token_count(text)
-
-    def _get_tiktoken_encoding(self, encoding_name: str):
-        """Get or create a tiktoken encoding with caching."""
-        if encoding_name not in self.tiktoken_encodings:
-            try:
-                self.tiktoken_encodings[encoding_name] = tiktoken.get_encoding(encoding_name)
-            except Exception as e:
-                logger.error(f"Failed to get tiktoken encoding '{encoding_name}': {str(e)}")
-                self.tiktoken_encodings[encoding_name] = self.fallback_encoder
-        return self.tiktoken_encodings[encoding_name]
-
-    def _get_transformers_tokenizer(self, tokenizer_name: str, model_name: str):
-        """Get or create a transformers tokenizer with caching and fallbacks."""
-        if not TRANSFORMERS_AVAILABLE:
-            logger.warning(f"Transformers not available. Using tiktoken for model '{model_name}'.")
-            return self._get_tiktoken_encoding("cl100k_base")
-
-        cache_key = tokenizer_name
-
-        # Rate limiting: don't try to load the same tokenizer too frequently
-        now = time.time()
-        if cache_key in self.last_tokenizer_load and now - self.last_tokenizer_load[cache_key] < 5:
-            logger.debug(f"Using cached tokenizer for '{tokenizer_name}' (rate limited)")
-            return self.transformers_tokenizers.get(cache_key, self.fallback_encoder)
-
-        self.last_tokenizer_load[cache_key] = now
-
-        if cache_key not in self.transformers_tokenizers:
-            try:
-                logger.info(f"Loading transformers tokenizer: {tokenizer_name}")
-                tokenizer = AutoTokenizer.from_pretrained(
-                    tokenizer_name,
-                    trust_remote_code=False, # Set to False for security
-                    low_cpu_mem_usage=True
-                )
-                self.transformers_tokenizers[cache_key] = tokenizer
-                logger.info(f"Successfully loaded tokenizer: {tokenizer_name}")
-                return tokenizer
-
-            except Exception as e:
-                logger.error(f"Failed to load tokenizer '{tokenizer_name}': {str(e)}")
-
-                # Try fallback tokenizers based on model family
-                model_family = next((k for k in self.MODEL_FAMILY_MAPPING if k in model_name.lower()), None)
-
-                if model_family == "llama":
-                    fallback_tokenizers = [
-                        "hf-internal-testing/llama-tokenizer",
-                        "NousResearch/Llama-2-7b-chat-hf",
-                        "meta-llama/Llama-3-8b"
-                    ]
-                elif model_family == "deepseek":
-                    fallback_tokenizers = [
-                        "meta-llama/Llama-2-7b-hf",  # DeepSeek often uses similar tokenization
-                        "deepseek-ai/deepseek-coder-6.7b-base"
-                    ]
-                elif model_family == "phi":
-                    fallback_tokenizers = [
-                        "microsoft/phi-1_5",
-                        "microsoft/phi-2"
-                    ]
-                else:
-                    fallback_tokenizers = ["gpt2"]  # Universal fallback
-
-                for fallback in fallback_tokenizers:
-                    try:
-                        logger.info(f"Trying fallback tokenizer: {fallback}")
-                        tokenizer = AutoTokenizer.from_pretrained(fallback, trust_remote_code=False)
-                        self.transformers_tokenizers[cache_key] = tokenizer
-                        logger.info(f"Successfully loaded fallback tokenizer: {fallback}")
-                        return tokenizer
-                    except Exception as fallback_e:
-                        logger.warning(f"Failed fallback tokenizer '{fallback}': {str(fallback_e)}")
-
-                # Ultimate fallback to tiktoken
-                logger.warning(f"All tokenizer attempts failed for '{model_name}'. Using cl100k_base.")
-                return self._get_tiktoken_encoding("cl100k_base")
-
-        return self.transformers_tokenizers[cache_key]
-
-    def _get_safe_fallback_encoder(self):
-        """Get a safe fallback encoder that will always work."""
-        try:
-            return tiktoken.get_encoding("cl100k_base")
-        except Exception as e:
-            logger.error(f"Failed to get fallback encoding: {str(e)}")
-            try:
-                return tiktoken.get_encoding("gpt2")
-            except Exception as e2:
-                logger.critical(f"Critical failure: could not get any encoding: {str(e2)}")
-                # Create a very basic fallback encoder
-                class BasicFallbackEncoder:
-                    def encode(self, text):
-                        # Very rough estimate: 4 characters per token
-                        return [text[i:i+4] for i in range(0, len(text), 4)]
-                return BasicFallbackEncoder()
-
-    def _fallback_token_count(self, text: str) -> int:
-        """
-        Ultimate fallback token count estimation.
-        Very rough heuristic: 4 characters per token on average.
-        """
-        if not text:
-            return 0
-        # Handle special cases
-        if len(text) < 10:
-            return 1  # Very short text is likely 1 token
-
-        # Rough estimation: 4 chars per token, but account for whitespace and punctuation
-        word_count = len(text.split())
-        char_count = len(text)
-
-        # Hybrid approach: combine word count and character count
-        estimated_tokens = max(1, min(
-            word_count * 1.3,  # Words are typically 1-1.3 tokens
-            char_count / 3.5   # Average characters per token
-        ))
-
-        return int(estimated_tokens)
-
- main
- main
 
 @dataclass
 class TaskProfile:
-    """Defines the cost/quality tradeoff for each model"""
     model: str
     context_limit: int
     cost_per_1k: float
-    speed: str  # "fast", "medium", "slow"
-    strength: str  # "reasoning", "general", "ingestion"
+    speed: str
+    strength: str
 
 class RainmakerOrchestrator:
-    """
-    Routes tasks between Kimi-Linear (1M context) and Ollama models
-    based on actual requirements, not just "use the biggest model"
-    """
     def __init__(self):
         self.zread_agent = ZreadAgent()
         self.patent = PatentAgent()
@@ -310,14 +51,14 @@ class RainmakerOrchestrator:
         "kimi-linear-48b": TaskProfile(
             model="http://kimi-linear:8000/v1/chat/completions",
             context_limit=1_048_576,
-            cost_per_1k=0.10,  # Your bulk Azure cost
+            cost_per_1k=0.10,
             speed="slow",
             strength="ingestion"
         ),
         "deepseek-r1:32b": TaskProfile(
             model="http://ollama:11434/api/chat",
             context_limit=32_768,
-            cost_per_1k=0.01,  # Local GPU cost
+            cost_per_1k=0.01,
             speed="medium",
             strength="reasoning"
         ),
@@ -336,9 +77,9 @@ class RainmakerOrchestrator:
             strength="simple"
         ),
         "zread": TaskProfile(
-            model="http://localhost:8000", # Or your Zread API URL
-            context_limit=1048576, # Zread needs full context
-            cost_per_1k=0.01, # Check Zread pricing
+            model="http://localhost:8000",
+            context_limit=1048576,
+            cost_per_1k=0.01,
             speed="medium",
             strength="private_repo_access"
         )
@@ -350,19 +91,13 @@ class RainmakerOrchestrator:
         "code_audit": re.compile(r'security|vulnerability|xss|injection', re.I)
     }
 
- feat/robust-token-estimation-13849698795088988745
     def estimate_tokens(self, text: str, model_name: str = "gpt-4") -> int:
-        """Quick token estimation without full encoding"""
         return self.token_estimator.count_tokens(text, model_name)
 
-
- main
     def _is_ip_task(self, context: str) -> bool:
-        """Check if the task is related to private repo search"""
         return any(pattern.search(context) for pattern in self.TASK_TYPE_PATTERNS.values())
 
     def _select_model(self, task: Dict[str, Any], context_size: int) -> tuple[str, str]:
-        """Selects the best model based on task properties."""
         task_type = task.get("type", "general")
 
         if self._is_ip_task(task.get("context", "")):
@@ -382,33 +117,13 @@ class RainmakerOrchestrator:
             return "llama4-scout", "General task - defaulting to Llama4"
 
     def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        The brain: decide which model to use
-        task = {
-            "type": "code_debugging"|"strategy"|"ingestion"|"extraction",
-            "context": "full text or code",
-            "priority": "high"|"low"
-        }
-        """
         with TASK_ROUTING_TIME.time():
- feat/robust-token-estimation-13849698795088988745
-            # Estimate with a general-purpose model first for routing decisions
-            context_size = self.estimate_tokens(task["context"])
-            task_type = task.get("type", "general")
-
-            # First, get a rough estimate with a default model.
-            initial_context_size = self.token_estimator.count_tokens(task["context"], "llama4-scout")
- main
-
-            # Now, select the model based on the initial estimate.
-            model, reason = self._select_model(task, initial_context_size)
-
-            # Get the final, more accurate token count with the selected model.
+            context_size = self.estimate_tokens(task["context"], "llama4-scout")
+            model, reason = self._select_model(task, context_size)
             final_context_size = self.token_estimator.count_tokens(task["context"], model)
 
             TASK_COUNT.labels(model=model).inc()
 
-            # Special case for zread which doesn't have an endpoint
             if model == "zread":
                 return {
                     "model": model,
@@ -418,49 +133,8 @@ class RainmakerOrchestrator:
                     "context_size": final_context_size
                 }
 
- feat/enhance-orchestrator-logic-11371318690222704120
-            # Routing logic based on actual facts
-            if context_size > 100_000:
-                # Only Kimi can handle this
-                model = "kimi-linear-48b"
-                reason = f"Context size ({context_size:,} tokens) exceeds Ollama limits"
-
-            elif task_type == "code_debugging":
-                # DeepSeek-R1 for reasoning
-                model = "deepseek-r1:32b"
-                reason = "Reasoning task - using DeepSeek-R1"
-
-            elif task_type == "strategy":
-                # Llama4 for balanced quality/speed
-                model = "llama4-scout"
-                reason = "Strategy task - Llama4 provides optimal balance"
-
-            elif task_type == "extraction" and context_size < 8_000:
-                # Phi4 for speed on simple tasks
-                model = "phi4-mini"
-                reason = "Simple extraction - Phi4 for minimal latency"
-
-            elif task_type == "ingestion":
-                # Kimi for massive document processing
-                model = "kimi-linear-48b"
-                reason = "Ingestion requires 1M context window"
-
-            else:
-                # Default to Llama4
-                model = "llama4-scout"
-                reason = "General task - defaulting to Llama4"
-
             provider = "ollama" if "ollama" in self.MODEL_PROFILES[model].model.lower() else "kimi"
-            TASK_COUNT.labels(provider=provider, task_type=task.get("type", "general")).inc()
 
-
- feat/robust-token-estimation-13849698795088988745
-            # Re-estimate with the specific model for accuracy
-            final_context_size = self.estimate_tokens(task["context"], model_name=model)
-
-
- main
- main
             return {
                 "model": model,
                 "endpoint": self.MODEL_PROFILES[model].model,
@@ -471,7 +145,6 @@ class RainmakerOrchestrator:
             }
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Route and execute in one call"""
         routing = self.route_task(task)
         task_id = task.get("id", "unknown")
         provider = routing.get("provider", "unknown")
@@ -479,35 +152,14 @@ class RainmakerOrchestrator:
         start_time = asyncio.get_event_loop().time()
 
         try:
-            # Add patent research routing
             if task.get("type") == "patent_research":
                 subtype = task.get("subtype", "novelty_check")
                 if subtype == "novelty_check":
-                    patent_data = await self.patent.novelty_check(task["context"])
-                    findings = patent_data.get("findings", patent_data)
-                    synthesis_prompt = f"""
-                    Based on this patent landscape analysis:
-                    {json.dumps(findings, indent=2)}
+                    from .patent_agent import PatentAgent
+                    async with PatentAgent() as patent_agent:
+                        patent_data = await patent_agent.novelty_check(task["context"])
+                    return await self._synthesize_patent_findings(patent_data, routing)
 
-                    Provide a professional novelty assessment. Include:
-                    1. Novelty score (1-10)
-                    2. Key differentiators vs. existing patents
-                    3. Recommended claim strategy
-                    4. Risks and opportunities
-                    """
-                    synthesis_task = task.copy()
-                    synthesis_task["context"] = synthesis_prompt
-                    lm_response = await self._call_kimi(synthesis_task, routing)
-                    synthesis = lm_response["choices"][0]["message"]["content"]
-                    return {
-                        "status": "success",
-                        "task_id": task_id,
-                        "type": "patent_research",
-                        "patent_data": patent_data,
-                        "expert_assessment": synthesis
-                    }
-
-            # Call the appropriate model or agent
             if routing.get("provider") == "zread":
                 repo_url = task.get("repo_url", "https://github.com/example/repo")
                 query = task.get("context", "")
@@ -516,55 +168,6 @@ class RainmakerOrchestrator:
                 response = await self._call_ollama(task, routing)
             else:
                 response = await self._call_kimi(task, routing)
-
- feat/robust-token-estimation-13849698795088988745
-        # Add patent research routing
-        if task.get("type") == "patent_research":
-            subtype = task.get("subtype", "novelty_check")
-
-            if subtype == "novelty_check":
-                patent_data = await self.patent.novelty_check(task["context"])
-
-                # Synthesize findings with LLM
-                synthesis_prompt = f"""
-Based on this patent landscape analysis:
-{json.dumps(patent_data['findings'], indent=2)}
-
-Provide a professional novelty assessment. Include:
-1. Novelty score (1-10)
-2. Key differentiators vs. existing patents
-3. Recommended claim strategy
-4. Risks and opportunities
-"""
-                synthesis_task = task.copy()
-                synthesis_task["context"] = synthesis_prompt
-
-                lm_response = await self._call_kimi(synthesis_task, routing)
-                synthesis = lm_response["choices"][0]["message"]["content"]
-
-                return {
-                    "status": "success",
-                    "task_id": task_id,
-                    "type": "patent_research",
-                    "patent_data": patent_data,
-                    "expert_assessment": synthesis
-                }
-
-        # Call the appropriate model or agent
-        if routing.get("model") == "zread":
-            repo_url = task.get("repo_url", "https://github.com/example/repo")
-            query = task.get("context", "")
-            response = await asyncio.to_thread(self.zread_agent.search_repo, repo_url, query)
-        elif "ollama" in routing["endpoint"]:
-            response = await self._call_ollama(task, routing)
-        else:
-            response = await self._call_kimi(task, routing)
-
-        return {
-            "routing": routing,
-            "response": response,
-            "timestamp": datetime.now().isoformat()
-        }
 
             return {
                 "routing": routing,
@@ -578,12 +181,44 @@ Provide a professional novelty assessment. Include:
         finally:
             latency = asyncio.get_event_loop().time() - start_time
             LATENCY_HISTOGRAM.labels(provider=provider, task_type=task_subtype).observe(latency)
- main
+
+    async def _synthesize_patent_findings(self, patent_data: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+        findings = patent_data.get("findings", {})
+        normalized = findings.get("normalized", {})
+        patents = normalized.get("patents", [])
+        counts = normalized.get("counts", {})
+
+        limited_patents = patents[:25]
+
+        synthesis_prompt = f"""
+BASIS: Patent landscape analysis for novelty assessment
+SEARCH TERMS: {', '.join(findings.get('key_terms', [])[:5])}
+TOTAL UNIQUE PATENTS FOUND: {counts.get('total_unique', 0)}
+LENS API RESULTS: {counts.get('lens_success', 0)} successful queries
+PATENTSVIEW RESULTS: {counts.get('patentsview_success', 0)} successful queries
+
+RELEVANT PRIOR ART (top {len(limited_patents)} patents by relevance):
+{json.dumps(limited_patents, indent=2)}
+
+TASK: Provide a professional novelty assessment including:
+1. Overall novelty score (1-10 scale)
+2. Key differentiating features vs. existing patents
+3. Recommended claim strategy focusing on novel aspects
+4. Freedom-to-operate risks and opportunities
+5. Most relevant prior art references that must be addressed
+6. Specific recommendations for patent application drafting
+"""
+
+        synthesis_task = {
+            "context": synthesis_prompt,
+            "model": routing["model"],
+            "subtype": "patent_synthesis"
+        }
+
+        return await self.execute_task(synthesis_task)
 
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        """Make async Ollama API call without blocking event loop"""
         try:
-            # Critical fix: run blocking requests in thread pool
             response = await asyncio.to_thread(
                 partial(
                     requests.post,
@@ -602,9 +237,7 @@ Provide a professional novelty assessment. Include:
             raise
 
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        """Make async Kimi API call without blocking event loop"""
         try:
-            # Critical fix: run blocking requests in thread pool
             response = await asyncio.to_thread(
                 partial(
                     requests.post,
@@ -613,8 +246,9 @@ Provide a professional novelty assessment. Include:
                     json={
                         "model": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
                         "messages": [{"role": "user", "content": task["context"]}],
-                        "max_tokens": 2000,
-                        "temperature": 0.7
+                        "max_tokens": 4096,
+                        "temperature": 0.3,
+                        "top_p": 0.9
                     },
                     timeout=45.0
                 )
@@ -624,24 +258,18 @@ Provide a professional novelty assessment. Include:
         except requests.RequestException as e:
             raise
 
-# Usage example
 if __name__ == "__main__":
     orchestrator = RainmakerOrchestrator()
 
-    # Create a dummy file for the example
     with open("linear_backlog.txt", "w") as f:
         f.write("This is a very long text file." * 10000)
 
-    # Simulate a Linear backlog ingestion task
     task = {
         "type": "ingestion",
-        "context": open("./linear_backlog.txt").read(),  # 500K tokens
+        "context": open("./linear_backlog.txt").read(),
         "priority": "high"
     }
 
     result = orchestrator.route_task(task)
     print(json.dumps(result, indent=2))
-    # Will route to kimi-linear-48b due to context size
-
-    # Clean up the dummy file
     os.remove("linear_backlog.txt")

@@ -1,24 +1,50 @@
 {
-  "name": "lab-verse-monitoring",
+  "name": "the-lab-verse-monitoring",
   "version": "1.0.0",
+  "description": "Express.js server for The Lab Verse monitoring",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "postinstall": "[ -f crewai/requirements.txt ] && pip3 install -r crewai/requirements.txt || echo '⚠️ crewai/requirements.txt not found - skipping Python dependencies'",
-    "test": "jest"
+    "start": "node server.js",
+    "dev": "NODE_ENV=development nodemon server.js",
+    "build": "echo 'Express server - no build step'",
+    "test": "jest --runInBand --coverage --verbose --testTimeout=10000",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "prepare": "husky install",
+    "clean": "rimraf node_modules package-lock.json",
+    "fresh-install": "npm run clean && npm install",
+    "postinstall": "if [ -d 'crewai' ]; then pip3 install -r crewai/requirements.txt; else echo 'crewai directory not found, skipping pip install'; fi",
+    "health": "node -e \"require('http').get('http://localhost:3000/health', r=>{console.log('✅ Health check passed'); r.on('error', e=>{console.error('❌ Health check failed:', e); process.exit(1)});}).on('error', e=>{console.error('❌ Health check failed:', e); process.exit(1)});\""
   },
   "dependencies": {
-    "@vercel/postgres": "^0.10.0",
-    "@vercel/speed-insights": "^1.0.0",
-    "axios": "^1.13.2",
-    "dotenv": "^17.2.3",
-    "express": "^4.19.2",
-    "lucide-react": "^0.555.0",
-    "node-fetch": "^3.3.2"
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.24.0",
-    "@babel/preset-typescript": "^7.24.0",
+    "nodemon": "^3.0.1",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "ts-jest": "^29.1.2"
-  }
+    "supertest": "^6.3.4",
+    "eslint": "^8.52.0",
+    "prettier": "^3.0.3",
+    "husky": "^8.0.3",
+    "rimraf": "^5.0.5",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "express",
+    "monitoring",
+    "api",
+    "the-lab-verse"
+  ],
+  "author": "The Lab Verse",
+  "license": "MIT"
 }

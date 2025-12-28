@@ -1,4 +1,3 @@
-# docker-compose.superstack.yml
 networks:
   ai-circuit:
     driver: bridge

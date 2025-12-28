@@ -1,4 +1,3 @@
-# rainmaker_orchestrator/orchestrator.py
 import requests
 import tiktoken
 from typing import Dict, Any, List, Optional
@@ -14,7 +13,6 @@ from functools import lru_cache
 import logging
 import time
 
-# Add these imports at the top of orchestrator.py
 try:
     from transformers import AutoTokenizer
     TRANSFORMERS_AVAILABLE = True
@@ -24,16 +22,19 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
-# Add vaal-ai-empire to path to import ZreadAgent
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vaal-ai-empire')))
 from agents.zread_agent import ZreadAgent
+ feat/robust-token-estimation-13849698795088988745
 from rainmaker_orchestrator.patent_agent import PatentAgent
 
 
-# Metrics for monitoring
+from .patent_agent import PatentAgent
+from .token_estimator import TokenEstimator
+ main
+
 TASK_ROUTING_TIME = Histogram('rainmaker_routing_duration_seconds', 'Time to route task')
 TASK_COUNT = Counter('rainmaker_tasks_total', 'Total tasks routed', ['model'])
+ feat/robust-token-estimation-13849698795088988745
 
 class TokenEstimator:
     """
@@ -264,20 +265,19 @@ class TokenEstimator:
 
         return int(estimated_tokens)
 
+ERROR_COUNTER = Counter('rainmaker_errors_total', 'Total errors encountered', ['error_type', 'provider'])
+LATENCY_HISTOGRAM = Histogram('rainmaker_task_latency_seconds', 'Task processing latency', ['provider', 'task_type'])
+ main
+
 @dataclass
 class TaskProfile:
-    """Defines the cost/quality tradeoff for each model"""
     model: str
     context_limit: int
     cost_per_1k: float
-    speed: str  # "fast", "medium", "slow"
-    strength: str  # "reasoning", "general", "ingestion"
+    speed: str
+    strength: str
 
 class RainmakerOrchestrator:
-    """
-    Routes tasks between Kimi-Linear (1M context) and Ollama models
-    based on actual requirements, not just "use the biggest model"
-    """
     def __init__(self):
         self.zread_agent = ZreadAgent()
         self.patent = PatentAgent()
@@ -287,14 +287,14 @@ class RainmakerOrchestrator:
         "kimi-linear-48b": TaskProfile(
             model="http://kimi-linear:8000/v1/chat/completions",
             context_limit=1_048_576,
-            cost_per_1k=0.10,  # Your bulk Azure cost
+            cost_per_1k=0.10,
             speed="slow",
             strength="ingestion"
         ),
         "deepseek-r1:32b": TaskProfile(
             model="http://ollama:11434/api/chat",
             context_limit=32_768,
-            cost_per_1k=0.01,  # Local GPU cost
+            cost_per_1k=0.01,
             speed="medium",
             strength="reasoning"
         ),
@@ -313,9 +313,9 @@ class RainmakerOrchestrator:
             strength="simple"
         ),
         "zread": TaskProfile(
-            model="http://localhost:8000", # Or your Zread API URL
-            context_limit=1048576, # Zread needs full context
-            cost_per_1k=0.01, # Check Zread pricing
+            model="http://localhost:8000",
+            context_limit=1048576,
+            cost_per_1k=0.01,
             speed="medium",
             strength="private_repo_access"
         )
@@ -328,23 +328,36 @@ class RainmakerOrchestrator:
     }
 
     def estimate_tokens(self, text: str, model_name: str = "gpt-4") -> int:
-        """Quick token estimation without full encoding"""
         return self.token_estimator.count_tokens(text, model_name)
 
     def _is_ip_task(self, context: str) -> bool:
-        """Check if the task is related to private repo search"""
         return any(pattern.search(context) for pattern in self.TASK_TYPE_PATTERNS.values())
 
+ feat/robust-token-estimation-13849698795088988745
+
+    def _select_model(self, task: Dict[str, Any], context_size: int) -> tuple[str, str]:
+        task_type = task.get("type", "general")
+
+        if self._is_ip_task(task.get("context", "")):
+            return "zread", "Private repository access required. Using Zread MCP for deep search/reading."
+
+        if context_size > 100_000:
+            return "kimi-linear-48b", f"Context size ({context_size:,} tokens) exceeds Ollama limits"
+        elif task_type == "code_debugging":
+            return "deepseek-r1:32b", "Reasoning task - using DeepSeek-R1"
+        elif task_type == "strategy":
+            return "llama4-scout", "Strategy task - Llama4 provides optimal balance"
+        elif task_type == "extraction" and context_size < 8_000:
+            return "phi4-mini", "Simple extraction - Phi4 for minimal latency"
+        elif task_type == "ingestion":
+            return "kimi-linear-48b", "Ingestion requires 1M context window"
+        else:
+            return "llama4-scout", "General task - defaulting to Llama4"
+
+ main
     def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        The brain: decide which model to use
-        task = {
-            "type": "code_debugging"|"strategy"|"ingestion"|"extraction",
-            "context": "full text or code",
-            "priority": "high"|"low"
-        }
-        """
         with TASK_ROUTING_TIME.time():
+ feat/robust-token-estimation-13849698795088988745
             # Estimate with a general-purpose model first for routing decisions
             context_size = self.estimate_tokens(task["context"])
             task_type = task.get("type", "general")
@@ -354,6 +367,15 @@ class RainmakerOrchestrator:
                 model = "zread" # Force Zread
                 reason = "Private repository access required. Using Zread MCP for deep search/reading."
 
+
+            context_size = self.estimate_tokens(task["context"], "llama4-scout")
+            model, reason = self._select_model(task, context_size)
+            final_context_size = self.token_estimator.count_tokens(task["context"], model)
+
+            TASK_COUNT.labels(model=model).inc()
+
+            if model == "zread":
+ main
                 return {
                     "model": model,
                     "reason": reason,
@@ -361,6 +383,7 @@ class RainmakerOrchestrator:
                     "context_size": context_size
                 }
 
+ feat/robust-token-estimation-13849698795088988745
             # Routing logic based on actual facts
             if context_size > 100_000:
                 # Only Kimi can handle this
@@ -397,6 +420,9 @@ class RainmakerOrchestrator:
             # Re-estimate with the specific model for accuracy
             final_context_size = self.estimate_tokens(task["context"], model_name=model)
 
+            provider = "ollama" if "ollama" in self.MODEL_PROFILES[model].model.lower() else "kimi"
+ main
+
             return {
                 "model": model,
                 "endpoint": self.MODEL_PROFILES[model].model,
@@ -406,10 +432,10 @@ class RainmakerOrchestrator:
             }
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Route and execute in one call"""
         routing = self.route_task(task)
         task_id = task.get("id", "unknown")
 
+ feat/robust-token-estimation-13849698795088988745
         # Add patent research routing
         if task.get("type") == "patent_research":
             subtype = task.get("subtype", "novelty_check")
@@ -442,11 +468,46 @@ class RainmakerOrchestrator:
 
     async def _synthesize_patent_findings(self, task: Dict[str, Any], patent_data: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         """Synthesize patent findings with normalized schema"""
+
+        try:
+            if task.get("type") == "patent_research":
+                subtype = task.get("subtype", "novelty_check")
+                if subtype == "novelty_check":
+                    from .patent_agent import PatentAgent
+                    async with PatentAgent() as patent_agent:
+                        patent_data = await patent_agent.novelty_check(task["context"])
+                    return await self._synthesize_patent_findings(patent_data, routing)
+
+            if routing.get("provider") == "zread":
+                repo_url = task.get("repo_url", "https://github.com/example/repo")
+                query = task.get("context", "")
+                response = await asyncio.to_thread(self.zread_agent.search_repo, repo_url, query)
+            elif routing.get("provider") == "ollama":
+                response = await self._call_ollama(task, routing)
+            else:
+                response = await self._call_kimi(task, routing)
+
+            return {
+                "routing": routing,
+                "response": response,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            error_type = type(e).__name__
+            ERROR_COUNTER.labels(error_type=error_type, provider=provider).inc()
+            raise
+        finally:
+            latency = asyncio.get_event_loop().time() - start_time
+            LATENCY_HISTOGRAM.labels(provider=provider, task_type=task_subtype).observe(latency)
+
+    async def _synthesize_patent_findings(self, patent_data: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+ main
         findings = patent_data.get("findings", {})
         normalized = findings.get("normalized", {})
         patents = normalized.get("patents", [])
         counts = normalized.get("counts", {})
 
+ feat/robust-token-estimation-13849698795088988745
         # Limit patents to fit context window (25 is safe for most models)
         limited_patents = patents[:25]
 
@@ -460,6 +521,27 @@ Provide a professional novelty assessment. Include:
 3. Recommended claim strategy
 4. Risks and opportunities
 5. Most relevant prior art references
+
+        limited_patents = patents[:25]
+
+        synthesis_prompt = f"""
+BASIS: Patent landscape analysis for novelty assessment
+SEARCH TERMS: {', '.join(findings.get('key_terms', [])[:5])}
+TOTAL UNIQUE PATENTS FOUND: {counts.get('total_unique', 0)}
+LENS API RESULTS: {counts.get('lens_success', 0)} successful queries
+PATENTSVIEW RESULTS: {counts.get('patentsview_success', 0)} successful queries
+
+RELEVANT PRIOR ART (top {len(limited_patents)} patents by relevance):
+{json.dumps(limited_patents, indent=2)}
+
+TASK: Provide a professional novelty assessment including:
+1. Overall novelty score (1-10 scale)
+2. Key differentiating features vs. existing patents
+3. Recommended claim strategy focusing on novel aspects
+4. Freedom-to-operate risks and opportunities
+5. Most relevant prior art references that must be addressed
+6. Specific recommendations for patent application drafting
+ main
 """
 
         synthesis_task = {
@@ -469,6 +551,7 @@ Provide a professional novelty assessment. Include:
         }
 
         return await self.execute_task(synthesis_task)
+ feat/robust-token-estimation-13849698795088988745
 
 
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
@@ -498,24 +581,61 @@ Provide a professional novelty assessment. Include:
         )
         return response.json()
 
-# Usage example
+
+    async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            response = await asyncio.to_thread(
+                partial(
+                    requests.post,
+                    routing["endpoint"],
+                    json={
+                        "model": routing["model"],
+                        "messages": [{"role": "user", "content": task["context"]}],
+                        "stream": False
+                    },
+                    timeout=30.0
+                )
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise
+
+    async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            response = await asyncio.to_thread(
+                partial(
+                    requests.post,
+                    routing["endpoint"],
+                    headers={"Authorization": "Bearer EMPTY"},
+                    json={
+                        "model": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
+                        "messages": [{"role": "user", "content": task["context"]}],
+                        "max_tokens": 4096,
+                        "temperature": 0.3,
+                        "top_p": 0.9
+                    },
+                    timeout=45.0
+                )
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise
+ main
+
 if __name__ == "__main__":
     orchestrator = RainmakerOrchestrator()
 
-    # Create a dummy file for the example
     with open("linear_backlog.txt", "w") as f:
         f.write("This is a very long text file." * 10000)
 
-    # Simulate a Linear backlog ingestion task
     task = {
         "type": "ingestion",
-        "context": open("./linear_backlog.txt").read(),  # 500K tokens
+        "context": open("./linear_backlog.txt").read(),
         "priority": "high"
     }
 
     result = orchestrator.route_task(task)
     print(json.dumps(result, indent=2))
-    # Will route to kimi-linear-48b due to context size
-
-    # Clean up the dummy file
     os.remove("linear_backlog.txt")

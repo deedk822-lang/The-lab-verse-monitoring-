@@ -1,4 +1,6 @@
 requests
-tiktoken
+tiktoken>=0.7.0
 prometheus-client
 aiohttp
+transformers>=4.36.0
+torch>=2.1.0

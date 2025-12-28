@@ -8,9 +8,11 @@ logger = logging.getLogger(__name__)
 class ContentFactory:
     """Enhanced content generation with multiple provider support"""
 
+    PROVIDER_PRIORITY = ["groq", "cohere", "mistral", "huggingface"]
+
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
+        self._providers_cache = {}
         self.image_generator = None
 
         # Initialize image generation if available
@@ -21,61 +23,42 @@ class ContentFactory:
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
 
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
+    def _get_provider(self, provider_name: str):
+        """Lazy-load and cache a provider on first use"""
+        if provider_name in self._providers_cache:
+            return self._providers_cache[provider_name]
 
-        # Try Cohere
+        provider = None
         try:
-            from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
+            if provider_name == "cohere":
+                from api.cohere import CohereAPI
+                provider = CohereAPI()
+            elif provider_name == "groq":
+                from api.groq_api import GroqAPI
+                provider = GroqAPI()
+            elif provider_name == "mistral":
+                from api.mistral import MistralAPI
+                provider = MistralAPI()
+            elif provider_name == "huggingface":
+                from api.huggingface_api import HuggingFaceAPI
+                provider = HuggingFaceAPI()
+
+            if provider:
+                logger.info(f"✅ {provider_name.capitalize()} provider initialized")
+                self._providers_cache[provider_name] = provider
+            else:
+                logger.warning(f"⚠️  {provider_name.capitalize()} provider not found")
+                self._providers_cache[provider_name] = None
         except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
+            logger.warning(f"⚠️  {provider_name.capitalize()} unavailable: {e}")
+            self._providers_cache[provider_name] = None
 
-        # Try Groq
-        try:
-            from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
-
-        # Try Mistral (local via Ollama)
-        try:
-            from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
-
-        # Try HuggingFace
-        try:
-            from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
-
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
-
-        return providers
+        return provider
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
-        priority = ["groq", "cohere", "mistral", "huggingface"]
-
-        for provider_name in priority:
-            provider = self.providers.get(provider_name)
+        for provider_name in self.PROVIDER_PRIORITY:
+            provider = self._get_provider(provider_name)
             if provider is None:
                 continue
 
@@ -442,8 +425,16 @@ Generate all {days} emails now:"""
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
-        }
+        """Get status of all providers without triggering initialization."""
+        status = {}
+        for provider_name in self.PROVIDER_PRIORITY:
+            # Check if the provider is already initialized and cached
+            if self._providers_cache.get(provider_name) is not None:
+                status[provider_name] = "available"
+            # If a provider was tried and failed (cached as None), it's unavailable
+            elif self._providers_cache.get(provider_name) is None and provider_name in self._providers_cache:
+                status[provider_name] = "unavailable"
+            # Otherwise, its status is unknown until it's called
+            else:
+                status[provider_name] = "unknown"
+        return status

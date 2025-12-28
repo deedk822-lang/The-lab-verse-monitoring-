@@ -2,6 +2,7 @@
 
 import os
 import aiohttp
+ feat/refactor-patent-agent-7332476735558934785
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Any, Optional, Set
 
@@ -19,6 +20,11 @@ class PatentRecord:
     raw: Optional[Dict[str, Any]] = None
 
 
+import json
+from typing import Dict, List, Any
+import os
+ main
+
 class PatentAgent:
     """
     Patent research agent using open APIs + permitted sources.
@@ -27,6 +33,7 @@ class PatentAgent:
 
     def __init__(self, session: aiohttp.ClientSession | None = None):
         self.patentsview_url = "https://www.patentsview.org/api/patents/query"
+ feat/refactor-patent-agent-7332476735558934785
         self.lens_api_url = "https://api.lens.org/patent/search"  # correct endpoint [web:145][web:151]
         self._session = session
 
@@ -50,6 +57,44 @@ class PatentAgent:
         return asdict(record)
 
     async def search_patentsview_api(self, query: str, limit: int = 10) -> Dict[str, Any]:
+
+        self.lens_api_url = "https://api.lens.org/patent/search"
+
+    async def search_google_patents_via_structured_data(
+        self,
+        query: str,
+        cpc_code: str = None
+    ) -> Dict[str, Any]:
+        """
+        Query Google Patents using their JSON endpoint (no scraping).
+        Google explicitly permits research use of their patent data.
+        """
+        # Google Patents exposes structured data via JSON endpoints
+        params = {
+            "q": query,
+            "sort": "date",
+            "page": 1
+        }
+
+        if cpc_code:
+            params["cpc"] = cpc_code  # e.g., "H04L" for data processing
+
+        # Note: Google Patents doesn't have a direct JSON API, but you can
+        # use PatentsView or Lens instead (see below)
+        return {"status": "info", "message": "Use PatentsView or Lens API for structured data"}
+
+    async def search_patentsview_api(
+        self,
+        query: str,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Query USPTO PatentsView API (free, open, no ToS violation).
+        Returns structured patent data.
+        """
+        # PatentsView API documentation: https://www.patentsview.org/api/
+
+ main
         payload = {
             "q": {"patent_abstract": {"text": query}},
             "f": [
@@ -111,6 +156,7 @@ class PatentAgent:
             "include": ["biblio", "doc_key"]  # per Lens examples [web:145]
         }
 
+ feat/refactor-patent-agent-7332476735558934785
         assert self._session is not None, "Use PatentAgent as an async context manager"
 
         async with self._session.post(
@@ -119,6 +165,39 @@ class PatentAgent:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}"  # required [web:145][web:151]
+
+        try:
+            token = os.getenv("LENS_API_TOKEN")  # store as secret env var
+            if not token:
+                return {"status": "error", "message": "Missing LENS_API_TOKEN"}
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.lens_api_url}",
+                    json=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {token}"
+                    }
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return {
+                            "status": "success",
+                            "source": "lens",
+                            "query": query,
+                            "count": data.get("total", 0),
+                            "results": data.get("data", [])
+                        }
+                    else:
+                        return {
+                            "status": "error",
+                            "message": f"Lens API error: {resp.status}"
+                        }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+ main
             }
         ) as resp:
             if resp.status != 200:

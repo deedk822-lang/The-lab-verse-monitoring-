@@ -163,6 +163,20 @@ services:
       - REDIS_ADDR=redis://host.docker.internal:6379
     restart: unless-stopped
 
+  # ============ RAINMAKER ORCHESTRATOR ============ # Added based on user input and prometheus config
+  rainmaker-orchestrator:
+    build: ./rainmaker_orchestrator # Assuming build context
+    container_name: vaal-rainmaker-orchestrator
+    networks:
+      - vaal-monitoring
+    ports:
+      - "8080:8080" # Based on prometheus.yml scrape config
+    volumes:
+      - ./ai_workspace:/workspace:ro  # Read-only for safety (write via agent only)
+      - ./orchestrator_config.yaml:/app/config.yaml
+    restart: unless-stopped
+    command: python orchestrator.py # Common command for python orchestrator
+
 volumes:
   prometheus-data:
     driver: local

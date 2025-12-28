@@ -556,7 +556,8 @@ TASK: Provide a professional novelty assessment including:
 
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         """Call Ollama API"""
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             routing["endpoint"],
             json={
                 "model": routing["model"],
@@ -564,6 +565,7 @@ TASK: Provide a professional novelty assessment including:
                 "stream": False
             }
         )
+        response.raise_for_status()
         return response.json()
 
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:

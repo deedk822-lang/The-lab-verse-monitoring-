@@ -33,3 +33,6 @@ tenacity>=8.0.0
 
 # Aya Vision Model Dependencies
 torch>=2.6
+
+# HTTP Requests
+requests>=2.28.0

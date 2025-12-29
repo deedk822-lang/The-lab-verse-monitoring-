@@ -12,4 +12,4 @@ docker-up:
 
 run:
 	@echo "Running Rainmaker Orchestrator..."
-	python rainmaker_orchestrator.py
+	python rainmaker-orchestrator/orchestrator.py

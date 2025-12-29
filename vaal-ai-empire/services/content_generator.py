@@ -5,77 +5,95 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
+    """Enhanced content generation with lazy-loaded provider support"""
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
+        self._provider_factory = self._get_provider_factory()
+        self._provider_instances = {}  # Cache for initialized providers
         self.image_generator = None
 
-        # Initialize image generation if available
+        # Defer image generator initialization
+        self._image_generator_initialized = False
+
+    def _initialize_image_generator(self):
+        """Lazy initializer for the image generator."""
+        if self._image_generator_initialized:
+            return
         try:
             from api.image_generation import BusinessImageGenerator
+
             self.image_generator = BusinessImageGenerator()
             logger.info("✅ Image generation enabled")
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
+        self._image_generator_initialized = True
 
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
-
-        # Try Cohere
+    def _get_provider_factory(self) -> Dict:
+        """Returns a dict mapping provider names to their class constructors."""
+        factory = {}
         try:
             from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
 
-        # Try Groq
+            factory["cohere"] = CohereAPI
+        except ImportError:
+            pass
         try:
             from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
 
-        # Try Mistral (local via Ollama)
+            factory["groq"] = GroqAPI
+        except ImportError:
+            pass
         try:
             from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
 
-        # Try HuggingFace
+            factory["mistral"] = MistralAPI
+        except ImportError:
+            pass
         try:
             from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
 
-        available = [k for k, v in providers.items() if v is not None]
+            factory["huggingface"] = HuggingFaceAPI
+        except ImportError:
+            pass
+
+        available = list(factory.keys())
         if available:
             logger.info(f"Available providers: {', '.join(available)}")
         else:
             logger.error("❌ No content generation providers available!")
 
-        return providers
+        return factory
+
+    def _get_provider(self, provider_name: str):
+        """Lazily initializes and returns a provider instance, caching it."""
+        if provider_name in self._provider_instances:
+            return self._provider_instances[provider_name]
+
+        if provider_name in self._provider_factory:
+            try:
+                logger.info(f"Initializing {provider_name} provider...")
+                provider_class = self._provider_factory[provider_name]
+                instance = provider_class()
+                self._provider_instances[provider_name] = instance
+                logger.info(f"✅ {provider_name.capitalize()} provider initialized")
+                return instance
+            except (ValueError, ImportError, Exception) as e:
+                logger.warning(f"⚠️  {provider_name.capitalize()} unavailable: {e}")
+                self._provider_instances[provider_name] = None
+                return None
+
+        logger.warning(f"Provider '{provider_name}' not found in factory.")
+        return None
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            provider = self._get_provider(provider_name)
             if provider is None:
                 continue
 
@@ -90,16 +108,16 @@ class ContentFactory:
                         self.db.log_api_usage(
                             "cohere",
                             "generate_content",
-                            result.get("usage", {}).get("input_tokens", 0) +
-                            result.get("usage", {}).get("output_tokens", 0),
-                            result.get("usage", {}).get("cost_usd", 0.0)
+                            result.get("usage", {}).get("input_tokens", 0)
+                            + result.get("usage", {}).get("output_tokens", 0),
+                            result.get("usage", {}).get("cost_usd", 0.0),
                         )
 
                     return {
                         "text": result["text"],
                         "provider": provider_name,
                         "cost_usd": result.get("usage", {}).get("cost_usd", 0.0),
-                        "tokens": result.get("usage", {}).get("output_tokens", 0)
+                        "tokens": result.get("usage", {}).get("output_tokens", 0),
                     }
 
                 elif provider_name == "groq":
@@ -110,14 +128,14 @@ class ContentFactory:
                             "groq",
                             "generate",
                             result.get("usage", {}).get("total_tokens", 0),
-                            result.get("cost_usd", 0.0)
+                            result.get("cost_usd", 0.0),
                         )
 
                     return {
                         "text": result["text"],
                         "provider": provider_name,
                         "cost_usd": result.get("cost_usd", 0.0),
-                        "tokens": result.get("usage", {}).get("completion_tokens", 0)
+                        "tokens": result.get("usage", {}).get("completion_tokens", 0),
                     }
 
                 elif provider_name == "mistral":
@@ -127,7 +145,7 @@ class ContentFactory:
                         "text": result["text"],
                         "provider": provider_name,
                         "cost_usd": 0.0,  # Local, no cost
-                        "tokens": 0
+                        "tokens": 0,
                     }
 
                 elif provider_name == "huggingface":
@@ -137,7 +155,7 @@ class ContentFactory:
                         "text": result["text"],
                         "provider": provider_name,
                         "cost_usd": 0.0,  # Free tier
-                        "tokens": 0
+                        "tokens": 0,
                     }
 
             except Exception as e:
@@ -147,8 +165,13 @@ class ContentFactory:
         # All providers failed
         raise Exception("All content generation providers failed")
 
-    def generate_social_pack(self, business_type: str, language: str = "afrikaans",
-                            num_posts: int = 10, num_images: int = 5) -> Dict:
+    def generate_social_pack(
+        self,
+        business_type: str,
+        language: str = "afrikaans",
+        num_posts: int = 10,
+        num_images: int = 5,
+    ) -> Dict:
         """Generate complete social media pack with REAL content"""
 
         logger.info(f"Generating social pack for {business_type} ({language})")
@@ -161,13 +184,13 @@ class ContentFactory:
             # Parse posts from response
             posts = self._parse_posts(posts_result["text"], num_posts)
 
-            # Generate images if available
+            # Lazily initialize and use the image generator
+            self._initialize_image_generator()
             images = []
             if self.image_generator:
                 try:
                     image_results = self.image_generator.generate_for_business(
-                        business_type,
-                        count=num_images
+                        business_type, count=num_images
                     )
                     images = image_results
                     logger.info(f"✅ Generated {len(images)} images")
@@ -190,8 +213,8 @@ class ContentFactory:
                     "generated_at": datetime.now().isoformat(),
                     "provider": posts_result.get("provider"),
                     "cost_usd": total_cost,
-                    "tokens_used": posts_result.get("tokens", 0)
-                }
+                    "tokens_used": posts_result.get("tokens", 0),
+                },
             }
 
             # Save to database if available
@@ -201,7 +224,7 @@ class ContentFactory:
                     pack_data=pack,
                     posts_count=len(posts),
                     images_count=len(images),
-                    cost_usd=total_cost
+                    cost_usd=total_cost,
                 )
 
             logger.info(f"✅ Generated {len(posts)} posts and {len(images)} images")
@@ -211,16 +234,20 @@ class ContentFactory:
             logger.error(f"Content generation failed: {e}")
             raise e
 
-    def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
+    def _build_posts_prompt(
+        self, business_type: str, language: str, num_posts: int
+    ) -> str:
         """Build optimized prompt for post generation"""
 
         language_instructions = {
             "afrikaans": "Write in Afrikaans (South African dialect)",
             "english": "Write in English (South African style)",
-            "both": "Write 50% in Afrikaans, 50% in English"
+            "both": "Write 50% in Afrikaans, 50% in English",
         }
 
-        lang_instruction = language_instructions.get(language, language_instructions["afrikaans"])
+        lang_instruction = language_instructions.get(
+            language, language_instructions["afrikaans"]
+        )
 
         business_contexts = {
             "butchery": "a local butchery in Vaal Triangle, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
@@ -228,10 +255,12 @@ class ContentFactory:
             "cafe": "a coffee shop in Vaal Triangle, South Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
             "restaurant": "a restaurant in Vaal Triangle, South Africa. Focus on delicious food, specials, events, and dining experience.",
             "salon": "a hair and beauty salon in Vaal Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
-            "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals."
+            "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals.",
         }
 
-        context = business_contexts.get(business_type, f"a {business_type} business in Vaal Triangle, South Africa")
+        context = business_contexts.get(
+            business_type, f"a {business_type} business in Vaal Triangle, South Africa"
+        )
 
         prompt = f"""Generate {num_posts} engaging social media posts for {context}
 
@@ -289,15 +318,19 @@ Now generate {num_posts} unique posts:"""
 
     def _create_placeholder_images(self, count: int) -> List[Dict]:
         """Create placeholder image references"""
-        return [{
-            "prompt": f"Business image {i+1}",
-            "image_url": f"https://via.placeholder.com/800x600?text=Image+{i+1}",
-            "provider": "placeholder",
-            "cost_usd": 0.0
-        } for i in range(count)]
+        return [
+            {
+                "prompt": f"Business image {i+1}",
+                "image_url": f"https://via.placeholder.com/800x600?text=Image+{i+1}",
+                "provider": "placeholder",
+                "cost_usd": 0.0,
+            }
+            for i in range(count)
+        ]
 
-    def generate_email_sequence(self, business_name: str, business_type: str,
-                               days: int = 7) -> List[Dict]:
+    def generate_email_sequence(
+        self, business_name: str, business_type: str, days: int = 7
+    ) -> List[Dict]:
         """Generate email sequence for MailChimp"""
 
         prompt = f"""Generate a {days}-day email sequence for {business_name}, a {business_type} in South Africa.
@@ -360,26 +393,24 @@ Generate all {days} emails now:"""
         templates = [
             {
                 "subject": f"Welcome to {business_name}!",
-                "body": f"Thank you for connecting with {business_name}. We're excited to serve you!"
+                "body": f"Thank you for connecting with {business_name}. We're excited to serve you!",
             },
             {
                 "subject": f"Special Offer from {business_name}",
-                "body": f"Check out our special offers this week at {business_name}!"
+                "body": f"Check out our special offers this week at {business_name}!",
             },
             {
                 "subject": f"Tips & Tricks from {business_name}",
-                "body": f"Here are some expert tips from the team at {business_name}."
-            }
+                "body": f"Here are some expert tips from the team at {business_name}.",
+            },
         ]
 
         emails = []
         for i in range(days):
             template = templates[i % len(templates)]
-            emails.append({
-                "day": i + 1,
-                "subject": template["subject"],
-                "body": template["body"]
-            })
+            emails.append(
+                {"day": i + 1, "subject": template["subject"], "body": template["body"]}
+            )
 
         return emails
 
@@ -438,12 +469,23 @@ Generate all {days} emails now:"""
             "html_content": html_content,
             "status": "created",
             "posts_included": len(pack.get("posts", [])),
-            "images_included": len(pack.get("images", []))
+            "images_included": len(pack.get("images", [])),
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
-        }
+        """Get status of all available provider constructors."""
+        all_providers = ["cohere", "groq", "mistral", "huggingface"]
+        status = {}
+        for p in all_providers:
+            if p in self._provider_factory:
+                # Check if it's been initialized and failed
+                if (
+                    p in self._provider_instances
+                    and self._provider_instances[p] is None
+                ):
+                    status[p] = "unavailable"
+                else:
+                    status[p] = "available"
+            else:
+                status[p] = "unavailable"
+        return status

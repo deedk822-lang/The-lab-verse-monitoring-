@@ -10,6 +10,14 @@ const modelRequestCounter = new Counter({
   labelNames: ['model'],
 });
 
+function sanitizeInput(input) {
+  if (!input) {
+    return '';
+  }
+  // Allow alphanumeric characters, spaces, and a few safe punctuation marks.
+  return input.replace(/[^a-zA-Z0-9 .,!?'-]/g, '');
+}
+
 export default async function handler(req, res) {
   const { task, location, language, student_id: client_id } = req.body;
 
@@ -188,7 +196,8 @@ async function executeOnModel(modelId, payload) {
 
   if (model.provider === 'CrewAI') {
     return new Promise((resolve, reject) => {
-      const pythonProcess = spawn('python3', [model.script, payload.query]);
+      const sanitizedQuery = sanitizeInput(payload.query);
+      const pythonProcess = spawn('python3', [model.script, sanitizedQuery]);
 
       let output = '';
       let errorOutput = '';

@@ -1,4 +1,0 @@
-requests
-tiktoken
-prometheus-client
-aiohttp

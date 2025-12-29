@@ -75,13 +75,14 @@ agent = AssistantAgent(
 
 async def main() -> None:
     tracer = trace.get_tracer(__name__)
-    with tracer.start_as_current_span("agent_conversation") as span:
-        task = "What is the weather in New York?"
+    try:
+        with tracer.start_as_current_span("agent_conversation") as span:
+            task = "What is the weather in New York?"
 
-        span.set_attribute("input", task)
-        res = await Console(agent.run_stream(task=task))
-        span.set_attribute("output", res.messages[-1].content)
-
+            span.set_attribute("input", task)
+            res = await Console(agent.run_stream(task=task))
+            span.set_attribute("output", res.messages[-1].content)
+    finally:
         await model_client.close()
 
 

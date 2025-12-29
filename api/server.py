@@ -32,6 +32,20 @@ class HubSpotWebhookPayload(BaseModel):
 async def health_check():
     return {"status": "healthy"}
 
+# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
+def get_market_intel(company_name: str):
+    """
+    Retrieves market intelligence for a given company.
+    This is a placeholder and returns static data.
+    """
+    print(f"Fetching market intel for (placeholder): {company_name}")
+    return {
+      "latest_headline": "ArcelorMittal South Africa ceases production at Newcastle steel mill and exhausts IDC rescue facility, with exclusive sale talks to IDC ending without agreement (November 2025)",
+      "financial_health_signal": "Severely Negative",
+      "key_pain_point": "Permanent cessation of long steel production at Newcastle and related facilities, depletion of R1.683 billion IDC lifeline, failed exclusive negotiations for potential sale/restructuring, ongoing heavy losses, and heightened supply chain vulnerabilities amid structural challenges like high energy/logistics costs and import competition",
+      "sales_hook": "Avoid capital-heavy proposals. Focus on immediate crisis response services: short-term liquidity optimization, working capital advisory, retrenchment/restructuring consulting, employee transition support, and strategic advisory for asset divestment or operational wind-down to mitigate fallout from the Newcastle closure and broader long-steel shutdown"
+    }
+
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
     contact_id = payload.objectId
@@ -41,7 +55,7 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
 
     # 1. "Zread" and Process with Ollama
     try:
-        prompt = f"Analyze this lead: {chat_text}. Return ONLY JSON with keys: summary, intent_score (0-10), suggested_action."
+        prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
         ollama_task = {"context": prompt, "model": "ollama"}
         ai_analysis_raw = await orchestrator._call_ollama(ollama_task, {})
 
@@ -75,16 +89,24 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         print(f"Error updating HubSpot contact: {e}")
         raise HTTPException(status_code=500, detail="Failed to update HubSpot contact.")
 
-    # 3. Logic: If Score > 8, Create Deal Automatically
+    # 3. Logic: If Score > 8, Create and Enrich Deal Automatically
     try:
         intent_score = parsed_ai.get('intent_score', 0)
         if intent_score > 8:
-            print(f"Intent score ({intent_score}) is high. Creating a new deal.")
+            company_name = parsed_ai.get('company_name', 'Unknown Company')
+            print(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
+
+            # Get market intelligence
+            intel = get_market_intel(company_name)
+
+            # Create the deal with enriched properties
             deal_properties = {
-                "dealname": f"New High-Intent Lead - Contact {contact_id}",
+                "dealname": f"{company_name} - WhatsApp Lead",
                 "pipeline": "default",
                 "dealstage": "appointmentscheduled", # Example stage
-                "hubspot_owner_id": "" # Optionally assign an owner
+                "news_latest_headline": intel.get('latest_headline'),
+                "news_sales_hook": intel.get('sales_hook'),
+                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel.get('key_pain_point')}\n\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
             }
             deal_input = SimplePublicObjectInput(properties=deal_properties)
             created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
@@ -96,7 +118,7 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
                 to_object_id=contact_id,
                 association_type='deal_to_contact'
             )
-            print(f"Successfully created and associated deal {created_deal.id} for contact {contact_id}.")
+            print(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
     except Exception as e:
         print(f"Error creating HubSpot deal: {e}")

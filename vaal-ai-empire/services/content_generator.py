@@ -1,115 +1,150 @@
-from functools import lru_cache
-from typing import Dict, List, Optional, Tuple, Any
+
+from typing import Dict, List, Optional, Any, Callable
 import logging
-import json
+import threading
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-# ⚡ Bolt Optimization: Cache provider initialization
-# This function is decorated with lru_cache to ensure that the expensive
-# process of initializing all API providers only happens once.
-@lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
+class _ProviderFactory:
     """
-    Initialize and cache all content and image generation providers.
-    This function is executed only once, and its result is cached.
+    ⚡ Bolt Optimization: Lazy Loading & Thread-Safe Singleton Provider Factory.
+
+    This factory ensures that each external API provider is initialized only once,
+    and only when it is first requested (lazy loading). This dramatically
+    improves the initial instantiation time of ContentFactory.
+
+    - Lazy Loading: Avoids expensive upfront initialization of all providers.
+    - Thread-Safe: Uses a lock to prevent race conditions during initialization.
+    - Singleton Pattern: Ensures only one instance of each provider exists.
     """
-    # --- Initialize Text Providers ---
-    providers = {
-        "cohere": None,
-        "groq": None,
-        "mistral": None,
-        "huggingface": None,
-        "kimi": None
-    }
+    _instance = None
+    _lock = threading.Lock()
 
-    # Try Cohere
-    try:
-        from api.cohere import CohereAPI
-        providers["cohere"] = CohereAPI()
-        logger.info("✅ Cohere provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Cohere unavailable: {e}")
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(_ProviderFactory, cls).__new__(cls)
+        return cls._instance
 
-    # Try Groq
-    try:
-        from api.groq_api import GroqAPI
-        providers["groq"] = GroqAPI()
-        logger.info("✅ Groq provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Groq unavailable: {e}")
+    def __init__(self):
+        # This check ensures __init__ runs only once
+        if not hasattr(self, '_initialized'):
+            with self._lock:
+                if not hasattr(self, '_initialized'):
+                    self._providers: Dict[str, Optional[Any]] = {}
+                    self._provider_initializers: Dict[str, Callable[[], Any]] = {
+                        "cohere": self._init_cohere,
+                        "groq": self._init_groq,
+                        "mistral": self._init_mistral,
+                        "huggingface": self._init_huggingface,
+                        "kimi": self._init_kimi,
+                        "image_generator": self._init_image_generator,
+                        "multimodal": self._init_multimodal,
+                    }
+                    self._initialized = True
 
-    # Try Mistral (local via Ollama)
-    try:
-        from api.mistral import MistralAPI
-        providers["mistral"] = MistralAPI()
-        logger.info("✅ Mistral provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Mistral unavailable: {e}")
+    def get_provider(self, name: str) -> Optional[Any]:
+        """Gets a provider, initializing it if it's the first time."""
+        if name not in self._providers:
+            with self._lock:
+                # Double-check locking to prevent re-initialization in multi-threaded scenarios
+                if name not in self._providers:
+                    initializer = self._provider_initializers.get(name)
+                    if initializer:
+                        self._providers[name] = initializer()
+                    else:
+                        self._providers[name] = None
+                        logger.warning(f"No initializer found for provider '{name}'")
+        return self._providers.get(name)
 
-    # Try HuggingFace
-    try:
-        from api.huggingface_api import HuggingFaceAPI
-        providers["huggingface"] = HuggingFaceAPI()
-        logger.info("✅ HuggingFace provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+    # --- Private Initializer Methods ---
 
-    # Try Kimi
-    try:
-        from api.kimi import KimiAPI
-        providers["kimi"] = KimiAPI()
-        logger.info("✅ Kimi provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Kimi unavailable: {e}")
+    def _init_cohere(self):
+        try:
+            from api.cohere import CohereAPI
+            logger.info("✅ Lazily initialized Cohere provider.")
+            return CohereAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  Cohere unavailable: {e}")
+            return None
 
-    available = [k for k, v in providers.items() if v is not None]
-    if available:
-        logger.info(f"Available text providers: {', '.join(available)}")
-    else:
-        logger.error("❌ No content generation providers available!")
+    def _init_groq(self):
+        try:
+            from api.groq_api import GroqAPI
+            logger.info("✅ Lazily initialized Groq provider.")
+            return GroqAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  Groq unavailable: {e}")
+            return None
 
-    # --- Initialize Image Generator ---
-    image_generator = None
-    try:
-        from api.image_generation import BusinessImageGenerator
-        image_generator = BusinessImageGenerator()
-        logger.info("✅ Image generation provider initialized")
-    except Exception as e:
-        logger.warning(f"⚠️  Image generation disabled: {e}")
+    def _init_mistral(self):
+        try:
+            from api.mistral import MistralAPI
+            logger.info("✅ Lazily initialized Mistral provider.")
+            return MistralAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  Mistral unavailable: {e}")
+            return None
 
-    # --- Initialize Multimodal Provider ---
-    multimodal_provider = None
-    try:
-        from api.aya_vision import AyaVisionAPI
-        multimodal_provider = AyaVisionAPI()
-        logger.info("✅ Aya Vision multimodal provider initialized")
-    except (ImportError, ValueError) as e:
-        logger.warning(f"⚠️  Aya Vision multimodal provider unavailable: {e}")
+    def _init_huggingface(self):
+        try:
+            from api.huggingface_api import HuggingFaceAPI
+            logger.info("✅ Lazily initialized HuggingFace provider.")
+            return HuggingFaceAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+            return None
 
-    return providers, image_generator, multimodal_provider
+    def _init_kimi(self):
+        try:
+            from api.kimi import KimiAPI
+            logger.info("✅ Lazily initialized Kimi provider.")
+            return KimiAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  Kimi unavailable: {e}")
+            return None
+
+    def _init_image_generator(self):
+        try:
+            from api.image_generation import BusinessImageGenerator
+            logger.info("✅ Lazily initialized Image Generation provider.")
+            return BusinessImageGenerator()
+        except Exception as e:
+            logger.warning(f"⚠️  Image generation disabled: {e}")
+            return None
+
+    def _init_multimodal(self):
+        try:
+            from api.aya_vision import AyaVisionAPI
+            logger.info("✅ Lazily initialized Aya Vision multimodal provider.")
+            return AyaVisionAPI()
+        except (ImportError, ValueError) as e:
+            logger.warning(f"⚠️  Aya Vision multimodal provider unavailable: {e}")
+            return None
 
 
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
-
+    """
+    Enhanced content generation with lazy-loaded provider support.
+    """
     def __init__(self, db=None):
         self.db = db
-        # Unpack the cached providers and image generator
-        self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+        # Use the singleton factory to get providers on demand
+        self._provider_factory = _ProviderFactory()
 
     def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
         """
-        Public method to generate content from multimodal inputs using the Aya Vision provider.
+        Public method to generate content from multimodal inputs.
         """
-        if not self.multimodal_provider:
+        multimodal_provider = self._provider_factory.get_provider("multimodal")
+        if not multimodal_provider:
             raise RuntimeError("Aya Vision multimodal provider is not available.")
 
         try:
-            result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
-            # You might want to log this usage to your database if needed
+            result = multimodal_provider.generate_from_messages(messages, max_new_tokens)
             return {
                 "text": result["text"],
                 "provider": "aya_vision",
@@ -127,17 +162,17 @@ class ContentFactory:
         return self._generate_with_fallback(prompt, max_tokens)
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
-        """Try providers in priority order until one succeeds"""
+        """Try providers in priority order until one succeeds."""
         priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            provider = self._provider_factory.get_provider(provider_name)
             if provider is None:
                 continue
 
             try:
                 logger.info(f"Trying {provider_name}...")
-
+                # ... (rest of the logic remains the same)
                 if provider_name == "cohere":
                     result = provider.generate_content(prompt, max_tokens)
                     if self.db:
@@ -163,23 +198,23 @@ class ContentFactory:
                 logger.warning(f"{provider_name} failed: {e}")
                 continue
 
-        raise Exception("All content generation providers failed")
+        raise RuntimeError("All content generation providers failed.")
+
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
-
+        """Generate complete social media pack with REAL content."""
         logger.info(f"Generating social pack for {business_type} ({language})")
-
         try:
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
             posts_result = self.generate_content(posts_prompt, max_tokens=2000)
             posts = self._parse_posts(posts_result["text"], num_posts)
 
             images = []
-            if self.image_generator:
+            image_generator = self._provider_factory.get_provider("image_generator")
+            if image_generator:
                 try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
+                    image_results = image_generator.generate_for_business(business_type, count=num_images)
                     images = image_results
                     logger.info(f"✅ Generated {len(images)} images")
                 except Exception as e:
@@ -346,4 +381,11 @@ Generate all {days} emails now:"""
         return {"subject": subject, "html_content": html_content, "status": "created", "posts_included": len(pack.get("posts", [])), "images_included": len(pack.get("images", []))}
 
     def get_provider_status(self) -> Dict:
-        return {provider: "available" if client else "unavailable" for provider, client in self.providers.items()}
+        # Note: This status check is less informative with lazy loading,
+        # as it won't initialize providers just to check them.
+        # It will only show the status of already-initialized providers.
+        initialized_providers = self._provider_factory._providers.keys()
+        return {
+            provider: "available" if self._provider_factory._providers.get(provider) else "unavailable"
+            for provider in initialized_providers
+        }

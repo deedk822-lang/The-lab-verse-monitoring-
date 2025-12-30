@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
 import sys
 import os
+ feat/hubspot-ollama-integration-9809589759324023108
+
 import json
 import hashlib
 import hmac
@@ -13,6 +15,7 @@ from hubspot.crm.deals import SimplePublicObjectInput
 from hubspot.core.exceptions import ApiException
 from pydantic import BaseModel
 from typing import Optional
+ main
 
 # --- Configuration ---
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
@@ -34,14 +37,11 @@ except ImportError as e:
 app = FastAPI(title="Lab Verse API")
 orchestrator = RainmakerOrchestrator()
 
-# Pydantic model for incoming HubSpot webhook data
-class HubSpotWebhookPayload(BaseModel):
-    objectId: int
-    message_body: str
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+ feat/hubspot-ollama-integration-9809589759324023108
+
 
 def get_market_intel(company_name: str):
     """
@@ -233,3 +233,4 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
         return {"status": "processed_with_deal_creation_error", "contact_id": contact_id}
 
     return {"status": "processed", "contact_id": contact_id}
+ main

@@ -7,6 +7,7 @@ import hmac
 import base64
 import logging
 import httpx
+import requests
 from hubspot import HubSpot
 from hubspot.crm.deals import SimplePublicObjectInput
 from hubspot.core.exceptions import ApiException
@@ -42,18 +43,78 @@ class HubSpotWebhookPayload(BaseModel):
 async def health_check():
     return {"status": "healthy"}
 
-# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
 def get_market_intel(company_name: str):
     """
-    Retrieves market intelligence for a given company.
-    This is a placeholder and returns static data.
+    Hits the live internet to find news from the last 30-90 days only.
+    Strictly filters for 'Business Risk' and 'Sales Triggers'.
     """
-    logging.info(f"Fetching market intel for (placeholder): {company_name}")
+    perplexity_api_key = orchestrator.config.get("PERPLEXITY_API_KEY")
+    if not perplexity_api_key:
+        logging.error("PERPLEXITY_API_KEY is not set.")
+        return {
+            "status": "UNKNOWN",
+            "headline": "Search failed: API key not configured",
+            "risk_factor": "Manual check required",
+            "sales_hook": "Ask lead about current projects."
+        }
+
+    url = "https://api.perplexity.ai/chat/completions"
+    system_instruction = (
+        "You are a Corporate Intelligence Officer in South Africa. "
+        "Your goal is to protect the sales team from wasting time on dead leads "
+        "and find the 'Golden Hook' for good leads."
+    )
+    user_query = (
+        f"Search for the absolute latest news (Oct 2025 - Dec 2025) for '{company_name}' in South Africa. "
+        "Prioritize sources like: Mining Weekly, News24, Engineering News, Reuters. "
+        "\n\n"
+        "Identify strictly:\n"
+        "1. FINANCIAL HEALTH (Is there a liquidity crisis? Share price crash?)\n"
+        "2. OPERATIONAL STATE (Retrenchments? Strikes? Wind-down? New Projects?)\n"
+        "3. THE SALES HOOK (Based on this news, what exact angle should a salesman use?)\n"
+        "\n"
+        "Return the answer in this JSON format only:\n"
+        '{ "status": "CRITICAL/CAUTION/GROWTH", "headline": "...", "risk_factor": "...", "sales_hook": "..." }'
+    )
+
+    payload = {
+        "model": "llama-3.1-sonar-large-128k-online",
+        "messages": [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": user_query}
+        ],
+        "temperature": 0.1
+    }
+
+    headers = {
+        "Authorization": f"Bearer {perplexity_api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        logging.info(f"🕵️  Scouting {company_name} for real-time intel...")
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+
+        content = response.json()['choices'][0]['message']['content']
+
+        if "```json" in content:
+            content = content.replace("```json", "").replace("```", "")
+
+        return json.loads(content)
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Perplexity API request failed: {e}")
+    except json.JSONDecodeError as e:
+        logging.error(f"Failed to parse JSON from Perplexity response: {e}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred in get_market_intel: {e}")
+
     return {
-      "latest_headline": "ArcelorMittal South Africa ceases production at Newcastle steel mill and exhausts IDC rescue facility, with exclusive sale talks to IDC ending without agreement (November 2025)",
-      "financial_health_signal": "Severely Negative",
-      "key_pain_point": "Permanent cessation of long steel production at Newcastle and related facilities, depletion of R1.683 billion IDC lifeline, failed exclusive negotiations for potential sale/restructuring, ongoing heavy losses, and heightened supply chain vulnerabilities amid structural challenges like high energy/logistics costs and import competition",
-      "sales_hook": "Avoid capital-heavy proposals. Focus on immediate crisis response services: short-term liquidity optimization, working capital advisory, retrenchment/restructuring consulting, employee transition support, and strategic advisory for asset divestment or operational wind-down to mitigate fallout from the Newcastle closure and broader long-steel shutdown"
+        "status": "UNKNOWN",
+        "headline": "Search failed",
+        "risk_factor": "Manual check required",
+        "sales_hook": "Ask lead about current projects."
     }
 
 async def verify_hubspot_signature(request: Request):
@@ -150,9 +211,9 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
                 "dealname": f"{company_name} - WhatsApp Lead",
                 "pipeline": "default",
                 "dealstage": "appointmentscheduled",
-                "news_latest_headline": intel.get('latest_headline'),
+                "news_latest_headline": intel.get('headline'),
                 "news_sales_hook": intel.get('sales_hook'),
-                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel.get('key_pain_point')}\n\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
+                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel.get('risk_factor')}\n\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
             }
             deal_input = SimplePublicObjectInput(properties=deal_properties)
             created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)

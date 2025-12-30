@@ -1,3 +1,4 @@
+import concurrent.futures
 from functools import lru_cache
 from typing import Dict, List, Optional, Tuple, Any
 import logging
@@ -166,32 +167,58 @@ class ContentFactory:
         raise Exception("All content generation providers failed")
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
-                            num_posts: int = 10, num_images: int = 5) -> Dict:
+                             num_posts: int = 10, num_images: int = 5) -> Dict:
         """Generate complete social media pack with REAL content"""
-
         logger.info(f"Generating social pack for {business_type} ({language})")
 
+        posts_result = {}
+        image_results = []
+        posts = []
+        images = []
+
         try:
-            posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Submit text generation to the executor
+                posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
+                posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
+                # Submit image generation to the executor
+                image_future = None
+                if self.image_generator and num_images > 0:
+                    image_future = executor.submit(self.image_generator.generate_for_business, business_type, count=num_images)
+                else:
                     images = self._create_placeholder_images(num_images)
-            else:
-                images = self._create_placeholder_images(num_images)
 
+                # Process results as they complete
+                posts_result = posts_future.result()
+                posts = self._parse_posts(posts_result["text"], num_posts)
+
+                if image_future:
+                    try:
+                        image_results = image_future.result()
+                        images = image_results
+                        logger.info(f"✅ Generated {len(images)} images")
+                    except Exception as e:
+                        logger.error(f"Image generation failed: {e}")
+                        images = self._create_placeholder_images(num_images)
+
+            # --- Consolidate results ---
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)
 
-            pack = {"posts": posts, "images": images, "metadata": {"business_type": business_type, "language": language, "generated_at": datetime.now().isoformat(), "provider": posts_result.get("provider"), "cost_usd": total_cost, "tokens_used": posts_result.get("tokens", 0)}}
+            pack = {
+                "posts": posts,
+                "images": images,
+                "metadata": {
+                    "business_type": business_type,
+                    "language": language,
+                    "generated_at": datetime.now().isoformat(),
+                    "provider": posts_result.get("provider"),
+                    "cost_usd": total_cost,
+                    "tokens_used": posts_result.get("tokens", 0)
+                }
+            }
+
             if self.db:
                 self.db.save_content_pack(client_id="system", pack_data=pack, posts_count=len(posts), images_count=len(images), cost_usd=total_cost)
 

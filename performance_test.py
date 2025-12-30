@@ -1,194 +1,157 @@
- bolt/parallelize-daily-automation-8919749710849742159
 
-
- bolt/cache-hf-model-loading-6086113376814306475
-import timeit
-import sys
-
-# Add the project directory to the Python path
-sys.path.insert(0, 'vaal-ai-empire')
-
-# To benchmark the original, we need to simulate the old code
-from unittest.mock import patch
-from sentence_transformers import SentenceTransformer
-
-# Original (simulated) implementation
-class OriginalHuggingFaceLab:
-    def __init__(self):
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception:
-            self.seo_model = None
-
-    def optimize_keywords(self, keywords: list):
-        if not self.seo_model: return 0
-        embeddings = self.seo_model.encode(keywords)
-        return len(embeddings)
-
-# Optimized implementation
-from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab
-
-def benchmark():
-    """Compare original vs optimized performance."""
-    print("=" * 60)
-    print("⚡ BOLT: PERFORMANCE COMPARISON TEST")
-    print("=" * 60)
-
-    # --- Correctness Check ---
-    # We need to install dependencies to run this check
-    try:
-        original_instance = OriginalHuggingFaceLab()
-        optimized_instance = OptimizedHuggingFaceLab()
-
-        test_keywords = ["python", "performance", "optimization"]
-        original_result = original_instance.optimize_keywords(test_keywords)
-        optimized_result = optimized_instance.optimize_keywords(test_keywords)
-
-        assert original_result == optimized_result, f"Results do not match! Original: {original_result}, Optimized: {optimized_result}"
-        print("✅ Correctness verified: Results match")
-    except ImportError as e:
-        print(f"⚠️ Skipping correctness check: Dependency not found ({e}). Please run 'pip install sentence-transformers'.")
-    except Exception as e:
-        print(f"❌ Correctness check failed: {e}")
-        return False
-
-    # --- Speed Benchmark ---
-    iterations = 10  # Instantiation is slow, so we use fewer iterations
-
-    # Measure original
-    original_setup = "from __main__ import OriginalHuggingFaceLab"
-    original_code = "OriginalHuggingFaceLab()"
-    original_time = timeit.timeit(original_code, setup=original_setup, number=iterations)
-
-    # Measure optimized
-    optimized_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab"
-    optimized_code = "OptimizedHuggingFaceLab()"
-    optimized_time = timeit.timeit(optimized_code, setup=optimized_setup, number=iterations)
-
-    # The first run of the optimized version will be slow due to model loading.
-    # We run it once to cache the model, then benchmark subsequent runs.
-    print("\nCaching optimized model...")
-    first_run_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab; OptimizedHuggingFaceLab()"
-    cached_optimized_time = timeit.timeit(optimized_code, setup=first_run_setup, number=iterations)
-
-    print(f"\n--- Benchmark Results ({iterations} instantiations) ---")
-    print(f"Original Total Time:      {original_time:.4f}s")
-    print(f"Optimized (First Run):    {optimized_time:.4f}s (includes one-time model load)")
-    print(f"Optimized (Subsequent):   {cached_optimized_time:.4f}s (uses cached model)")
-
-    try:
-        improvement = ((original_time - cached_optimized_time) / original_time) * 100
-        print(f"\nImprovement (Subsequent): {improvement:.1f}% faster")
-
-        if improvement > 10:
-            print("✅ SIGNIFICANT IMPROVEMENT DETECTED")
-        elif improvement > 0:
-            print("✅ Minor improvement")
-        else:
-            print("⚠️ NO IMPROVEMENT - Optimization may not be effective")
-        return improvement > 0
-    except ZeroDivisionError:
-        print("⚠️ Could not calculate improvement (division by zero).")
-        return False
-
-
-if __name__ == "__main__":
-    success = benchmark()
-
- vercel/enable-vercel-speed-insights-o-6em3bz
 import time
-import sys
-import os
+import unittest
 from unittest.mock import patch, MagicMock
+import logging
+from datetime import datetime
+import importlib
 
-# Ensure the script can find the vaal-ai-empire modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'vaal-ai-empire')))
+# Configure logging to avoid noisy output during tests
+logging.basicConfig(level=logging.ERROR)
 
-from scripts.daily_automation import DailyAutomation
+# --- Import modules with hyphens using importlib ---
+content_generator_module = importlib.import_module("vaal-ai-empire.services.content_generator")
+ContentFactory = content_generator_module.ContentFactory
+image_generation_module = importlib.import_module("vaal-ai-empire.api.image_generation")
+BusinessImageGenerator = image_generation_module.BusinessImageGenerator
 
-# Mock data for clients
-MOCK_CLIENTS = [
-    {"id": f"client_{i}", "name": f"Client {i}", "business_type": "butchery", "language": "afrikaans"}
-    for i in range(20)
-]
+# --- Original (un-optimized) implementation for baseline comparison ---
+# This class simulates the state of the code BEFORE the optimization.
+class OriginalContentFactory:
+    def __init__(self, db=None):
+        self.db = db
+        # Mock dependencies directly for the baseline test
+        self.image_generator = MagicMock()
+        # Ensure the mock has the necessary method
+        self.image_generator.generate_for_business = MagicMock()
 
-def benchmark_sequential(automation_instance):
-    """Benchmarks the original sequential method."""
-    print("\n--- Benchmarking OLD Sequential Method ---")
-    start_time = time.perf_counter()
+    def generate_content(self, prompt: str, max_tokens: int = 500) -> dict:
+        # This will be patched during the test to simulate a network call
+        pass
 
-    for client in MOCK_CLIENTS:
-        automation_instance._generate_for_client(client)
+    def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
+        # Simplified version for testing purposes
+        return f"Generate {num_posts} posts for {business_type} in {language}"
 
-    end_time = time.perf_counter()
-    return end_time - start_time
+    def _parse_posts(self, text: str, expected_count: int) -> list[str]:
+        return [f"Post {i+1}" for i in range(expected_count)]
 
-def benchmark_parallel(automation_instance):
-    """Benchmarks the new parallelized method."""
-    print("\n--- Benchmarking NEW Parallel Method ---")
-    start_time = time.perf_counter()
+    def _create_placeholder_images(self, count: int) -> list[dict]:
+        return [{"image_url": f"placeholder_{i+1}.png"} for i in range(count)]
 
-    with patch.object(automation_instance.db, 'get_active_clients', return_value=MOCK_CLIENTS):
-        automation_instance.generate_content_for_all_clients()
+    def generate_social_pack(self, business_type: str, language: str = "afrikaans",
+                            num_posts: int = 10, num_images: int = 5) -> dict:
+        """
+        The ORIGINAL sequential implementation.
+        """
+        logging.info(f"Generating social pack for {business_type} ({language})")
 
-    end_time = time.perf_counter()
-    return end_time - start_time
+        posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
+        # 1. First network call (blocking)
+        posts_result = self.generate_content(posts_prompt, max_tokens=2000)
+        posts = self._parse_posts(posts_result["text"], num_posts)
 
-@patch('scripts.daily_automation.ContentScheduler')
-@patch('scripts.daily_automation.ContentFactory')
-@patch('scripts.daily_automation.Database')
-def test_optimization(MockDatabase, MockFactory, MockScheduler):
-    """Compare original vs optimized performance."""
-    print("=" * 60)
-    print("⚡ Bolt: Performance Comparison Test ⚡")
-    print("=" * 60)
-    print(f"Simulating content generation for {len(MOCK_CLIENTS)} clients...")
+        images = []
+        if self.image_generator:
+            try:
+                # 2. Second network call (blocking)
+                image_results = self.image_generator.generate_for_business(business_type, count=num_images)
+                images = image_results
+            except Exception as e:
+                images = self._create_placeholder_images(num_images)
+        else:
+            images = self._create_placeholder_images(num_images)
 
-    # Mock the dependencies to isolate the concurrency logic
-    mock_db_instance = MockDatabase.return_value
-    mock_factory_instance = MockFactory.return_value
-    mock_scheduler_instance = MockScheduler.return_value
+        total_cost = posts_result.get("cost_usd", 0.0)
+        total_cost += sum(img.get("cost_usd", 0.0) for img in images)
 
-    # Simulate a network delay in content generation
-    def fake_generation(business_type, language):
-        time.sleep(0.1)  # Simulate 100ms I/O delay
-        return {"posts": ["post1", "post2"]}
+        pack = {"posts": posts, "images": images, "metadata": {"business_type": business_type, "language": language, "generated_at": datetime.now().isoformat(), "provider": posts_result.get("provider"), "cost_usd": total_cost, "tokens_used": posts_result.get("tokens", 0)}}
 
-    mock_factory_instance.generate_social_pack.side_effect = fake_generation
-    mock_scheduler_instance.schedule_pack.return_value = None
+        return pack
 
-    # Create an instance of the automation class with mocked dependencies
-    automation = DailyAutomation()
-    automation.db = mock_db_instance
-    automation.factory = mock_factory_instance
-    automation.scheduler = mock_scheduler_instance
+class TestPerformanceOptimization(unittest.TestCase):
 
-    # --- Benchmark Sequential ---
-    sequential_time = benchmark_sequential(automation)
+    @patch.object(ContentFactory, 'generate_content')
+    @patch.object(BusinessImageGenerator, 'generate_for_business')
+    def test_parallelization_speedup(self, mock_generate_images, mock_generate_text):
+        """
+        Verify that the parallel implementation is faster than the sequential one.
+        """
+        # --- Mock Configuration ---
+        # Simulate network latency for both text and image generation
+        TEXT_GENERATION_LATENCY = 0.5  # seconds
+        IMAGE_GENERATION_LATENCY = 0.8  # seconds
 
-    # --- Benchmark Parallel ---
-    parallel_time = benchmark_parallel(automation)
+        def text_side_effect(*args, **kwargs):
+            time.sleep(TEXT_GENERATION_LATENCY)
+            return {"text": "mocked text", "cost_usd": 0.01, "provider": "mock_text"}
 
-    # --- Report Results ---
-    improvement = ((sequential_time - parallel_time) / sequential_time) * 100
+        def image_side_effect(*args, **kwargs):
+            time.sleep(IMAGE_GENERATION_LATENCY)
+            return [{"image_url": "mocked_image.png", "cost_usd": 0.05}]
 
-    print("\n" + "=" * 60)
-    print("📊 RESULTS")
-    print("-" * 60)
-    print(f"Sequential Time: {sequential_time:.4f}s")
-    print(f"Parallel Time:   {parallel_time:.4f}s")
-    print("-" * 60)
-    print(f"🚀 Improvement: {improvement:.2f}% faster")
-    print("=" * 60)
+        # Assign mocks to the optimized factory's dependencies
+        mock_generate_text.side_effect = text_side_effect
+        mock_generate_images.side_effect = image_side_effect
 
-    if improvement > 50:
-        print("✅ SUCCESS: Significant performance improvement verified!")
-        return True
-    else:
-        print("⚠️ FAILURE: No significant improvement. Optimization may not be effective.")
-        return False
+        # --- Benchmark Original (Sequential) Implementation ---
+        original_factory = OriginalContentFactory()
 
-if __name__ == "__main__":
-    success = test_optimization()
- main
-    sys.exit(0 if success else 1)
+        # Patch the original factory's methods for a fair comparison
+        with patch.object(original_factory, 'generate_content', side_effect=text_side_effect), \
+             patch.object(original_factory.image_generator, 'generate_for_business', side_effect=image_side_effect):
+
+            start_time_original = time.perf_counter()
+            original_result = original_factory.generate_social_pack("butchery")
+            end_time_original = time.perf_counter()
+            original_duration = end_time_original - start_time_original
+
+        # --- Benchmark New (Parallel) Implementation ---
+        # We need to mock the providers cache to inject our mocked image generator
+        with patch.object(content_generator_module, '_get_cached_providers') as mock_get_providers:
+            mock_image_gen = MagicMock()
+            mock_image_gen.generate_for_business = mock_generate_images
+            mock_get_providers.return_value = ({}, mock_image_gen, None)
+
+            optimized_factory = ContentFactory()
+
+            start_time_optimized = time.perf_counter()
+            optimized_result = optimized_factory.generate_social_pack("butchery")
+            end_time_optimized = time.perf_counter()
+            optimized_duration = end_time_optimized - start_time_optimized
+
+        # --- Verification ---
+        print("\n" + "="*60)
+        print("⚡ BOLT: PERFORMANCE BENCHMARK RESULTS ⚡")
+        print("="*60)
+        print(f"Original (Sequential) Time: {original_duration:.4f} seconds")
+        print(f"Optimized (Parallel) Time:  {optimized_duration:.4f} seconds")
+        print("-"*60)
+
+        expected_original_duration = TEXT_GENERATION_LATENCY + IMAGE_GENERATION_LATENCY
+        print(f"Expected Sequential Time:   ~{expected_original_duration:.4f}s (text + image latency)")
+
+        expected_optimized_duration = max(TEXT_GENERATION_LATENCY, IMAGE_GENERATION_LATENCY)
+        print(f"Expected Parallel Time:     ~{expected_optimized_duration:.4f}s (max(text, image) latency)")
+        print("-"*60)
+
+        # Assert correctness: the structure of the output should be the same
+        self.assertEqual(len(original_result['posts']), len(optimized_result['posts']))
+        # The number of images should be the same, even if mock details differ
+        self.assertEqual(len(original_result['images']), len(optimized_result['images']))
+        print("✅ Correctness: Output structure matches between versions.")
+
+        # Assert performance: the optimized version must be faster
+        self.assertLess(optimized_duration, original_duration)
+        improvement = ((original_duration - optimized_duration) / original_duration) * 100
+        print(f"🚀 Performance Improvement:  {improvement:.2f}% faster")
+        print("="*60)
+
+        # The optimized duration should be close to the longest single operation, not the sum
+        self.assertLess(optimized_duration, expected_original_duration * 0.9) # Allow for some overhead
+        self.assertGreater(optimized_duration, expected_optimized_duration * 0.9)
+
+
+if __name__ == '__main__':
+    # To run this test: python performance_test.py
+    unittest.main()

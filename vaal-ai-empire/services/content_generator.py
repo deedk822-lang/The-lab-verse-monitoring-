@@ -2,80 +2,80 @@ from typing import Dict, List, Optional
 import logging
 import json
 from datetime import datetime
+import importlib.util
 
 logger = logging.getLogger(__name__)
 
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
+    """
+    Enhanced content generation with multiple provider support.
+    - This class now uses a lazy-loading pattern for API providers.
+    - Providers are only initialized when they are first requested,
+    - which significantly speeds up the instantiation of the ContentFactory.
+    """
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
-        self.image_generator = None
-
-        # Initialize image generation if available
-        try:
-            from api.image_generation import BusinessImageGenerator
-            self.image_generator = BusinessImageGenerator()
-            logger.info("✅ Image generation enabled")
-        except Exception as e:
-            logger.warning(f"⚠️  Image generation disabled: {e}")
-
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
+        # _providers will store memoized instances of provider clients
+        self._providers = {}
+        # _provider_factory maps provider names to their initialization functions
+        self._provider_factory = {
+            "cohere": self._init_cohere,
+            "groq": self._init_groq,
+            "mistral": self._init_mistral,
+            "huggingface": self._init_huggingface,
+            "image_generator": self._init_image_generator,
         }
 
-        # Try Cohere
-        try:
-            from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
+    def _init_cohere(self):
+        from api.cohere import CohereAPI
+        return CohereAPI()
 
-        # Try Groq
-        try:
-            from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
+    def _init_groq(self):
+        from api.groq_api import GroqAPI
+        return GroqAPI()
 
-        # Try Mistral (local via Ollama)
-        try:
-            from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
+    def _init_mistral(self):
+        from api.mistral import MistralAPI
+        return MistralAPI()
 
-        # Try HuggingFace
-        try:
-            from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+    def _init_huggingface(self):
+        from api.huggingface_api import HuggingFaceAPI
+        return HuggingFaceAPI()
 
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
+    def _init_image_generator(self):
+        from api.image_generation import BusinessImageGenerator
+        return BusinessImageGenerator()
 
-        return providers
+    def _get_provider(self, provider_name: str):
+        """
+        Lazily initializes and returns a provider client.
+        Caches the client after first initialization.
+        """
+        if provider_name not in self._providers:
+            try:
+                if provider_name in self._provider_factory:
+                    logger.info(f"Initializing {provider_name} provider...")
+                    self._providers[provider_name] = self._provider_factory[provider_name]()
+                    logger.info(f"✅ {provider_name.capitalize()} provider initialized")
+                else:
+                    self._providers[provider_name] = None
+            except (ImportError, ValueError) as e:
+                logger.warning(f"⚠️ {provider_name.capitalize()} unavailable: {e}")
+                self._providers[provider_name] = None
+        return self._providers.get(provider_name)
+
+    @property
+    def image_generator(self):
+        """Lazy-loaded image generator property."""
+        return self._get_provider("image_generator")
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            provider = self._get_provider(provider_name)
             if provider is None:
                 continue
 
@@ -442,8 +442,23 @@ Generate all {days} emails now:"""
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
+        """
+        Get the potential availability of providers without initializing them.
+        This method now checks for the presence of the underlying API modules.
+        """
+        provider_modules = {
+            "cohere": "api.cohere",
+            "groq": "api.groq_api",
+            "mistral": "api.mistral",
+            "huggingface": "api.huggingface_api",
+            "image_generator": "api.image_generation",
         }
+
+        status = {}
+        for provider, module_name in provider_modules.items():
+            spec = importlib.util.find_spec(module_name)
+            if spec:
+                status[provider] = "available"
+            else:
+                status[provider] = "unavailable"
+        return status

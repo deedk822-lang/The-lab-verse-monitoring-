@@ -8,12 +8,11 @@ from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
 from hubspot.crm.contacts import SimplePublicObjectInput
 from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
+from talent_scout_exceptions import ConfigurationError, RateLimitError
 
 # ========================
 # CONFIG (Using the specific name provided)
 # ========================
-class ConfigurationError(Exception):
-    pass
 
 KIMI_GITHUB_KEY = os.getenv("KIMI_GITHUB_KEY")
 HUBSPOT_TOKEN = os.getenv("HUBSPOT_TOKEN")
@@ -40,11 +39,7 @@ def audit_github(handle: str) -> Dict[str, str]:
         if user_resp.status_code == 401:
             raise ConfigurationError("GitHub API key is invalid or has expired.")
         if user_resp.status_code == 403:
-            return {
-                "status": "ERROR",
-                "evidence": "GitHub: API rate limit exceeded.",
-                "link": "#",
-            }
+            raise RateLimitError("GitHub API rate limit exceeded.")
         if user_resp.status_code == 404:
             return {
                 "status": "NO_GITHUB",

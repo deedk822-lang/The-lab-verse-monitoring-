@@ -1,0 +1,148 @@
+# Scheduled Asana Task Cleanup Workflow
+# Automatically completes tasks that meet predefined criteria
+# Runs daily with safety checks and comprehensive reporting
+
+name: Scheduled Asana Cleanup
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC (11 AM SAST)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode - show what would be completed without actually completing'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      completion_criteria:
+        description: 'Completion criteria filter'
+        required: false
+        default: 'overdue'
+        type: choice
+        options:
+        - overdue
+        - ready_tag
+        - old_completed_subtasks
+        - custom
+
+jobs:
+  scheduled-cleanup:
+    runs-on: ubuntu-latest
+    outputs:
+      completed_count: ${{ steps.cleanup.outputs.completed_count }}
+      skipped_count: ${{ steps.cleanup.outputs.skipped_count }}
+      error_count: ${{ steps.cleanup.outputs.error_count }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install asana requests python-dateutil
+
+      - name: Scheduled Task Cleanup
+        id: cleanup
+        env:
+          ASANA_PAT: "${{ secrets.ASANA_PAT }}"
+          DRY_RUN: "${{ github.event.inputs.dry_run || 'true' }}"
+          COMPLETION_CRITERIA: "${{ github.event.inputs.completion_criteria || 'overdue' }}"
+        run: python scripts/asana_task_cleanup.py
+
+      - name: Upload Cleanup Log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cleanup-log-${{ github.run_number }}
+          path: cleanup_log.json
+          retention-days: 30
+
+      - name: Generate Summary Report
+        id: summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 🧹 Scheduled Asana Cleanup Report
+
+          **Execution Time:** $(date -u)
+          **Mode:** ${{ github.event.inputs.dry_run == 'true' && 'DRY RUN' || 'LIVE EXECUTION' }}
+          **Criteria:** ${{ github.event.inputs.completion_criteria || 'overdue' }}
+
+          ### Results Summary
+          - ✅ **${{ steps.cleanup.outputs.completed_count }}** tasks ${{ github.event.inputs.dry_run == 'true' && 'would be completed' || 'completed' }}
+          - ⏭️ **${{ steps.cleanup.outputs.skipped_count }}** tasks skipped
+          - ❌ **${{ steps.cleanup.outputs.error_count }}** errors encountered
+
+          ### Completion Criteria
+          - **overdue**: Tasks past their due date
+          - **ready_tag**: Tasks tagged with 'ready-for-completion'
+          - **old_completed_subtasks**: Tasks with all subtasks completed
+
+          ### Next Steps
+          ${{ github.event.inputs.dry_run == 'true' && '- Review the results and run in live mode if satisfied' || '- Check Asana to verify task completions' }}
+          - Review the detailed log artifact for complete information
+          - Adjust criteria if needed for future runs
+          EOF
+
+  notify-results:
+    needs: scheduled-cleanup
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Prepare Notification Message
+        id: message
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" == "false" ] || [ "${{ github.event_name }}" == "schedule" ]; then
+            MODE="🔴 LIVE EXECUTION"
+          else
+            MODE="🟡 DRY RUN"
+          fi
+
+          MESSAGE="Asana Cleanup $MODE Complete
+          ✅ ${{ needs.scheduled-cleanup.outputs.completed_count }} tasks processed
+          ⏭️ ${{ needs.scheduled-cleanup.outputs.skipped_count }} tasks skipped
+          ❌ ${{ needs.scheduled-cleanup.outputs.error_count }} errors
+
+          Criteria: ${{ github.event.inputs.completion_criteria || 'overdue' }}
+          Repository: ${{ github.repository }}
+          Time: $(date -u)"
+
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Issue on Errors
+        if: needs.scheduled-cleanup.outputs.error_count > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Asana Cleanup Errors - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Scheduled Cleanup Encountered Errors
+
+              **Date:** ${new Date().toISOString()}
+              **Workflow Run:** ${context.runId}
+              **Errors:** ${{ needs.scheduled-cleanup.outputs.error_count }}
+
+              ### Summary
+              - ✅ Completed: ${{ needs.scheduled-cleanup.outputs.completed_count }}
+              - ⏭️ Skipped: ${{ needs.scheduled-cleanup.outputs.skipped_count }}
+              - ❌ Errors: ${{ needs.scheduled-cleanup.outputs.error_count }}
+
+              ### Action Required
+              Please review the workflow logs and cleanup log artifact to identify and resolve the errors.
+
+              **Workflow URL:** ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              labels: ['bug', 'automation', 'asana-integration']
+            });

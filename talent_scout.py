@@ -83,14 +83,19 @@ def audit_github(handle: str) -> Dict[str, str]:
             status, strength = "NUANCED_POTENTIAL", f"Light activity (Score: {activity_score:.1f})"
         else:
             # Check for MemberEvent as proxy for private activity
-            member_events = [
-                e for e in events
-                if e['type'] == 'MemberEvent' and datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) >= cutoff_date
-            ]
+            member_events = []
+            for e in events:
+                if e.get("type") == "MemberEvent":
+                    try:
+                        event_time = datetime.fromisoformat(e["created_at"].replace("Z", "+00:00"))
+                        if event_time >= cutoff_date:
+                            member_events.append(e)
+                    except (ValueError, KeyError):
+                        continue
             if member_events:
                 status, strength = "NUANCED_POTENTIAL", f"Signs of private/org activity ({len(member_events)} MemberEvents)"
             else:
-                status, strength = "GHOST_DEVELOPER", "No significant public activity in 2024–2025"
+                status, strength = "GHOST_DEVELOPER", "No significant public activity in 2024-2025"
 
         return {
             "status": status,
@@ -140,15 +145,16 @@ def fetch_pending() -> List[Dict[str, str]]:
         public_object_search_request=search
     ).results
 
-    return [
-        {
-            "id": c.id,
-            "handle": c.properties["github_handle"].strip("/").split("/")[-1],
-            "name": f"{c.properties.get('firstname', '')} {c.properties.get('lastname', '')}".strip(),
-        }
-        for c in results
-        if c.properties.get("github_handle", "").strip() # Ensure handle is not just whitespace after strip
-    ]
+    contacts = []
+    for c in results:
+        handle = c.properties.get("github_handle")
+        if handle and handle.strip():
+            contacts.append({
+                "id": c.id,
+                "handle": handle.strip("/").split("/")[-1],
+                "name": f"{c.properties.get('firstname', '')} {c.properties.get('lastname', '')}".strip(),
+            })
+    return contacts
 
 def post_card_and_update(contact_id: str, card: str) -> None:
     note = SimplePublicObjectInputForCreate(

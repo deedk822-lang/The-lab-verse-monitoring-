@@ -12,12 +12,15 @@ from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
 # ========================
 # CONFIG (Using the specific name provided)
 # ========================
+class ConfigurationError(Exception):
+    pass
+
 KIMI_GITHUB_KEY = os.getenv("KIMI_GITHUB_KEY")
 HUBSPOT_TOKEN = os.getenv("HUBSPOT_TOKEN")
 
 # Removed PROXYCURL_KEY check as Proxycurl is defunct
 if not all([KIMI_GITHUB_KEY, HUBSPOT_TOKEN]):
-    raise EnvironmentError("Required: KIMI_GITHUB_KEY, HUBSPOT_TOKEN")
+    raise ConfigurationError("Required: KIMI_GITHUB_KEY, HUBSPOT_TOKEN")
 
 client = HubSpot(access_token=HUBSPOT_TOKEN)
 
@@ -34,6 +37,14 @@ def audit_github(handle: str) -> Dict[str, str]:
         user_resp = requests.get(
             f"https://api.github.com/users/{handle}", headers=headers, timeout=10
         )
+        if user_resp.status_code == 401:
+            raise ConfigurationError("GitHub API key is invalid or has expired.")
+        if user_resp.status_code == 403:
+            return {
+                "status": "ERROR",
+                "evidence": "GitHub: API rate limit exceeded.",
+                "link": "#",
+            }
         if user_resp.status_code == 404:
             return {
                 "status": "NO_GITHUB",

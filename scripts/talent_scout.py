@@ -1,225 +1,202 @@
 import os
 import requests
 from datetime import datetime, timezone
-from typing import Dict, Optional
-import time # For potential rate limit handling
+from typing import List, Dict, Optional
 
 from hubspot import HubSpot
 from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
-from hubspot.exceptions import ApiError # Import specific exception
+from hubspot.crm.contacts import SimplePublicObjectInput
 
 # ========================
-# CONFIG
+# CONFIG (Using the specific name provided)
 # ========================
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+KIMI_GITHUB_KEY = os.getenv("KIMI_GITHUB_KEY")
 HUBSPOT_TOKEN = os.getenv("HUBSPOT_TOKEN")
 
-if not GITHUB_TOKEN:
-    raise ValueError("❌ GITHUB_TOKEN environment variable is missing.")
-if not HUBSPOT_TOKEN:
-    print("⚠️ HUBSPOT_TOKEN not found. Running in dry-run mode (prints only).")
+# Removed PROXYCURL_KEY check as Proxycurl is defunct
+if not all([KIMI_GITHUB_KEY, HUBSPOT_TOKEN]):
+    raise EnvironmentError("Required: KIMI_GITHUB_KEY, HUBSPOT_TOKEN")
 
-HUBSPOT_CLIENT = HubSpot(access_token=HUBSPOT_TOKEN) if HUBSPOT_TOKEN else None
+client = HubSpot(access_token=HUBSPOT_TOKEN)
 
 # ========================
-# CORE: Enhanced GitHub Audit
+# AUDITS (GitHub Only - Proxycurl Defunct)
 # ========================
-def audit_github(handle: str) -> Optional[Dict]:
+def audit_github(handle: str) -> Dict[str, str]:
     headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json" # Using v3 for consistency
+        "Authorization": f"token {KIMI_GITHUB_KEY}",
+        "Accept": "application/vnd.github.v3+json", # Using v3 for consistency
     }
-
-    # --- FIX 1: Corrected URL Concatenation (Removed fatal space) ---
-    user_url = f"https://api.github.com/users/{handle}"
-    events_url = f"https://api.github.com/users/{handle}/events/public"
-
     try:
-        # Fetch User Profile
-        user_resp = requests.get(user_url, headers=headers)
+        # FIX: Corrected URL (removed space)
+        user_resp = requests.get(
+            f"https://api.github.com/users/{handle}", headers=headers, timeout=10
+        )
         if user_resp.status_code == 404:
-            print(f"⚠️ GitHub user not found: {handle}")
-            return None
-        user_resp.raise_for_status() # Raises an HTTPError for bad responses (4xx or 5xx)
+            return {
+                "status": "NO_GITHUB",
+                "evidence": "GitHub: User not found",
+                "link": "#",
+            }
+        user_resp.raise_for_status() # Raise exception for other non-200 codes
         user = user_resp.json()
 
-        # Fetch Events
-        events_resp = requests.get(events_url, headers=headers)
+        # FIX: Corrected URL (removed space)
+        events_resp = requests.get(
+            f"https://api.github.com/users/{handle}/events/public",
+            headers=headers,
+            timeout=10,
+        )
+        events_resp.raise_for_status()
+        events = events_resp.json()
 
-        # --- ENHANCEMENT: Check Rate Limits ---
-        if 'X-RateLimit-Remaining' in events_resp.headers:
-            remaining = int(events_resp.headers['X-RateLimit-Remaining'])
-            if remaining < 10: # Threshold for warning
-                 print(f"⚠️ WARNING: Low GitHub API rate limit: {remaining} remaining. Sleeping briefly...")
-                 time.sleep(1) # Brief pause before proceeding
-            # Optional: Implement logic to stop if remaining is 0
+        # Improved activity calculation with multiple signals
+        cutoff_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        activity_score = 0
+        repos_contributed_to = set()
 
-        if events_resp.status_code == 404:
-            # User exists, but no public events
-            events = []
+        for e in events:
+            try:
+                event_time = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00'))
+            except (ValueError, KeyError):
+                continue # Skip if date parsing fails
+
+            if event_time >= cutoff_date:
+                repos_contributed_to.add(e.get('repo', {}).get('name', 'unknown_repo'))
+
+                if e.get("type") == "PushEvent":
+                    activity_score += len(e.get("payload", {}).get("commits", []))
+                elif e.get("type") == "PullRequestEvent" and e.get("payload", {}).get("action") == "opened":
+                    activity_score += 1.5
+                elif e.get("type") == "PullRequestReviewEvent":
+                    activity_score += 1
+                elif e.get("type") == "IssuesEvent" and e.get("payload", {}).get("action") == "opened":
+                    activity_score += 0.5
+
+        # Determine status based on score and other signals
+        if activity_score >= 15:
+            status, strength = "VERIFIED_BUILDER", f"High activity (Score: {activity_score:.1f})"
+        elif activity_score >= 5:
+            status, strength = "VERIFIED_BUILDER", f"Solid activity (Score: {activity_score:.1f})"
+        elif activity_score > 0:
+            status, strength = "NUANCED_POTENTIAL", f"Light activity (Score: {activity_score:.1f})"
         else:
-            events_resp.raise_for_status()
-            events = events_resp.json()
+            # Check for MemberEvent as proxy for private activity
+            member_events = [
+                e for e in events
+                if e['type'] == 'MemberEvent' and datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) >= cutoff_date
+            ]
+            if member_events:
+                status, strength = "NUANCED_POTENTIAL", f"Signs of private/org activity ({len(member_events)} MemberEvents)"
+            else:
+                status, strength = "GHOST_DEVELOPER", "No significant public activity in 2024–2025"
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error fetching GitHub data for {handle}: {e}")
-        return None
+        return {
+            "status": status,
+            "evidence": f"GitHub: {strength} | Repos: {user.get('public_repos', 0)} | Score: {activity_score:.1f}",
+            "link": user.get("html_url", "#"),
+        }
+    except requests.RequestException as e:
+        print(f"GitHub audit failed for {handle}: {e}") # Log error
+        return {
+            "status": "ERROR",
+            "evidence": f"GitHub: Request failed ({e})",
+            "link": "#",
+        }
 
-    # --- ENHANCEMENT: Improved Activity Analysis with Multiple Signals ---
-    cutoff_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+# ========================
+# CARD BUILDER (GitHub Only)
+# ========================
+def build_card(gh: Dict[str, str], name: str, login: str) -> str:
+    overall = gh["status"]
+    icon_map = {"VERIFIED_BUILDER": "🟢", "NUANCED_POTENTIAL": "⚠️", "GHOST_DEVELOPER": "🔴", "ERROR": "❌", "NO_GITHUB": "❓"}
+    icon = icon_map.get(overall, "❓")
 
-    recent_pushes = 0
-    recent_reviews = 0
-    recent_pr_creations = 0
-    recent_issue_creations = 0
-    repos_contributed_to = set()
-
-    for e in events:
-        try:
-            # --- FIX 2: Robust Date Parsing ---
-            event_time = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00'))
-        except (ValueError, KeyError):
-            print(f"⚠️ Could not parse date for event {e.get('id')} for user {handle}. Skipping.")
-            continue
-
-        if event_time >= cutoff_date:
-            repos_contributed_to.add(e.get('repo', {}).get('name', 'unknown_repo'))
-
-            if e['type'] == 'PushEvent':
-                recent_pushes += len(e.get('payload', {}).get('commits', []))
-            elif e['type'] == 'PullRequestReviewEvent':
-                recent_reviews += 1
-            elif e['type'] == 'PullRequestEvent' and e.get('payload', {}).get('action') == 'opened':
-                recent_pr_creations += 1
-            elif e['type'] == 'IssuesEvent' and e.get('payload', {}).get('action') == 'opened':
-                recent_issue_creations += 1
-
-    # --- ENHANCEMENT: Nuanced Status Logic based on multiple signals ---
-    member_events = []
-    activity_score = (
-        recent_pushes * 2 + # Weight pushes slightly higher
-        recent_pr_creations * 1.5 +
-        recent_reviews * 1 +
-        recent_issue_creations * 0.5
-    )
-
-    if activity_score >= 15: # Higher threshold for Senior
-        status = "🟢 VERIFIED SENIOR BUILDER"
-        recommendation = "Fast-track to technical interview"
-        strength = f"High activity ({recent_pushes} commits, {recent_pr_creations} PRs, {recent_reviews} reviews in 2024–2025)"
-    elif activity_score >= 5: # Mid threshold
-        status = "🟢 VERIFIED BUILDER"
-        recommendation = "Schedule technical screen"
-        strength = f"Solid activity ({recent_pushes} commits, {recent_pr_creations} PRs in 2024–2025)"
-    elif recent_pushes >= 1 or recent_pr_creations >= 1 or recent_reviews >= 1:
-        status = "⚠️ NUANCED POTENTIAL"
-        recommendation = "Request live coding sample or detailed project discussion"
-        strength = f"Basic activity ({recent_pushes} commits, {recent_pr_creations} PRs, {recent_reviews} reviews in 2024–2025)"
-    else:
-        # Check for MemberEvent as proxy for private activity (from previous versions)
-        member_events = [
-            e for e in events
-            if e['type'] == 'MemberEvent' and datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) >= cutoff_date
-        ]
-        if member_events:
-             status = "⚠️ NUANCED POTENTIAL (Active in Org/Private)"
-             recommendation = "Investigate further (likely active in private repos)"
-             strength = f"Signs of private/org activity ({len(member_events)} MemberEvents in 2024–2025)"
-        else:
-            status = "🔴 GHOST DEVELOPER"
-            recommendation = "Pass or request proof of recent code"
-            strength = "No significant public activity in 2024–2025"
-
-
-    card = (
-        f"**{status}** — {user.get('name') or user['login']} (@{user['login']})\n\n"
-        f"**📊 Stats:** {user.get('public_repos', 0)} repos | {user.get('followers', 0)} followers\n"
-        f"**💻 Activity Score:** ~{activity_score:.1f} (Pushes: {recent_pushes}, PRs: {recent_pr_creations}, Reviews: {recent_reviews}, Issues: {recent_issue_creations})\n"
-        f"**🌐 Repos Contributed:** {len(repos_contributed_to)}\n"
-        f"**🧠 Assessment:** {strength}\n"
+    return (
+        f"**{icon} {overall}** — {name or '@' + login}\n\n"
+        f"**💻 {gh['evidence']}**\n"
         "----------------------------------\n"
-        f"**👮 Recommendation:** {recommendation}\n"
+        f"**👮 Recommendation:** {'Fast-track to technical interview' if 'VERIFIED' in overall else 'Request code sample or pass'}\n"
         "----------------------------------\n"
-        f"**🔗 Source:** [{user['html_url']}]({user['html_url']})\n\n"
+        f"**🔗 Source:**\n- [GitHub]({gh['link']})\n\n"
         f"_AI Talent Scout • {datetime.now().strftime('%H:%M on %d %B %Y')}_"
     )
 
-    return {
-        "card": card,
-        "user": user,
-        "status": status.split()[0],  # 🟢/⚠️/🔴
-        "activity_score": activity_score,
-        "pushes": recent_pushes,
-        "prs": recent_pr_creations,
-        "reviews": recent_reviews,
-        "issues": recent_issue_creations,
-        "repos_contributed": len(repos_contributed_to),
-        "member_events": len(member_events)
-    }
-
 # ========================
-# HubSpot Update
+# HUBSPOT LOOP
 # ========================
-def post_to_hubspot(email: str, card: str) -> None:
-    if not HUBSPOT_CLIENT:
-        print("🖨️ Dry run: HubSpot skipped (HUBSPOT_TOKEN not set)")
-        print(f"--- Would post to: {email} ---\n{card}\n--- End Note ---")
-        return
-
+def fetch_pending() -> List[Dict[str, str]]:
     search = PublicObjectSearchRequest(
-        filter_groups=[FilterGroup(filters=[Filter(property_name="email", operator="EQ", value=email)])],
-        limit=1
+        filter_groups=[FilterGroup(filters=[
+            Filter(property_name="audit_status", operator="EQ", value="Pending"),
+            Filter(property_name="github_handle", operator="NEQ", value=""), # Handle not empty
+        ])],
+        properties=["github_handle", "firstname", "lastname"], # Removed unused properties
+        limit=50,
     )
 
-    try:
-        results = HUBSPOT_CLIENT.crm.contacts.search_api.do_search(public_object_search_request=search).results
-        if not results:
-            print(f"⚠️ Contact not found in HubSpot: {email}")
-            return
+    results = client.crm.contacts.search_api.do_search(
+        public_object_search_request=search
+    ).results
 
-        contact_id = results[0].id
-        note = SimplePublicObjectInputForCreate(
-            properties={
-                "hs_timestamp": datetime.now(timezone.utc).isoformat(),
-                "hs_note_body": card
-            },
-            associations=[{
-                "to": {"id": contact_id},
-                "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}] # Note-to-Contact association
-            }]
-        )
+    return [
+        {
+            "id": c.id,
+            "handle": c.properties["github_handle"].strip("/").split("/")[-1],
+            "name": f"{c.properties.get('firstname', '')} {c.properties.get('lastname', '')}".strip(),
+        }
+        for c in results
+        if c.properties.get("github_handle", "").strip() # Ensure handle is not just whitespace after strip
+    ]
 
-        HUBSPOT_CLIENT.crm.objects.notes.basic_api.create(simple_public_object_input_for_create=note)
-        print(f"✅ Posted to HubSpot contact {contact_id}: {email}")
-
-    except ApiError as e: # Catch HubSpot-specific errors
-        print(f"❌ HubSpot API error for {email}: {e.reason} - {e}")
-    except Exception as e: # Catch other potential errors
-        print(f"❌ Unexpected error posting to HubSpot for {email}: {e}")
+def post_card_and_update(contact_id: str, card: str) -> None:
+    note = SimplePublicObjectInputForCreate(
+        properties={
+            "hs_timestamp": datetime.now(timezone.utc).isoformat(),
+            "hs_note_body": card,
+        },
+        associations=[{
+            "to": {"id": contact_id},
+            "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}],
+        }],
+    )
+    client.crm.objects.notes.basic_api.create(
+        simple_public_object_input_for_create=note
+    )
+    client.crm.contacts.basic_api.update(
+        contact_id=contact_id,
+        simple_public_object_input=SimplePublicObjectInput(
+            properties={"audit_status": "Audited"}
+        ),
+    )
+    print("   → Audit posted & status updated to Audited")
 
 # ========================
 # MAIN
 # ========================
 if __name__ == "__main__":
-    # Example list - replace with dynamic fetch in production
-    candidates = [
-        {"handle": "torvalds", "email": "test-torvalds@yourcompany.com"},
-        {"handle": "defunkt", "email": "test-defunkt@yourcompany.com"},
-        {"handle": "mojombo", "email": "test-mojombo@yourcompany.com"},
-        {"handle": "nonexistentuser123456", "email": "test-fake@yourcompany.com"}, # Test missing user
-    ]
+    print("AI Talent Scout v8 Enhanced (GitHub Only) — Proxycurl Removed, Lint/Security Fixed\n")
 
-    print("🚀 AI Talent Scout v5 Enhanced Running\n")
+    candidates = fetch_pending()
 
-    for cand in candidates:
-        print(f"🔍 Auditing {cand['handle']}...")
-        result = audit_github(cand["handle"])
-        if result:
-            print(result["card"])
-            print("-" * 60 + "\n")
-            post_to_hubspot(cand["email"], result["card"])
-        else:
-            print(f"❌ Skipping {cand['handle']} due to audit failure.\n")
+    if not candidates:
+        print("No pending candidates found.")
+        exit(0)
 
-    print("🎯 Audit Complete")
+    print(f"Found {len(candidates)} candidate(s) to audit...\n")
+
+    for c in candidates:
+        print(f"Auditing {c['name'] or '@' + c['handle']} (Contact ID: {c['id']})")
+
+        gh = audit_github(c["handle"])
+
+        card = build_card(gh, c["name"], c["handle"])
+
+        print(f"   Verdict: {gh['status']}\n")
+
+        post_card_and_update(c["id"], card)
+
+        print("-" * 60)
+
+    print("\nRun complete.")

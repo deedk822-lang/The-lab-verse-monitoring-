@@ -21,7 +21,6 @@ jobs:
 
       - name: Run Talent Scout
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
-          PROXYCURL_KEY: ${{ secrets.PROXYCURL_KEY }}
-        run: python talent_scout.py
+          KIMI_GITHUB_KEY: ${{ secrets.KIMI_GITHUB_KEY }}
+          HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_TOKEN }}
+        run: python scripts/talent_scout.py

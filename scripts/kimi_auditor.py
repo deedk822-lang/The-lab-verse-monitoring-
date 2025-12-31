@@ -5,158 +5,173 @@ import time
 from datetime import datetime
 import openai
 import tempfile
+import re
 
 # ========================
-# CONFIG (Env Vars)
+# CONFIG
 # ========================
 MOONSHOT_API_KEY = os.getenv("MOONSHOT_API_KEY")
 if not MOONSHOT_API_KEY:
     raise ValueError("Set MOONSHOT_API_KEY")
 
-BASE_URL = os.getenv("MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1")  # .ai global / .cn China
-MODEL = os.getenv("KIMI_MODEL", "kimi-k2-thinking")  # 2025 flagship reasoning model
-WORKSPACE = os.getenv("WORKSPACE", ".")
+BASE_URL = os.getenv("MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1")
+MODEL = os.getenv("KIMI_MODEL", "kimi-k2-thinking")
+WORKSPACE = os.getenv("WORKSPACE", "/workspace/the-lab-verse")
 BASE_BRANCH = os.getenv("BASE_BRANCH", "main")
-TARGET_BRANCH = os.getenv("TARGET_BRANCH", "HEAD")
+TARGET_BRANCH = os.getenv("TARGET_BRANCH", "feat/hubspot-ollama-integration-9809589759324023108")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "3600"))
+MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "3"))
+AUTO_APPROVE = os.getenv("AUTO_APPROVE", "false").lower() == "true"  # Set true for full autonomy
+TEST_CMD = os.getenv("TEST_CMD", "pytest")  # e.g., "pytest" or "make test"
 
 client = openai.OpenAI(api_key=MOONSHOT_API_KEY, base_url=BASE_URL)
 
 def log(msg: str):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] KIMI: {msg}")
 
-def get_changed_files() -> list[str]:
+def get_diff() -> str:
     os.chdir(WORKSPACE)
     subprocess.run(["git", "pull", "--quiet"], check=False)
     result = subprocess.run(
-        ["git", "diff", "--name-only", f"origin/{BASE_BRANCH}...{TARGET_BRANCH}"],
+        ["git", "diff", f"origin/{BASE_BRANCH}...HEAD"],
         capture_output=True, text=True
     )
-    files = [f.strip() for f in result.stdout.splitlines() if f.strip()]
-    log(f"Detected {len(files)} changed files")
-    return files
+    diff = result.stdout
+    log(f"Diff size: {len(diff)//1000}k chars")
+    return diff if diff else ""
 
-def build_context(files: list[str]) -> str:
-    context = ""
-    for file_path in files[:8]:  # Balanced for context length
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-            context += f"\n\n=== {file_path} ===\n{content[:5000]}"
-    return context
+def run_tests() -> bool:
+    log("Running tests...")
+    result = subprocess.run(TEST_CMD.split(), capture_output=True, text=True)
+    if result.returncode == 0:
+        log("Tests passed")
+        return True
+    log(f"Tests failed:\n{result.stdout[-1000:]}{result.stderr[-1000:]}")
+    return False
 
-def run_kimi_analysis(context: str) -> str | None:
-    if not context:
-        return None
+def run_kimi_analysis(diff: str, error_feedback: str = "") -> str | None:
+    feedback = f"\nPrevious attempt failed: {error_feedback}" if error_feedback else ""
+    prompt = f"""You are a senior security engineer fixing vulnerabilities in changed code.
 
-    prompt = f"""You are a senior security auditor for The Lab Verse project.
-Analyze changed files for CRITICAL/HIGH security vulnerabilities ONLY.
+DIFF ONLY:
+{diff[:12000]}{"..." if len(diff) > 12000 else ""}
 
-{context}
+{feedback}
 
-Output EXACTLY in this format:
+Output EXACTLY:
 
 ### Findings
-Markdown list of issues (or "NO CRITICAL ISSUES")
+Markdown summary (or "NO CRITICAL ISSUES")
 
-### Proposed Fix
-If safe auto-fixes possible: a COMPLETE unified diff patch fixing ALL issues.
-\`\`\`diff
-diff --git a/file.py b/file.py
+### Confidence
+High/Medium/Low
+
+### Patch
+Unified diff fixing ALL issues, or "NO SAFE FIX POSSIBLE"
+```diff
 ...
-\`\`\`
-
-If no safe fixes: "NO SAFE AUTO-FIX POSSIBLE"
-"""
+```"""
 
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.0,  # Deterministic for patches
+        temperature=0.0,
         max_tokens=8000
     )
     return response.choices[0].message.content.strip()
 
+def extract_section(raw: str, header: str) -> str:
+    match = re.search(rf"### {header}\n(.*?)(###|$)", raw, re.DOTALL)
+    return match.group(1).strip() if match else ""
+
 def extract_patch(raw: str) -> str | None:
-    if "```diff" not in raw:
-        return None
-    start = raw.find("```diff") + 7
-    end = raw.find("```", start)
-    return raw[start:end].strip() if end != -1 else None
+    match = re.search(r"```diff\n(.*?)\n```", raw, re.DOTALL)
+    return match.group(1).strip() if match else None
 
-def apply_patch(patch: str) -> bool:
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+def apply_patch(patch: str) -> str:  # Returns error or ""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.patch') as f:
         f.write(patch)
-        patch_file = f.name
+        f.flush()
+        check = subprocess.run(["git", "apply", "--check", f.name], capture_output=True)
+        if check.returncode != 0:
+            return f"Patch rejected: {check.stderr.decode()}"
+        subprocess.run(["git", "apply", f.name], check=True)
+    return ""
 
-    check = subprocess.run(["git", "apply", "--check", patch_file], capture_output=True)
-    os.unlink(patch_file)
-
-    if check.returncode != 0:
-        log("Patch check failed (conflicts or invalid)")
-        return False
-
-    subprocess.run(["git", "apply", patch_file], check=True)
-    return True
-
-def create_fix_branch_and_pr(findings_md: str, applied: bool):
+def create_pr(findings: str, confidence: str, applied: bool, iteration: int):
     timestamp = int(time.time())
-    branch = f"kimi/fix-{timestamp}"
+    branch = f"kimi/fix-{timestamp}-i{iteration}"
+    status = "Applied" if applied else "Proposed"
 
     subprocess.run(["git", "checkout", "-b", branch], check=True)
     if applied:
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-m", "🤖 Kimi auto-fix: security vulnerabilities"], check=True)
+        subprocess.run(["git", "add", "-A"])
+        subprocess.run(["git", "commit", "-m", f"🤖 Kimi auto-fix (iteration {iteration})"], check=True)
 
     subprocess.run(["git", "push", "origin", branch, "--force"], check=True)
 
-    title = "🤖 Kimi Security Fixes (Auto-Applied)" if applied else "🤖 Kimi Security Audit (Review Needed)"
-    body = f"Automated audit on {TARGET_BRANCH}:\n\n{findings_md}\n\n{'Fixes auto-applied — please review!' if applied else 'No safe auto-fix — manual review required.'}"
+    body = f"### Kimi Security Audit (Confidence: {confidence})\n\n{findings}\n\n"
+    body += f"Fixes {status.lower()} in iteration {iteration}. Tests: {'Passed' if applied else 'N/A'}"
 
-    pr_cmd = ["gh", "pr", "create", "--title", title, "--body", body,
-              "--base", TARGET_BRANCH, "--head", branch,
-              "--label", "kimi,security,auto-fix"]
+    title = f"🤖 Kimi Security Fix ({confidence} confidence)"
+    labels = "kimi,security,auto-fix"
+    if not applied:
+        labels += ",needs-review"
 
-    result = subprocess.run(pr_cmd, capture_output=True, text=True)
-    if result.returncode == 0:
-        log(f"✅ PR created: {result.stdout.strip()}")
-    else:
-        log(f"❌ PR failed: {result.stderr.strip()}")
+    subprocess.run([
+        "gh", "pr", "create", "--title", title, "--body", body,
+        "--base", TARGET_BRANCH, "--head", branch, "--label", labels
+    ], check=True)
+    log("PR created")
 
 def main():
-    log("🚀 Kimi Autonomous Security Auditor v3 Activated (with Fix Automation)")
-    log(f"Monitoring vs origin/{BASE_BRANCH}")
+    log("Kimi Self-Healing Security Agent v4 Activated")
 
-    files = get_changed_files()
-    if not files:
-        log("No changes")
-        return
+    while True:
+        try:
+            diff = get_diff()
+            if not diff:
+                log("No changes")
+                time.sleep(CHECK_INTERVAL)
+                continue
 
-    context = build_context(files)
-    raw = run_kimi_analysis(context)
+            error_feedback = ""
+            applied = False
+            for i in range(1, MAX_ITERATIONS + 1):
+                log(f"Iteration {i}/{MAX_ITERATIONS}")
+                raw = run_kimi_analysis(diff, error_feedback)
+                findings = extract_section(raw, "Findings")
+                confidence = extract_section(raw, "Confidence")
+                patch = extract_patch(raw)
 
-    if not raw:
-        log("No analysis")
-        return
+                print(f"\n{findings}\nConfidence: {confidence}\n")
 
-    findings_start = raw.find("### Findings")
-    findings_md = raw[findings_start:].split("### Proposed Fix")[0].strip() if findings_start != -1 else "Parse failed"
+                if not patch or "NO SAFE FIX" in raw:
+                    log("No safe fix possible")
+                    break
 
-    log("🔍 Analysis complete")
-    print(findings_md)
+                apply_error = apply_patch(patch)
+                if apply_error:
+                    error_feedback = apply_error
+                    subprocess.run(["git", "reset", "--hard", "HEAD"], check=True)  # rollback
+                    continue
 
-    patch = extract_patch(raw)
-    if patch and "NO SAFE AUTO-FIX" not in raw:
-        log("✅ Safe patch generated")
-        confirm = os.getenv("AUTO_FIX", "false").lower()
-        if confirm == "true":
-            applied = apply_patch(patch)
-            create_fix_branch_and_pr(findings_md, applied)
-        else:
-            create_fix_branch_and_pr(findings_md, False)
-    else:
-        log("No auto-fix possible")
-        create_fix_branch_and_pr(findings_md, False)
+                if run_tests():
+                    applied = True
+                    break
+                else:
+                    error_feedback = "Tests failed after patch"
+                    subprocess.run(["git", "reset", "--hard", "HEAD"], check=True)
+
+            confirm = "yes" if AUTO_APPROVE else input("\nCreate PR? (yes/no): ").strip().lower()
+            if confirm == "yes":
+                create_pr(findings, confidence, applied, i)
+
+            time.sleep(CHECK_INTERVAL)
+
+        except Exception as e:
+            log(f"Error: {e}")
+            time.sleep(300)
 
 if __name__ == "__main__":
     main()

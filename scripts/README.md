@@ -1,6 +1,6 @@
 # Kimi Autonomous Security Auditor
 
-This directory contains the scripts for the Kimi Autonomous Security Auditor.
+This directory contains the script for the Kimi Autonomous Security Auditor.
 
 ## `kimi_auditor.py`
 
@@ -8,29 +8,32 @@ This is the main Python script that performs the security audit. It is designed 
 
 ### Configuration
 
-The script is configured entirely through environment variables. The following variables are required:
+The script is configured entirely through environment variables. To configure the auditor, follow these steps:
 
--   `MOONSHOT_API_KEY`: Your API key for the Moonshot/Kimi service.
+1.  **Copy the example environment file:**
 
-The following variables are optional and have default values:
+    ```bash
+    cp .env.example .env
+    ```
 
--   `MOONSHOT_BASE_URL`: The base URL for the Moonshot API. Defaults to `https://api.moonshot.ai/v1`.
--   `KIMI_MODEL`: The model to use for the analysis. Defaults to `kimi-k2-thinking`.
--   `WORKSPACE`: The path to the repository. Defaults to the current directory.
--   `BASE_BRANCH`: The base branch to compare against. Defaults to `main`.
--   `TARGET_BRANCH`: The branch to analyze. Defaults to `HEAD`.
--   `AUTO_FIX`: Set to `true` to automatically apply patches and create pull requests. Defaults to `false`.
+2.  **Edit the `.env` file:**
 
-## `run_audit.sh`
+    Open the newly created `.env` file and fill in the required values under the "Kimi Autonomous Security Auditor" section. At a minimum, you must provide your `MOONSHOT_API_KEY`.
 
-This is a convenience script that demonstrates how to set the required environment variables and run the auditor.
+    The following variables are available:
+
+    -   `MOONSHOT_API_KEY`: **(Required)** Your API key for the Moonshot/Kimi service.
+    -   `TARGET_BRANCH`: The branch you want to analyze.
+    -   `BASE_BRANCH`: The base branch to compare against.
+    -   `AUTO_FIX`: Set to `"true"` to enable the script to automatically apply patches and create pull requests.
+    -   `MOONSHOT_BASE_URL`: The base URL for the Moonshot API.
+    -   `KIMI_MODEL`: The model to use for the analysis.
+    -   `WORKSPACE`: The path to the repository.
 
 ### Usage
 
-1.  Open `scripts/run_audit.sh` and replace the placeholder `sk-your-key-here` with your actual Moonshot/Kimi API key.
-2.  (Optional) Customize the other environment variables in the script as needed.
-3.  Run the script from the root of the repository:
+Once you have configured your `.env` file, you can run the auditor from the root of the repository:
 
-    ```bash
-    bash scripts/run_audit.sh
-    ```
+```bash
+python3 scripts/kimi_auditor.py
+```

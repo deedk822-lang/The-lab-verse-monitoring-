@@ -7,6 +7,7 @@ from hubspot import HubSpot
 from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
 from hubspot.crm.contacts import SimplePublicObjectInput
+from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
 
 # ========================
 # CONFIG (Using the specific name provided)
@@ -156,7 +157,48 @@ def fetch_pending() -> List[Dict[str, str]]:
             })
     return contacts
 
+def has_existing_scout_note(contact_id: str) -> bool:
+    try:
+        # Get all note associations for the contact
+        associated_notes_response = client.crm.associations.v4.basic_api.get_page(
+            from_object_type="contacts",
+            to_object_type="notes",
+            from_object_id=contact_id,
+        )
+        note_ids = [assoc.to_object_id for assoc in associated_notes_response.results]
+
+        if not note_ids:
+            return False
+
+        # Batch read the notes to check their content
+        notes_batch_input = BatchReadInputSimplePublicObjectId(
+            inputs=[{"id": note_id} for note_id in note_ids],
+            properties=["hs_note_body"]
+        )
+        notes_response = client.crm.objects.notes.batch_api.read(
+            batch_read_input_simple_public_object_id=notes_batch_input
+        )
+
+        for note in notes_response.results:
+            if "AI Talent Scout" in note.properties.get("hs_note_body", ""):
+                return True
+        return False
+    except Exception as e:
+        print(f"  - Could not check for existing notes: {e}")
+        return False # Fail safe: proceed with posting
+
 def post_card_and_update(contact_id: str, card: str) -> None:
+    if has_existing_scout_note(contact_id):
+        print("   → Duplicate prevented — scout note already exists.")
+        # Still update status to prevent re-auditing
+        client.crm.contacts.basic_api.update(
+            contact_id=contact_id,
+            simple_public_object_input=SimplePublicObjectInput(
+                properties={"audit_status": "Audited"}
+            ),
+        )
+        return
+
     note = SimplePublicObjectInputForCreate(
         properties={
             "hs_timestamp": datetime.now(timezone.utc).isoformat(),

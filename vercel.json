@@ -9,34 +9,7 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/health",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
-    },
-    {
-      "src": "/ready",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
-    },
-    {
-      "src": "/live",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
-    }
-  ],
   "env": {
-    "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
-    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
     "NODE_ENV": "production"
   },
   "headers": [

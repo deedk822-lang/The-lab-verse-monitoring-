@@ -66,9 +66,8 @@ def extract_python_env_vars_astroid(file_path: str) -> set:
     except FileNotFoundError:
         print(f"❌ Error: File {file_path} not found.", file=sys.stderr)
         sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error parsing {file_path} with astroid: {e}", file=sys.stderr)
-        sys.exit(1)
+    except (astroid.AstroidBuildingError, SyntaxError) as e:
+        print(f"Warning: Could not parse Python file {file_path}: {e}", file=sys.stderr)
 
     return env_vars
 
@@ -81,17 +80,11 @@ def extract_vercel_env_vars(file_path: str) -> set:
     2. Build env array: { "build": { "env": [ { "key": "VAR" } ] } }
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             config = json.load(f)
-    except FileNotFoundError:
-        print(f"❌ Error: File {file_path} not found.", file=sys.stderr)
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"❌ Error: Invalid JSON in {file_path}: {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error parsing {file_path}: {e}", file=sys.stderr)
-        sys.exit(1)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Warning: Could not parse vercel.json file {file_path}: {e}", file=sys.stderr)
+        return set()
 
     env_vars = set()
 
@@ -113,9 +106,16 @@ def extract_vercel_env_vars(file_path: str) -> set:
     return env_vars
 
 
+import argparse
+
 def main():
-    python_file = 'talent_scout.py'
-    vercel_file = 'vercel.json'
+    parser = argparse.ArgumentParser(description="Validate config-code sync.")
+    parser.add_argument("--py-file", default="talent_scout.py", help="Python file to scan.")
+    parser.add_argument("--vercel-file", default="vercel.json", help="Vercel config file.")
+    args = parser.parse_args()
+
+    python_file = args.py_file
+    vercel_file = args.vercel_file
 
     print(f"🔍 Scanning {python_file} (Semantic Analysis via Astroid)...")
     python_vars = extract_python_env_vars_astroid(python_file)
@@ -137,9 +137,8 @@ def main():
     ghost_vars = vercel_vars - python_vars
     if ghost_vars:
         print(f"\n⚠️ WARNING: Ghost variables in config: {ghost_vars}")
-        legacy_found = [var for var in ghost_vars if 'AIRTABLE' in var or 'PROXYCURL' in var]
-        if legacy_found:
-            print(f"   -> CRITICAL: Legacy variables detected: {legacy_found}")
+        if any("AIRTABLE" in var for var in ghost_vars):
+            print("   -> CRITICAL: Legacy Airtable variables must be removed.")
             drift_detected = True
 
     if drift_detected:

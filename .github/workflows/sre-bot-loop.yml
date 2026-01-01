@@ -3,7 +3,6 @@ name: "SRE Autonomous Fix Loop"
 on:
   issue_comment:
     types: [created]
-  # Also run on push to catch the config drift immediately
   push:
     branches: ["main", "develop"]
 
@@ -13,22 +12,22 @@ permissions:
   contents: read
 
 jobs:
-  # NEW JOB: The Gatekeeper
-  config-sync-check:
+  sre-gatekeeper:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run Config-Code Validator
-        run: python .github/scripts/validate_config_sync.py
-      # If this fails, we proceed to the fixer below
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  summon-jules:
-    if: |
-      contains(github.event.comment.body, '#FIX-REQUIRED') &&
-      (github.event.comment.user.login == 'coderabbitai[bot]' || github.event.comment.user.login == 'coderabbitai')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Jules Remediation
+      - name: Run Config-Code Validator
+        id: validator
+        run: python .github/scripts/validate_config_sync.py
+        continue-on-error: true
+
+      - name: Trigger Jules Remediation on Failure or Comment
+        if: |
+          steps.validator.outcome == 'failure' ||
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '#FIX-REQUIRED') &&
+          (github.event.comment.user.login == 'coderabbitai[bot]' || github.event.comment.user.login == 'coderabbitai'))
         uses: actions/github-script@v7
         with:
           script: |
@@ -36,16 +35,15 @@ jobs:
             @google-labs-jules
 
             ### 🤖 SRE Automation Trigger (ARCHITECTURE MODE)
-            The pipeline has detected **Configuration Drift** and **Linting Violations (TRY003)**.
+            The pipeline has detected **Configuration Drift** or a **Critical Review Finding**.
 
             **Mission Objectives:**
-            1. **Config Sync:** Purge "Ghost Variables" (AIRTABLE_BASE_ID) from vercel.json.
-            2. **Architecture Upgrade:**
-               - Import exceptions from the new \`talent_scout_exceptions.py\`.
-               - Replace \`raise Error("String")\` with \`raise ConfigurationError("String")\`.
-            3. **Code Hygiene:** Ensure all imports are clean and the build passes.
-
-            Please push the architectural fixes to this branch.
+            1. **Analyze Failure:** Review the output of the 'Run Config-Code Validator' step above or the CodeRabbit comment that triggered this workflow.
+            2. **Synchronize Configuration:** Purge "Ghost Variables" (e.g., AIRTABLE_BASE_ID) from vercel.json and ensure all variables in talent_scout.py are defined in the config.
+            3. **Adhere to Architecture:**
+               - Ensure all exceptions are imported from \`talent_scout_exceptions.py\`.
+               - Replace any \`raise Error("String")\` with typed exceptions like \`raise ConfigurationError("...")\`.
+            4. **Push Fixes:** Commit the architectural fixes directly to this branch.
             `;
             await github.rest.issues.createComment({
               owner: context.repo.owner,

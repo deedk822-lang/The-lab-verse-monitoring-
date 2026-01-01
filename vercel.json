@@ -10,7 +10,9 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "KIMI_GITHUB_KEY": "@kimi_github_key",
+    "HUBSPOT_TOKEN": "@hubspot_token"
   },
   "headers": [
     {

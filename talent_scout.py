@@ -242,15 +242,17 @@ if __name__ == "__main__":
 
     for c in candidates:
         print(f"Auditing {c['name'] or '@' + c['handle']} (Contact ID: {c['id']})")
-
-        gh = audit_github(c["handle"])
-
-        card = build_card(gh, c["name"], c["handle"])
-
-        print(f"   Verdict: {gh['status']}\n")
-
-        post_card_and_update(c["id"], card)
-
+        try:
+            gh = audit_github(c["handle"])
+            card = build_card(gh, c["name"], c["handle"])
+            print(f"   Verdict: {gh['status']}\n")
+            post_card_and_update(c["id"], card)
+        except RateLimitError as e:
+            print(f"   ⚠️ WARNING: Could not audit @{c['handle']} due to API rate limit: {e}")
+            continue
+        except Exception as e:
+            print(f"   ❌ ERROR: An unexpected error occurred for @{c['handle']}: {e}")
+            continue
         print("-" * 60)
 
     print("\nRun complete.")

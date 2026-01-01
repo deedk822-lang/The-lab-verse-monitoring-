@@ -9,12 +9,11 @@ from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
 from hubspot.crm.contacts import SimplePublicObjectInput
 from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
 
+from talent_scout_exceptions import ConfigurationError
+
 # ========================
 # CONFIG (Using the specific name provided)
 # ========================
-class ConfigurationError(Exception):
-    pass
-
 KIMI_GITHUB_KEY = os.getenv("KIMI_GITHUB_KEY")
 HUBSPOT_TOKEN = os.getenv("HUBSPOT_TOKEN")
 

@@ -1,81 +1,153 @@
-import os
-import sys
 import json
-import re
-from typing import Set
+import sys
+import astroid
 
-def extract_env_vars_from_code(file_path: str) -> Set[str]:
-    """Extracts environment variable names from os.getenv() calls in a Python file."""
+def extract_python_env_vars_astroid(file_path: str) -> set:
+    """
+    Uses astroid to find environment variable names from calls like:
+    - os.getenv('VAR_NAME')
+    - from os import getenv; getenv('VAR_NAME')
+    - import os as alias; alias.getenv('VAR_NAME')
+    """
+    env_vars = set()
+    try:
+        module = astroid.MANAGER.ast_from_file(file_path)
+
+        for node in module.nodes_of_class(astroid.Call):
+            func = node.func
+
+            # Helper to add variable from argument
+            def add_arg(call_node):
+                if call_node.args:
+                    first_arg = call_node.args[0]
+                    # Infer the value to ensure we get the literal string if possible
+                    try:
+                        # Infer returns a generator, take the first result
+                        inferred_val = next(first_arg.infer())
+                        if isinstance(inferred_val, astroid.Const):
+                            if isinstance(inferred_val.value, str):
+                                env_vars.add(inferred_val.value)
+                    except (StopIteration, astroid.InferenceError):
+                        # Fallback: If inference fails, try to check the AST directly for a constant
+                        if isinstance(first_arg, astroid.Const) and isinstance(first_arg.value, str):
+                            env_vars.add(first_arg.value)
+
+            # Case 1: os.getenv(...) or alias.getenv(...)
+            if isinstance(func, astroid.Attribute):
+                # Try to infer what 'os' or 'alias' refers to
+                try:
+                    # func.expr is the object (e.g., Name(id='os'))
+                    for inferred_obj in func.expr.infer():
+                        # Check if the inferred object is the 'os' module
+                        if isinstance(inferred_obj, astroid.Module) and inferred_obj.name == 'os':
+                            # Check if the attribute name is 'getenv'
+                            if func.attrname == 'getenv':
+                                add_arg(node)
+                                break
+                except astroid.InferenceError:
+                    pass
+
+            # Case 2: getenv(...) imported from os
+            elif isinstance(func, astroid.Name):
+                # Look up the definition of this name in the current scope
+                # module.locals gives a list of assignment/import nodes for that name
+                defs = module.locals.get(func.name, [])
+                for def_node in defs:
+                    # Check if it was imported from 'os'
+                    if isinstance(def_node, astroid.ImportFrom) and def_node.modname == 'os':
+                        # def_node.names is a list of tuples (name, asname)
+                        # We need to find if 'getenv' was imported
+                        for imported_name, imported_as in def_node.names:
+                            # Matches 'import getenv' or 'import getenv as get'
+                            if imported_name == 'getenv' and (imported_as is None or imported_as == func.name):
+                                add_arg(node)
+                                break
+
+    except FileNotFoundError:
+        print(f"❌ Error: File {file_path} not found.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error parsing {file_path} with astroid: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    return env_vars
+
+
+def extract_vercel_env_vars(file_path: str) -> set:
+    """
+    Scans vercel.json for env keys.
+    Handles both:
+    1. Top-level 'env' object: { "env": { "VAR": "val" } }
+    2. Build env array: { "build": { "env": [ { "key": "VAR" } ] } }
+    """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            code_content = f.read()
-    except FileNotFoundError:
-        print(f"❌ Error: File {file_path} not found.")
-        return set()
-
-    # Regex pattern to find os.getenv('VAR_NAME'), os.environ.get('VAR_NAME'), os.environ['VAR_NAME']
-    # This pattern captures the variable name inside the quotes/apostrophes.
-    # It assumes simple string literals, which is the common case.
-    pattern = r"os\.(?:getenv|environ(?:\.get|\[))\s*['\"]([A-Z_][A-Z0-9_]*)['\"].*?\)?"
-    matches = re.findall(pattern, code_content)
-    return set(matches)
-
-def extract_env_vars_from_vercel_config(config_path: str) -> Set[str]:
-    """Extracts environment variable names from vercel.json (top-level 'env' object)."""
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
     except FileNotFoundError:
-        print(f"❌ Error: File {config_path} not found.")
-        return set()
+        print(f"❌ Error: File {file_path} not found.", file=sys.stderr)
+        sys.exit(1)
     except json.JSONDecodeError as e:
-        print(f"❌ Error: Invalid JSON in {config_path}: {e}")
-        return set()
+        print(f"❌ Error: Invalid JSON in {file_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error parsing {file_path}: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    # vercel.json typically has env vars at the top level under the 'env' key
-    # or potentially under build.env or dev.env, but top-level is most common for runtime vars
-    env_block = config.get('env', {})
-    # vercel.json env block can have values as strings or objects like {"source": "shell", "value": "..."}
-    # We only care about the keys (variable names)
-    return set(env_block.keys())
+    env_vars = set()
 
-def check_sync():
-    """Main function to perform the sync check."""
-    print("🔍 Audit: Scanning for 'Ghost Variables' and 'Zombie Variables'...")
+    # Case 1: Check build.env (Array of objects) - Common Vercel Pattern
+    build_env = config.get('build', {}).get('env', [])
+    if isinstance(build_env, list):
+        for item in build_env:
+            if isinstance(item, dict) and 'key' in item:
+                env_vars.add(item['key'])
+    elif isinstance(build_env, dict):
+        # Some configs use dict in build.env
+        env_vars.update(build_env.keys())
 
-    # Load variables from both sources
-    code_vars = extract_env_vars_from_code('talent_scout.py')
-    infra_vars = extract_env_vars_from_vercel_config('vercel.json')
+    # Case 2: Check top-level env (Dict)
+    top_env = config.get('env', {})
+    if isinstance(top_env, dict):
+        env_vars.update(top_env.keys())
 
-    # Define variables that might exist in config but are not explicitly used in code (e.g., Node.js defaults)
-    # These are typically provided by the platform or runtime and might not be explicitly fetched in Python.
-    # Adjust this set based on your specific runtime environment if necessary.
-    ignored_vars = {'NODE_ENV', 'VERCEL', 'VERCEL_URL', 'VERCEL_ENV'}
+    return env_vars
 
-    # Calculate drift
-    ghost_vars = infra_vars - code_vars - ignored_vars
-    zombie_vars = code_vars - infra_vars
+
+def main():
+    python_file = 'talent_scout.py'
+    vercel_file = 'vercel.json'
+
+    print(f"🔍 Scanning {python_file} (Semantic Analysis via Astroid)...")
+    python_vars = extract_python_env_vars_astroid(python_file)
+    print(f"   Found in code: {python_vars}")
+
+    print(f"🔍 Scanning {vercel_file} (Structural Analysis)...")
+    vercel_vars = extract_vercel_env_vars(vercel_file)
+    print(f"   Found in config: {vercel_vars}")
 
     drift_detected = False
 
-    # Report Ghost Variables (In Infra, not in Code) - Warning
-    if ghost_vars:
-        print(f"⚠️  WARNING: Ghost Variables found in vercel.json (defined but not used in talent_scout.py): {ghost_vars}")
-        print("   -> Consider removing them from vercel.json if they are truly unused.")
-
-    # Report Zombie Variables (In Code, not in Infra) - Critical Error
-    if zombie_vars:
-        print(f"❌ CRITICAL: Zombie Variables found in talent_scout.py but missing from vercel.json: {zombie_vars}")
-        print("   -> Deployment will likely fail. These variables must be defined in vercel.json.")
+    # 1. Missing in Vercel (Critical Drift)
+    missing_in_vercel = python_vars - vercel_vars
+    if missing_in_vercel:
+        print(f"\n❌ CRITICAL: Variables used in code are missing from config: {missing_in_vercel}")
         drift_detected = True
 
+    # 2. Ghost Variables (Legacy)
+    ghost_vars = vercel_vars - python_vars
+    if ghost_vars:
+        print(f"\n⚠️ WARNING: Ghost variables in config: {ghost_vars}")
+        legacy_found = [var for var in ghost_vars if 'AIRTABLE' in var or 'PROXYCURL' in var]
+        if legacy_found:
+            print(f"   -> CRITICAL: Legacy variables detected: {legacy_found}")
+            drift_detected = True
+
     if drift_detected:
-        print("❌ Configuration drift detected. Please fix before committing.")
-        return False
+        print("\n💥 Configuration drift detected. Fix required.")
+        sys.exit(1)
     else:
-        print("✅ Sync Status: Code and Configuration are aligned.")
-        return True
+        print("\n✅ Configuration Synchronized: System Integrity Verified.")
+        sys.exit(0)
 
 if __name__ == "__main__":
-    success = check_sync()
-    sys.exit(0 if success else 1)
+    main()

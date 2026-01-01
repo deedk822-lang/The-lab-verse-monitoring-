@@ -1,6 +1,10 @@
-httpx
-fastapi
-uvicorn
-python-dotenv
-hubspot-api-client
-requests
+# Core web framework dependencies
+fastapi==0.128.0
+uvicorn==0.29.0
+httpx==0.27.0
+
+# Talent Scout Core Dependencies
+astroid==3.3.4  # For robust AST-based configuration validation
+requests==2.31.0  # For HTTP requests to GitHub/HubSpot APIs
+python-dotenv==1.0.0  # For loading environment variables from .env (optional, if used)
+hubspot-api-client==15.1.0  # HubSpot API Client

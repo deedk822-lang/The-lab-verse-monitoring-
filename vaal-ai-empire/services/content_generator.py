@@ -6,11 +6,12 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class ContentFactory:
-    """Enhanced content generation with multiple provider support"""
+    """Enhanced content generation with lazy-loaded provider support"""
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
+        self.provider_classes = self._discover_providers()
+        self.provider_instances = {}  # Cache for initialized providers
         self.image_generator = None
 
         # Initialize image generation if available
@@ -21,61 +22,62 @@ class ContentFactory:
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
 
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
-
+    def _discover_providers(self) -> Dict:
+        """Discover all available content generation provider classes"""
+        provider_classes = {}
         # Try Cohere
         try:
             from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
-
+            provider_classes["cohere"] = CohereAPI
+        except (ImportError, ValueError):
+            pass
         # Try Groq
         try:
             from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
-
+            provider_classes["groq"] = GroqAPI
+        except (ImportError, ValueError):
+            pass
         # Try Mistral (local via Ollama)
         try:
             from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
-
+            provider_classes["mistral"] = MistralAPI
+        except (ImportError, ValueError):
+            pass
         # Try HuggingFace
         try:
             from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
+            provider_classes["huggingface"] = HuggingFaceAPI
+        except (ImportError, ValueError):
+            pass
 
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
+        logger.info(f"Discovered providers: {', '.join(provider_classes.keys())}")
+        return provider_classes
 
-        return providers
+    def get_provider(self, provider_name: str):
+        """Lazy-load a provider instance on first use"""
+        if provider_name in self.provider_instances:
+            return self.provider_instances[provider_name]
+
+        if provider_name in self.provider_classes:
+            try:
+                logger.info(f"Initializing {provider_name} provider...")
+                instance = self.provider_classes[provider_name]()
+                self.provider_instances[provider_name] = instance
+                logger.info(f"✅ {provider_name} provider initialized")
+                return instance
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to initialize {provider_name}: {e}")
+                # Remove from available providers to prevent re-initialization attempts
+                self.provider_classes.pop(provider_name, None)
+                return None
+        return None
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            provider = self.get_provider(provider_name)
             if provider is None:
                 continue
 
@@ -442,8 +444,17 @@ Generate all {days} emails now:"""
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
-        }
+        """Get the detailed status of all discovered providers."""
+        status = {}
+        # Iterate over a fixed list of known providers to ensure consistent output
+        for provider_name in ["cohere", "groq", "mistral", "huggingface"]:
+            if provider_name in self.provider_instances:
+                # The provider has been successfully initialized and is ready.
+                status[provider_name] = "initialized"
+            elif provider_name in self.provider_classes:
+                # The provider's class was discovered but it has not been used yet.
+                status[provider_name] = "available"
+            else:
+                # The provider's class could not be imported or failed to initialize.
+                status[provider_name] = "unavailable"
+        return status

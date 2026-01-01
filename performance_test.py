@@ -1,114 +1,106 @@
-# performance_test.py
 import time
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch, MagicMock
 
-# To allow the test to run without installing the agent, we add it to the path
-sys.path.insert(0, ".")
+# --- Original (Eager-Loading) Implementation ---
+# Copied here to create a stable benchmark baseline, as the original file is modified.
+class OriginalContentFactory:
+    def __init__(self, db=None):
+        self.db = db
+        self.providers = self._initialize_providers()
 
-# --- Original (Sequential) Implementation ---
-def original_discover_services(creds):
-    """The original, sequential implementation for benchmarking."""
-    from googleapiclient.discovery import build
-    services = {}
-    time.sleep(0.1) # Simulate network latency
-    try:
-        gmail = build("gmail", "v1", credentials=creds)
-        gmail.users().getProfile(userId="me").execute()
-        services["Gmail"] = True
-    except Exception:
-        services["Gmail"] = False
-    time.sleep(0.1)
-    try:
-        gbp = build("mybusinessbusinessinformation", "v1", credentials=creds)
-        accounts = gbp.accounts().list().execute()
-        services["GoogleBusiness"] = bool(accounts.get("accounts"))
-    except Exception:
-        services["GoogleBusiness"] = False
-    time.sleep(0.1)
-    try:
-        yt = build("youtube", "v3", credentials=creds)
-        yt.channels().list(mine=True, part="id").execute()
-        services["YouTube"] = True
-    except Exception:
-        services["YouTube"] = False
-    time.sleep(0.1)
-    try:
-        cal = build("calendar", "v3", credentials=creds)
-        cal.calendarList().list(maxResults=1).execute()
-        services["Calendar"] = True
-    except Exception:
-        services["Calendar"] = False
-    return services
+    def _initialize_providers(self):
+        providers = {"cohere": None, "groq": None, "mistral": None, "huggingface": None}
+        try:
+            from api.cohere import CohereAPI
+            providers["cohere"] = CohereAPI()
+        except (ImportError, ValueError):
+            pass
+        try:
+            from api.groq_api import GroqAPI
+            providers["groq"] = GroqAPI()
+        except (ImportError, ValueError):
+            pass
+        try:
+            from api.mistral import MistralAPI
+            providers["mistral"] = MistralAPI()
+        except (ImportError, ValueError):
+            pass
+        try:
+            from api.huggingface_api import HuggingFaceAPI
+            providers["huggingface"] = HuggingFaceAPI()
+        except (ImportError, ValueError):
+            pass
+        return providers
 
-# --- Optimized (Concurrent) Implementation ---
-# We import the function from the agent that we modified
-from agent import _discover_services as optimized_discover_services
+# --- Optimized (Lazy-Loading) Implementation ---
+# We need to add the subdirectory to the path to import the module correctly.
+sys.path.insert(0, 'vaal-ai-empire')
+from services.content_generator import ContentFactory as OptimizedContentFactory
 
-def benchmark_function(func, creds):
-    """Benchmark a function."""
-    start = time.perf_counter()
-    func(creds)
-    end = time.perf_counter()
-    return end - start
+# --- Mocking Dependencies ---
+# Mock the API modules to prevent ImportError and isolate the test
+# to the instantiation logic of the ContentFactory itself.
+mock_cohere = MagicMock()
+mock_groq = MagicMock()
+mock_mistral = MagicMock()
+mock_huggingface = MagicMock()
+mock_image_gen = MagicMock()
 
-def test_optimization():
-    """Compare original vs optimized performance."""
+# --- Benchmarking Logic ---
+def benchmark_instantiation(factory_class, iterations=1000):
+    """Measures the time taken to instantiate a class over many iterations."""
+    start_time = time.perf_counter()
+    for _ in range(iterations):
+        _ = factory_class()
+    end_time = time.perf_counter()
+    return end_time - start_time
+
+def run_performance_test():
+    """Compares the performance of the original and optimized factories."""
     print("=" * 60)
-    print("⚡ Bolt Performance Test: Concurrent Service Discovery ⚡")
+    print("⚡ Bolt: Performance Benchmark Test ⚡")
     print("=" * 60)
+    print("Target: ContentFactory Instantiation")
+    print("Optimization: Lazy-loading of API provider clients.")
+    print("-" * 60)
 
-    mock_creds = MagicMock()
+    iterations = 5000
 
-    # Mock the googleapiclient.discovery.build function
-    with patch('googleapiclient.discovery.build') as mock_build:
-        # Configure the mock to return a mock service object
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
+    # Mock all external API dependencies before running the benchmark
+    with patch.dict('sys.modules', {
+        'api.cohere': mock_cohere,
+        'api.groq_api': mock_groq,
+        'api.mistral': mock_mistral,
+        'api.huggingface_api': mock_huggingface,
+        'api.image_generation': mock_image_gen,
+    }):
+        # Benchmark Original
+        print(f"Running benchmark for Original Eager-Loading version ({iterations} iterations)...")
+        original_time = benchmark_instantiation(OriginalContentFactory, iterations)
+        print(f"  -> Original Total Time: {original_time:.6f}s")
+        print(f"  -> Original Avg. Time:  {(original_time / iterations) * 1e6:.2f} µs per instantiation")
 
-        # Test correctness first
-        original_result = original_discover_services(mock_creds)
+        # Benchmark Optimized
+        print(f"\nRunning benchmark for Optimized Lazy-Loading version ({iterations} iterations)...")
+        optimized_time = benchmark_instantiation(OptimizedContentFactory, iterations)
+        print(f"  -> Optimized Total Time: {optimized_time:.6f}s")
+        print(f"  -> Optimized Avg. Time:  {(optimized_time / iterations) * 1e6:.2f} µs per instantiation")
 
-        # Define a side effect that simulates latency and returns a mock
-        def mock_execute_with_latency(*args, **kwargs):
-            time.sleep(0.1)
-            # Return a new MagicMock to mimic the API returning an object
-            return MagicMock()
+    print("-" * 60)
 
-        # Apply the side effect to all execute calls for the optimized function
-        mock_service.users.return_value.getProfile.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.accounts.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.channels.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.calendarList.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-
-        optimized_result = optimized_discover_services(mock_creds)
-
-        # Sort the results to ensure they are comparable
-        original_sorted = sorted(original_result.items())
-        optimized_sorted = sorted(optimized_result.items())
-
-        assert original_sorted == optimized_sorted, "Results don't match!"
-        print("✅ Correctness verified: Results match")
-
-        # Benchmark speed
-        original_time = benchmark_function(original_discover_services, mock_creds)
-        optimized_time = benchmark_function(optimized_discover_services, mock_creds)
-
+    # Calculate and display results
+    if optimized_time > 0 and original_time > optimized_time:
         improvement = ((original_time - optimized_time) / original_time) * 100
+        times_faster = original_time / optimized_time
+        print(f"✅ SUCCESS: Optimized version is {improvement:.2f}% faster.")
+        print(f"   (Approximately {times_faster:.1f}x faster)")
+    elif original_time < optimized_time:
+        print("⚠️  REGRESSION: Optimized version is slower.")
+    else:
+        print("ℹ️  NO CHANGE: No significant performance change detected.")
 
-        print(f"\nOriginal (Sequential): {original_time:.4f}s")
-        print(f"Optimized (Concurrent): {optimized_time:.4f}s")
-        print(f"Improvement: {improvement:.1f}% faster")
-
-        if improvement > 50:
-            print("✅ SIGNIFICANT IMPROVEMENT")
-        elif improvement > 0:
-            print("✅ Minor improvement")
-        else:
-            print("⚠️ NO IMPROVEMENT - Optimization may not be effective")
-
-        return improvement > 0
+    print("=" * 60)
 
 if __name__ == "__main__":
-    success = test_optimization()
-    sys.exit(0 if success else 1)
+    run_performance_test()

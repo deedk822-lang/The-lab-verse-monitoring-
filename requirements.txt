@@ -1,7 +1,10 @@
-httpx
-fastapi
-uvicorn
-python-dotenv
-hubspot-api-client
-requests
-astroid==3.3.4
+# Talent Scout Core Dependencies
+astroid==3.3.4  # For robust AST-based configuration validation
+requests==2.31.0  # For HTTP requests to GitHub/HubSpot APIs
+python-dotenv==1.0.0  # For loading environment variables from .env (optional, if used)
+# HubSpot API Client (ensure the version is the latest stable)
+hubspot-api-client==12.0.0  # Reverted to latest known stable version
+
+# Add other dependencies as needed, e.g., logging, typing (often part of stdlib, so not always needed here)
+# Example: if using specific date handling beyond stdlib:
+# python-dateutil==2.8.2

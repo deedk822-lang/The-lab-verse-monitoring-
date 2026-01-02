@@ -1,43 +1,64 @@
 name: "Branch Security Gates & SRE Validation"
 
+# Use pull_request, not pull_request_target, for validation to avoid PPE risks
+# pull_request_target runs in the context of the base repo and has access to secrets,
+# but also runs on untrusted code from forks. Use with extreme caution.
 on:
   pull_request:
-    types: [opened, synchronize, reopened] # Run on PR open, base branch update, or re-open
+    types: [opened, synchronize, reopened, closed] # ADD 'closed' to trigger MTTR tracking
+    branches: [main, develop] # Only run on specific branches
 
+# Set default permissions to read-only
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
+  pull-requests: read # Initially read, write only where needed
+  statuses: read # Initially read, write only where needed
 
 jobs:
   sre-validation:
     runs-on: ubuntu-latest
+    # Grant minimal required permissions for this job
+    permissions:
+      contents: read # Needed for checkout
+      pull-requests: read # Needed to read PR details if required by script
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pin to SHA (v4.2.2)
+        with:
+          # Use the PR head SHA for security, not the merge commit (default for pull_request)
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fetch only necessary history for validation (e.g., compare with base)
+          fetch-depth: 2
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a20 # Pin to SHA (v5.3.0)
         with:
           python-version: '3.10'
       - name: Install dependencies
-        run: pip install -r requirements.txt # Ensure astroid is installed
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt # Ensure astroid, pip-audit, etc., are installed
       - name: Run Configuration Sync Check
         id: validator
-        run: python .github/scripts/validate_config_sync.py # Use the astroid version
+        run: python .github/scripts/validate_config_sync.py # Use the enhanced astroid version
+      - name: Dependency Security Scan
+        run: |
+          pip-audit --require-hashes --desc # Use pip-audit as recommended
+        continue-on-error: false # Fail the job if security issues are found
 
   # The Fixer (Listens for validation failures via comments or specific triggers)
-  # This assumes a mechanism to trigger Jules *after* the validation fails.
-  # The previous workflow `sre-bot-loop.yml` handled summoning Jules on a comment trigger.
-  # We can integrate the summoning logic here if the validation fails *within* this job,
-  # but the comment-based trigger is also valid.
-  # For this example, let's assume Jules is triggered externally or by a failure comment.
-  # If we want to trigger Jules *immediately* on failure within this workflow:
+  # This job is typically triggered by an external comment, not by this workflow's failure directly.
+  # The 'ai-validation' job below handles the trigger *if* this workflow posts a comment.
+  # However, let's keep the mechanism shown, assuming it's triggered by a comment containing a trigger phrase.
+  # For this job to run, it needs write permissions to PRs.
   ai-validation:
     needs: sre-validation
     if: failure() # Only run if sre-validation failed
     runs-on: ubuntu-latest
+    # This job requires write access to post comments
+    permissions:
+      pull-requests: write
     steps:
       - name: Comment to Trigger Jules
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # Pin to SHA (v7.0.1)
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -50,18 +71,35 @@ jobs:
               body: body
             });
 
-  # NEW: MTTR Tracking Job (Runs on successful PR merge)
+  # NEW: MTTR Tracking Job (Runs on successful PR merge - triggered by 'closed' event)
+  # This job *could* run on pull_request_target closed, but for simple reporting like this,
+  # using the standard pull_request closed event and GITHUB_TOKEN is often sufficient
+  # if it doesn't need to trigger other workflows based on the update.
+  # If it *must* run *after* merge and update status/labels, pull_request_target might be needed,
+  # but then extreme care is needed with actions/checkout.
+  # For this example, let's stick with pull_request for the MTTR job as well.
   mttr-tracking:
-    # This job runs after the PR is merged successfully
-    # It calculates the time from PR creation to merge
+    # This job runs *after* the PR is closed (merged or not)
+    # The condition ensures it only runs if the PR was actually merged.
+    # Note: This still runs on the pull_request event, so it sees the PR state *before* it's closed.
+    # The 'closed' event type means the PR is closed (merged or not).
+    # We need to check if it was merged specifically.
+    # This job runs in the context of the PR's head branch, but the PR itself is closed.
+    # It needs to access the PR details to get creation/merge time.
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    # Grant minimal required permissions for this job
+    permissions:
+      contents: read
+      pull-requests: read # To read PR details
+      statuses: write # To update status checks if needed (optional, here for comments)
     steps:
       - name: Calculate & Post MTTR
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # Pin to SHA (v7.0.1)
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { owner, repo } = context.repo;
             const pr = context.payload.pull_request;
             const created = new Date(pr.created_at);
             const merged = new Date(pr.merged_at);
@@ -74,8 +112,14 @@ jobs:
             const comment = `### 📊 MTTR Report\n\n**Status:** ${badge}\n**Time to Merge (MTTR):** ${mttrMinutes} minutes\n\n> Self-healing loop completed successfully.`;
 
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               issue_number: pr.number,
               body: comment
             });
+
+            // NEW: Update GitHub Summary (SLO Dashboard Integration)
+            const fs = require('fs');
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            const summaryContent = `## SRE SLO Report\n- Latest MTTR: ${mttrMinutes} minutes\n- AI-Healed: ${isAiGenerated ? 'Yes' : 'No'}\n- PR: #${pr.number}\n`;
+            fs.appendFileSync(summaryPath, summaryContent, { flag: 'a' });

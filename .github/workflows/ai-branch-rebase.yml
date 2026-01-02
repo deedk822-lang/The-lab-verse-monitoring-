@@ -1,0 +1,89 @@
+name: "AI Branch Auto-Rebase"
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC (adjust as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+# Set default permissions to read-only
+permissions:
+  contents: read # Initially read, write only where needed
+  pull-requests: read # Initially read, read only where needed
+
+jobs:
+  rebase-ai-branches:
+    runs-on: ubuntu-latest
+    # Grant minimal required permissions for this job
+    permissions:
+      contents: write # Needed to push rebased branches
+      pull-requests: read # Needed to list PRs if checking status
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pin to SHA (v4.2.2)
+        with:
+          fetch-depth: 0 # Fetch full history for rebase
+          token: ${{ secrets.GITHUB_TOKEN }} # Use the default token
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch All Branches
+        run: git fetch origin
+
+      - name: Identify and Rebase AI Branches
+        run: |
+          # Get the default base branch (usually main or develop)
+          BASE_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+          echo "Base branch identified as: $BASE_BRANCH"
+
+          # Find all remote branches starting with 'ai-fix/'
+          AI_BRANCHES=$(git branch -r | grep "origin/ai-fix/" | sed 's|origin/||')
+
+          if [ -z "$AI_BRANCHES" ]; then
+            echo "No 'ai-fix/' branches found on remote."
+            exit 0
+          fi
+
+          echo "Found AI branches: $AI_BRANCHES"
+
+          for branch in $AI_BRANCHES; do
+            echo "Processing branch: $branch"
+
+            # Checkout the AI branch
+            git checkout $branch || { echo "Failed to checkout $branch"; continue; }
+
+            # Attempt to rebase onto the latest base branch
+            if git rebase "origin/$BASE_BRANCH"; then
+              echo "✅ Rebase successful for $branch."
+              # Force push the rebased branch back to the remote
+              # Use --force-with-lease for safer pushing
+              if git push --force-with-lease origin "$branch"; then
+                 echo "   -> Branch $branch pushed successfully."
+              else
+                 echo "❌ Failed to push rebased branch $branch."
+              fi
+            else
+              echo "❌ Rebase failed for $branch due to conflicts."
+              # Abort the rebase to leave the working directory clean
+              git rebase --abort
+              echo "   -> Rebase aborted for $branch. Branch is unchanged."
+
+              # Optional: Post a comment on the associated PR if conflicts occur
+              # This requires finding the PR number for the branch, which is complex via git alone
+              # Using GitHub CLI is easier
+              # gh pr list --head $branch --json number --jq '.[0].number' might work
+              PR_NUMBER=$(gh pr list --head "$branch" --json number --jq '.[0].number' 2>/dev/null)
+              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+                  COMMENT_BODY="⚠️ **Auto-Rebase Failed**\n\nThe daily attempt to rebase this AI-generated branch (\`$branch\`) onto the updated base branch (\`$BASE_BRANCH\`) failed due to merge conflicts. Please resolve the conflicts manually."
+                  gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"
+                  echo "   -> Comment posted on PR #$PR_NUMBER"
+              else
+                  echo "   -> Could not find associated PR for $branch to comment."
+              fi
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for 'gh' CLI command

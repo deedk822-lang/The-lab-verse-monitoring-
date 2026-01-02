@@ -1,0 +1,147 @@
+name: "Auto-Fill PR Template with AI (GLM-4)"
+
+# Trigger on PR creation or new commits. Only runs on PRs from the same repo.
+on:
+  pull_request:
+    types: [opened, synchronize] # Trigger on PR creation or new commits
+    branches: [main, develop]
+
+# Set default permissions to read-only
+permissions:
+  contents: read
+  pull-requests: read # Initially read, write only where needed
+
+jobs:
+  auto-fill-template:
+    runs-on: ubuntu-latest
+    # Grant minimal required permissions for this job
+    permissions:
+      contents: read # Required to check out the code.
+      pull-requests: write # Required to read PR details and update the description.
+    steps:
+      # 1. Checkout code (from the PR's head branch)
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pin to SHA (v4.2.2)
+        with:
+          # Use the PR head SHA for security, not the merge commit (default for pull_request)
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fetch only necessary history for getting the diff (e.g., compare with base)
+          fetch-depth: 2
+
+      # 2. Fetch the PR Diff
+      - name: Get PR Diff
+        id: get_diff
+        run: |
+          # Use GitHub CLI to get the diff for the PR
+          # Truncate if very large to avoid token limits (optional, adjust size)
+          gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }} | head -c 50000 > pr_diff.txt
+          echo "Diff saved to pr_diff.txt (truncated if large)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub CLI needs this
+
+      # 3. Setup Python and Install Dependencies
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a20 # Pin to SHA (v5.3.0)
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt # Installs zhipuai, pip-audit, etc.
+
+      # 4. Run the AI Generation Script (Zhipu AI GLM)
+      - name: Generate AI Description (Zhipu AI GLM)
+        id: ai_gen_zhipu
+        run: |
+          python .github/scripts/generate_pr_description_zhipu.py pr_diff.txt .github/pr_template_prompt.txt > ai_output.txt
+          AI_CONTENT=$(cat ai_output.txt)
+          echo "ai_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$AI_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} # The secret is passed here
+
+      # 5. Update PR Description
+      # This step requires write access to the PR
+      - name: Update PR Description
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # Pin to SHA (v7.0.1)
+        with:
+          # Use a Personal Access Token (PAT) if you want subsequent workflows to trigger
+          # Otherwise, the default GITHUB_TOKEN won't trigger other workflows when updating the PR
+          github-token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo, number: pr_number } = context.issue;
+            const ai_output = `${{ steps.ai_gen_zhipu.outputs.ai_content }}`;
+
+            // Fetch the current PR description
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pr_number
+            });
+            let current_body = pr.body || '';
+
+            // Define markers in the template to identify where to insert AI content
+            const summaryMarker = '## 🛠 Summary of Changes';
+            const impactMarker = '## 🎯 Impact';
+            const testingMarker = '## 🧪 Testing (if applicable)';
+
+            // Check if the markers exist in the current body
+            if (current_body.includes(summaryMarker)) {
+              // If markers exist, replace the content between them with AI output
+              // Find the start of the summary section
+              const summaryStartIndex = current_body.indexOf(summaryMarker);
+              if (summaryStartIndex !== -1) {
+                // Find the start of the next section (impact or testing or end of body)
+                const impactIndex = current_body.indexOf(impactMarker, summaryStartIndex + summaryMarker.length);
+                const testingIndex = current_body.indexOf(testingMarker, summaryStartIndex + summaryMarker.length);
+                const nextSectionStart = [impactIndex, testingIndex].filter(i => i !== -1).sort((a, b) => a - b)[0];
+                const sectionEndIndex = nextSectionStart !== -1 ? nextSectionStart : current_body.length;
+
+                // Split the body into parts: before the summary, the summary section, and after the summary section
+                const beforeSummary = current_body.substring(0, summaryStartIndex + summaryMarker.length);
+                const afterSummarySection = current_body.substring(sectionEndIndex);
+
+                // The AI output is expected to contain all three sections sequentially
+                // Split the AI output based on the markers it should have generated
+                // This is a simple split; a more robust parser might be needed for complex outputs
+                const aiSections = ai_output.split('\n## ').map(s => '## ' + s).filter(s => s.trim() !== '## ');
+
+                let newSummaryContent = '';
+                let newImpactContent = '';
+                let newTestingContent = '';
+
+                aiSections.forEach(section => {
+                  if (section.startsWith(summaryMarker)) {
+                    newSummaryContent = section.substring(summaryMarker.length).trim();
+                  } else if (section.startsWith(impactMarker)) {
+                    newImpactContent = section.substring(impactMarker.length).trim();
+                  } else if (section.startsWith(testingMarker)) {
+                    newTestingContent = section.substring(testingMarker.length).trim();
+                  }
+                });
+
+                // Reconstruct the body
+                let newBody = beforeSummary;
+                if (newSummaryContent) newBody += '\n' + newSummaryContent;
+                if (newImpactContent) newBody += '\n\n' + impactMarker + '\n' + newImpactContent;
+                if (newTestingContent) newBody += '\n\n' + testingMarker + '\n' + newTestingContent;
+                newBody += afterSummarySection;
+
+                current_body = newBody;
+              }
+            } else {
+              // If the template markers don't exist, append the AI output to the end
+              // This handles cases where the template might not be strictly followed initially
+              current_body += '\n\n---\n\n## Auto-Generated AI Summary (GLM-4)\n\n' + ai_output;
+            }
+
+            // Update the PR description
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: pr_number,
+              body: current_body
+            });
+            console.log("PR description updated with AI-generated content (GLM-4).");

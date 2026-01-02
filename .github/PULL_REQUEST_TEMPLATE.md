@@ -5,7 +5,15 @@
 - **Related Issue/Comment:** <!-- Link to the original issue/comment that triggered the fix -->
 
 ## 🛠 Summary of Changes
-<!-- Briefly describe what was fixed -->
+<!-- AI will fill this based on the diff -->
 
-## 🤖 Jules/Kimi Output (Auto-filled on ai-fix branches)
-<!-- Paste AI reasoning and diff here if applicable -->
+## 🎯 Impact
+<!-- AI will describe the impact -->
+
+## 🧪 Testing (if applicable)
+<!-- AI will suggest verification steps -->
+
+## ✅ Validation Checklist
+- [ ] Code adheres to `talent_scout_exceptions.py` architecture (if applicable).
+- [ ] Configuration drift identified by `validate_config_sync.py` has been resolved.
+- [ ] (For manual PRs) MTTR target considered (e.g., aim for < 30 mins for drift fixes).

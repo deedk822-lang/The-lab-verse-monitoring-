@@ -3,14 +3,61 @@ import logging
 import json
 from datetime import datetime
 
+import importlib
+
 logger = logging.getLogger(__name__)
+
+
+class ProviderFactory:
+    """
+    ⚡ Bolt Optimization: Lazy-loads and caches AI content providers.
+    This prevents all API clients from being initialized on every
+    ContentFactory instantiation, significantly speeding up the process.
+    """
+    _provider_cache: Dict[str, Optional[object]] = {}
+    _provider_map: Dict[str, tuple[str, str]] = {
+        "cohere": ("api.cohere", "CohereAPI"),
+        "groq": ("api.groq_api", "GroqAPI"),
+        "mistral": ("api.mistral", "MistralAPI"),
+        "huggingface": ("api.huggingface_api", "HuggingFaceAPI"),
+    }
+
+    @classmethod
+    def get_provider(cls, provider_name: str) -> Optional[object]:
+        """On-demand initializes and returns a provider instance."""
+        # Return from cache if already initialized
+        if provider_name in cls._provider_cache:
+            return cls._provider_cache[provider_name]
+
+        if provider_name not in cls._provider_map:
+            logger.warning(f"Provider '{provider_name}' not recognized.")
+            return None
+
+        # Dynamically import and instantiate the provider
+        try:
+            module_path, class_name = cls._provider_map[provider_name]
+            module = importlib.import_module(module_path)
+            provider_class = getattr(module, class_name)
+            instance = provider_class()
+
+            cls._provider_cache[provider_name] = instance
+            logger.info(f"✅ {provider_name.capitalize()} provider lazy-loaded and initialized.")
+            return instance
+        except (ImportError, AttributeError, ValueError) as e:
+            # Cache the failure to prevent repeated attempts
+            cls._provider_cache[provider_name] = None
+            logger.warning(f"⚠️  {provider_name.capitalize()} unavailable on first use: {e}")
+            return None
+
 
 class ContentFactory:
     """Enhanced content generation with multiple provider support"""
 
     def __init__(self, db=None):
         self.db = db
-        self.providers = self._initialize_providers()
+        # ⚡ Bolt Optimization: Replaced eager initialization with a lazy-loading factory.
+        # self.providers = self._initialize_providers()
+        self.provider_factory = ProviderFactory()
         self.image_generator = None
 
         # Initialize image generation if available
@@ -21,61 +68,13 @@ class ContentFactory:
         except Exception as e:
             logger.warning(f"⚠️  Image generation disabled: {e}")
 
-    def _initialize_providers(self) -> Dict:
-        """Initialize all available content generation providers"""
-        providers = {
-            "cohere": None,
-            "groq": None,
-            "mistral": None,
-            "huggingface": None
-        }
-
-        # Try Cohere
-        try:
-            from api.cohere import CohereAPI
-            providers["cohere"] = CohereAPI()
-            logger.info("✅ Cohere provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Cohere unavailable: {e}")
-
-        # Try Groq
-        try:
-            from api.groq_api import GroqAPI
-            providers["groq"] = GroqAPI()
-            logger.info("✅ Groq provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Groq unavailable: {e}")
-
-        # Try Mistral (local via Ollama)
-        try:
-            from api.mistral import MistralAPI
-            providers["mistral"] = MistralAPI()
-            logger.info("✅ Mistral provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  Mistral unavailable: {e}")
-
-        # Try HuggingFace
-        try:
-            from api.huggingface_api import HuggingFaceAPI
-            providers["huggingface"] = HuggingFaceAPI()
-            logger.info("✅ HuggingFace provider initialized")
-        except (ImportError, ValueError) as e:
-            logger.warning(f"⚠️  HuggingFace unavailable: {e}")
-
-        available = [k for k, v in providers.items() if v is not None]
-        if available:
-            logger.info(f"Available providers: {', '.join(available)}")
-        else:
-            logger.error("❌ No content generation providers available!")
-
-        return providers
-
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "huggingface"]
 
         for provider_name in priority:
-            provider = self.providers.get(provider_name)
+            # ⚡ Bolt Optimization: Get provider on-demand instead of from a pre-initialized dict.
+            provider = self.provider_factory.get_provider(provider_name)
             if provider is None:
                 continue
 
@@ -442,8 +441,17 @@ Generate all {days} emails now:"""
         }
 
     def get_provider_status(self) -> Dict:
-        """Get status of all providers"""
-        return {
-            provider: "available" if client else "unavailable"
-            for provider, client in self.providers.items()
-        }
+        """
+        ⚡ Bolt Fix: Restore original method contract to avoid breaking changes.
+        This method now actively initializes all providers to give a definitive
+        "available" or "unavailable" status, matching the old behavior.
+        The performance benefit of lazy loading is retained for all other
+        operations.
+        """
+        status = {}
+        known_providers = self.provider_factory._provider_map.keys()
+        for provider_name in known_providers:
+            # This will trigger initialization if not already cached
+            provider = self.provider_factory.get_provider(provider_name)
+            status[provider_name] = "available" if provider else "unavailable"
+        return status

@@ -1,21 +1,16 @@
 from fastapi import FastAPI
 import sys
 import os
- feat/hubspot-ollama-integration-9809589759324023108
-
 import json
+import logging
 from hubspot import HubSpot
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
 from typing import Optional
- main
- feat/jules-kimi-activation-16043666581364389657
 
 # --- Configuration ---
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
- main
 
 # Ensure the root directory is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,15 +28,13 @@ except ImportError as e:
 app = FastAPI(title="Lab Verse API")
 orchestrator = RainmakerOrchestrator()
 
+class HubSpotWebhookPayload(BaseModel):
+    objectId: int
+    message_body: str
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
- feat/hubspot-ollama-integration-9809589759324023108
- feat/jules-kimi-activation-16043666581364389657
-
-
- main
-
 
 # TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
 def get_market_intel(company_name: str):
@@ -138,4 +131,3 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         return {"status": "processed_with_deal_creation_error", "contact_id": contact_id}
 
     return {"status": "processed", "contact_id": contact_id}
- main

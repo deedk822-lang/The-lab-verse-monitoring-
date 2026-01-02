@@ -21,13 +21,12 @@ jobs:
       - name: Run Config-Code Validator
         id: validator
         run: python .github/scripts/validate_config_sync.py
-        continue-on-error: true
 
-      - name: Trigger Jules Remediation on Failure or Comment
+      - name: Trigger Jules Remediation on Comment
         if: |
-          steps.validator.outcome == 'failure' ||
-          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '#FIX-REQUIRED') &&
-          (github.event.comment.user.login == 'coderabbitai[bot]' || github.event.comment.user.login == 'coderabbitai'))
+          github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '#FIX-REQUIRED') &&
+          (github.event.comment.user.login == 'coderabbitai[bot]' || github.event.comment.user.login == 'coderabbitai')
         uses: actions/github-script@v7
         with:
           script: |

@@ -1,0 +1,81 @@
+name: "Branch Security Gates & SRE Validation"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened] # Run on PR open, base branch update, or re-open
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  sre-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt # Ensure astroid is installed
+      - name: Run Configuration Sync Check
+        id: validator
+        run: python .github/scripts/validate_config_sync.py # Use the astroid version
+
+  # The Fixer (Listens for validation failures via comments or specific triggers)
+  # This assumes a mechanism to trigger Jules *after* the validation fails.
+  # The previous workflow `sre-bot-loop.yml` handled summoning Jules on a comment trigger.
+  # We can integrate the summoning logic here if the validation fails *within* this job,
+  # but the comment-based trigger is also valid.
+  # For this example, let's assume Jules is triggered externally or by a failure comment.
+  # If we want to trigger Jules *immediately* on failure within this workflow:
+  ai-validation:
+    needs: sre-validation
+    if: failure() # Only run if sre-validation failed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment to Trigger Jules
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo, pull_request: pr } = context.payload;
+            const body = `@google-labs-jules ⚠️ **SRE ALERT**: The Config-Code Sync check failed. Please analyze the logs and submit a fix PR branch (e.g., \`ai-fix/config-sync-<issue>\`).`;
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr.number,
+              body: body
+            });
+
+  # NEW: MTTR Tracking Job (Runs on successful PR merge)
+  mttr-tracking:
+    # This job runs after the PR is merged successfully
+    # It calculates the time from PR creation to merge
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate & Post MTTR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const created = new Date(pr.created_at);
+            const merged = new Date(pr.merged_at);
+            const mttrMinutes = Math.round((merged - created) / 60000);
+
+            // Determine if this was an AI-generated PR (heuristic)
+            const isAiGenerated = pr.head.ref.startsWith('ai-fix/') || pr.title.toLowerCase().includes('ai-fix');
+
+            const badge = isAiGenerated ? '🤖 AI-HEALED' : '🧑‍💻 HUMAN-HEALED';
+            const comment = `### 📊 MTTR Report\n\n**Status:** ${badge}\n**Time to Merge (MTTR):** ${mttrMinutes} minutes\n\n> Self-healing loop completed successfully.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: comment
+            });

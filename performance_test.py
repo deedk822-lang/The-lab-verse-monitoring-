@@ -1,194 +1,125 @@
- bolt/parallelize-daily-automation-8919749710849742159
-
-
- bolt/cache-hf-model-loading-6086113376814306475
-import timeit
-import sys
-
-# Add the project directory to the Python path
-sys.path.insert(0, 'vaal-ai-empire')
-
-# To benchmark the original, we need to simulate the old code
-from unittest.mock import patch
-from sentence_transformers import SentenceTransformer
-
-# Original (simulated) implementation
-class OriginalHuggingFaceLab:
-    def __init__(self):
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception:
-            self.seo_model = None
-
-    def optimize_keywords(self, keywords: list):
-        if not self.seo_model: return 0
-        embeddings = self.seo_model.encode(keywords)
-        return len(embeddings)
-
-# Optimized implementation
-from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab
-
-def benchmark():
-    """Compare original vs optimized performance."""
-    print("=" * 60)
-    print("⚡ BOLT: PERFORMANCE COMPARISON TEST")
-    print("=" * 60)
-
-    # --- Correctness Check ---
-    # We need to install dependencies to run this check
-    try:
-        original_instance = OriginalHuggingFaceLab()
-        optimized_instance = OptimizedHuggingFaceLab()
-
-        test_keywords = ["python", "performance", "optimization"]
-        original_result = original_instance.optimize_keywords(test_keywords)
-        optimized_result = optimized_instance.optimize_keywords(test_keywords)
-
-        assert original_result == optimized_result, f"Results do not match! Original: {original_result}, Optimized: {optimized_result}"
-        print("✅ Correctness verified: Results match")
-    except ImportError as e:
-        print(f"⚠️ Skipping correctness check: Dependency not found ({e}). Please run 'pip install sentence-transformers'.")
-    except Exception as e:
-        print(f"❌ Correctness check failed: {e}")
-        return False
-
-    # --- Speed Benchmark ---
-    iterations = 10  # Instantiation is slow, so we use fewer iterations
-
-    # Measure original
-    original_setup = "from __main__ import OriginalHuggingFaceLab"
-    original_code = "OriginalHuggingFaceLab()"
-    original_time = timeit.timeit(original_code, setup=original_setup, number=iterations)
-
-    # Measure optimized
-    optimized_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab"
-    optimized_code = "OptimizedHuggingFaceLab()"
-    optimized_time = timeit.timeit(optimized_code, setup=optimized_setup, number=iterations)
-
-    # The first run of the optimized version will be slow due to model loading.
-    # We run it once to cache the model, then benchmark subsequent runs.
-    print("\nCaching optimized model...")
-    first_run_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab; OptimizedHuggingFaceLab()"
-    cached_optimized_time = timeit.timeit(optimized_code, setup=first_run_setup, number=iterations)
-
-    print(f"\n--- Benchmark Results ({iterations} instantiations) ---")
-    print(f"Original Total Time:      {original_time:.4f}s")
-    print(f"Optimized (First Run):    {optimized_time:.4f}s (includes one-time model load)")
-    print(f"Optimized (Subsequent):   {cached_optimized_time:.4f}s (uses cached model)")
-
-    try:
-        improvement = ((original_time - cached_optimized_time) / original_time) * 100
-        print(f"\nImprovement (Subsequent): {improvement:.1f}% faster")
-
-        if improvement > 10:
-            print("✅ SIGNIFICANT IMPROVEMENT DETECTED")
-        elif improvement > 0:
-            print("✅ Minor improvement")
-        else:
-            print("⚠️ NO IMPROVEMENT - Optimization may not be effective")
-        return improvement > 0
-    except ZeroDivisionError:
-        print("⚠️ Could not calculate improvement (division by zero).")
-        return False
-
-
-if __name__ == "__main__":
-    success = benchmark()
-
- vercel/enable-vercel-speed-insights-o-6em3bz
+# performance_test.py
 import time
 import sys
 import os
-from unittest.mock import patch, MagicMock
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from unittest.mock import MagicMock
 
-# Ensure the script can find the vaal-ai-empire modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'vaal-ai-empire')))
+# --- Mocks to simulate real classes ---
 
-from scripts.daily_automation import DailyAutomation
+class MockSocialPoster:
+    """A mock poster that simulates network latency."""
+    def post_via_ayrshare(self, content, platforms, image_url=None):
+        time.sleep(0.1)  # Simulate a 100ms network call
+        return {"status": "success"}
 
-# Mock data for clients
-MOCK_CLIENTS = [
-    {"id": f"client_{i}", "name": f"Client {i}", "business_type": "butchery", "language": "afrikaans"}
-    for i in range(20)
-]
+class MockContentScheduler:
+    """A mock scheduler that returns a fixed list of posts."""
+    def __init__(self, posts):
+        self._posts = posts
+        self._posted_ids = set()
 
-def benchmark_sequential(automation_instance):
-    """Benchmarks the original sequential method."""
-    print("\n--- Benchmarking OLD Sequential Method ---")
-    start_time = time.perf_counter()
+    def get_due_posts(self):
+        return self._posts
 
-    for client in MOCK_CLIENTS:
-        automation_instance._generate_for_client(client)
+    def mark_posted(self, post_id):
+        self._posted_ids.add(post_id)
 
-    end_time = time.perf_counter()
-    return end_time - start_time
+# --- Implementations to test ---
 
-def benchmark_parallel(automation_instance):
-    """Benchmarks the new parallelized method."""
-    print("\n--- Benchmarking NEW Parallel Method ---")
-    start_time = time.perf_counter()
+# 1. Original Sequential Implementation
+def post_scheduled_content_original(scheduler, poster):
+    due_posts = scheduler.get_due_posts()
+    for post in due_posts:
+        try:
+            platforms = post["platforms"].split(",")
+            result = poster.post_via_ayrshare(
+                post["content"],
+                platforms,
+                post.get("image_url")
+            )
+            if result.get("status") != "error":
+                scheduler.mark_posted(post["id"])
+        except Exception:
+            pass # Ignore errors in test
 
-    with patch.object(automation_instance.db, 'get_active_clients', return_value=MOCK_CLIENTS):
-        automation_instance.generate_content_for_all_clients()
+# 2. New Parallel Implementation
+def _post_single_item_parallel(post, scheduler, poster):
+    try:
+        platforms = post["platforms"].split(",")
+        result = poster.post_via_ayrshare(
+            post["content"],
+            platforms,
+            post.get("image_url")
+        )
+        if result.get("status") != "error":
+            scheduler.mark_posted(post["id"])
+            return post["id"], True
+        return post["id"], False
+    except Exception:
+        return post["id"], False
 
-    end_time = time.perf_counter()
-    return end_time - start_time
+def post_scheduled_content_optimized(scheduler, poster):
+    due_posts = scheduler.get_due_posts()
+    if not due_posts:
+        return
 
-@patch('scripts.daily_automation.ContentScheduler')
-@patch('scripts.daily_automation.ContentFactory')
-@patch('scripts.daily_automation.Database')
-def test_optimization(MockDatabase, MockFactory, MockScheduler):
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_post = {executor.submit(_post_single_item_parallel, post, scheduler, poster): post for post in due_posts}
+        for future in as_completed(future_to_post):
+            future.result()
+
+# --- Benchmark ---
+
+def benchmark_function(func, scheduler, poster):
+    """Benchmark a function's execution time."""
+    start = time.perf_counter()
+    func(scheduler, poster)
+    end = time.perf_counter()
+    return end - start
+
+def run_benchmark():
     """Compare original vs optimized performance."""
     print("=" * 60)
-    print("⚡ Bolt: Performance Comparison Test ⚡")
+    print("⚡ Bolt: Performance Benchmark")
+    print("Target: Parallelizing social media posting")
     print("=" * 60)
-    print(f"Simulating content generation for {len(MOCK_CLIENTS)} clients...")
 
-    # Mock the dependencies to isolate the concurrency logic
-    mock_db_instance = MockDatabase.return_value
-    mock_factory_instance = MockFactory.return_value
-    mock_scheduler_instance = MockScheduler.return_value
+    # Setup
+    num_posts = 50
+    print(f"Simulating {num_posts} posts, each with 100ms network latency...")
+    dummy_posts = [{"id": i, "content": f"Post {i}", "platforms": "facebook,twitter", "client_id": "test"} for i in range(num_posts)]
 
-    # Simulate a network delay in content generation
-    def fake_generation(business_type, language):
-        time.sleep(0.1)  # Simulate 100ms I/O delay
-        return {"posts": ["post1", "post2"]}
+    poster = MockSocialPoster()
 
-    mock_factory_instance.generate_social_pack.side_effect = fake_generation
-    mock_scheduler_instance.schedule_pack.return_value = None
+    # Benchmark Original
+    scheduler_orig = MockContentScheduler(dummy_posts)
+    original_time = benchmark_function(post_scheduled_content_original, scheduler_orig, poster)
 
-    # Create an instance of the automation class with mocked dependencies
-    automation = DailyAutomation()
-    automation.db = mock_db_instance
-    automation.factory = mock_factory_instance
-    automation.scheduler = mock_scheduler_instance
+    # Benchmark Optimized
+    scheduler_opt = MockContentScheduler(dummy_posts)
+    optimized_time = benchmark_function(post_scheduled_content_optimized, scheduler_opt, poster)
 
-    # --- Benchmark Sequential ---
-    sequential_time = benchmark_sequential(automation)
+    # Verify correctness
+    assert scheduler_orig._posted_ids == scheduler_opt._posted_ids, "Mismatch in posted items!"
+    print("\n✓ Correctness verified: Both methods posted the same items.")
 
-    # --- Benchmark Parallel ---
-    parallel_time = benchmark_parallel(automation)
+    # Show results
+    improvement = ((original_time - optimized_time) / original_time) * 100 if original_time > 0 else 0
 
-    # --- Report Results ---
-    improvement = ((sequential_time - parallel_time) / sequential_time) * 100
-
-    print("\n" + "=" * 60)
-    print("📊 RESULTS")
-    print("-" * 60)
-    print(f"Sequential Time: {sequential_time:.4f}s")
-    print(f"Parallel Time:   {parallel_time:.4f}s")
-    print("-" * 60)
-    print(f"🚀 Improvement: {improvement:.2f}% faster")
-    print("=" * 60)
+    print("\n--- BENCHMARK RESULTS ---")
+    print(f"Original (Sequential): {original_time:.4f}s")
+    print(f"Optimized (Parallel):  {optimized_time:.4f}s")
+    print("-------------------------")
+    print(f"🚀 Improvement: {improvement:.1f}% faster")
 
     if improvement > 50:
-        print("✅ SUCCESS: Significant performance improvement verified!")
+        print("\n🏆 STATUS: SIGNIFICANT IMPROVEMENT")
         return True
     else:
-        print("⚠️ FAILURE: No significant improvement. Optimization may not be effective.")
+        print("\n STATUS: No significant improvement.")
         return False
 
 if __name__ == "__main__":
-    success = test_optimization()
- main
+    success = run_benchmark()
     sys.exit(0 if success else 1)

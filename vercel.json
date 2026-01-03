@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "framework": "nextjs",
   "installCommand": "npm ci --legacy-peer-deps",
-  "framework": "vite",
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "NODE_VERSION": "20.x",
       "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
       "NEXT_PUBLIC_EVENT_DATE": "@event-date"
     }
@@ -17,25 +14,33 @@
       "runtime": "nodejs20.x",
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/health": {
+      "runtime": "edge"
     }
   },
+  "crons": [
+    {
+      "path": "/api/health-check",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/bandwidth-monitor",
+      "schedule": "0 */6 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=31536000; includeSubDomains"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
       ]
     }
-  ]
+  ],
+  "regions": ["iad1"]
 }

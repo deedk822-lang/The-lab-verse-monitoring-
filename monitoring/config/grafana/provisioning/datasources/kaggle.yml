@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Kaggle
+    type: grafana-infinity-datasource
+    access: proxy
+    jsonData:
+      httpMethod: "GET"
+      httpHeaderName1: "Authorization"
+    secureJsonData:
+      httpHeaderValue1: "Bearer $KAGGLE_API_TOKEN"

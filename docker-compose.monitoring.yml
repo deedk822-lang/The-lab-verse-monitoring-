@@ -76,9 +76,10 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-VaalEmpire2025!}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://localhost:3001
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource,grafana-infinity-datasource
       - GF_ANALYTICS_REPORTING_ENABLED=false
       - GF_AUTH_ANONYMOUS_ENABLED=false
+      - KAGGLE_API_TOKEN=${KAGGLE_API_TOKEN}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/config/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -91,6 +92,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   # ============ LOG AGGREGATION ============ # From HEAD
   loki:
@@ -138,18 +140,22 @@ services:
       - vaal-monitoring
     ports:
       - "9093:9093"
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
     volumes:
-      - ./monitoring/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./monitoring/config/alertmanager.yml.tmpl:/etc/alertmanager/alertmanager.yml.tmpl:ro
       - alertmanager-data:/alertmanager
     command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
+      - /bin/sh
+      - -c
+      - envsubst < /etc/alertmanager/alertmanager.yml.tmpl > /etc/alertmanager/alertmanager.yml && /bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
 
   # ============ REDIS EXPORTER (for caching metrics) ============ # From HEAD
   redis-exporter:

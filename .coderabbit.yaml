@@ -24,10 +24,3 @@ reviews:
         | :--- | :--- | :--- | :--- | :--- |
         | Critical | Config-Drift | `vercel.json` | AIRTABLE_BASE_ID is missing from secrets. | Yes |
 
-summaries:
-  enabled: true
-  high_level_summary_prompt: |
-    Provide a "Risk Report" summarizing:
-    1. Architectural Impact.
-    2. Deployment Readiness (Are there config-drift risks?).
-    3. Jira Ticket Completion Status.

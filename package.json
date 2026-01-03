@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development nodemon server.js",
+    "prebuild": "node prebuild.js",
     "build": "echo 'Express server - no build step'",
     "test": "jest --runInBand --coverage --verbose --testTimeout=10000",
     "test:watch": "jest --watch",

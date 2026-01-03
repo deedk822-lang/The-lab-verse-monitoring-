@@ -7,6 +7,10 @@ reviews:
   request_changes_workflow: true
 
   instructions:
+    - paths: ["monitoring/kaggle/docker-compose.yml"]
+      instruction: "Verify plugin identifiers, environment variables, and security settings. Require manual approval from @deedk822-lang for infrastructure changes."
+    - paths: ["monitoring/kaggle/provisioning/**/*.yaml"]
+      instruction: "Validate datasource configurations, authentication methods, and security settings. Check for secrets in plaintext."
     - paths: ["**/*.{py,json,yaml,yml}"]
       instruction: |
         Act as a Staff Site Reliability Engineer (SRE). Your goal is to prevent deployment failures and eliminate "Configuration Drift."

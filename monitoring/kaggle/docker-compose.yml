@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # CRITICAL FIX: Correct plugin identifier
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource;2.9.0
+
+      # Kaggle API credentials
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME}
+      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
+
+      # Security settings
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+      # Enable provisioning
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  grafana-data:

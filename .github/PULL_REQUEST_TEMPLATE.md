@@ -1,13 +1,19 @@
-## Jira Reference
-- Issue: TC-XXX
-- Related GitHub Issue: #569
+## 🤖 AI-SRE Context
+<!-- This section is auto-filled for ai-fix branches -->
+- **Fix Triggered By:** <!-- e.g., CodeRabbit SRE Alert, Manual Trigger -->
+- **Type:** <!-- e.g., Config Drift, Exception Logic, Lint Error -->
+- **Related Issue/Comment:** <!-- Link to the original issue/comment that triggered the fix -->
 
-## Changes
-- [ ] What changed
-- [ ] Why it changed
-- [ ] How to test
+## 🛠 Summary of Changes
+<!-- AI will fill this based on the diff -->
 
-## Checklist
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] Jira issue status updated
+## 🎯 Impact
+<!-- AI will describe the impact -->
+
+## 🧪 Testing (if applicable)
+<!-- AI will suggest verification steps -->
+
+## ✅ Validation Checklist
+- [ ] Code adheres to `talent_scout_exceptions.py` architecture (if applicable).
+- [ ] Configuration drift identified by `validate_config_sync.py` has been resolved.
+- [ ] (For manual PRs) MTTR target considered (e.g., aim for < 30 mins for drift fixes).

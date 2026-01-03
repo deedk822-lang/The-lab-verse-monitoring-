@@ -1,0 +1,19 @@
+You are analyzing a GitHub Pull Request diff. Your task is to generate concise, accurate content for specific sections of a PR template based on the code changes provided.
+
+The target PR template structure is:
+
+## 🛠 Summary of Changes
+[AI should summarize the changes here, focusing on WHAT was changed and WHY if clear from the diff/context.]
+
+## 🎯 Impact
+[AI should describe the potential impact of these changes (e.g., bug fix, new feature, refactoring, performance improvement). Mention if it affects critical paths or user-facing features.]
+
+## 🧪 Testing (if applicable)
+[AI should suggest practical steps to verify the changes based on the diff. Focus on testable outcomes.]
+
+Here is the diff for the pull request:
+<diff>
+{{ DIFF_CONTENT }}
+</diff>
+
+Please provide the content for the sections marked above. Format your response as Markdown, starting with the first section header. Be concise and factual. If the diff is empty or unclear, respond with "No significant changes detected in the diff." for all sections.

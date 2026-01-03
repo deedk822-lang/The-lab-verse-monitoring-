@@ -8,12 +8,11 @@ from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
 from hubspot.crm.contacts import SimplePublicObjectInput
 from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
+from talent_scout_exceptions import ConfigurationError, RateLimitError
 
 # ========================
 # CONFIG (Using the specific name provided)
 # ========================
-class ConfigurationError(Exception):
-    pass
 
 KIMI_GITHUB_KEY = os.getenv("KIMI_GITHUB_KEY")
 HUBSPOT_TOKEN = os.getenv("HUBSPOT_TOKEN")
@@ -40,11 +39,7 @@ def audit_github(handle: str) -> Dict[str, str]:
         if user_resp.status_code == 401:
             raise ConfigurationError("GitHub API key is invalid or has expired.")
         if user_resp.status_code == 403:
-            return {
-                "status": "ERROR",
-                "evidence": "GitHub: API rate limit exceeded.",
-                "link": "#",
-            }
+            raise RateLimitError("GitHub API rate limit exceeded.")
         if user_resp.status_code == 404:
             return {
                 "status": "NO_GITHUB",
@@ -247,15 +242,17 @@ if __name__ == "__main__":
 
     for c in candidates:
         print(f"Auditing {c['name'] or '@' + c['handle']} (Contact ID: {c['id']})")
-
-        gh = audit_github(c["handle"])
-
-        card = build_card(gh, c["name"], c["handle"])
-
-        print(f"   Verdict: {gh['status']}\n")
-
-        post_card_and_update(c["id"], card)
-
+        try:
+            gh = audit_github(c["handle"])
+            card = build_card(gh, c["name"], c["handle"])
+            print(f"   Verdict: {gh['status']}\n")
+            post_card_and_update(c["id"], card)
+        except RateLimitError as e:
+            print(f"   ⚠️ WARNING: Could not audit @{c['handle']} due to API rate limit: {e}")
+            continue
+        except Exception as e:
+            print(f"   ❌ ERROR: An unexpected error occurred for @{c['handle']}: {e}")
+            continue
         print("-" * 60)
 
     print("\nRun complete.")

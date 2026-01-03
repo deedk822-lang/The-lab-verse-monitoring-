@@ -1,16 +1,23 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["**/*.js", "**/*.json", "**/*.txt"]
-      }
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "framework": "vite",
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NODE_VERSION": "20.x",
+      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
+      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/**/*.{js,ts}": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
+    }
   },
   "headers": [
     {
@@ -25,12 +32,8 @@
           "value": "DENY"
         },
         {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
           "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
+          "value": "max-age=31536000; includeSubDomains"
         }
       ]
     }

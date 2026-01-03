@@ -1,33 +1,49 @@
-# .coderabbit.yaml — Full-Stack SRE & Systemic Integrity Edition
-
+---
+language: "en-US"
+early_access: false
 reviews:
+  profile: "assertive"  # FIXED: Changed from 'professional' to 'assertive'
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
   auto_review:
     enabled: true
-  profile: professional
-  request_changes_workflow: true
+    drafts: false
+  path_instructions:
+    - path: "**/*.ts"
+      instructions: |
+        Review TypeScript code for:
+        - Type safety (no 'any' types without justification)
+        - React best practices (hooks, component patterns)
+        - Performance issues (unnecessary re-renders, memo usage)
+        - Accessibility (ARIA labels, semantic HTML)
 
-  instructions:
-    - paths: ["**/*.{py,json,yaml,yml}"]
-      instruction: |
-        Act as a Staff Site Reliability Engineer (SRE). Your goal is to prevent deployment failures and eliminate "Configuration Drift."
+    - path: "**/*.py"
+      instructions: |
+        Review Python code for:
+        - Type hints on all functions
+        - Pydantic model validation
+        - Security issues (SQL injection, XSS)
+        - Performance (async/await usage, database queries)
 
-        1. **The Infrastructure Sync**: If a Python file adds/removes an environment variable (os.getenv), you MUST verify that `vercel.json` and `.env.example` are updated accordingly.
-        2. **Legacy Purge**: Flag any references to "Airtable" as Critical if the project intent (via Jira/PR description) indicates a move to HubSpot/GitHub.
-        3. **Integration Reliability**: Ensure all API interactions (GitHub, HubSpot, Proxycurl) include:
-           - Explicit timeouts.
-           - Specific handling for 401 (Auth) and 403 (Rate Limit).
-           - Custom exceptions (e.g., ConfigurationError) instead of generic Errors.
-        4. **Jira Alignment**: If a Jira ticket is linked, validate that the implementation satisfies the ticket's Acceptance Criteria.
+    - path: "**/docker-compose*.yml"
+      instructions: |
+        Review Docker configurations for:
+        - Security (no hardcoded secrets, non-root users)
+        - Resource limits (memory, CPU)
+        - Health checks on all services
+        - Volume persistence for data
 
-        **Output Format (Strict Table):**
-        | Severity | Type | Location | Analysis | #FIX-REQUIRED |
-        | :--- | :--- | :--- | :--- | :--- |
-        | Critical | Config-Drift | `vercel.json` | AIRTABLE_BASE_ID is missing from secrets. | Yes |
+    - path: "monitoring/**"
+      instructions: |
+        Review monitoring configs for:
+        - Correct datasource URLs and ports
+        - Valid Prometheus query syntax
+        - Grafana dashboard JSON structure
+        - Alert threshold reasonableness
 
-summaries:
-  enabled: true
-  high_level_summary_prompt: |
-    Provide a "Risk Report" summarizing:
-    1. Architectural Impact.
-    2. Deployment Readiness (Are there config-drift risks?).
-    3. Jira Ticket Completion Status.
+chat:
+  auto_reply: true
+

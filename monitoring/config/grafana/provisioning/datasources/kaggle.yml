@@ -1,0 +1,22 @@
+apiVersion: 1
+datasources:
+  - name: Kaggle
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    url: https://www.kaggle.com/api/v1
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      # CRITICAL: Use Basic authentication, not Bearer tokens
+      auth_method: basicAuth
+      # Whitelist allowed external hosts (security requirement)
+      allowedHosts:
+        - www.kaggle.com
+        - kaggle.com
+      # Timeout settings for API calls
+      timeout: 30
+    # Secure credentials (encrypted at rest)
+    secureJsonData:
+      basicAuthUser: ${KAGGLE_USERNAME}
+      basicAuthPassword: ${KAGGLE_API_KEY}

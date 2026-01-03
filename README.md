@@ -200,6 +200,28 @@ For issues and questions, please open an issue on GitHub.
 
 ---
 
+## Kaggle API Integration
+
+This monitoring stack includes a Grafana datasource for querying Kaggle datasets. To use this feature, you will need to provide your Kaggle API credentials.
+
+### Obtaining Kaggle API Credentials
+
+1.  Go to your Kaggle account settings: [https://www.kaggle.com/settings/account](https://www.kaggle.com/settings/account)
+2.  Scroll down to the "API" section.
+3.  Click on "Create New Token". This will download a `kaggle.json` file.
+4.  Open the `kaggle.json` file and extract your `username` and `key`.
+5.  Add these credentials to a `.env` file in the `monitoring` directory, using the `.env.example` as a template.
+
+### Secret Management Best Practices
+
+Passing API tokens via environment variables is suitable for local development. However, for production environments, it is strongly recommended to use a dedicated secrets management solution, such as:
+
+*   Docker Secrets
+*   Kubernetes Secrets
+*   HashiCorp Vault
+
+Do not commit `.env` files containing sensitive credentials to your version control system.
+
 **Version:** 1.0.0  
 **Last Updated:** January 3, 2026  
 **Maintainer:** Lab-Verse Team

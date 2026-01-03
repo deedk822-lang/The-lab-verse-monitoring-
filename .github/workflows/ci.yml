@@ -14,12 +14,6 @@ on:
 env:
   NODE_VERSION: '20'
 
-permissions:
-  contents: read
-  packages: write
-  pull-requests: write
-  actions: read
-
 # Cancel old runs on the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,12 +25,16 @@ jobs:
     name: 🔍 Code Quality & Linting
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775199f52541f3d82fd8ca7d653c # v4.0.2
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -54,12 +52,17 @@ jobs:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775199f52541f3d82fd8ca7d653c # v4.0.2
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -70,7 +73,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4f966567c135599a03c230536a049 # 0.19.0
         with:
           scan-type: 'fs'
           ignore-unfixed: false
@@ -79,7 +82,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@7f979a338d9277c5c6b75c51877a37257007e15f # v3.25.12
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -87,15 +90,20 @@ jobs:
   # ========== Testing Phase ==========
   test:
     name: 🧪 Run Tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint, security]
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775199f52541f3d82fd8ca7d653c # v4.0.2
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -107,7 +115,7 @@ jobs:
         run: npm test
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b0f56306e00b8e4e138a2e379b1836502280d0d8 # v4.4.1
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -120,12 +128,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [test]
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775199f52541f3d82fd8ca7d653c # v4.0.2
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -137,7 +149,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v4.3.3
         if: success()
         with:
           name: build-artifacts-${{ github.sha }}
@@ -153,17 +165,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [build]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
     environment:
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
 
       - name: Deploy to Vercel Preview
         id: deploy
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@a3c332943181827b7c53a7a407a5182103328e35 # v25
         if: env.VERCEL_TOKEN != ''
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -192,7 +210,7 @@ jobs:
           exit 1
 
       - name: Comment PR with deployment URL
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a0a9ee59cb12a24716752044813 # v7.0.1
         if: success()
         with:
           script: |
@@ -210,22 +228,25 @@ jobs:
     timeout-minutes: 30
     needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
     environment:
       name: production
       url: https://the-lab-verse-monitoring.vercel.app
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@a33c6901966a3382c85e2a22538006d48e8a6094 # v4.1.7
         with:
           name: build-artifacts-${{ github.sha }}
         continue-on-error: false
 
       - name: Deploy to Vercel Production
         id: deploy
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@a3c332943181827b7c53a7a407a5182103328e35 # v25
         if: env.VERCEL_TOKEN != ''
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -257,7 +278,7 @@ jobs:
 
       - name: Rollback on failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a0a9ee59cb12a24716752044813 # v7.0.1
         with:
           script: |
             github.rest.repos.createDeployment({
@@ -274,6 +295,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-preview, deploy-production]
     if: always()
+    permissions: {}
     steps:
       - name: Send notification
         run: |

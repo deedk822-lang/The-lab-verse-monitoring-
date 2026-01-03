@@ -19,7 +19,7 @@ route:
 receivers:
   - name: 'default'
     webhook_configs:
-      - url: 'http://localhost:5001/webhook'  # Your webhook endpoint
+      - url: 'http://backend:5001/webhook'  # Update to actual service name
 
   - name: 'critical'
     slack_configs:

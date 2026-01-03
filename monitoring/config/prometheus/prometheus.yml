@@ -34,13 +34,13 @@ scrape_configs:
       - targets: ['node-exporter:9100']
 
   # PostgreSQL (if using postgres_exporter)
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
-    # Optional: only if you add postgres_exporter service
+  # Uncomment when postgres_exporter service is added
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
 
   # Redis (if using redis_exporter)
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-    # Optional: only if you add redis_exporter service
+  # Uncomment when redis_exporter service is added
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

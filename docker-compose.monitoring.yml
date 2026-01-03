@@ -65,6 +65,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     # ADDED: Resource limits
     deploy:
       resources:
@@ -115,8 +116,9 @@ services:
     container_name: alertmanager
     restart: unless-stopped
     command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
+      - /bin/sh
+      - -c
+      - envsubst < /etc/alertmanager/alertmanager.yml.tmpl > /etc/alertmanager/alertmanager.yml && /bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
     volumes:
       - ./monitoring/config/alertmanager:/etc/alertmanager:ro
       - alertmanager_data:/alertmanager
@@ -129,6 +131,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     deploy:
       resources:
         limits:

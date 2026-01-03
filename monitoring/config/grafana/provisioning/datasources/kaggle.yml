@@ -5,10 +5,10 @@ datasources:
     access: proxy
     url: https://www.kaggle.com/api/v1
     jsonData:
-      authMethod: basic
-      basicAuthUser: ${KAGGLE_USERNAME}
+      authMethod: basicAuth
       allowedHosts:
         - www.kaggle.com
         - kaggle.com
     secureJsonData:
+      basicAuthUser: ${KAGGLE_USERNAME}
       basicAuthPassword: ${KAGGLE_API_KEY}

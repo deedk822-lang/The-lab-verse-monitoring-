@@ -1,9 +1,7 @@
-# monitoring/kaggle/docker-compose.yml - FIXED VERSION
 version: '3.8'
 
 services:
   grafana:
-    # FIX 1: Pin specific version
     image: grafana/grafana:11.4.0
     container_name: grafana
     restart: unless-stopped
@@ -12,27 +10,14 @@ services:
       - "3000:3000"
 
     environment:
-      # FIX 2: Remove weak password fallback
       - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:?GF_ADMIN_PASSWORD is required}
-
-      # FIX 3: Compatible plugin version
       - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource;2.10.2
-
-      # Kaggle API credentials
       - KAGGLE_USERNAME=${KAGGLE_USERNAME:?KAGGLE_USERNAME is required}
       - KAGGLE_API_KEY=${KAGGLE_API_KEY:?KAGGLE_API_KEY is required}
-
-      # Security settings
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
-
-      # Enable provisioning
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
-
-      # Logging
       - GF_LOG_LEVEL=info
-      - GF_LOG_MODE=console
 
     volumes:
       - ./provisioning:/etc/grafana/provisioning:ro
@@ -50,7 +35,6 @@ services:
 
 volumes:
   grafana-data:
-    driver: local
 
 networks:
   monitoring:

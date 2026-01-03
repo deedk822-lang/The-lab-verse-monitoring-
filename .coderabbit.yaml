@@ -1,33 +1,23 @@
-# .coderabbit.yaml — Full-Stack SRE & Systemic Integrity Edition
-
+version: "0.1"
+language: "en-US"
+early_access: true
 reviews:
+  # 1. PROFILE SETTING: Optimize for SRE/Security
+  profile: "chill" # 'assertive' can generate too much noise for solo devs
+  request_changes_workflow: false # Set to true if you want the AI to actually block the PR
+  high_level_summary: true
   auto_review:
     enabled: true
-  profile: professional
-  request_changes_workflow: true
-
-  instructions:
-    - paths: ["**/*.{py,json,yaml,yml}"]
-      instruction: |
-        Act as a Staff Site Reliability Engineer (SRE). Your goal is to prevent deployment failures and eliminate "Configuration Drift."
-
-        1. **The Infrastructure Sync**: If a Python file adds/removes an environment variable (os.getenv), you MUST verify that `vercel.json` and `.env.example` are updated accordingly.
-        2. **Legacy Purge**: Flag any references to "Airtable" as Critical if the project intent (via Jira/PR description) indicates a move to HubSpot/GitHub.
-        3. **Integration Reliability**: Ensure all API interactions (GitHub, HubSpot, Proxycurl) include:
-           - Explicit timeouts.
-           - Specific handling for 401 (Auth) and 403 (Rate Limit).
-           - Custom exceptions (e.g., ConfigurationError) instead of generic Errors.
-        4. **Jira Alignment**: If a Jira ticket is linked, validate that the implementation satisfies the ticket's Acceptance Criteria.
-
-        **Output Format (Strict Table):**
-        | Severity | Type | Location | Analysis | #FIX-REQUIRED |
-        | :--- | :--- | :--- | :--- | :--- |
-        | Critical | Config-Drift | `vercel.json` | AIRTABLE_BASE_ID is missing from secrets. | Yes |
-
-summaries:
-  enabled: true
-  high_level_summary_prompt: |
-    Provide a "Risk Report" summarizing:
-    1. Architectural Impact.
-    2. Deployment Readiness (Are there config-drift risks?).
-    3. Jira Ticket Completion Status.
+    # 2. THE FIX: Ignore Framer's auto-generated mess
+    ignore:
+      - "src/framer-export/**"
+      - "dist/**"
+      - "**/*.min.js"
+    # 3. CONTEXT: Teach the AI your architecture
+    system_prompt: |
+      You are a Senior SRE and React Security Expert.
+      - We use Framer for UI (ignore styling complexity).
+      - We use Vercel for hosting.
+      - CRITICAL RULE: All API calls to 3rd party services (HubSpot, MailChimp) MUST go through a Vercel Serverless Function (Proxy).
+      - If you see a `fetch('https://api.hubspot.com...')` directly in a React component, FLAG IT AS CRITICAL. This is a leaked secret risk.
+      - Verify that `NEXT_PUBLIC_` variables are only used for non-sensitive public keys.

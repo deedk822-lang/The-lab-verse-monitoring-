@@ -1,4 +1,3 @@
-# .coderabbit.yaml - FIXED CONFIGURATION
 language: "en-US"
 early_access: false
 enable_free_tier: true
@@ -14,8 +13,6 @@ reviews:
     enabled: true
     auto_incremental_review: true
     drafts: false
-  path_filters: []
-  path_instructions: []
 
 chat:
   auto_reply: true

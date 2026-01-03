@@ -1,0 +1,68 @@
+contract_version: "1.0.0"
+project: "Aventis Event Platform"
+
+backend:
+  framework: "FastAPI"
+  base_url: "NEXT_PUBLIC_API_ENDPOINT"
+  endpoints:
+    /api/events:
+      method: GET
+      response: Event[]
+      cache: 3600
+      auth: false
+    /api/speakers:
+      method: GET
+      response: Speaker[]
+      cache: 7200
+      auth: false
+    /api/register:
+      method: POST
+      body: RegistrationRequest
+      response: RegistrationResponse
+      auth: false
+
+frontend:
+  framework: "Next.js 15 (App Router)"
+  styling: "Tailwind CSS"
+  data_fetching: "React Query + Server Actions"
+  components:
+    Hero: []
+    SpeakersGrid: [/api/speakers]
+    EventSchedule: [/api/events]
+    RegistrationForm: [/api/register]
+
+models:
+  Event:
+    id: string
+    title: string
+    date: string
+    description: string
+    price: number
+  Speaker:
+    id: string
+    name: string
+    bio: string
+    photo_url: string
+  RegistrationRequest:
+    email: string
+    name: string
+    event_id: string
+  RegistrationResponse:
+    success: boolean
+    message: string
+
+integrations:
+  - hubspot
+  - mailchimp
+  - ollama
+
+environment_variables:
+  - NEXT_PUBLIC_API_ENDPOINT
+  - HUBSPOT_API_KEY
+  - MAILCHIMP_API_KEY
+  - OLLAMA_ENDPOINT
+
+deployment:
+  frontend: "Vercel"
+  backend: "Render"
+  database: "PostgreSQL"

@@ -1,12 +1,11 @@
 apiVersion: 1
 
 providers:
-  - name: 'Vaal Empire Dashboards'
+  - name: 'default'
     orgId: 1
-    folder: 'Vaal AI Empire'
+    folder: ''
     type: file
     disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
+    editable: true
     options:
       path: /var/lib/grafana/dashboards

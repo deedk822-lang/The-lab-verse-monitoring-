@@ -43,7 +43,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}  # MUST be in .env
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource,yesoreyeram-infinity-datasource
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource,yesoreyeram-infinity-datasource;2.5.0
       # ADDED: Security settings
       - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_ANALYTICS_REPORTING_ENABLED=false
@@ -61,7 +61,7 @@ services:
       prometheus:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/api/health && test -n \"$KAGGLE_USERNAME\" && test -n \"$KAGGLE_API_KEY\""]
       interval: 30s
       timeout: 10s
       retries: 3

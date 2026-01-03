@@ -1,0 +1,24 @@
+rules:
+  - id: hardcoded-secret
+    languages: [javascript, typescript]
+    message: "Hardcoded secret detected. Use environment variables."
+    severity: ERROR
+    pattern-regex: '(api_key|apiKey|token|secret|password)\s*[:=]\s*["\'][A-Za-z0-9-_]{20,}["\']'
+
+  - id: unsafe-url-validation
+    languages: [javascript, typescript]
+    message: "Unsafe URL validation. Use URL.hostname instead of startsWith()"
+    severity: ERROR
+    patterns:
+      - pattern: $URL.startsWith('https://$HOST')
+      - pattern-inside: |
+          function handler($REQ, $RES) { ... }
+
+  - id: missing-env-check
+    languages: [javascript, typescript]
+    message: "Environment variable used without validation"
+    severity: WARNING
+    patterns:
+      - pattern: process.env.$VAR
+      - pattern-not-inside: |
+          if (process.env.$VAR) { ... }

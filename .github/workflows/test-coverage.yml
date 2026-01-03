@@ -1,0 +1,57 @@
+name: "Test Coverage"
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests with Coverage
+        run: npm run test:coverage
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: true
+
+      - name: Comment Coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json'));
+
+            const body = `## 📊 Test Coverage Report
+
+            | Metric | Coverage | Status |
+            |--------|----------|--------|
+            | Statements | ${coverage.total.statements.pct}% | ${coverage.total.statements.pct >= 80 ? '✅' : '❌'} |
+            | Branches | ${coverage.total.branches.pct}% | ${coverage.total.branches.pct >= 80 ? '✅' : '❌'} |
+            | Functions | ${coverage.total.functions.pct}% | ${coverage.total.functions.pct >= 80 ? '✅' : '❌'} |
+            | Lines | ${coverage.total.lines.pct}% | ${coverage.total.lines.pct >= 80 ? '✅' : '❌'} |
+
+            **Minimum Required:** 80% coverage for all metrics
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

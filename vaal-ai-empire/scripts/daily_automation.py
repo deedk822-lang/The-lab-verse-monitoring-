@@ -7,6 +7,7 @@ Generates content, posts scheduled items, sends reports
 import schedule
 import time
 import logging
+import os
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.database import Database
@@ -77,31 +78,55 @@ class DailyAutomation:
         logger.info("=== CONTENT GENERATION COMPLETED ===")
         logger.info(f"Summary: {success_count} succeeded, {failure_count} failed.")
 
-    def post_scheduled_content(self):
-        """Post all due content"""
-        logger.info("=== POSTING SCHEDULED CONTENT ===")
+    def _post_single_item(self, post):
+        """Helper function to post a single item, for use with ThreadPoolExecutor."""
+        try:
+            platforms = post["platforms"].split(",")
+            result = self.poster.post_via_ayrshare(
+                post["content"],
+                platforms,
+                post.get("image_url")
+            )
+            if result.get("status") != "error":
+                self.scheduler.mark_posted(post["id"])
+                logger.info(f"Posted content for client {post['client_id']}")
+                return True
+            else:
+                logger.error(f"API error for post {post['id']}: {result.get('message', 'Unknown error')}")
+                return False
+        except Exception as e:
+            logger.error(f"Posting failed for post {post['id']}: {e}")
+            return False
 
+    def post_scheduled_content(self):
+        """
+        Post all due content in parallel using a ThreadPoolExecutor.
+        This significantly speeds up posting to multiple social media accounts.
+        """
+        logger.info("=== PARALLEL POSTING OF SCHEDULED CONTENT STARTED ===")
         due_posts = self.scheduler.get_due_posts()
         logger.info(f"Found {len(due_posts)} posts due")
 
-        for post in due_posts:
-            try:
-                platforms = post["platforms"].split(",")
+        if not due_posts:
+            logger.info("No posts to publish.")
+            logger.info("=== POSTING COMPLETED ===")
+            return
 
-                result = self.poster.post_via_ayrshare(
-                    post["content"],
-                    platforms,
-                    post.get("image_url")
-                )
+        success_count = 0
+        failure_count = 0
 
-                if result.get("status") != "error":
-                    self.scheduler.mark_posted(post["id"])
-                    logger.info(f"Posted content for client {post['client_id']}")
+        with ThreadPoolExecutor(max_workers=int(os.getenv("MAX_POSTING_WORKERS", "5"))) as executor:
+            future_to_post = {executor.submit(self._post_single_item, post): post for post in due_posts}
 
-            except Exception as e:
-                logger.error(f"Posting failed for post {post['id']}: {e}")
+            for future in as_completed(future_to_post):
+                success = future.result()
+                if success:
+                    success_count += 1
+                else:
+                    failure_count += 1
 
         logger.info("=== POSTING COMPLETED ===")
+        logger.info(f"Summary: {success_count} posts succeeded, {failure_count} failed.")
 
     def send_daily_report(self):
         """Generate and log daily report"""

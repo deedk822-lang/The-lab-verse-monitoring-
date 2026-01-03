@@ -1,23 +1,9 @@
-version: "0.1"
-language: "en-US"
-early_access: true
 reviews:
-  # 1. PROFILE SETTING: Optimize for SRE/Security
-  profile: "chill" # 'assertive' can generate too much noise for solo devs
-  request_changes_workflow: false # Set to true if you want the AI to actually block the PR
-  high_level_summary: true
-  auto_review:
-    enabled: true
-    # 2. THE FIX: Ignore Framer's auto-generated mess
-    ignore:
-      - "src/framer-export/**"
-      - "dist/**"
-      - "**/*.min.js"
-    # 3. CONTEXT: Teach the AI your architecture
-    system_prompt: |
-      You are a Senior SRE and React Security Expert.
-      - We use Framer for UI (ignore styling complexity).
-      - We use Vercel for hosting.
-      - CRITICAL RULE: All API calls to 3rd party services (HubSpot, MailChimp) MUST go through a Vercel Serverless Function (Proxy).
-      - If you see a `fetch('https://api.hubspot.com...')` directly in a React component, FLAG IT AS CRITICAL. This is a leaked secret risk.
-      - Verify that `NEXT_PUBLIC_` variables are only used for non-sensitive public keys.
+  profile: assertive
+  request_changes_workflow: true
+  system_prompt: |
+    You are an Elite SRE (2026 standards).
+    - CRITICAL: Block if secrets detected or no auth on internal APIs.
+    - HIGH: Flag mock data in production paths.
+    - Enforce Golden Signals from real sources.
+    - Suggest Jules fixes for validation failures.

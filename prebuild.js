@@ -1,10 +1,12 @@
-const requiredEnvVar = 'NEXT_PUBLIC_EVENT_DATE';
+const required = ["VERCEL_TOKEN", "DATABASE_URL", "METRICS_API_TOKEN"];
 
-if (!process.env[requiredEnvVar]) {
-  console.error(`Error: Required environment variable "${requiredEnvVar}" is not set.`);
-  console.error('This variable is necessary for the application to build correctly.');
-  console.error('Please ensure it is defined in your Vercel project settings or .env.local file.');
+const missing = required.filter(k => !process.env[k]);
+
+if (missing.length > 0) {
+  console.error("BUILD FAILED: Missing critical server-side environment variables.");
+  console.error(`The following variables were not found: ${missing.join(', ')}.`);
+  console.error("Please ensure these are set in your Vercel project environment variables.");
   process.exit(1);
 }
 
-console.log(`Successfully validated the presence of "${requiredEnvVar}".`);
+console.log("Pre-build checks passed: All critical environment variables are present.");

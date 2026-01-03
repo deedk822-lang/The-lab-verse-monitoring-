@@ -1,0 +1,26 @@
+name: Elite Semgrep Security Scan
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep Scan (2026 Rules)
+        run: |
+          semgrep scan \
+            --config=p/serverside-js \
+            --config=p/secrets \
+            --config=p/nextjs \
+            --config=p/vercel \
+            --config=rules/vercel-secrets.yml \
+            --severity=ERROR \
+            --json > semgrep.json
+      - name: Upload Results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.json

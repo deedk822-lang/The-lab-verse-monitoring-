@@ -1,174 +1,151 @@
-version: '3.8'
-
-networks:
-  vaal-monitoring:
-    driver: bridge
+version: '3.9'
 
 services:
-  # Main Application (Next.js) - from incoming branch
-  app:
-    build: .
-    container_name: vaal-app
-    networks:
-      - vaal-monitoring
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-
-  # GDELT Monitor (Python) - from incoming branch
-  gdelt-monitor:
-    image: python:3.11-slim
-    container_name: vaal-gdelt-monitor
-    networks:
-      - vaal-monitoring
-    ports:
-      - "9091:9091"
-    volumes:
-      - ./services:/app
-    working_dir: /app
-    command: >
-      sh -c "pip install -q requests prometheus-client &&
-             python gdelt_monitor.py"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9091/metrics"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-
-  # ============ METRICS COLLECTION ============ # Prioritizing HEAD's detailed config
   prometheus:
     image: prom/prometheus:v2.48.0
-    container_name: vaal-prometheus
-    networks:
-      - vaal-monitoring
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/config/rules:/etc/prometheus/rules:ro
-      - prometheus-data:/prometheus
+    container_name: prometheus
+    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=90d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    restart: unless-stopped
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./monitoring/config/prometheus:/etc/prometheus:ro  # Read-only for security
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+    # ADDED: Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
-  # ============ VISUALIZATION ============ # Prioritizing HEAD's detailed config
   grafana:
-    image: grafana/grafana:10.2.2
-    container_name: vaal-grafana
-    networks:
-      - vaal-monitoring
-    ports:
-      - "3001:3000"
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-VaalEmpire2025!}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}  # MUST be in .env
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3001
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+      # ADDED: Security settings
+      - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_ANALYTICS_REPORTING_ENABLED=false
-      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=lax
     volumes:
-      - grafana-data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
       - ./monitoring/config/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/config/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ============ LOG AGGREGATION ============ # From HEAD
-  loki:
-    image: grafana/loki:2.9.3
-    container_name: vaal-loki
-    networks:
-      - vaal-monitoring
     ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/config/loki.yml:/etc/loki/local-config.yaml:ro
-      - loki-data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    restart: unless-stopped
+      - "3001:3000"
+    networks:
+      - monitoring
+    depends_on:
+      prometheus:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    # ADDED: Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
+    # ADDED: Non-root user
+    user: "472:472"  # Grafana user
 
-  # ============ SYSTEM METRICS ============ # Combined commands, preferring HEAD's rootfs
+  # ADDED: Node Exporter for system metrics
   node-exporter:
     image: prom/node-exporter:v1.7.0
-    container_name: vaal-node-exporter
-    networks:
-      - vaal-monitoring
-    ports:
-      - "9100:9100"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
+    container_name: node-exporter
+    restart: unless-stopped
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
+      - '--path.rootfs=/host'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    restart: unless-stopped
-
-  # ============ ALERTING ============ # From HEAD
-  alertmanager:
-    image: prom/alertmanager:v0.26.0
-    container_name: vaal-alertmanager
-    networks:
-      - vaal-monitoring
-    ports:
-      - "9093:9093"
     volumes:
-      - ./monitoring/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-    restart: unless-stopped
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:9100/metrics || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
 
-  # ============ REDIS EXPORTER (for caching metrics) ============ # From HEAD
-  redis-exporter:
-    image: oliver006/redis_exporter:v1.55.0
-    container_name: vaal-redis-exporter
-    networks:
-      - vaal-monitoring
-    ports:
-      - "9121:9121"
-    environment:
-      - REDIS_ADDR=redis://host.docker.internal:6379
+  # ADDED: Alertmanager for alerts
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./monitoring/config/alertmanager:/etc/alertmanager:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
 
 volumes:
-  prometheus-data:
+  prometheus_data:
     driver: local
-  grafana-data:
+  grafana_data:
     driver: local
-  loki-data: # From HEAD
+  alertmanager_data:
     driver: local
-  alertmanager-data: # From HEAD
-    driver: local
+
+networks:
+  monitoring:
+    driver: bridge

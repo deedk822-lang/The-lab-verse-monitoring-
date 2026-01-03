@@ -3,7 +3,7 @@
 reviews:
   auto_review:
     enabled: true
-  profile: professional
+  profile: assertive
   request_changes_workflow: true
 
   instructions:

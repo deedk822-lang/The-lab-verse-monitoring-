@@ -2,7 +2,10 @@ import os
 import json
 import re
 import httpx
+import asyncio
+import logging
 from typing import Dict, Any
+from redis import asyncio as aioredis
 from .fs_agent import FileSystemAgent
 from .config import ConfigManager
 
@@ -128,3 +131,57 @@ class RainmakerOrchestrator:
             return {"status": "failed", "message": "Max retries exceeded.", "last_error": execution_log[-1] if execution_log else "Unknown"}
 
         return {"status": "error", "message": "Task type not supported."}
+
+
+class WebhookConsumer:
+    def __init__(self, redis_url: str):
+        self.redis_url = redis_url
+        self.redis = None
+        self.orchestrator = RainmakerOrchestrator()
+        self.logger = logging.getLogger(__name__)
+
+    async def connect(self):
+        self.redis = await aioredis.from_url(self.redis_url, decode_responses=True)
+        self.logger.info("WebhookConsumer connected to Redis.")
+
+    async def consume(self):
+        self.logger.info("WebhookConsumer starting to consume events.")
+        while True:
+            try:
+                # Use BLPOP for blocking pop
+                _, event_data = await self.redis.blpop(["hubspot:events", "clickup:events", "grafana:events"])
+                event = json.loads(event_data)
+
+                self.logger.info(f"Received event: {event}")
+
+                # Placeholder for event processing logic
+                # In a real implementation, this would trigger different orchestrator tasks
+                if "subscriptionType" in event: # HubSpot
+                    self.logger.info(f"Processing HubSpot event: {event.get('subscriptionType')}")
+                elif "event" in event: # ClickUp
+                    self.logger.info(f"Processing ClickUp event: {event.get('event')}")
+                elif "ruleId" in event: # Grafana
+                    self.logger.info(f"Processing Grafana event: {event.get('title')}")
+
+            except Exception as e:
+                self.logger.error(f"Error consuming webhook event: {e}")
+                await asyncio.sleep(5) # Avoid rapid-fire errors
+
+    async def close(self):
+        if self.redis:
+            await self.redis.close()
+        await self.orchestrator.aclose()
+
+
+async def main():
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    consumer = WebhookConsumer(redis_url)
+    try:
+        await consumer.connect()
+        await consumer.consume()
+    finally:
+        await consumer.close()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

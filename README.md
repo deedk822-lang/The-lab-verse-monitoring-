@@ -1,205 +1,74 @@
-# Lab-Verse Monitoring Dashboard
+# Rainmaker AI Superstack
 
-A production-ready real-time monitoring and analytics dashboard for Lab-Verse infrastructure.
+A production-ready, multi-service stack for orchestrating and serving large language models.
 
-## Features
+## Overview
 
-✅ **Real-time Metrics** - CPU, memory, disk, network monitoring  
-✅ **Performance Analytics** - Response times, throughput, success rates  
-✅ **Alert Management** - Configurable thresholds and notifications  
-✅ **System Logs** - Real-time log streaming with filtering  
-✅ **Service Health** - Monitor all critical services  
-✅ **Dark Mode** - Beautiful dark/light theme support  
-✅ **Responsive Design** - Works on desktop, tablet, mobile  
-✅ **API Integration** - RESTful API for custom integrations  
+This repository contains a Docker-based environment for running a sophisticated AI system. It leverages multiple powerful open-source models and tools to provide a comprehensive platform for AI-driven tasks, including a "self-healing" coding agent.
+
+The core of the stack is the **Rainmaker Orchestrator**, a custom Python service that intelligently routes tasks to different AI models and can iteratively test and fix code.
+
+## Services
+
+The stack is defined in `docker-compose.superstack.yml` and includes the following key services:
+
+- **`rainmaker-orchestrator`**: The custom-built "brain" of the operation. It's a Flask-based Python server that accepts tasks, routes them to the appropriate AI model, and manages the execution and verification process.
+- **`kimi-linear`**: A powerful, large-context AI model served via `vllm`.
+- **`ollama`**: A flexible service for running various open-source models like Llama 3.
+- **`open-webui`**: A user-friendly web interface (`ghcr.io/open-webui/open-webui`) that provides a chat-like control panel for interacting with the AI models.
+- **`prometheus`**: A monitoring service for collecting metrics from all components.
+- **`grafana`**: A visualization dashboard for viewing the metrics collected by Prometheus.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- Vercel account (for deployment)
+- Docker and Docker Compose
+- Git
+- An environment with NVIDIA GPUs is required to run the AI models.
 
-### Installation
+### Installation & Setup
 
-```bash
-# Clone the repository
-git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
-cd The-lab-verse-monitoring-
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
+    cd The-lab-verse-monitoring-
+    ```
 
-# Install dependencies
-npm install
+2.  **Configure Environment Variables:**
+    Create a `.env` file by copying the example file.
+    ```bash
+    cp .env.example .env
+    ```
+    Now, you **must** edit the `.env` file and fill in the required API keys and tokens (e.g., `HF_TOKEN`, `KIMI_API_KEY`, etc.). The system will not work without these secrets.
 
-# Copy environment variables
-cp .env.example .env.local
+3.  **Launch the Stack:**
+    Use the `docker-compose.superstack.yml` file to build and run all the services in detached mode.
+    ```bash
+    docker-compose -f docker-compose.superstack.yml up --build -d
+    ```
 
-# Edit .env.local with your configuration
-```
-
-### Development
-
-```bash
-# Start development server
-npm run dev
-
-# Open http://localhost:3000 in your browser
-```
-
-### Production Build
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx              # Dashboard home
-│   ├── performance/          # Performance metrics
-│   ├── alerts/               # Alert management
-│   ├── logs/                 # System logs
-│   ├── health/               # Service health
-│   ├── settings/             # Configuration
-│   ├── api/                  # API routes
-│   ├── layout.tsx            # Root layout
-│   └── globals.css           # Global styles
-├── components/
-│   ├── Navbar.tsx            # Top navigation
-│   ├── Sidebar.tsx           # Left sidebar
-│   ├── StatCard.tsx          # Metric cards
-│   ├── AlertBox.tsx          # Alert display
-│   ├── charts/               # Chart components
-│   ├── ThemeProvider.tsx     # Theme management
-│   └── ui/                   # Reusable UI components
-└── lib/
-    └── utils.ts              # Utility functions
-```
-
-## API Endpoints
-
-### Metrics
-```
-GET /api/metrics
-Returns current system metrics and performance data
-```
-
-### Health Check
-```
-GET /api/health
-Returns health status of all services
-```
+4.  **Access the Services:**
+    - **AI Control Panel (Web UI):** `http://localhost:3000`
+    - **Grafana Dashboard:** `http://localhost:3001`
+    - **Prometheus Metrics:** `http://localhost:9090`
+    - **Orchestrator API:** `http://localhost:8080` (e.g., `GET /health`)
 
 ## Configuration
 
-Edit `.env.local` to configure:
+All service configurations are managed via the `.env` file at the root of the repository. Key variables include:
 
-- Database connection
-- API endpoints
-- Integrations (Slack, Grafana)
-- Feature flags
-- Retention policies
-
-## Deployment
-
-### Deploy to Vercel
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel
-```
-
-### Deploy to Docker
-
-```bash
-# Build Docker image
-docker build -t lab-verse-monitoring .
-
-# Run container
-docker run -p 3000:3000 lab-verse-monitoring
-```
-
-## Key Technologies
-
-- **Next.js 14** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **Recharts** - Data visualization
-- **Radix UI** - Accessible components
-- **Next-themes** - Dark mode support
-
-## Performance Metrics Tracked
-
-- CPU Usage
-- Memory Utilization
-- Disk I/O
-- Network Throughput
-- API Response Times
-- Request Success/Error Rates
-- System Uptime
-- Service Health Status
+- `HF_TOKEN`: Your Hugging Face token, required for downloading models.
+- `KIMI_API_KEY`: API key for the Kimi model service.
+- `KIMI_API_BASE`: The base URL for the Kimi API endpoint.
+- `OLLAMA_API_BASE`: The base URL for the Ollama API endpoint.
 
 ## Architecture
 
-```
-┌─────────────────┐
-│  Web Browser    │
-└────────┬────────┘
-         │ HTTP/WebSocket
-         ↓
-┌─────────────────────┐
-│  Next.js Frontend   │
-│  (React + TypeScript)│
-└────────┬────────────┘
-         │ REST API
-         ↓
-┌─────────────────────┐
-│  API Layer          │
-│  (Node.js/Express)  │
-└────────┬────────────┘
-         │ Database/Cache
-         ↓
-┌─────────────────────┐
-│  Monitoring Data    │
-│  (PostgreSQL/Redis) │
-└─────────────────────┘
-```
+The system is designed around a microservices architecture, orchestrated by Docker Compose.
 
-## Contributing
-
-1. Create a feature branch
-2. Commit changes
-3. Push to branch
-4. Open a pull request
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues and questions, please open an issue on GitHub.
-
-## Roadmap
-
-- [ ] Grafana integration
-- [ ] Prometheus metrics export
-- [ ] Custom dashboard creation
-- [ ] Advanced alerting rules
-- [ ] Team collaboration features
-- [ ] Multi-tenant support
-
----
-
-**Version:** 1.0.0  
-**Last Updated:** January 3, 2026  
-**Maintainer:** Lab-Verse Team
+1.  The **Open WebUI** provides the main user interface for sending prompts and tasks.
+2.  It is configured to communicate with the **Kimi** and **Ollama** model-serving containers.
+3.  For complex, programmatic tasks, a request can be sent to the **Rainmaker Orchestrator** API.
+4.  The orchestrator analyzes the task, calls the appropriate model (Kimi or Ollama) to generate code or a solution, and then uses its internal `FileSystemAgent` to write, execute, and validate the output.
+5.  **Prometheus** and **Grafana** continuously monitor the health and performance of all services.

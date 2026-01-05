@@ -19,16 +19,6 @@
       "runtime": "edge"
     }
   },
-  "crons": [
-    {
-      "path": "/api/health-check",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/bandwidth-monitor",
-      "schedule": "0 */6 * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

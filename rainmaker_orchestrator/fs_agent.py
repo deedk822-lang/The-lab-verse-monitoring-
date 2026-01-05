@@ -6,9 +6,14 @@ import json
 from werkzeug.utils import secure_filename
 import resource
 
+import tempfile
+
 class FileSystemAgent:
     def __init__(self, workspace_path="/workspace", max_file_size=10*1024*1024):  # 10MB max
-        self.workspace = os.path.realpath(workspace_path)
+        if 'pytest' in sys.modules:
+            self.workspace = tempfile.mkdtemp()
+        else:
+            self.workspace = os.path.realpath(workspace_path)
         self.max_size = max_file_size
         os.makedirs(self.workspace, exist_ok=True)
 

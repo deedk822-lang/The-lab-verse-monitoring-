@@ -14,13 +14,7 @@ class HuggingFaceLab:
         self.hf_token = os.getenv("HUGGINGFACE_API_KEY")
         self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
 
-        # Load Local SEO Model (CPU-friendly)
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-            logger.info("✅ HF Lab: Local SEO Model Loaded.")
-        except Exception:
-            self.seo_model = None
-            logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+        self.seo_model = None # Lazy load this model
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""
@@ -36,7 +30,13 @@ class HuggingFaceLab:
 
     def optimize_keywords(self, keywords: list):
         """Free Tier Semantic Analysis (Local)"""
-        if not self.seo_model: return 0
+        if self.seo_model is None:
+            try:
+                self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
+                logger.info("✅ HF Lab: Local SEO Model Loaded.")
+            except Exception:
+                logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+                return 0
         embeddings = self.seo_model.encode(keywords)
         return len(embeddings)
 

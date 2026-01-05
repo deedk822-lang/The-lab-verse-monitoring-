@@ -3,8 +3,8 @@ import json
 import re
 import httpx
 from typing import Dict, Any
-from .fs_agent import FileSystemAgent
-from .config import ConfigManager
+from fs_agent import FileSystemAgent
+from config import ConfigManager
 
 class RainmakerOrchestrator:
     def __init__(self, workspace_path="/workspace", config_file=".env"):

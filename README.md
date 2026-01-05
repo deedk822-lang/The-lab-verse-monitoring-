@@ -16,30 +16,51 @@ A production-ready AI orchestration system with self-healing code generation, mu
 ## 🏗️ Architecture
 
 ```
-HTTP Request → Flask/Gunicorn → Orchestrator
+HTTP Request → Node.js TaskRouter → Orchestrator
                                       ↓
                           ┌───────────┴───────────┐
                           ↓                       ↓
                     Kimi (Moonshot AI)      Ollama (Local)
                           ↓                       ↓
-                    JSON Response          JSON Response
+                     Blueprint (JSON)      Blueprint (JSON)
                           ↓                       ↓
                           └───────────┬───────────┘
                                       ↓
-                              FileSystem Agent
-                                   (Secure)
+                              Confidence Engine
+                                (Governance)
                                       ↓
-                              Execute & Validate
-                                      ↓
-                              Return Result
+            ┌─────────────────────────┼────────────────────────┐
+            ↓                         ↓                        ↓
+      Auto-Merge (>=90)      Pull Request (>=70)           Reject (<70)
 ```
+
+### 🛡️ Governance Model: The Confidence Engine
+
+This system is governed by a **Confidence Engine** that quantifies the risk of every proposed code change. It's an automated SRE (Site Reliability Engineer) that decides whether an AI-generated change is safe enough to merge automatically.
+
+#### How it Works
+
+1.  **Blueprint Analysis**: Every proposed change (a "blueprint") from the AI is analyzed.
+2.  **Risk Scoring**: The `ConfidenceScorer` calculates a score from 0 to 100 based on several factors:
+    *   **Protected Paths**: Touching critical infrastructure files (like `.github/workflows` or `docker-compose.yml`) severely penalizes the score.
+    *   **Complexity**: Large, complex changes (measured by lines of code) receive a lower score.
+    *   **Security Risks**: A static analysis scan looks for potential vulnerabilities. Any findings reduce the score.
+    *   **Test Coverage**: Blueprints that include new or updated tests get a score bonus.
+3.  **Decision Matrix**: Based on the final score, the system takes one of three actions:
+    *   **A (90-100)**: **Auto-Merge**. The change is considered safe and is automatically merged and deployed.
+    *   **B (70-89)**: **Human Review**. The change is submitted as a pull request, requiring a human engineer to approve it.
+    *   **C (<70)**: **Reject**. The task is rejected, and the AI is notified to reconsider its approach.
+
+This governance layer ensures that while the system is autonomous, it operates with a "safety-first" mindset, preventing risky or broken code from ever reaching production without oversight.
+
 
 ### Core Components
 
-- **orchestrator.py** - Routes tasks to appropriate AI models (Kimi/Ollama)
-- **server.py** - Flask HTTP API for orchestration
-- **fs_agent.py** - Secure filesystem operations with sandboxing
-- **config.py** - Configuration management from .env files
+- **router.js** - The core orchestration logic with the Confidence Engine.
+- **governance/scorer.js** - The ConfidenceScorer that calculates the risk score.
+- **scripts/validate.sh** - The validation pipeline that runs before any code is committed.
+- **agents/healer.py** - The self-healing agent that responds to alerts.
+- **server.py** - The Flask HTTP API that exposes the orchestrator and the alert webhook.
 
 ## 📋 Prerequisites
 

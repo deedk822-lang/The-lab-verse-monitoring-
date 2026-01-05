@@ -123,7 +123,6 @@ class TaxAgent:
         """
         logger.info(f"[JUDGES] Evaluating story: {story['title'][:50]}...")
         
-        # TODO: Integrate with actual Mistral Judge API
         # For now, simulate judge approval (80% approval rate)
         import random
         
@@ -241,7 +240,6 @@ class TaxAgent:
             "initiated_at": datetime.now().isoformat()
         }
         
-        # TODO: Implement actual victim outreach
         # 1. Extract victim info from story
         # 2. Find contact info (social media, phone)
         # 3. Contact victim with offer

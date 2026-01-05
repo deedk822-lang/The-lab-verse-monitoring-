@@ -39,7 +39,6 @@ class MCPOrchestrator {
 
   /**
    * WORKFLOW 1: SEO Ranking Drop Response
-   * Triggered when RankYak detects a ranking drop
    */
   async handleSEORankingDrop(keyword, previousPosition, currentPosition, url) {
     console.log(`🚨 SEO Alert: "${keyword}" dropped from #${previousPosition} to #${currentPosition}`);

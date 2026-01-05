@@ -1,6 +1,100 @@
-httpx
-fastapi
-uvicorn
-python-dotenv
-hubspot-api-client
-requests
+# ============================================================
+# Autonomous Builder Platform - Production Dependencies
+# Version: 2.0.0
+# Last Updated: 2026-01-05
+# ============================================================
+
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.7.4
+python-dotenv==1.0.0
+
+# LangChain (2026 Latest)
+langchain==0.3.0
+langchain-openai==0.2.0
+langchain-community==0.3.0
+langchain-core==0.3.0
+
+# AI/ML Libraries
+openai==1.40.0             # For OpenAI-compatible APIs (Moonshot)
+
+# HTTP & Networking
+requests==2.31.0
+httpx==0.26.0
+aiohttp==3.9.1
+
+# Monitoring & Metrics
+prometheus-client==0.19.0
+
+# Security & Validation
+semgrep==1.50.0            # Security scanning
+
+# Data Processing
+pydantic-settings==2.4.0
+
+# Logging & Utilities
+python-json-logger==2.0.7
+
+# Development Tools (Optional but Recommended)
+black==23.12.1             # Code formatting
+pylint==3.0.3              # Linting
+mypy==1.8.0                # Type checking
+
+# Testing (Optional)
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+
+# Git Operations
+GitPython==3.1.41
+
+# File Processing
+pathspec==0.12.1
+
+# ============================================================
+# Optional Integrations (uncomment if needed)
+# ============================================================
+
+# GitHub Integration
+# PyGithub==2.1.1
+
+# Slack Integration
+# slack-sdk==3.26.2
+
+# Sentry Error Tracking
+# sentry-sdk==1.39.2
+
+# Advanced NLP
+# transformers==4.36.2
+# torch==2.1.2
+
+# Database (if needed)
+# sqlalchemy==2.0.25
+# psycopg2-binary==2.9.9
+
+# ============================================================
+# Version Constraints
+# ============================================================
+
+# Ensure compatibility with Python 3.11+
+python-dateutil>=2.8.2
+typing-extensions>=4.9.0
+
+# ============================================================
+# Installation Instructions
+# ============================================================
+#
+# 1. Create virtual environment:
+#    python3 -m venv venv
+#    source venv/bin/activate  # On Windows: venv\Scripts\activate
+#
+# 2. Install dependencies:
+#    pip install --upgrade pip
+#    pip install -r requirements.txt
+#
+# 3. Verify installation:
+#    python3 -c "import langchain; import fastapi; print('✓ All imports successful')"
+#
+# ============================================================

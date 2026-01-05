@@ -1,5 +1,4 @@
 # File: scripts/scheduled_completion.py
-import asana
 import sys
 import os
 from datetime import datetime

@@ -1,0 +1,61 @@
+{
+  "required_keys": {
+    "KIMI_API_KEY": {
+      "status": "valid",
+      "description": "Moonshot AI (Kimi) - Primary reasoning engine"
+    },
+    "MISTRAL_API_KEY": {
+      "status": "missing",
+      "description": "Mistral AI - Secondary model for validation"
+    },
+    "GROQ_API_KEY": {
+      "status": "missing",
+      "description": "Groq - Fast inference for real-time tasks"
+    },
+    "HUGGINGFACE_API_KEY": {
+      "status": "missing",
+      "description": "HuggingFace - Model downloads and inference"
+    }
+  },
+  "optional_keys": {
+    "GITHUB_TOKEN": {
+      "status": "not_set",
+      "description": "GitHub API - For PR creation and repo management"
+    },
+    "SLACK_WEBHOOK_URL": {
+      "status": "not_set",
+      "description": "Slack - For notifications and alerts"
+    },
+    "PROMETHEUS_URL": {
+      "status": "not_set",
+      "description": "Prometheus - Metrics collection"
+    },
+    "GRAFANA_API_KEY": {
+      "status": "not_set",
+      "description": "Grafana - Dashboard management"
+    },
+    "SENTRY_DSN": {
+      "status": "not_set",
+      "description": "Sentry - Error tracking"
+    }
+  },
+  "paths": {
+    ".jules": "exists",
+    ".jules/logs": "exists",
+    ".jules/temp": "exists",
+    ".jules/validation-results": "exists",
+    "agents": "exists",
+    "clients": "exists",
+    "tools": "exists",
+    "scoring": "created",
+    "governance": "created",
+    "scripts": "exists"
+  },
+  "dependencies": {
+    "python:langchain": "missing",
+    "python:pydantic": "missing",
+    "python:requests": "missing",
+    "python:python-dotenv": "missing"
+  },
+  "overall_status": "needs_configuration"
+}

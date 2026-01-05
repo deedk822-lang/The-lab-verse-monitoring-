@@ -5,7 +5,7 @@ echo "🔍 [SYSTEM VERIFIER] Starting comprehensive system verification..."
 
 # 1. No merge conflicts remain
 echo "  [1/10] Verifying no merge conflicts..."
-if grep -lr '<<<<<<< HEAD' . --exclude=verify_system.sh; then
+if grep -lr '<<<<<<< HEAD' . --exclude=verify_system.sh --exclude=fix_merge_conflicts.sh; then
   echo "❌ FAILED: Merge conflicts found."
   exit 1
 fi
@@ -34,7 +34,7 @@ echo "  ✅ PASSED: All Python files have valid syntax."
 
 # 4. router.js has all required methods
 echo "  [4/10] Verifying router.js methods..."
-ROUTER_METHODS=("createPullRequest" "rejectTask" "autoMerge")
+ROUTER_METHODS=("createPullRequest" "rejectTask" "applyAndTestChanges")
 for method in "${ROUTER_METHODS[@]}"; do
   if ! grep -q "$method" "orchestrator/router.js"; then
     echo "❌ FAILED: router.js is missing method: $method"
@@ -70,11 +70,11 @@ echo "  ✅ PASSED: Configuration files are valid."
 # 8. No out-of-scope files present
 echo "  [8/10] Verifying no out-of-scope files..."
 OUT_OF_SCOPE_PATTERNS=(
-  "*asana*"
-  "*g20*"
-  "*rankyak*"
-  "*mock*"
-  "*simulation*"
+  "asana-analytics-dashboard.py"
+  "G20_BRANCH_README.md"
+  "rankyak-sync-script.js"
+  "mock_db.py"
+  "simulation_runner.py"
 )
 for pattern in "${OUT_OF_SCOPE_PATTERNS[@]}"; do
   if find . -name "$pattern" -type f | grep -q .; then

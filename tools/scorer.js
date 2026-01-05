@@ -1,4 +1,5 @@
 const fs = require('fs');
+const micromatch = require('micromatch');
 
 class ConfidenceScorer {
   constructor() {
@@ -8,7 +9,7 @@ class ConfidenceScorer {
     let score = 100;
 
     // Penalty: Touching "Protected" Infrastructure
-    const protectedFilesViolated = blueprint.files.filter(f => this.protected_paths.some(p => f.path.includes(p)));
+    const protectedFilesViolated = blueprint.files.filter(f => micromatch.isMatch(f.path, this.protected_paths));
     if (protectedFilesViolated.length > 0) {
         return {
             score: 0,

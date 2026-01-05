@@ -25,7 +25,8 @@
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.2.0",
     "axios": "^1.6.0",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "micromatch": "^4.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

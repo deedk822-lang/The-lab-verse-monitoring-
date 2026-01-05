@@ -10,6 +10,9 @@ class TaskRouter {
     this.fs = new FileSystemAgent(config.fs);
     this.scorer = new ConfidenceScorer();
     this.security = new SecurityGate();
+    if (!process.env.GITHUB_TOKEN) {
+      throw new Error("GITHUB_TOKEN environment variable is not set.");
+    }
     this.octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   }
 
@@ -33,7 +36,7 @@ class TaskRouter {
 
     // 4. Decision Matrix
     if (confidenceScore.score >= 90 && !riskAnalysis.hasCritical) {
-      return this.autoMerge(blueprint);
+      return this.applyAndTestChanges(blueprint);
     } else if (confidenceScore.score >= 70) {
       return this.createPullRequest(blueprint, riskAnalysis);
     } else {
@@ -41,12 +44,16 @@ class TaskRouter {
     }
   }
 
-  async autoMerge(blueprint) {
-    console.log("⚡ [HANDS] High Confidence. Auto-merging...");
-    // In a real implementation, this would commit, push, and merge.
-    await this.fs.applyChanges(blueprint.files);
-    await this.fs.runTests(); // Self-healing check
-    return { status: "merged", changed: Object.keys(blueprint.files) };
+  async applyAndTestChanges(blueprint) {
+    console.log("⚡ [HANDS] High Confidence. Applying and testing changes...");
+    try {
+      await this.fs.applyChanges(blueprint.files);
+      await this.fs.runTests(); // Self-healing check
+      return { status: "merged", changed: Object.keys(blueprint.files) };
+    } catch (error) {
+      console.error("Error applying and testing changes:", error);
+      return { status: "failed", error: error.message };
+    }
   }
 
   async createPullRequest(blueprint, riskAnalysis) {

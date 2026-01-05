@@ -1,15 +1,18 @@
-from ..orchestrator import RainmakerOrchestrator
-
-# Placeholder for a Kimi client
-class KimiClient:
-    def generate(self, prompt, mode):
-        print(f"Generating blueprint for prompt: {prompt} with mode: {mode}")
-        return {"files": {"fix.py": "print('fixed')"}}
-
-kimi_client = KimiClient()
-orchestrator = RainmakerOrchestrator()
+from orchestrator import RainmakerOrchestrator
+from clients.kimi import KimiClient
 
 class SelfHealingAgent:
+    def __init__(self, kimi_client=None, orchestrator=None):
+        self.kimi_client = kimi_client or self._init_kimi_client()
+        self.orchestrator = orchestrator or self._init_orchestrator()
+
+    def _init_kimi_client(self, api_key=None):
+        # In a real implementation, this would get the API key from a secure store
+        return KimiClient(api_key=api_key)
+
+    def _init_orchestrator(self):
+        return RainmakerOrchestrator()
+
     def handle_alert(self, alert_payload):
         """
         Receives Prometheus Alert Manager Webhook
@@ -28,7 +31,7 @@ class SelfHealingAgent:
         """
 
         # Trigger Kimi with "Hotfix" priority
-        blueprint = kimi_client.generate(prompt, mode="hotfix")
+        blueprint = self.kimi_client.generate(prompt, mode="hotfix")
 
         # Deploy to a "hotfix" branch, verify, and merge
         # In a real implementation, this would be a more sophisticated process

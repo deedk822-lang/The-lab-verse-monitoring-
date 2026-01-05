@@ -2,17 +2,20 @@ const fs = require('fs');
 
 class ConfidenceScorer {
   constructor() {
-    this.protected_paths = JSON.parse(fs.readFileSync('rainmaker_orchestrator/protected_paths.json', 'utf8'));
+    this.protected_paths = JSON.parse(fs.readFileSync('.jules/protected_paths.json', 'utf8')).protected_paths;
   }
   calculate(blueprint, riskAnalysis) {
     let score = 100;
 
     // Penalty: Touching "Protected" Infrastructure
-    if (blueprint.files.some(f => this.protected_paths.some(p => f.path.includes(p)))) {
-      return {
-        score: 0,
-        grade: this.getGrade(0)
-      };
+    const protectedFilesViolated = blueprint.files.filter(f => this.protected_paths.some(p => f.path.includes(p)));
+    if (protectedFilesViolated.length > 0) {
+        return {
+            score: 0,
+            blocked: true,
+            reason: 'protected_paths_violation',
+            files: protectedFilesViolated
+        };
     }
 
     // Penalty: High Complexity (Cyclomatic Complexity proxy)

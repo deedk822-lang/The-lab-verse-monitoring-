@@ -11,6 +11,7 @@ from typing import Dict, Any
 
 from flask import Flask, request, jsonify
 from orchestrator import RainmakerOrchestrator
+from agents.healer import SelfHealingAgent
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +32,7 @@ try:
         workspace_path=workspace_path,
         config_file=config_file
     )
+    healer = SelfHealingAgent()
     logger.info(f"Orchestrator initialized (workspace: {workspace_path})")
 except Exception as e:
     logger.error(f"Failed to initialize orchestrator: {e}", exc_info=True)
@@ -76,6 +78,21 @@ def validate_execute_request(data: Dict[str, Any]) -> tuple[bool, str]:
             return False, "Field 'output_filename' contains invalid characters"
 
     return True, ""
+
+
+@app.route("/webhook/alert", methods=["POST"])
+def handle_alert():
+    """
+    Handle alerts from Prometheus Alert Manager.
+    """
+    try:
+        alert_payload = request.get_json()
+        logger.info(f"Received alert: {alert_payload}")
+        result = healer.handle_alert(alert_payload)
+        return jsonify({"status": "success", "result": result}), 200
+    except Exception as e:
+        logger.error(f"Failed to handle alert: {e}", exc_info=True)
+        return jsonify({"error": "Failed to handle alert", "details": str(e)}), 500
 
 
 @app.route("/execute", methods=["POST"])

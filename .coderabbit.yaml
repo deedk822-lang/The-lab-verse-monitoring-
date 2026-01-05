@@ -1,26 +1,14 @@
-# .coderabbit.yaml - FIXED CONFIGURATION
-language: "en-US"
-early_access: false
-enable_free_tier: true
 
+version: "0.1"
+language: "en-US"
 reviews:
-  profile: "chill"
-  request_changes_workflow: false
+  # FIX: Change 'professional' to 'assertive'
+  profile: "assertive"
+  request_changes_workflow: true
   high_level_summary: true
-  poem: false
-  review_status: true
-  collapse_walkthrough: false
   auto_review:
     enabled: true
-    auto_incremental_review: true
-    drafts: false
-  path_filters: []
-  path_instructions: []
-
-chat:
-  auto_reply: true
-
-knowledge_base:
-  learnings:
-    scope: "auto"
-  opt_out: false
+    ignore:
+      - "dist/**"
+      - "yarn.lock"
+      - "package-lock.json"

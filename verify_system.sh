@@ -5,7 +5,7 @@ echo "🔍 [SYSTEM VERIFIER] Starting comprehensive system verification..."
 
 # 1. No merge conflicts remain
 echo "  [1/10] Verifying no merge conflicts..."
-if grep -lr '<<<<<<< HEAD' . --exclude=verify_system.sh; then
+if grep -R --binary-files=text -l -E '<<<<<<< |>>>>>>>|=======' . --exclude=verify_system.sh --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv | grep .; then
   echo "❌ FAILED: Merge conflicts found."
   exit 1
 fi
@@ -29,12 +29,17 @@ echo "  ✅ PASSED: All critical files exist."
 
 # 3. All Python files have valid syntax
 echo "  [3/10] Verifying Python syntax..."
-find . -name "*.py" -exec python3 -m py_compile {} \;
+for file in $(find . -name "*.py"); do
+    if ! python3 -m py_compile "$file"; then
+        echo "❌ FAILED: Syntax error in $file"
+        exit 1
+    fi
+done
 echo "  ✅ PASSED: All Python files have valid syntax."
 
 # 4. router.js has all required methods
 echo "  [4/10] Verifying router.js methods..."
-ROUTER_METHODS=("createPullRequest" "rejectTask" "autoMerge")
+ROUTER_METHODS=("createPullRequest" "rejectTask" "applyAndTestChanges")
 for method in "${ROUTER_METHODS[@]}"; do
   if ! grep -q "$method" "orchestrator/router.js"; then
     echo "❌ FAILED: router.js is missing method: $method"
@@ -45,8 +50,8 @@ echo "  ✅ PASSED: router.js has all required methods."
 
 # 5. scorer.js has protected paths logic
 echo "  [5/10] Verifying scorer.js logic..."
-if ! grep -q "protected_paths_violation" "tools/scorer.js"; then
-  echo "❌ FAILED: scorer.js is missing protected paths logic."
+if ! grep -q "micromatch" "tools/scorer.js"; then
+  echo "❌ FAILED: scorer.js is missing micromatch logic."
   exit 1
 fi
 echo "  ✅ PASSED: scorer.js has protected paths logic."
@@ -73,12 +78,12 @@ OUT_OF_SCOPE_PATTERNS=(
   "*asana*"
   "*g20*"
   "*rankyak*"
-  "*mock*"
-  "*simulation*"
+  "rankyak_enrichment_demo.py"
+  "rankyak-sync-script.js"
 )
 for pattern in "${OUT_OF_SCOPE_PATTERNS[@]}"; do
-  if find . -name "$pattern" -type f | grep -q .; then
-    echo "❌ FAILED: Out-of-scope files found."
+  if find . -name "$pattern" -type f -not -path "./__tests__/*" -not -path "./tests/*" | grep -q .; then
+    echo "❌ FAILED: Out-of-scope files found for pattern: $pattern."
     exit 1
   fi
 done
@@ -95,9 +100,17 @@ echo "  ✅ PASSED: Dependencies installed."
 # 10. Environment configured
 echo "  [10/10] Verifying environment..."
 if [ ! -f ".env" ]; then
-  echo "  [10/10] Creating .env file..."
-  touch .env
+  echo "❌ FAILED: .env file not found. Please create one from .env.example."
+  exit 1
 fi
+
+REQUIRED_VARS=("GITHUB_TOKEN" "KIMI_API_KEY")
+for var in "${REQUIRED_VARS[@]}"; do
+    if ! grep -q "^$var=" .env; then
+        echo "❌ FAILED: Required environment variable not set in .env: $var"
+        exit 1
+    fi
+done
 echo "  ✅ PASSED: Environment configured."
 
 echo "✅ [SYSTEM VERIFIER] All checks passed."

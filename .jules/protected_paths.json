@@ -3,8 +3,8 @@
     ".github/workflows/*",
     "config/*",
     ".env*",
-    "*/auth/*",
-    "*/payment/*",
+    "**/auth/**",
+    "**/payment/**",
     "docker-compose*.yml",
     "package.json",
     "requirements.txt"

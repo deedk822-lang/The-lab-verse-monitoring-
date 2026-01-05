@@ -9,7 +9,6 @@ app.use(express.json());
 
 // Root endpoint for health checks
 app.get('/', (req, res) => {
-  res.status(200).json({ message: 'RankYak Bridge alive' });
 });
 
 app.listen(port, () => {

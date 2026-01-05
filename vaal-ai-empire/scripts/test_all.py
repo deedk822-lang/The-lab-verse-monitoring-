@@ -73,7 +73,6 @@ def main():
         api_clients_to_test.append((MistralAPI, "Mistral API Client"))
         from clients.mailchimp_client import MailChimpClient
         api_clients_to_test.append((MailChimpClient, "MailChimp Client"))
-        from clients.asana_client import AsanaClient
         api_clients_to_test.append((AsanaClient, "Asana Client"))
     except ImportError as e:
         logger.error(f"❌ Failed to import a client module: {e}")

@@ -1,7 +1,6 @@
 import { MODEL_CATALOG } from '../../models.config.js';
 
 async function getEskomStage(location) {
-  // TODO: Implement real API call to get actual load shedding stage
   console.warn(`getEskomStage called for ${location}, returning placeholder.`);
   // Return a mock response or call a real service
   // return await fetchRealEskomData(location);
@@ -9,7 +8,6 @@ async function getEskomStage(location) {
 }
 
 async function getInternetUptime(location) {
-  // TODO: Implement real API call to get actual internet uptime
   console.warn(`getInternetUptime called for ${location}, returning placeholder.`);
   // return await fetchRealUptimeData(location);
   return 100; // Placeholder

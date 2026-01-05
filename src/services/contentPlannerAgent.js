@@ -11,7 +11,6 @@ import { logger } from '../utils/logger.js';
 export class ContentPlannerAgent {
   /**
    * Main handler for content planning requests
-   * @param {Object} payload - RankYak webhook payload
    * @param {Object} context - Execution context including handoffs
    * @returns {Object} Planning result with handoff instructions
    */
@@ -44,7 +43,6 @@ export class ContentPlannerAgent {
         meta {
           requestId: context.requestId || `plan_${Date.now()}`,
           timestamp: new Date().toISOString(),
-          source: 'rankyak-webhook'
         }
       };
       
@@ -70,8 +68,6 @@ export class ContentPlannerAgent {
   }
 
   /**
-   * Create comprehensive content plan from RankYak payload
-   * @param {Object} payload - RankYak webhook payload
    * @returns {Object} Content plan with all necessary details
    */
   static async createContentPlan(payload) {
@@ -119,7 +115,6 @@ export class ContentPlannerAgent {
       imageRequirements: imageRequirements.output,
       channels: payload.platforms?.split(',') || ['blog', 'linkedin', 'twitter'],
       metadata: {
-        source: 'rankyak',
         createdAt: new Date().toISOString(),
         version: '1.0'
       }
@@ -277,7 +272,6 @@ export class ContentPlannerAgent {
       draft: false,
       hero_image_url: briaOutput.imageUrl,
       bria_attribution: briaOutput.attributionToken,
-      source: 'rankyak-webhook',
       keywords: contentPlan.keywords.join(', '),
       audience: contentPlan.audience,
       tone: contentPlan.tone,
@@ -318,7 +312,6 @@ export class ContentPlannerAgent {
       meta {
         github_url: '', // Will be filled after GitHub commit
         bria_attribution: briaOutput.attributionToken,
-        source: 'rankyak-webhook'
       }
     };
   }

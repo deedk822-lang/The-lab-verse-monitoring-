@@ -32,7 +32,6 @@ export class MCPHandoffRouter {
           result = await mistral.generateCode(payload.spec || topic, 'python');
           break;
 
-        case 'visionary': // Content / RankYak
           const { ContentPlanner } = await import('./contentPlannerAgent.js'); // Assuming this exists
           result = await ContentPlanner.handle(payload, options);
           break;

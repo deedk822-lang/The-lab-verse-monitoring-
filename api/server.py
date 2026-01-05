@@ -43,7 +43,6 @@ async def health_check():
  main
 
 
-# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
 def get_market_intel(company_name: str):
     """
     Retrieves market intelligence for a given company.

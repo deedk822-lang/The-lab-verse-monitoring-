@@ -72,7 +72,6 @@ class APIHealthChecker:
         """Test WordPress XML-RPC connection"""
         user = os.getenv('WORDPRESS_USER')
         password = os.getenv('WORDPRESS_PASSWORD')
-        site_url = "https://rankyakdigital.com"
 
         if not user or not password:
             return False, "Credentials not configured"

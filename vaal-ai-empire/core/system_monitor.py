@@ -23,6 +23,7 @@ class SystemMonitor:
         self.error_count = 0
         self.warning_count = 0
         self.api_calls = {"success": 0, "failure": 0}
+        self._session = requests.Session()
 
     def record_error(self, component: str, error: Exception,
                     context: Optional[Dict] = None):
@@ -148,7 +149,7 @@ class SystemMonitor:
     def _check_ollama(self) -> str:
         """Check Ollama server health"""
         try:
-            response = requests.get("http://localhost:11434", timeout=2)
+            response = self._session.get("http://localhost:11434", timeout=2)
             return "healthy" if response.status_code == 200 else "unreachable"
         except:
             return "not_running"
@@ -175,7 +176,7 @@ class SystemMonitor:
             return "not_configured"
 
         try:
-            response = requests.get(
+            response = self._session.get(
                 "https://app.ayrshare.com/api/profiles",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5

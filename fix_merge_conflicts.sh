@@ -14,7 +14,8 @@ fi
 echo "🔧 [MERGE FIXER] Mending the following files:"
 echo "$CONFLICT_FILES"
 
-for file in $CONFLICT_FILES; do
+# Use a while loop to handle filenames with spaces correctly
+while IFS= read -r file; do
   # Create a backup
   cp "$file" "$file.bak"
 
@@ -26,6 +27,6 @@ for file in $CONFLICT_FILES; do
     />>>>>>>/      { in_conflict = 0; next }
     in_conflict != 2 { print }
   ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-done
+done <<< "$CONFLICT_FILES"
 
 echo "✅ [MERGE FIXER] All merge conflicts resolved. Backups created with .bak extension."

@@ -1,11 +1,42 @@
-// Optional StatsD binding; avoids hard dependency
-let statsd: { gauge?: Function; increment?: Function } | undefined;
+import { SecureLogger } from '../security/SecureLogger';
+
+const logger = new SecureLogger();
+
+let statsd: any = null;
+let metricsEnabled = false;
+
 try {
-  // Dynamically import if present in the workspace
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const HotShots = require('hot-shots');
-  statsd = new HotShots.StatsD({ prefix: 'lapverse.' });
-} catch {}
+
+  statsd = new HotShots.StatsD({
+    prefix: 'lapverse.',
+    errorHandler: (error: Error) => {
+      logger.warn('StatsD error', { error: error.message });
+    }
+  });
+
+  metricsEnabled = true;
+  logger.info('Metrics enabled with hot-shots');
+
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    // Module not found is expected, others are concerning
+    if (error.message.includes('Cannot find module')) {
+      logger.debug('hot-shots not installed, metrics disabled');
+    } else {
+      logger.warn('Failed to initialize metrics', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  }
+  metricsEnabled = false;
+}
+
+export function isMetricsEnabled(): boolean {
+  return metricsEnabled;
+}
 
 export class FinOpsTagger {
   async estimate(task: any): Promise<number>{
@@ -27,7 +58,11 @@ export class FinOpsTagger {
   }
 
   emitUsage(meta: Record<string,any>){
-    // Prometheus handled elsewhere; optionally emit StatsD if available
+    if (!metricsEnabled || !statsd) {
+      logger.debug('Usage metrics (statsd disabled)', meta);
+      return;
+    }
+
     try {
       statsd?.increment?.('usage.events', 1, 1, [
         `tenant:${meta.tenant||'unknown'}`,
@@ -38,7 +73,9 @@ export class FinOpsTagger {
           `tenant:${meta.tenant||'unknown'}`
         ]);
       }
-    } catch {/* no-op */}
+    } catch (error) {
+      logger.error('Failed to emit metrics', { error, meta });
+    }
   }
 
   getFinOpsTags(task: any){

@@ -41,6 +41,30 @@ class TaskRouter {
   }
 
   async applyAndTestChanges(blueprint) {
+    if (!blueprint || !Array.isArray(blueprint.files) || blueprint.files.length === 0) {
+        return {
+            status: "failed",
+            changed: [],
+            error: "Invalid blueprint or no files to apply."
+        };
+    }
+    for (const file of blueprint.files) {
+        if (!file.path || typeof file.path !== 'string') {
+            return {
+                status: "failed",
+                changed: [],
+                error: "Invalid file path in blueprint."
+            };
+        }
+        if (!file.content && !file.deleted) {
+            return {
+                status: "failed",
+                changed: [],
+                error: "File must have content or be marked for deletion."
+            };
+        }
+    }
+
     try {
         // In a real implementation, this would commit, push, and merge.
         await this.fs.applyChanges(blueprint.files);

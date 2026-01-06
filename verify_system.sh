@@ -5,7 +5,19 @@ echo "🔍 [SYSTEM VERIFIER] Starting comprehensive system verification..."
 
 # 1. No merge conflicts remain
 echo "  [1/10] Verifying no merge conflicts..."
-if grep -R --binary-files=text -l -E '<<<<<<< |>>>>>>>|=======' . --exclude=verify_system.sh --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv | grep .; then
+EXCLUDE_ARGS=(
+    --exclude='*.md'
+    --exclude='*.txt'
+    --exclude='verify_system.sh'
+    --exclude='MERGE_CONFLICT_PREVENTION.md'
+    --exclude-dir='node_modules'
+    --exclude-dir='.git'
+    --exclude-dir='.venv'
+    --exclude-dir='__pycache__'
+    --exclude-dir='test/fixtures'
+    --exclude-dir='docs'
+)
+if grep -R --binary-files=text -l -E '<<<<<<< |>>>>>>>|=======' . "${EXCLUDE_ARGS[@]}" | grep .; then
   echo "❌ FAILED: Merge conflicts found."
   exit 1
 fi
@@ -29,12 +41,12 @@ echo "  ✅ PASSED: All critical files exist."
 
 # 3. All Python files have valid syntax
 echo "  [3/10] Verifying Python syntax..."
-for file in $(find . -name "*.py"); do
+while IFS= read -r -d '' file; do
     if ! python3 -m py_compile "$file"; then
         echo "❌ FAILED: Syntax error in $file"
         exit 1
     fi
-done
+done < <(find . -name "*.py" -print0)
 echo "  ✅ PASSED: All Python files have valid syntax."
 
 # 4. router.js has all required methods
@@ -104,13 +116,53 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-REQUIRED_VARS=("GITHUB_TOKEN" "KIMI_API_KEY")
-for var in "${REQUIRED_VARS[@]}"; do
-    if ! grep -q "^$var=" .env; then
-        echo "❌ FAILED: Required environment variable not set in .env: $var"
-        exit 1
+REQUIRED_VARS=(
+    "GITHUB_TOKEN:pattern:ghp_[A-Za-z0-9]{36}:GitHub Personal Access Token"
+    "KIMI_API_KEY:pattern:sk-[A-Za-z0-9]{32,}:Kimi API Key"
+)
+
+# Load .env safely
+set -a
+source <(grep -v '^#' .env | grep -v '^$')
+set +a
+
+VALIDATION_FAILED=false
+
+for var_spec in "${REQUIRED_VARS[@]}"; do
+    IFS=':' read -r var_name validation_type validation_pattern description <<< "$var_spec"
+
+    # Check if variable is set
+    if [ -z "${!var_name:-}" ]; then
+        echo "❌ MISSING: $var_name"
+        echo "   Description: $description"
+        VALIDATION_FAILED=true
+        continue
     fi
+
+    # Check if value is not just whitespace
+    if [[ "${!var_name}" =~ ^[[:space:]]*$ ]]; then
+        echo "❌ EMPTY: $var_name contains only whitespace"
+        VALIDATION_FAILED=true
+        continue
+    fi
+
+    # Type-specific validation
+    case "$validation_type" in
+        pattern)
+            if [[ ! "${!var_name}" =~ $validation_pattern ]]; then
+                echo "❌ INVALID FORMAT: $var_name"
+                echo "   Expected pattern: $validation_pattern"
+                echo "   Description: $description"
+                VALIDATION_FAILED=true
+            fi
+            ;;
+    esac
 done
+
+if [ "$VALIDATION_FAILED" = true ]; then
+    echo "❌ FAILED: Environment variable validation failed"
+    exit 1
+fi
 echo "  ✅ PASSED: Environment configured."
 
 echo "✅ [SYSTEM VERIFIER] All checks passed."

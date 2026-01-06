@@ -75,7 +75,7 @@ To resolve the conflict, edit the file to remove the markers and choose which ve
 ```json
 {
   "name": "my-app",
-  "version": "2.0.0",
+  "version": "2.0.0"
 }
 ```
 

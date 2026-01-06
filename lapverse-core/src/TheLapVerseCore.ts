@@ -14,6 +14,7 @@ import { OpenFeatureFlags } from './delivery/OpenFeatureFlags';
 import { TheLapVerseKagglePipe } from './kaggle/TheLapVerseKagglePipe';
 import { HealthChecker } from './monitoring/HealthChecker';
 import { MetricsCollector } from './metrics/MetricsCollector';
+import { HttpError, RateLimitError, CapacityError, FeatureDisabledError } from './HttpError';
 
 export class TheLapVerseCore {
   private readonly tracer   = trace.getTracer('lapverse-core', '2.0.0');
@@ -131,6 +132,13 @@ export class TheLapVerseCore {
     app.get('/metrics', (_req, res) => res.end(register.metrics()));
 
     app.use((err: any, _req: any, res: any, _next: any) => {
+      if (err instanceof HttpError) {
+        return res.status(err.status).json({
+          error: err.message,
+          code: err.code,
+          retryable: err.retryable
+        });
+      }
       const status = err?.status || 500;
       res.status(status).json({ error: err?.message || 'internal-error' });
     });
@@ -194,16 +202,16 @@ export class TheLapVerseCore {
 
         if (await this.cost.wouldBustMargin(tenant, forecast)) {
           span.setStatus({ code: SpanStatusCode.ERROR, message: 'Margin guardrail' });
-          throw { status: 402, message: 'Exceeds margin guardrail' };
+          throw new RateLimitError('Exceeds margin guardrail');
         }
 
         if (this.slo.wouldExceedBudget()) {
           span.setStatus({ code: SpanStatusCode.ERROR, message: 'Budget exhausted' });
-          throw { status: 503, message: 'Error budget exhausted' };
+          throw new CapacityError('Error budget exhausted');
         }
 
         if (!await this.flags.isEnabled(`${type}-v2`, tenant)) {
-          throw { status: 404, message: 'Feature not available for tenant' };
+          throw new FeatureDisabledError(`${type}-v2`);
         }
 
         await queue.add('run', { id, payload: req.body, tenant }, {
@@ -330,7 +338,6 @@ export class TheLapVerseCore {
 
   private runSpan<T>(name: string, fn: (span: import('@opentelemetry/api').Span) => Promise<T>): Promise<T> {
     const span = this.tracer.startSpan(name);
-.
     return context.with(trace.setSpan(context.active(), span), () => fn(span))
       .finally(() => span.end());
   }

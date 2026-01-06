@@ -6,6 +6,9 @@ const { Octokit } = require("@octokit/rest");
 
 class TaskRouter {
   constructor(config) {
+    if (!process.env.GITHUB_TOKEN || process.env.GITHUB_TOKEN.trim() === '') {
+        throw new Error('GITHUB_TOKEN environment variable must be set.');
+    }
     this.kimi = new KimiClient(config.kimi);
     this.fs = new FileSystemAgent(config.fs);
     this.scorer = new ConfidenceScorer();
@@ -14,8 +17,6 @@ class TaskRouter {
   }
 
   async handleRequest(intent) {
-    console.log(`🧠 [BRAIN] Analyzing intent: "${intent}"`);
-
     // 1. Context Assembly (RAG-lite)
     const context = await this.fs.getRepoContext({
       includeStructure: true,
@@ -29,11 +30,9 @@ class TaskRouter {
     const riskAnalysis = await this.security.scanBlueprint(blueprint);
     const confidenceScore = this.scorer.calculate(blueprint, riskAnalysis);
 
-    console.log(`🛡️ [GOVERNANCE] Confidence Score: ${confidenceScore.score}/100`);
-
     // 4. Decision Matrix
     if (confidenceScore.score >= 90 && !riskAnalysis.hasCritical) {
-      return this.autoMerge(blueprint);
+      return this.applyAndTestChanges(blueprint);
     } else if (confidenceScore.score >= 70) {
       return this.createPullRequest(blueprint, riskAnalysis);
     } else {
@@ -41,16 +40,46 @@ class TaskRouter {
     }
   }
 
-  async autoMerge(blueprint) {
-    console.log("⚡ [HANDS] High Confidence. Auto-merging...");
-    // In a real implementation, this would commit, push, and merge.
-    await this.fs.applyChanges(blueprint.files);
-    await this.fs.runTests(); // Self-healing check
-    return { status: "merged", changed: Object.keys(blueprint.files) };
+  async applyAndTestChanges(blueprint) {
+    if (!blueprint || !Array.isArray(blueprint.files) || blueprint.files.length === 0) {
+        return {
+            status: "failed",
+            changed: [],
+            error: "Invalid blueprint or no files to apply."
+        };
+    }
+    for (const file of blueprint.files) {
+        if (!file.path || typeof file.path !== 'string') {
+            return {
+                status: "failed",
+                changed: [],
+                error: "Invalid file path in blueprint."
+            };
+        }
+        if (!file.content && !file.deleted) {
+            return {
+                status: "failed",
+                changed: [],
+                error: "File must have content or be marked for deletion."
+            };
+        }
+    }
+
+    try {
+        // In a real implementation, this would commit, push, and merge.
+        await this.fs.applyChanges(blueprint.files);
+        await this.fs.runTests(); // Self-healing check
+        return { status: "merged", changed: Object.keys(blueprint.files) };
+    } catch (err) {
+        return {
+            status: "failed",
+            changed: [],
+            error: err.message
+        };
+    }
   }
 
   async createPullRequest(blueprint, riskAnalysis) {
-    console.log("🤔 [HANDS] Medium Confidence. Creating Pull Request...");
     const { owner, repo, base, head } = blueprint.branchInfo;
 
     const { data: pr } = await this.octokit.pulls.create({
@@ -80,7 +109,6 @@ class TaskRouter {
   }
 
   async rejectTask(riskAnalysis) {
-    console.log("🛑 [HANDS] Low Confidence. Rejecting task...");
     // In a real implementation, this would notify the user or another system.
     return { status: "rejected", riskAnalysis };
   }

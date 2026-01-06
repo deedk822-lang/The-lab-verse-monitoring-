@@ -1,65 +1,42 @@
- main
-import { StatsD } from 'hot-shots';
+import { SecureLogger } from '../security/SecureLogger';
 
-export class FinOpsTagger {
-    private readonly client = new StatsD();
+const logger = new SecureLogger();
 
-    emitUsage(usage: { artifactId?: string; forecastCost: number; tenant?: string; source: string; }) {
-        this.client.increment('finops.usage.emit', 1, {
-            source: usage.source,
-            tenant: usage.tenant || 'default'
-        });
-    }
+let statsd: any = null;
+let metricsEnabled = false;
 
-    getFinOpsTags(task: any) {
-        return {
-            'finops.cost_center': 'ai-inference',
-            'finops.tenant': task.tenantId || 'default',
-        };
-    }
-
-    getAllocation() {
-        return {
-            'project-default': {
-                used: 100,
-                limit: 1000,
-            }
-        }
-    }
-
-    async estimate(body: any) {
-        return 0.001;
-    }
-
-    async estimateCompetition(body: any) {
-        return 0.01;
-    }
-
-    async wouldBustMargin(tenant: string, forecast: number) {
-        return false;
-    }
-
-    async calculate(task: any) {
-        return 0.002
-    }
-
-    async calculateCompetition(results: any) {
-        return 0.02
-    }
-
-    trackLlmUsage(tokens: number, dimensions: any) {
-        this.client.histogram('finops.llm.tokens', tokens, dimensions);
-    }
-}
-
-// Optional StatsD binding; avoids hard dependency
-let statsd: { gauge?: Function; increment?: Function } | undefined;
 try {
-  // Dynamically import if present in the workspace
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const HotShots = require('hot-shots');
-  statsd = new HotShots.StatsD({ prefix: 'lapverse.' });
-} catch {}
+
+  statsd = new HotShots.StatsD({
+    prefix: 'lapverse.',
+    errorHandler: (error: Error) => {
+      logger.warn('StatsD error', { error: error.message });
+    }
+  });
+
+  metricsEnabled = true;
+  logger.info('Metrics enabled with hot-shots');
+
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    // Module not found is expected, others are concerning
+    if (error.message.includes('Cannot find module')) {
+      logger.debug('hot-shots not installed, metrics disabled');
+    } else {
+      logger.warn('Failed to initialize metrics', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  }
+  metricsEnabled = false;
+}
+
+export function isMetricsEnabled(): boolean {
+  return metricsEnabled;
+}
 
 export class FinOpsTagger {
   async estimate(task: any): Promise<number>{
@@ -68,17 +45,10 @@ export class FinOpsTagger {
     return base * complexity[task.requirements?.complexity||'simple'];
   }
 
- cursor/the-lap-verse-core-service-polish-ae35
-  async estimateCompetition(_payload: any): Promise<number>{
-    // Simple heuristic: 4 variants at 1.5x single task
-    const perVariant = await this.estimate({ requirements: { complexity: 'intermediate' } });
-    return perVariant * 4 * 1.5;
-
   async estimateCompetition(payload: any): Promise<number>{
     const competitors: string[] = payload?.competitors || ['aggressive','conservative','balanced','experimental'];
     const perVariant = await this.estimate({ requirements: { complexity: payload?.requirements?.complexity || 'intermediate' } });
     return competitors.length * perVariant;
- main
   }
 
   async wouldBustMargin(tenant: string, forecast: number): Promise<boolean>{
@@ -88,7 +58,11 @@ export class FinOpsTagger {
   }
 
   emitUsage(meta: Record<string,any>){
-    // Prometheus handled elsewhere; optionally emit StatsD if available
+    if (!metricsEnabled || !statsd) {
+      logger.debug('Usage metrics (statsd disabled)', meta);
+      return;
+    }
+
     try {
       statsd?.increment?.('usage.events', 1, 1, [
         `tenant:${meta.tenant||'unknown'}`,
@@ -99,7 +73,9 @@ export class FinOpsTagger {
           `tenant:${meta.tenant||'unknown'}`
         ]);
       }
-    } catch {/* no-op */}
+    } catch (error) {
+      logger.error('Failed to emit metrics', { error, meta });
+    }
   }
 
   getFinOpsTags(task: any){
@@ -114,16 +90,11 @@ export class FinOpsTagger {
   }
 
   calculate(task: any){ return this.estimate(task); }
- cursor/the-lap-verse-core-service-polish-ae35
+
   async calculateCompetition(results: PromiseSettledResult<any>[]): Promise<number>{
     const completed = results.filter(r=>r.status==='fulfilled').length || 1;
     return completed * (await this.estimate({ requirements: { complexity: 'intermediate' } }));
-
-  async calculateCompetition(results: PromiseSettledResult<any>[]){
-    const completed = results.filter(r=>r.status==='fulfilled').length;
-    return completed * 0.02; // simple per-variant cost model
- main
   }
+
   getAllocation(){ /* per-tenant cost */ return {}; }
 }
- cursor/the-lap-verse-core-service-polish-ae35

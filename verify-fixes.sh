@@ -6,10 +6,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-    print_error "Merge conflict markers still present in requirements.txt"
-else
-    print_success "No merge conflicts in requirements.txt"
-fi
 
 if grep -q '^groq$' requirements.txt; then
     print_success "groq dependency correctly formatted"

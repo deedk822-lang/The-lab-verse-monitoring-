@@ -32,6 +32,7 @@ const config = {
   
   // Module name mapping for aliases and CSS
   moduleNameMapper: {
+    'msw/node': '<rootDir>/node_modules/msw/node/index.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@workflow/core$': '<rootDir>/workflows/core',

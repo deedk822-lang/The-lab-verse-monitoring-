@@ -1,9 +1,6 @@
-
-version: "0.1"
-language: "en-US"
+version: "2"
 reviews:
-  # FIX: Change 'professional' to 'assertive'
-  profile: "assertive"
+  profile: assertive
   request_changes_workflow: true
   high_level_summary: true
   auto_review:
@@ -12,3 +9,38 @@ reviews:
       - "dist/**"
       - "yarn.lock"
       - "package-lock.json"
+checks:
+  collaboration:
+    # This check will flag pull requests that have a low docstring coverage.
+    # The `threshold` is the minimum percentage of docstrings that must be present.
+    # The `in_files` and `not_in_files` are glob patterns to include or exclude files.
+    docstring_coverage:
+      enabled: true
+      threshold: 80
+      in_files: ["**/*.py"]
+      not_in_files: ["**/__init__.py", "**/test_*.py", "**/tests_*.py"]
+
+  correctness:
+    # This check will enforce a maximum length for pull request titles.
+    # The `max_length` is the maximum number of characters allowed.
+    title_max_length:
+      enabled: true
+      max_length: 80
+
+  maintainability:
+    # This check will look for TODOs and FIXMEs in the code.
+    # The `message` is the comment that will be posted on the pull request.
+    # The `in_files` and `not_in_files` are glob patterns to include or exclude files.
+    todos_and_fixmes:
+      enabled: true
+      message: "Remove TODO/FIXME before merge - create a ticket instead"
+      in_files: ["**/*.{js,ts,py,sh}"]
+
+    # This check will look for console.log statements in the code.
+    # The `message` is the comment that will be posted on the pull request.
+    # The `in_files` and `not_in_files` are glob patterns to include or exclude files.
+    no_console_log:
+      enabled: true
+      pattern: "console\\.(log|debug|info)"
+      in_files: ["src/**/*.{js,ts}", "!**/*.test.{js,ts}"]
+      message: "Remove console.log - use proper logging instead"

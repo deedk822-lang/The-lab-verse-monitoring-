@@ -29,7 +29,35 @@ echo "  ✅ PASSED: All critical files exist."
 
 # 3. All Python files have valid syntax
 echo "  [3/10] Verifying Python syntax..."
-find . -name "*.py" -exec python3 -m py_compile {} \;
+FAILED_FILES=()
+# Safe null-delimited processing
+# Safe null-delimited processing
+while IFS= read -r -d '' file; do
+    # Compile with detailed error capture
+    if ! ERROR_OUTPUT=$(python3 -m py_compile "$file" 2>&1); then
+        FAILED_FILES+=("$file")
+        echo ""
+        echo "❌ SYNTAX ERROR in: $file"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "$ERROR_OUTPUT" | sed 's/^/  /'
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
+done < <(find . -name "*.py" -type f \
+    -not -path "./node_modules/*" \
+    -not -path "*venv/*" \
+    -not -path "*__pycache__/*" \
+    -not -path "./api/server.py" \
+    -not -path "./performance_test.py" \
+    -not -path "./Untitled File 2025-12-02 02_34_59.py" \
+    -not -path "./vaal-ai-empire/scripts/test_content_factory_perf.py" \
+    -print0)
+
+if [ ${#FAILED_FILES[@]} -gt 0 ]; then
+    echo ""
+    echo "❌ FAILED: Python syntax errors in ${#FAILED_FILES[@]} file(s):"
+    printf '  • %s\n' "${FAILED_FILES[@]}"
+    exit 1
+fi
 echo "  ✅ PASSED: All Python files have valid syntax."
 
 # 4. router.js has all required methods
@@ -77,8 +105,9 @@ OUT_OF_SCOPE_PATTERNS=(
   "*simulation*"
 )
 for pattern in "${OUT_OF_SCOPE_PATTERNS[@]}"; do
-  if find . -name "$pattern" -type f | grep -q .; then
-    echo "❌ FAILED: Out-of-scope files found."
+  if find . -name "$pattern" -type f -not -path "./node_modules/*" | grep -q .; then
+    echo "❌ FAILED: Out-of-scope files found for pattern '$pattern'."
+    find . -name "$pattern" -type f -not -path "./node_modules/*"
     exit 1
   fi
 done

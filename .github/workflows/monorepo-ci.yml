@@ -1,0 +1,140 @@
+name: Lab-Verse Monorepo CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. SECURITY AUDIT (Runs on everything)
+  # ------------------------------------------------------------------
+  security:
+    name: 🛡️ Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret Scanning (TruffleHog)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+      - name: SAST Scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
+
+  # ------------------------------------------------------------------
+  # 2. PYTHON WORKSPACES (Vaal Empire, Rainmaker, Lab Verse)
+  # ------------------------------------------------------------------
+  python-ci:
+    name: 🐍 Python CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: [vaal-ai-empire, rainmaker_orchestrator, lab_verse, agents]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - '${{ matrix.workspace }}/**'
+
+      - name: Set up Python
+        if: steps.filter.outputs.src == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        if: steps.filter.outputs.src == 'true'
+        run: |
+          if [ -f "${{ matrix.workspace }}/requirements.txt" ]; then
+            pip install -r ${{ matrix.workspace }}/requirements.txt
+          fi
+          pip install pytest flake8
+
+      - name: Lint & Test
+        if: steps.filter.outputs.src == 'true'
+        run: |
+          cd ${{ matrix.workspace }}
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Run tests if tests folder exists
+          if [ -d "tests" ] || [ -f "test_*.py" ]; then
+            pytest
+          fi
+
+  # ------------------------------------------------------------------
+  # 3. NODE.JS WORKSPACES (Content Creator, Kimi, Lapverse)
+  # ------------------------------------------------------------------
+  node-ci:
+    name: 🟢 Node.js CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: [content-creator-ai, kimi-computer, lapverse-core, lapverse-alpha, deal-hunter]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - '${{ matrix.workspace }}/**'
+
+      - name: Set up Node
+        if: steps.filter.outputs.src == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '${{ matrix.workspace }}/package-lock.json'
+
+      - name: Install & Test
+        if: steps.filter.outputs.src == 'true'
+        run: |
+          cd ${{ matrix.workspace }}
+          if [ -f "package.json" ]; then
+            npm ci --legacy-peer-deps
+            # Run build if script exists
+            if npm run | grep -q "build"; then npm run build; fi
+            # Run test if script exists
+            if npm run | grep -q "test"; then npm run test; fi
+          fi
+
+  # ------------------------------------------------------------------
+  # 4. GO WORKSPACE (QuantumGuard)
+  # ------------------------------------------------------------------
+  go-ci:
+    name: 🔵 Go CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters:
+            src: ['quantumguard-v2/**']
+
+      - name: Set up Go
+        if: steps.filter.outputs.src == 'true'
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache-dependency-path: quantumguard-v2/go.sum
+
+      - name: Build & Test
+        if: steps.filter.outputs.src == 'true'
+        run: |
+          cd quantumguard-v2
+          go build -v ./...
+          go test -v ./...

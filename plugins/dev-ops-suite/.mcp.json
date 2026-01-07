@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "system-doctor": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/sys_monitor.py"]
+    }
+  }
+}

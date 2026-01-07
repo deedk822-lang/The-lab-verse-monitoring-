@@ -1,0 +1,16 @@
+{
+  "name": "dev-ops-suite",
+  "version": "1.0.0",
+  "description": "Autonomous System Doctor: Monitoring, Diagnostics, and Repair Agent.",
+  "author": {
+    "name": "Lab-Verse SRE Team",
+    "email": "admin@lab-verse.com"
+  },
+  "commands": [
+    "./commands"
+  ],
+  "agents": [
+    "./agents"
+  ],
+  "mcpServers": "./.mcp.json"
+}

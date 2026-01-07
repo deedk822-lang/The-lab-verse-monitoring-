@@ -196,7 +196,7 @@ def test_github():
 def test_anthropic():
     key = get_secret('ANTHROPIC_API_KEY')
     if key:
-        print(f"✓ Anthropic: Key loaded ({key[:20]}...)")
+        print(f"✓ Anthropic: Key loaded (length: {len(key)})")
 
 def test_grafana():
     url = get_secret('GRAFANA_API_KEY')

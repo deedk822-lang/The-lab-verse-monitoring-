@@ -94,7 +94,7 @@ class APIHealthChecker:
     async def check_kaggle(self) -> Tuple[bool, str]:
         """Test Kaggle API connection"""
         username = os.getenv('KAGGLE_USERNAME')
-        key = os.getenv('KAGGLE_KEY')
+        key = os.getenv('KAGGLE_API_KEY')
 
         if not username or not key:
             return False, "Credentials not configured"

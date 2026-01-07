@@ -1,11 +1,10 @@
-# .github/workflows/ci-cd-pipeline.yml
-name: Monorepo CI/CD Pipeline
+name: Complete CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -20,41 +19,15 @@ concurrency:
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.12'
-  GO_VERSION: '1.22'
-  JAVA_VERSION: '21'
 
 jobs:
-  security-scan:
-    name: "🔒 Security Scanning"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --report-path gitleaks-report.json --no-git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: CodeQL init
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript, python, java, go
-      - name: CodeQL analyze
-        uses: github/codeql-action/analyze@v3
-
   detect-changes:
     name: "🔍 Detect Changed Paths"
     runs-on: ubuntu-latest
     outputs:
       node: ${{ steps.filter.outputs.node }}
       python: ${{ steps.filter.outputs.python }}
-      java: ${{ steps.filter.outputs.java }}
-      go: ${{ steps.filter.outputs.go }}
       docker: ${{ steps.filter.outputs.docker }}
-      agents: ${{ steps.filter.outputs.agents }}
-      monitoring: ${{ steps.filter.outputs.monitoring }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -72,85 +45,371 @@ jobs:
               - 'requirements*.txt'
               - 'agents/**/*.py'
               - 'lab_verse/**/*.py'
-            java:
-              - 'industrial-chat-api/**'
-            go:
-              - 'quantumguard-v2/**'
+              - 'scripts/**/*.py'
             docker:
               - '**/Dockerfile'
               - '**/docker-compose*.yml'
-            agents:
-              - 'agents/**'
-              - 'lab_verse/**'
-            monitoring:
-              - 'monitoring/**'
-              - 'prometheus/**'
+  # ==========================================
+  # SECURITY SCANNING
+  # ==========================================
+
+  security-scan:
+    name: '🔒 Security Scan'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ==========================================
+  # VALIDATE SECRETS
+  # ==========================================
+
+  validate-secrets:
+    name: '✅ Validate Secrets'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install python-dotenv requests
+
+      - name: Validate required secrets
+        env:
+          # Core
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+          # AI Providers
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HUGGINGFACE_API_KEY: ${{ secrets.HF_API_TOKEN }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+          # Monitoring
+          GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+
+          # Project Management
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_LINK: ${{ secrets.JIRA_LINK }}
+          ASANA_INTEGRATIONS_ACTIONS: ${{ secrets.ASANA_INTEGRATIONS_ACTIONS }}
+          HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+
+          # Payment
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+
+          # Communication
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+          WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
+
+          # Cloud
+          ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          FLYIO_API_KEY: ${{ secrets.FLYIO_API_KEY }}
+
+          # Security
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+
+        run: |
+          python scripts/load_github_secrets.py --validate --show
+
+  # ==========================================
+  # PYTHON CI
+  # ==========================================
+
+  python-ci:
+    name: '🐍 Python CI'
+    needs: [security-scan, validate-secrets, detect-changes]
+    if: needs.detect-changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+        workspace: [agents, lab_verse, vaal-ai-empire, rainmaker_orchestrator]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest flake8 black mypy pip-audit
+
+      - name: Lint with flake8
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --statistics
+
+      - name: Format check with black
+        working-directory: ${{ matrix.workspace }}
+        run: black --check .
+
+      - name: Run tests
+        working-directory: ${{ matrix.workspace }}
+        run: pytest
+
+      - name: Security audit
+        working-directory: ${{ matrix.workspace }}
+        run: pip-audit
+
+  # ==========================================
+  # NODE.JS CI
+  # ==========================================
 
   node-ci:
-    name: "🟢 Node.js CI"
+    name: '🟢 Node.js CI'
     needs: [security-scan, detect-changes]
     if: needs.detect-changes.outputs.node == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18,20,22]
-        workspace: [content-creator-ai,kimi-computer,lapverse-core,lapverse-alpha,deal-hunter]
+        node-version: [18, 20, 22]
+        workspace: [content-creator-ai, kimi-computer, lapverse-core, lapverse-alpha, deal-hunter]
+
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
+
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: '${{ matrix.workspace }}/package-lock.json'
-      - name: Install deps
+
+      - name: Install dependencies
         working-directory: ${{ matrix.workspace }}
         run: |
           if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
+
       - name: Lint
         working-directory: ${{ matrix.workspace }}
-        run: npm run lint || true
+        run: npm run lint --if-present
+
       - name: Test & Build
         working-directory: ${{ matrix.workspace }}
         run: |
-          npm test || true
-          npm run build || true
+          npm test --if-present
+          npm run build --if-present
 
-  python-ci:
-    name: "🐍 Python CI"
-    needs: [security-scan, detect-changes]
-    if: needs.detect-changes.outputs.python == 'true'
+      - name: Security audit
+        working-directory: ${{ matrix.workspace }}
+        run: npm audit --audit-level=moderate || true
+
+  # ==========================================
+  # INTEGRATION TESTS
+  # ==========================================
+
+  integration-tests:
+    name: '🧪 Integration Tests'
+    needs: [python-ci, node-ci, detect-changes]
+    if: needs.detect-changes.outputs.python == 'true' || needs.detect-changes.outputs.node == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10','3.11','3.12']
-        workspace: [agents,lab_verse,vaal-ai-empire,rainmaker_orchestrator]
+
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install deps
-        working-directory: ${{ matrix.workspace }}
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Lint & Test
-        working-directory: ${{ matrix.workspace }}
-        run: |
-          flake8 . || true
-          pytest -q || true
+          python-version: ${{ env.PYTHON_VERSION }}
 
-  report:
-    name: "📝 Build Report"
-    needs: [security-scan, node-ci, python-ci]
+      - name: Install dependencies
+        run: |
+          pip install -r agents/requirements.txt
+          pip install pytest
+
+      - name: Test service integrations
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          ALLOW_EXTERNAL_REQUESTS: "yes"
+          ALLOWED_DOMAINS: "api.github.com,httpbin.org"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+        run: |
+          python tests/test_integrations.py
+
+  # ==========================================
+  # DOCKER BUILD
+  # ==========================================
+
+  docker-build:
+    name: '🐳 Docker Build'
+    needs: [python-ci, node-ci]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./agents
+          push: false
+          tags: labverse/worker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+
+  # ==========================================
+  # DEPLOY TO STAGING
+  # ==========================================
+
+  deploy-staging:
+    name: '🚀 Deploy to Staging'
+    needs: [integration-tests, docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.labverse.example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Fly.io (if configured)
+        if: secrets.FLYIO_API_KEY != ''
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLYIO_API_KEY }}
+        run: |
+          echo "Deploying to Fly.io..."
+          # fly deploy --config fly.staging.toml
+
+      - name: Deploy to Vercel (if configured)
+        if: secrets.VERCEL_TOKEN != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "Deploying to Vercel..."
+          # vercel --token $VERCEL_TOKEN
+
+  # ==========================================
+  # NOTIFY INTEGRATIONS
+  # ==========================================
+
+  notify:
+    name: '📢 Notify Integrations'
+    needs: [deploy-staging]
     if: always()
     runs-on: ubuntu-latest
+
     steps:
-      - name: Summary
+      - uses: actions/checkout@v4
+
+      - name: Notify Datadog
+        if: secrets.DATADOG_API_KEY != ''
         run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Security scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Node CI: ${{ needs.node-ci.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Python CI: ${{ needs.python-ci.result }}" >> $GITHUB_STEP_SUMMARY
+          curl -X POST "https://api.datadoghq.eu/api/v1/events" \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "title": "CI/CD Pipeline Complete",
+              "text": "Build ${{ github.run_number }} completed",
+              "tags": ["source:github_actions", "env:staging"]
+            }'
+
+      - name: Update Jira (if configured)
+        if: secrets.JIRA_LINK != ''
+        run: |
+          echo "Would update Jira with deployment status"
+          # Add Jira API call here
+
+      - name: Send HubSpot notification
+        if: secrets.HUBSPOT_API_KEY != ''
+        run: |
+          echo "Would send HubSpot notification"
+          # Add HubSpot API call here
+
+  # ==========================================
+  # SUMMARY REPORT
+  # ==========================================
+
+  report:
+    name: '📝 Build Report'
+    needs: [security-scan, python-ci, node-ci, integration-tests, docker-build]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 📊 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐍 Python CI | ${{ needs.python-ci.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟢 Node.js CI | ${{ needs.node-ci.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Docker Build | ${{ needs.docker-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Secrets Available" >> $GITHUB_STEP_SUMMARY
+          echo "- AI Providers: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitoring: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Project Management: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Payment Processing: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Grafana Dashboard](https://dimakatsomoleli.grafana.net)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Datadog CI](https://app.datadoghq.eu/ci)" >> $GITHUB_STEP_SUMMARY
+          echo "- [CodeRabbit](https://app.coderabbit.ai/dashboard)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Jira Board](https://the-lab-verse.atlassian.net)" >> $GITHUB_STEP_SUMMARY

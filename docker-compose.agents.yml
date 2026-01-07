@@ -64,5 +64,6 @@ services:
       - METRICS_PORT=8002
       - SCHEDULE_INTERVAL_SECONDS=60
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped

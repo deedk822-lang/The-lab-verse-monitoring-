@@ -35,7 +35,12 @@ run_or_echo() {
 
 # Step 1: Inspect env files
 echo "Step 1: Inspecting environment files..."
-env_files=( ".env.local" "Configure connector  .env" "cp .env.example .env" ".env" ".env.*" )
+env_files=( ".env.local" "Configure connector  .env" "cp .env.example .env" ".env" )
+# Safely expand glob and add to array
+for g in .env.*; do
+  [ -e "$g" ] && env_files+=("$g")
+done
+
 for f in "${env_files[@]}"; do
   if [ -f "$f" ]; then
     echo -e "${RED}⚠️  FOUND: $f${NC}"

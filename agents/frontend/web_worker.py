@@ -10,7 +10,8 @@ Provides:
 """
 import os
 from fastapi import FastAPI, HTTPException, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Dict
 from redis import Redis
 from rq import Queue
 import rq
@@ -32,7 +33,7 @@ app = FastAPI(title="Agent Web Worker")
 class JobPayload(BaseModel):
     url: str
     method: str = "GET"
-    headers: dict = {}
+    headers: Dict[str, str] = Field(default_factory=dict)
     timeout: float = 10.0
 
 @app.on_event("startup")
@@ -58,8 +59,8 @@ def create_job(payload: JobPayload):
 def job_status(job_id: str):
     try:
         job = rq.job.Job.fetch(job_id, connection=redis_conn)
-    except Exception:
-        raise HTTPException(status_code=404, detail="job not found")
+    except rq.exceptions.NoSuchJobError:
+        raise HTTPException(status_code=404, detail="job not found") from None
     response = {
         "id": job.get_id(),
         "status": job.get_status(),
@@ -67,8 +68,9 @@ def job_status(job_id: str):
         "enqueued_at": str(job.enqueued_at),
         "started_at": str(job.started_at) if getattr(job, "started_at", None) else None,
         "ended_at": str(job.ended_at) if getattr(job, "ended_at", None) else None,
-        "exc_info": job.exc_info,
     }
+    if job.exc_info:
+        response["error"] = "internal error"
     return response
 
 @app.get("/health")

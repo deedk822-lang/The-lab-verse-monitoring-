@@ -22,7 +22,7 @@ SHUTDOWN = Event()
 
 # Prometheus metrics (agents should increment these)
 REQUESTS = Counter("agent_requests_total", "Total requests handled")
-PROCESS_TIME = Histogram("agent_processing_seconds", "Time spent processing a job_seconds")
+PROCESS_TIME = Histogram("agent_processing_seconds", "Time spent processing a job in seconds")
 
 def handle_signal(signum, frame):
     logger.info("Received signal", extra={"signal": signum})

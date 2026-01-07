@@ -53,6 +53,12 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - external_only
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   scheduler:
     build:
@@ -64,5 +70,13 @@ services:
       - METRICS_PORT=8002
       - SCHEDULE_INTERVAL_SECONDS=60
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+
+networks:
+  external_only:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

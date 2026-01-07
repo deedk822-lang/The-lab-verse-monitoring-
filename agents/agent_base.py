@@ -25,6 +25,13 @@ REQUESTS = Counter("agent_requests_total", "Total requests handled")
 PROCESS_TIME = Histogram("agent_processing_seconds", "Time spent processing a job in seconds")
 
 def handle_signal(signum, frame):
+    """
+    Signal handler that logs the received signal and sets the SHUTDOWN event to trigger graceful shutdown.
+    
+    Parameters:
+        signum (int): Numeric signal number received.
+        frame (object): Current stack frame (may be None).
+    """
     logger.info("Received signal", extra={"signal": signum})
     SHUTDOWN.set()
 

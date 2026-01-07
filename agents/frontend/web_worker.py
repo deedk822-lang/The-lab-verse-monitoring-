@@ -57,6 +57,25 @@ def create_job(payload: JobPayload):
 
 @app.get("/jobs/{job_id}")
 def job_status(job_id: str):
+    """
+    Retrieve status and metadata for a job stored in Redis by its RQ job ID.
+    
+    Parameters:
+        job_id (str): RQ job identifier.
+    
+    Returns:
+        dict: A mapping with the following keys:
+            - id: job id string
+            - status: job status string (e.g., "queued", "started", "finished", "failed")
+            - result: job result value (may be None)
+            - enqueued_at: ISO-like string of when the job was enqueued
+            - started_at: ISO-like string of when the job started, or None
+            - ended_at: ISO-like string of when the job ended, or None
+            - error: included with value `"internal error"` if the job recorded exception info
+    
+    Raises:
+        HTTPException: with status_code 404 when no job with `job_id` exists.
+    """
     try:
         job = rq.job.Job.fetch(job_id, connection=redis_conn)
     except rq.exceptions.NoSuchJobError:

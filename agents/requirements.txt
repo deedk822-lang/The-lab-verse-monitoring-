@@ -1,0 +1,9 @@
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+requests==2.31.0
+redis==5.3.1
+rq==1.9.0
+prometheus-client==0.16.0
+apscheduler==3.9.1
+python-json-logger==2.0.6
+uvloop==0.18.0

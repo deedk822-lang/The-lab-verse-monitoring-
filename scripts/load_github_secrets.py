@@ -67,9 +67,8 @@ def fetch_github_secret_names(token: str, repo: str) -> List[str]:
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28"
     }
-
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
 
@@ -78,7 +77,7 @@ def fetch_github_secret_names(token: str, repo: str) -> List[str]:
         return secret_names
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to fetch secrets from GitHub: {e}")
+        logger.exception("Failed to fetch secrets from GitHub")
         return []
 
 

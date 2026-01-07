@@ -139,7 +139,7 @@ EOF
   echo "  cd ../$MIRROR_DIR"
   echo "  git push --force"
   if [ "$PUSH_NOW" = "yes" ]; then
-    (cd "../$MIRROR_DIR" && git push --force) || true
+    (cd "../$MIRROR_DIR" && git push --force)
   fi
 else
   echo "Invalid METHOD. Use METHOD=1 or METHOD=2"

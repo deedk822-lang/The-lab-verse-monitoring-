@@ -51,7 +51,7 @@ Observability
 Troubleshooting
 - If jobs are not running: ensure background-worker has connected to Redis and RQ queue name matches.
 - If metrics not scraping: check docker-compose service names match Prometheus static_configs.
-- If no metrics: ensure agents start start_metrics_server(...) on configured ports.
+- If no metrics: ensure agents start_metrics_server(...) on configured ports.
 
 This is a production-ready baseline; extend the job processing functions (agents.background.worker.process_http_job)
 to integrate with your internal model calls, cloud APIs, or data stores. Always keep secrets out of the repository.

@@ -1,6 +1,4 @@
-httpx
-fastapi
-uvicorn
-python-dotenv
-hubspot-api-client
-requests
+# Minimal production dependencies
+openai>=1.57.0
+python-dotenv>=1.0.0
+requests>=2.32.0

@@ -28,6 +28,9 @@ try:
         messages=[{"role": "user", "content": "What is Next.js version 15?"}],
         max_tokens=100
     )
+    if not search.choices or not search.choices[0].message:
+        print("❌ Invalid response from Perplexity")
+        sys.exit(1)
     fact = search.choices[0].message.content
     print(f" Found: {fact[:80]}...")
 

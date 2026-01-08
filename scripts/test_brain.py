@@ -1,49 +1,74 @@
+#!/usr/bin/env python3
+"""
+scripts/test_brain.py - End-to-end test for the AI brain workflow
+"""
+
 import os
 import sys
-import time
+from openai import OpenAI
 
+# Fail fast if dependencies are missing
 try:
-    import anthropic
-except ImportError:
-    print("❌ Missing dependency. Run: pip install anthropic")
+    from dotenv import load_dotenv
+except ImportError as e:
+    print(f"❌ Python Dependency Error: {e}")
+    print("Run: pip install python-dotenv openai")
     sys.exit(1)
 
-def test_brain_function():
-    print("🧠 Testing Anthropic Reasoning Capability...")
+load_dotenv()
 
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("❌ ANTHROPIC_API_KEY not found.")
+def main():
+    """Main entry point for the brain test script."""
+    # Initialize clients
+    try:
+        perplexity = OpenAI(api_key=os.getenv("PERPLEXITY_API_KEY"), base_url="https://api.perplexity.ai")
+        zai = OpenAI(api_key=os.getenv("ZAI_API_KEY"), base_url="https://api.z.ai/api/paas/v4/")
+    except Exception as e:
+        print(f"❌ API client initialization failed: {e}")
         sys.exit(1)
 
-    client = anthropic.Anthropic(api_key=api_key)
-
-    start_time = time.time()
+    # Step 1: Research with Perplexity
+    print("🔎 Researching...")
     try:
-        message = client.messages.create(
-            model="claude-3-haiku-20240307", # Use Haiku for fast/cheap testing
-            max_tokens=20,
-            messages=[
-                {"role": "user", "content": "Return the JSON object {'status': 'online'}. Do not say anything else."}
-            ]
+        response = perplexity.chat.completions.create(
+            model="sonar-pro",
+            messages=[{"role": "user", "content": "What is the capital of France?"}],
+            max_tokens=50
         )
-
-        duration = round((time.time() - start_time) * 1000, 2)
-        response = message.content[0].text
-
-        print(f"✅ Brain Response Received in {duration}ms")
-        print(f"📄 Output: {response}")
-
-        if "online" in response:
-            print("🚀 Cognitive Check Passed.")
-            sys.exit(0)
-        else:
-            print("⚠️ Response format unexpected.")
+        if not response.choices or not response.choices[0].message:
+            print("❌ Invalid response from Perplexity")
             sys.exit(1)
-
+        fact = response.choices[0].message.content
     except Exception as e:
-        print(f"❌ Brain Failure: {e}")
+        print(f"❌ Perplexity API request failed: {e}")
+        sys.exit(1)
+
+    # Step 2: Reasoning with Z.ai
+    print("🧠 Analyzing...")
+    try:
+        response = zai.chat.completions.create(
+            model="glm-4.7",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"Based on the fact: '{fact}', what is the capital of France?"}
+            ],
+            max_tokens=50
+        )
+        if not response.choices or not response.choices[0].message:
+            print("❌ Invalid response from Z.ai")
+            sys.exit(1)
+        output = response.choices[0].message.content
+    except Exception as e:
+        print(f"❌ Z.ai API request failed: {e}")
+        sys.exit(1)
+
+    # Validate output
+    if output and output.strip() and "paris" in output.lower():
+        print(f"✅ Workflow passed: {output}")
+        sys.exit(0)
+    else:
+        print(f"❌ Invalid output: {output}")
         sys.exit(1)
 
 if __name__ == "__main__":
-    test_brain_function()
+    main()

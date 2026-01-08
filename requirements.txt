@@ -4,3 +4,4 @@ uvicorn
 python-dotenv
 hubspot-api-client
 requests
+anthropic>=0.69.0

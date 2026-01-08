@@ -59,7 +59,7 @@ def validate_perplexity():
             base_url="https://api.perplexity.ai"
         )
 
-        response = client.chat.completions.create(
+        client.chat.completions.create(
             model="sonar-pro",
             messages=[{"role": "user", "content": "test"}],
             max_tokens=10

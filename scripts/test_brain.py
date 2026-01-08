@@ -51,6 +51,12 @@ try:
         print("❌ Invalid output")
         sys.exit(1)
 
+except OpenAIError as e:
+    print(f"❌ API error: {e}")
+    sys.exit(1)
+except KeyError as e:
+    print(f"❌ Invalid response structure: {e}")
+    sys.exit(1)
 except Exception as e:
     print(f"❌ Workflow failed: {e}")
-    sys.exit(1)
+    raise  # Re-raise to preserve stack trace for unexpected errors

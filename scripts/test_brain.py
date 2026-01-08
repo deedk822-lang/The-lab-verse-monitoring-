@@ -1,49 +1,56 @@
+#!/usr/bin/env python3
+"""
+scripts/test_brain.py - Agent Workflow Test
+Tests Research (Perplexity) → Reasoning (GLM-4.7) workflow
+"""
+
 import os
 import sys
-import time
+from openai import OpenAI
 
-try:
-    import anthropic
-except ImportError:
-    print("❌ Missing dependency. Run: pip install anthropic")
+# Get API keys
+zai_key = os.getenv("ZAI_API_KEY")
+pplx_key = os.getenv("PERPLEXITY_API_KEY")
+
+if not zai_key or not pplx_key:
+    print("❌ Missing API keys")
     sys.exit(1)
 
-def test_brain_function():
-    print("🧠 Testing Anthropic Reasoning Capability...")
+# Initialize clients
+zai = OpenAI(api_key=zai_key, base_url="https://api.z.ai/api/paas/v4/")
+pplx = OpenAI(api_key=pplx_key, base_url="https://api.perplexity.ai")
 
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("❌ ANTHROPIC_API_KEY not found.")
+try:
+    # Step 1: Research with Perplexity
+    print("🔍 Researching...")
+    search = pplx.chat.completions.create(
+        model="sonar-pro",
+        messages=[{"role": "user", "content": "What is Next.js version 15?"}],
+        max_tokens=100
+    )
+    fact = search.choices[0].message.content
+    print(f"   Found: {fact[:80]}...")
+
+    # Step 2: Reasoning with GLM-4.7
+    print("🧠 Analyzing...")
+    response = zai.chat.completions.create(
+        model="glm-4.7",
+        messages=[
+            {"role": "system", "content": "You are a technical analyst."},
+            {"role": "user", "content": f"Summarize in one sentence: {fact}"}
+        ],
+        max_tokens=100
+    )
+    output = response.choices[0].message.content
+
+    # Validate
+    if len(output) > 20:
+        print(f"✅ Workflow passed: {output}")
+        sys.exit(0)
+    else:
+        print("❌ Invalid output")
         sys.exit(1)
 
-    client = anthropic.Anthropic(api_key=api_key)
-
-    start_time = time.time()
-    try:
-        message = client.messages.create(
-            model="claude-3-haiku-20240307", # Use Haiku for fast/cheap testing
-            max_tokens=20,
-            messages=[
-                {"role": "user", "content": "Return the JSON object {'status': 'online'}. Do not say anything else."}
-            ]
-        )
-
-        duration = round((time.time() - start_time) * 1000, 2)
-        response = message.content[0].text
-
-        print(f"✅ Brain Response Received in {duration}ms")
-        print(f"📄 Output: {response}")
-
-        if "online" in response:
-            print("🚀 Cognitive Check Passed.")
-            sys.exit(0)
-        else:
-            print("⚠️ Response format unexpected.")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"❌ Brain Failure: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    test_brain_function()
+except Exception as e:
+    print(f"❌ Workflow failed: {e}")
+    sys.exit(1)

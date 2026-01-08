@@ -1,5 +1,3 @@
- fix/coderabbit-yaml-parsing-error-14153990587715603946
-version: "2"
 reviews:
   profile: assertive
   request_changes_workflow: true
@@ -10,6 +8,22 @@ reviews:
       - "dist/**"
       - "yarn.lock"
       - "package-lock.json"
+  effort_estimation:
+    # Use complexity scoring based on actual impact
+    factors:
+      - security_issues: 120  # 2 hours per security issue
+      - data_integrity: 90    # 1.5 hours per data issue
+      - error_handling: 60    # 1 hour per error path
+      - testing_required: 45   # 45 min per test suite
+      - documentation: 30      # 30 min per doc update
+
+    # Minimum effort thresholds
+    min_effort_hours:
+      trivial: 0.25
+      minor: 1
+      moderate: 3
+      complex: 6      # Changed from "60 minutes"
+      critical: 12    # Add critical category
 checks:
   collaboration:
     # This check will flag pull requests that have a low docstring coverage.
@@ -51,24 +65,6 @@ early_access: true
 enable_free_tier: false
 
 # CRITICAL: Fix effort estimation
-reviews:
-  profile: "assertive"
-  effort_estimation:
-    # Use complexity scoring based on actual impact
-    factors:
-      - security_issues: 120  # 2 hours per security issue
-      - data_integrity: 90    # 1.5 hours per data issue
-      - error_handling: 60    # 1 hour per error path
-      - testing_required: 45   # 45 min per test suite
-      - documentation: 30      # 30 min per doc update
-
-    # Minimum effort thresholds
-    min_effort_hours:
-      trivial: 0.25
-      minor: 1
-      moderate: 3
-      complex: 6      # Changed from "60 minutes"
-      critical: 12    # Add critical category
 
 # Enhanced issue detection
 issue_detection:
@@ -89,7 +85,7 @@ issue_detection:
           ```
 
       - name: "secret_leakage"
-        pattern: 'except.*Exception.*:.*return.*\{.*["\']message["\'].*str\(e\)'
+        pattern: 'except.*Exception.*:.*return.*\{.*["'']message["''].*str\(e\)'
         message: "Exception messages may leak sensitive data (API keys, passwords, internal paths)"
         severity: "high"
         remediation: |
@@ -134,7 +130,7 @@ issue_detection:
     enabled: true
     patterns:
       - name: "http_status_lost"
-        pattern: 'throw new Error\(["\'].*["\']\)'
+        pattern: 'throw new Error\(["''].*["'']\)'
         context: 'express|fastify|@nestjs'
         message: "Plain Error objects lose HTTP status codes, all errors return 500"
         severity: "high"
@@ -428,4 +424,3 @@ tone:
   include_proof_of_concept: true  # Show how to exploit issues
   include_test_cases: true        # Show how to test fixes
   include_full_solutions: true    # Show complete, production-ready code
- main

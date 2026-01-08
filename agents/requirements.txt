@@ -1,9 +1,0 @@
-fastapi==0.115.5
-starlette==0.41.3
-uvicorn==0.32.1
-requests==2.32.3
-redis==5.2.1
-rq==2.0.0
-prometheus-client==0.21.1
-apscheduler==3.11.0
-python-json-logger==3.2.1

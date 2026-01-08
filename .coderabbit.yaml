@@ -1,5 +1,4 @@
  fix/coderabbit-yaml-parsing-error-14153990587715603946
-version: "2"
 reviews:
   profile: assertive
   request_changes_workflow: true

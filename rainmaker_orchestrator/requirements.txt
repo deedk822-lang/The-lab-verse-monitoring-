@@ -29,3 +29,6 @@ anyio==4.7.0
 # Additional production dependencies
 python-dotenv==1.0.1
 setproctitle==1.3.4
+
+# AI Client dependencies
+openai==1.59.6

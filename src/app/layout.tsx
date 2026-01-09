@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -20,6 +23,26 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    // Ping every 14 minutes to keep backend awake
+    const keepAlive = setInterval(() => {
+      const backendUrl = process.env.NEXT_PUBLIC_API_ENDPOINT;
+      if (backendUrl) {
+        fetch(`${backendUrl}/health`)
+          .then(res => {
+            if (res.ok) {
+              console.log('Backend is awake.');
+          } else {
+            console.error('Failed to ping backend.');
+          }
+        })
+        .catch(err => console.error('Error pinging backend:', err));
+      }
+    }, 14 * 60 * 1000);
+
+    return () => clearInterval(keepAlive);
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

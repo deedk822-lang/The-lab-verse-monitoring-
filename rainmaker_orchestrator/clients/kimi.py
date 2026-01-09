@@ -36,9 +36,9 @@ class KimiClient:
             )
 
             return response.choices[0].message.content
-        except Exception as e:
+        except APIError as e:
             logger.error(f"Error during Kimi API call: {e}")
-            return f"Error: {str(e)}"
+            return None
 
     def health_check(self) -> bool:
         """

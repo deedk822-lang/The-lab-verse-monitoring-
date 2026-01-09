@@ -85,7 +85,8 @@ async def lifespan(app: FastAPI):
     app.state.kimi_client = KimiClient()
     app.state.orchestrator = RainmakerOrchestrator(workspace_path=settings.workspace_path)
     app.state.healer_agent = SelfHealingAgent(
-        kimi_client=app.state.kimi_client
+        kimi_client=app.state.kimi_client,
+        orchestrator=app.state.orchestrator
     )
     logger.info(f"Workspace directory: {settings.workspace_path}")
 

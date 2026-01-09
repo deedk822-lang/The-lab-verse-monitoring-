@@ -1,14 +1,19 @@
 import logging
+from rainmaker_orchestrator.core import RainmakerOrchestrator
 from rainmaker_orchestrator.clients.kimi import KimiClient
 
 logger = logging.getLogger(__name__)
 
 class SelfHealingAgent:
-    def __init__(self, kimi_client=None):
+    def __init__(self, kimi_client=None, orchestrator=None):
         self.kimi_client = kimi_client or self._init_kimi_client()
+        self.orchestrator = orchestrator or self._init_orchestrator()
 
     def _init_kimi_client(self, api_key=None):
         return KimiClient(api_key=api_key)
+
+    def _init_orchestrator(self):
+        return RainmakerOrchestrator()
 
     def handle_alert(self, alert_payload):
         """

@@ -11,7 +11,7 @@ class KimiClient:
     """
     def __init__(self, api_key=None):
         self.client = OpenAI(
-            base_url=os.getenv("KIMI_API_BASE", "http://localhost:8000/v1"),
+            base_url=os.getenv("KIMI_API_BASE", "http://kimi-linear:8000/v1"),
             api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY")
         )
         self.model = os.getenv("KIMI_MODEL", "moonshot-v1-8k")

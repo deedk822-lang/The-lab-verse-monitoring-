@@ -23,6 +23,7 @@ class SystemMonitor:
         self.error_count = 0
         self.warning_count = 0
         self.api_calls = {"success": 0, "failure": 0}
+        self.session = requests.Session()
 
     def record_error(self, component: str, error: Exception,
                     context: Optional[Dict] = None):
@@ -148,7 +149,7 @@ class SystemMonitor:
     def _check_ollama(self) -> str:
         """Check Ollama server health"""
         try:
-            response = requests.get("http://localhost:11434", timeout=2)
+            response = self.session.get("http://localhost:11434", timeout=2)
             return "healthy" if response.status_code == 200 else "unreachable"
         except:
             return "not_running"
@@ -175,7 +176,7 @@ class SystemMonitor:
             return "not_configured"
 
         try:
-            response = requests.get(
+            response = self.session.get(
                 "https://app.ayrshare.com/api/profiles",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5
@@ -397,6 +398,7 @@ class AlertSystem:
         self.db = db
         self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
         self.alert_history = []
+        self.session = requests.Session()
 
     def send_alert(self, severity: str, component: str,
                    message: str, details: Optional[Dict] = None):
@@ -455,7 +457,7 @@ class AlertSystem:
                 ]
             }
 
-            requests.post(self.webhook_url, json=payload, timeout=5)
+            self.session.post(self.webhook_url, json=payload, timeout=5)
         except Exception as e:
             logger.error(f"Failed to send webhook alert: {e}")
 

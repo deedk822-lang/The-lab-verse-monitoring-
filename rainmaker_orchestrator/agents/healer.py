@@ -33,6 +33,10 @@ class SelfHealingAgent:
         # Trigger Kimi with "Hotfix" priority
         blueprint = self.kimi_client.generate(prompt, mode="hotfix")
 
+        if blueprint is None:
+            logger.error(f"Failed to generate hotfix for {service_name} due to Kimi client error.")
+            return {"status": "hotfix_failed", "error": "Blueprint generation failed"}
+
         # In a real implementation, this would involve deploying the hotfix
-        print(f"Generated hotfix for {service_name}: {blueprint}")
+        logger.info(f"Generated hotfix for {service_name}: {blueprint}")
         return {"status": "hotfix_generated", "blueprint": blueprint}

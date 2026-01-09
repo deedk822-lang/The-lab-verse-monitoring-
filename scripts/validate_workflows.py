@@ -15,7 +15,7 @@ def validate_workflows():
         sys.exit(1)
 
     for filename in os.listdir(workflows_dir):
-        if filename.endswith('.yml') or filename.endswith('.yaml'):
+        if filename.endswith(('.yml', '.yaml', '.yml.disabled', '.yaml.disabled')):
             filepath = os.path.join(workflows_dir, filename)
             try:
                 with open(filepath, 'r') as f:

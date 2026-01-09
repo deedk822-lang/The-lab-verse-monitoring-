@@ -53,11 +53,11 @@ jobs:
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_LINK: ${{ secrets.JIRA_LINK }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
           WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}
+          KAGGLE_API_KEY: ${{ secrets.KAGGLE_API_KEY }}
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_API_KEY: ${{ secrets.DATABRICKS_API_KEY }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}

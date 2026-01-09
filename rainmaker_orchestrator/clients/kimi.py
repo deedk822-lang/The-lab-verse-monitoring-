@@ -39,3 +39,14 @@ class KimiClient:
         except Exception as e:
             logger.error(f"Error during Kimi API call: {e}")
             return f"Error: {str(e)}"
+
+    def health_check(self) -> bool:
+        """
+        Performs a health check on the Kimi API.
+        """
+        try:
+            self.client.models.list()
+            return True
+        except Exception as e:
+            logger.error(f"Kimi health check failed: {e}")
+            return False

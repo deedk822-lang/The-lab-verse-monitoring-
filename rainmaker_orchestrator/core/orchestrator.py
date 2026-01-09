@@ -1,5 +1,4 @@
-"""
-Core orchestrator module for task execution and deployment.
+"""Core orchestrator module for task execution and deployment.
 
 Handles task execution, code deployment, and integration with various
 execution backends.
@@ -173,6 +172,11 @@ class RainmakerOrchestrator:
 
         Returns:
             Execution result dictionary
+        
+        Security:
+            Note: shell=True is used for intentional shell feature support.
+            This is only safe when used with trusted input sources.
+            For production, consider using shlex.split() and shell=False.
         """
         import time
         start_time = time.time()
@@ -234,13 +238,17 @@ class RainmakerOrchestrator:
 
         Returns:
             Execution result dictionary
+        
+        Note:
+            Docker execution is planned for future implementation.
+            Track progress at: https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues
         """
-        # TODO: Implement Docker execution
         logger.warning("Docker execution not yet implemented")
         return {
             "status": "failed",
             "error": "Docker execution not yet implemented",
-            "output": ""
+            "output": "",
+            "message": "Use 'python' or 'shell' mode for now"
         }
 
     def _execute_general(

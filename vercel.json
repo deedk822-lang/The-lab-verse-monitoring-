@@ -1,36 +1,37 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "installCommand": "npm ci --legacy-peer-deps",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "env": {
+    "NEXT_PUBLIC_API_ENDPOINT": "http://localhost:8080"
+  },
   "build": {
     "env": {
-      "NODE_ENV": "production",
-      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
-      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
-    }
-  },
-  "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/health": {
-      "runtime": "edge"
+      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint"
     }
   },
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
       ]
     }
   ],
-  "regions": ["iad1"]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://localhost:8080/:path*"
+    }
+  ]
 }

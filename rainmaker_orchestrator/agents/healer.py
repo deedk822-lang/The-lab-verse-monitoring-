@@ -1,6 +1,8 @@
-import os
+import logging
 from rainmaker_orchestrator.core import RainmakerOrchestrator
 from rainmaker_orchestrator.clients.kimi import KimiClient
+
+logger = logging.getLogger(__name__)
 
 class SelfHealingAgent:
     def __init__(self, kimi_client=None, orchestrator=None):
@@ -30,13 +32,17 @@ class SelfHealingAgent:
         3. Do not refactor unrelated code.
         """
 
-        # Trigger Kimi with "Hotfix" priority
-        blueprint = self.kimi_client.generate(prompt, mode="hotfix")
+        try:
+            # Trigger Kimi with "Hotfix" priority
+            blueprint = self.kimi_client.generate(prompt, mode="hotfix")
 
-        if blueprint is None:
-            logger.error(f"Failed to generate hotfix for {service_name} due to Kimi client error.")
-            return {"status": "hotfix_failed", "error": "Blueprint generation failed"}
+            if blueprint is None:
+                logger.error(f"Failed to generate hotfix for {service_name} due to Kimi client error.")
+                return {"status": "hotfix_failed", "error": "Blueprint generation failed"}
 
-        # In a real implementation, this would involve deploying the hotfix
-        logger.info(f"Generated hotfix for {service_name}: {blueprint}")
-        return {"status": "hotfix_generated", "blueprint": blueprint}
+            # In a real implementation, this would involve deploying the hotfix
+            logger.info(f"Generated hotfix for {service_name}: {blueprint}")
+            return {"status": "hotfix_generated", "blueprint": blueprint}
+        except Exception as e:
+            logger.exception(f"Exception while handling alert for {service_name}")
+            return {"status": "hotfix_failed", "error": str(e)}

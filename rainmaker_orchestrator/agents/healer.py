@@ -1,6 +1,6 @@
 import os
-from orchestrator import RainmakerOrchestrator
-from clients.kimi import KimiClient
+from rainmaker_orchestrator.core import RainmakerOrchestrator
+from rainmaker_orchestrator.clients.kimi import KimiClient
 
 class SelfHealingAgent:
     def __init__(self, kimi_client=None, orchestrator=None):

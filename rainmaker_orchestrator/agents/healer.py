@@ -4,20 +4,64 @@ from rainmaker_orchestrator.clients.kimi import KimiClient
 
 logger = logging.getLogger(__name__)
 
+
 class SelfHealingAgent:
+    """
+    Self-healing agent that handles alerts and generates hotfixes.
+    
+    This agent receives alert payloads from monitoring systems (e.g., Prometheus)
+    and uses AI to analyze errors and generate automated hotfixes.
+    """
+    
     def __init__(self, kimi_client=None, orchestrator=None):
+        """
+        Initialize the self-healing agent.
+        
+        Args:
+            kimi_client: Optional KimiClient instance. If not provided, creates a new one.
+            orchestrator: Optional RainmakerOrchestrator instance. If not provided, creates a new one.
+        """
         self.kimi_client = kimi_client or self._init_kimi_client()
         self.orchestrator = orchestrator or self._init_orchestrator()
 
-    def _init_kimi_client(self, api_key=None):
-        return KimiClient(api_key=api_key)
+    def _init_kimi_client(self):
+        """
+        Initialize a new KimiClient instance.
+        
+        Returns:
+            KimiClient: A new KimiClient instance
+        """
+        return KimiClient()
 
     def _init_orchestrator(self):
+        """
+        Initialize a new RainmakerOrchestrator instance.
+        
+        Returns:
+            RainmakerOrchestrator: A new orchestrator instance
+        """
         return RainmakerOrchestrator()
 
     def handle_alert(self, alert_payload):
         """
-        Receives Prometheus Alert Manager Webhook
+        Handle an incoming alert and generate a hotfix.
+        
+        Receives a Prometheus Alert Manager webhook payload, analyzes the error,
+        and generates an AI-powered hotfix blueprint.
+        
+        Args:
+            alert_payload: Dictionary containing alert information:
+                - description: Error description or log
+                - service: Name of the affected service
+                - severity: Alert severity level (optional)
+                - labels: Additional labels (optional)
+                - annotations: Additional annotations (optional)
+        
+        Returns:
+            Dictionary with status and hotfix information:
+            - status: 'hotfix_generated', 'hotfix_failed'
+            - blueprint: Generated hotfix code (if successful)
+            - error: Error message (if failed)
         """
         error_log = alert_payload.get('description', 'No description provided')
         service_name = alert_payload.get('service', 'Unknown service')

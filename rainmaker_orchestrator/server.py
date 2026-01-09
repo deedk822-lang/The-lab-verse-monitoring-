@@ -1,5 +1,4 @@
-"""
-Rainmaker Orchestrator Server - Complete FastAPI Application
+"""Rainmaker Orchestrator Server - Complete FastAPI Application
 
 This module provides a comprehensive API for the Rainmaker Orchestrator,
 including alert handling, workspace management, and task execution endpoints.
@@ -7,12 +6,13 @@ including alert handling, workspace management, and task execution endpoints.
 
 import os
 import logging
+import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from rainmaker_orchestrator.agents.healer import SelfHealingAgent
@@ -26,6 +26,14 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Metrics tracking
+metrics = {
+    "alerts_processed": 0,
+    "hotfixes_generated": 0,
+    "tasks_executed": 0,
+    "start_time": time.time()
+}
 
 
 # Pydantic Models for Request/Response
@@ -94,7 +102,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Rainmaker Orchestrator...")
-    # Add any cleanup tasks here
     logger.info("Shutdown complete")
 
 
@@ -151,20 +158,38 @@ async def health_check():
         raise HTTPException(status_code=503, detail=f"Health check failed: {e!r}")
 
 
-@app.get("/metrics", tags=["Status"])
-async def metrics():
+@app.get("/metrics", response_class=PlainTextResponse, tags=["Status"])
+async def metrics_endpoint():
     """
     Prometheus metrics endpoint.
 
-    Returns metrics in Prometheus format for monitoring.
+    Returns metrics in Prometheus text format for monitoring and alerting.
     """
-    # TODO: Implement Prometheus metrics export
-    return {
-        "alerts_processed": 0,
-        "hotfixes_generated": 0,
-        "tasks_executed": 0,
-        "uptime_seconds": 0
-    }
+    uptime_seconds = int(time.time() - metrics["start_time"])
+    
+    # Prometheus text format
+    output = []
+    output.append("# HELP rainmaker_alerts_processed_total Total number of alerts processed")
+    output.append("# TYPE rainmaker_alerts_processed_total counter")
+    output.append(f"rainmaker_alerts_processed_total {metrics['alerts_processed']}")
+    output.append("")
+    
+    output.append("# HELP rainmaker_hotfixes_generated_total Total number of hotfixes generated")
+    output.append("# TYPE rainmaker_hotfixes_generated_total counter")
+    output.append(f"rainmaker_hotfixes_generated_total {metrics['hotfixes_generated']}")
+    output.append("")
+    
+    output.append("# HELP rainmaker_tasks_executed_total Total number of tasks executed")
+    output.append("# TYPE rainmaker_tasks_executed_total counter")
+    output.append(f"rainmaker_tasks_executed_total {metrics['tasks_executed']}")
+    output.append("")
+    
+    output.append("# HELP rainmaker_uptime_seconds Uptime in seconds")
+    output.append("# TYPE rainmaker_uptime_seconds gauge")
+    output.append(f"rainmaker_uptime_seconds {uptime_seconds}")
+    output.append("")
+    
+    return "\n".join(output)
 
 
 # ============================================================================
@@ -190,12 +215,16 @@ async def handle_alert_webhook(
     """
     try:
         logger.info(f"Received alert for service: {alert.service}")
+        metrics["alerts_processed"] += 1
 
         # Convert Pydantic model to dict for processing
         alert_dict = alert.model_dump()
 
-        # Process alert (can be moved to background for async processing)
+        # Process alert
         result = app.state.healer_agent.handle_alert(alert_dict)
+
+        if result.get("status") == "hotfix_generated":
+            metrics["hotfixes_generated"] += 1
 
         logger.info(f"Alert processed: {result['status']}")
 
@@ -227,6 +256,9 @@ async def handle_batch_alerts(alerts: List[AlertPayload]):
             alert_dict = alert.model_dump()
             result = app.state.healer_agent.handle_alert(alert_dict)
             results.append(result)
+            metrics["alerts_processed"] += 1
+            if result.get("status") == "hotfix_generated":
+                metrics["hotfixes_generated"] += 1
 
         logger.info(f"Processed {len(alerts)} alerts in batch")
 
@@ -260,6 +292,7 @@ async def execute_task(request: ExecuteRequest):
     """
     try:
         logger.info(f"Executing task in {request.mode} mode")
+        metrics["tasks_executed"] += 1
 
         # Execute task using orchestrator
         result = app.state.orchestrator.execute(
@@ -295,18 +328,21 @@ async def execute_task_async(
     """
     Execute a task asynchronously in the background.
 
+    Note: Task ID tracking is not yet implemented. This is fire-and-forget.
+
     Args:
         request: ExecuteRequest with task details
         background_tasks: FastAPI background tasks
 
     Returns:
-        Task ID for status tracking
+        Task ID (for future status tracking)
     """
     try:
         import uuid
         task_id = str(uuid.uuid4())
 
         logger.info(f"Queuing async task {task_id}")
+        metrics["tasks_executed"] += 1
 
         # Add task to background queue
         background_tasks.add_task(
@@ -320,7 +356,7 @@ async def execute_task_async(
         return {
             "task_id": task_id,
             "status": "queued",
-            "message": "Task queued for execution"
+            "message": "Task queued for execution (note: status tracking not implemented)"
         }
 
     except Exception as e:

@@ -33,13 +33,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       
       - name: Post to social media
         env:
           ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
         run: |
-          node ayrshare/post-to-social.js "${{ inputs.post_content }}" "${{ inputs.platforms }}" "${{ inputs.media_urls }}"
+          node ayrshare/post-to-social.js "${{ github.event.inputs.post_content }}" "${{ github.event.inputs.platforms }}" "${{ github.event.inputs.media_urls }}"
       
       - name: Upload results
         if: always()
@@ -55,8 +55,8 @@ jobs:
           if [ -f ayrshare-post-results.json ]; then
             echo "## 📣 Social Media Post Results" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Content:** ${{ inputs.post_content }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Platforms:** ${{ inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Content:** ${{ github.event.inputs.post_content }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Platforms:** ${{ github.event.inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Results" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY

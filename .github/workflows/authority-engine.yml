@@ -31,7 +31,7 @@ jobs:
       # === CONTENT SOURCE ===
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}         # ✅ Already set in GitHub Secrets
-      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id || '2b8af2b8d06b8150a5acfe7aa7d8f221' }}
 
       # === IDENTITY 1: DEEDK822 (BLOG OWNER & CONTENT PUBLISHER) ===
       # WordPress publishing identity
@@ -48,7 +48,7 @@ jobs:
       # Jira: dimakatsomoleli.atlassian.net
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
-      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}        # ✅ Already set in GitHub Secrets
       JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
 
       # === MARKETING CHANNELS ===

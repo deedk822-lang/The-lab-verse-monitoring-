@@ -19,6 +19,7 @@ class SystemMonitor:
 
     def __init__(self, db=None):
         self.db = db
+        self.session = requests.Session()
         self.start_time = datetime.now()
         self.error_count = 0
         self.warning_count = 0
@@ -148,7 +149,7 @@ class SystemMonitor:
     def _check_ollama(self) -> str:
         """Check Ollama server health"""
         try:
-            response = requests.get("http://localhost:11434", timeout=2)
+            response = self.session.get("http://localhost:11434", timeout=2)
             return "healthy" if response.status_code == 200 else "unreachable"
         except:
             return "not_running"
@@ -175,7 +176,7 @@ class SystemMonitor:
             return "not_configured"
 
         try:
-            response = requests.get(
+            response = self.session.get(
                 "https://app.ayrshare.com/api/profiles",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5
@@ -393,9 +394,10 @@ class ErrorHandler:
 class AlertSystem:
     """Send alerts when critical issues occur"""
 
-    def __init__(self, db=None, webhook_url: Optional[str] = None):
+    def __init__(self, db=None, webhook_url: Optional[str] = None, session=None):
         self.db = db
         self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
+        self.session = session or requests.Session()
         self.alert_history = []
 
     def send_alert(self, severity: str, component: str,
@@ -455,7 +457,7 @@ class AlertSystem:
                 ]
             }
 
-            requests.post(self.webhook_url, json=payload, timeout=5)
+            self.session.post(self.webhook_url, json=payload, timeout=5)
         except Exception as e:
             logger.error(f"Failed to send webhook alert: {e}")
 
@@ -485,5 +487,6 @@ def get_alert_system(db=None) -> AlertSystem:
     """Get global alert system instance"""
     global _alert_system
     if _alert_system is None:
-        _alert_system = AlertSystem(db)
+        monitor = get_monitor(db)
+        _alert_system = AlertSystem(db, session=monitor.session)
     return _alert_system

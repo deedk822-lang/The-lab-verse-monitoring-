@@ -113,4 +113,4 @@ jobs:
         with:
           labels: |
             ${{ (steps.scoring.outputs.final_score >= steps.config.outputs.min_score && steps.scoring.outputs.is_protected == 'false') && 'jules-approved' || 'human-review-required' }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -164,6 +164,16 @@ def _validate_and_resolve_target(url: str) -> tuple[bool, str, str]:
 
 
 def process_http_job(job_payload):
+    # Security: Rate Limit Check
+    client_id = payload.get('client_id', 'anonymous') if 'payload' in locals() else 'anonymous'
+    if not check_rate_limit(client_id):
+        return {"status": "failed", "reason": "Rate limit exceeded"}
+
+    # Security: Rate Limit Check
+    client_id = payload.get('client_id', 'anonymous') if 'payload' in locals() else 'anonymous'
+    if not check_rate_limit(client_id):
+        return {"status": "failed", "reason": "Rate limit exceeded"}
+
     """Enhanced version with DNS rebinding protection"""
     REQUESTS.inc()
     start = time.time()

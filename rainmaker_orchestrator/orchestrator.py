@@ -3,11 +3,11 @@ import json
 import re
 import httpx
 from typing import Dict, Any
-from fs_agent import FileSystemAgent
-from config import ConfigManager
+from .fs_agent import FileSystemAgent
+from .config import ConfigManager
 
 class RainmakerOrchestrator:
-    def __init__(self, workspace_path="/workspace", config_file=".env"):
+    def __init__(self, workspace_path="./workspace", config_file=".env"):
         self.fs = FileSystemAgent(workspace_path=workspace_path)
         self.config = ConfigManager(config_file=config_file)
         self.client = httpx.AsyncClient(timeout=120.0)

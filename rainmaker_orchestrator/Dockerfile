@@ -1,6 +1,6 @@
 # Multi-stage build for Rainmaker Orchestrator
 # Stage 1: Builder
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \

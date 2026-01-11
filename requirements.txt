@@ -1,5 +1,14 @@
+ fix/workflow-syntax-errors-13477659195332719743
 httpx==0.27.0
 fastapi==0.110.0
 uvicorn==0.29.0
 python-dotenv==1.0.1
 hubspot-api-client==8.1.1
+
+httpx
+fastapi
+uvicorn
+python-dotenv
+hubspot-api-client
+requests
+ main

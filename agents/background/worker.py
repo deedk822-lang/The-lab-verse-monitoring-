@@ -34,28 +34,28 @@ SSRF_BLOCKS = Counter(
     ['reason', 'hostname']
 )
 
-# Simple in-memory rate limiter (use Redis in production)
-request_counts = defaultdict(list)
-RATE_LIMIT_WINDOW = 60  # seconds
-RATE_LIMIT_MAX = 10     # requests per window
+def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
+    """
+    Distributed rate limiting using Redis.
+    CRITICAL FIX: Uses atomic Redis counters instead of local memory.
+    """
+    if not redis_conn:
+        logger.warning("Redis missing. Failing open (allowing traffic) for safety.")
+        return True
 
-def check_rate_limit(domain: str) -> bool:
-    """Check if domain has exceeded rate limit"""
-    now = current_time()
+    key = f"rate_limit:{client_id}"
+    try:
+        current_count = redis_conn.incr(key)
+        if current_count == 1:
+            redis_conn.expire(key, window)
 
-    # Clean old entries
-    request_counts[domain] = [
-        ts for ts in request_counts[domain]
-        if now - ts < RATE_LIMIT_WINDOW
-    ]
-
-    # Check limit
-    if len(request_counts[domain]) >= RATE_LIMIT_MAX:
-        return False
-
-    # Record request
-    request_counts[domain].append(now)
-    return True
+        if current_count > limit:
+            logger.warning(f"Rate limit exceeded for {client_id}")
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Redis error: {e}")
+        return True
 
 def _domain_allowed(hostname: str) -> bool:
     # Placeholder for a domain allowlist/blocklist
@@ -177,8 +177,9 @@ def process_http_job(job_payload):
 
     try:
         parsed = urlparse(url)
-        if not check_rate_limit(parsed.hostname):
-            logger.warning("Rate limit exceeded", extra={"hostname": parsed.hostname})
+        client_id = parsed.hostname or "unknown_hostname"
+        if not check_rate_limit(client_id=client_id):
+            logger.warning("Rate limit exceeded", extra={"hostname": client_id})
             return {"error": "rate limit exceeded"}
     except Exception:
         return {"error": "invalid url for rate limiting"}

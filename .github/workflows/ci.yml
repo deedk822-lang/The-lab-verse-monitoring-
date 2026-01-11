@@ -187,6 +187,8 @@ jobs:
           mkdir -p tests
 
       - name: Run pytest
+        env:
+          PYTHONPATH: .
         run: |
           # Run tests if they exist, otherwise skip
           if [ -f tests/test_orchestrator.py ]; then
@@ -195,8 +197,7 @@ jobs:
               --cov=rainmaker_orchestrator \
               --cov-report=xml \
               --cov-report=html \
-              --cov-report=term-missing \
-              || true
+              --cov-report=term-missing
           else
             echo "No tests found, skipping..."
             exit 0

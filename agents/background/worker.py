@@ -40,10 +40,6 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
     Distributed rate limiting using Redis.
     CRITICAL FIX: Uses atomic Redis counters instead of local memory.
     """
-    if not redis_conn:
-        logger.warning("Redis missing. Failing open (allowing traffic) for safety.")
-        return True
-
     key = f"rate_limit:{client_id}"
     try:
         current_count = redis_conn.incr(key)

@@ -4,3 +4,4 @@ uvicorn
 python-dotenv
 hubspot-api-client
 requests
+openai>=1.57.0

@@ -60,8 +60,8 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
 
     key = f"rate_limit:{client_id}"
     try:
-        current_count = redis_conn.incr(key)
-        if current_count == 1:
+        if current_count == 1 or redis_conn.ttl(key) == -1:
+            redis_conn.expire(key, window)
             redis_conn.expire(key, window)
         if current_count > limit:
             logger.warning(f"Rate limit exceeded for {client_id}")

@@ -28,7 +28,7 @@ try:
     from rainmaker_orchestrator import RainmakerOrchestrator
     logging.info("✅ Successfully imported rainmaker_orchestrator in server")
 except ImportError as e:
-    logging.exception(f"❌ Import error in server: {e}. CWD: {os.getcwd()}")
+    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
     raise
 
 @asynccontextmanager

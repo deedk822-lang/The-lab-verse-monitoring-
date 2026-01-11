@@ -1,16 +1,163 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# ============================================================================
+# CodeRabbit Configuration - Schema v2 Compliant
+# ============================================================================
+# Professional-grade code review configuration for production systems
+# Last updated: 2025-01-11
+
+version: "2"
+
+# ============================================================================
+# LANGUAGE & TONE
+# ============================================================================
+language: "en-US"
+tone_instructions: |
+  Act as a Senior Software Architect with 15+ years of experience in distributed systems.
+
+  Focus areas (in priority order):
+  1. SECURITY VULNERABILITIES - Critical security issues, injection attacks, authentication flaws
+  2. CORRECTNESS - Logic errors, race conditions, data consistency issues
+  3. PERFORMANCE - Bottlenecks, N+1 queries, inefficient algorithms
+  4. ARCHITECTURE - Design patterns, separation of concerns, maintainability
+  5. RELIABILITY - Error handling, edge cases, fault tolerance
+
+  Review style:
+  - Be direct and objective
+  - Provide specific code examples for suggested fixes
+  - Reference industry standards (OWASP, CWE, etc.) for security issues
+  - Avoid subjective style opinions unless they impact maintainability
+  - Flag breaking changes or backward incompatibility
+  - Highlight missing tests for critical paths
+
+# ============================================================================
+# REVIEW CONFIGURATION
+# ============================================================================
 reviews:
-  profile: assertive
+  # Profile determines aggressiveness of review
+  profile: "assertive"
+
+  # Workflow integration
   request_changes_workflow: true
   high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  # Summary configuration
+  high_level_summary_placeholder: "## 🔍 Architecture & Security Review"
   auto_review:
     enabled: true
-    ignore:
-      - "dist/**"
-      - "yarn.lock"
-      - "package-lock.json"
-  effort_estimation:
-    enabled: true
-    base_minutes: 15
+    auto_incremental_review: true
+    ignore_title_keywords: ["WIP", "DO NOT MERGE", "DRAFT"]
 
-language: "en-US"
+  # Path-based filtering
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/*.min.js"
+    - "!**/*.lock"
+    - "!**/coverage/**"
+
+  # Additional instructions for specific file types
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        Check for:
+        - Proper type hints (PEP 484)
+        - Async/await correctness (no blocking I/O in async functions)
+        - SQL injection vulnerabilities
+        - Proper exception handling
+        - Resource cleanup (async context managers)
+
+    - path: "**/agents/*.py"
+      instructions: |
+        AI Agent specific checks:
+        - Prompt injection prevention
+        - Input validation for AI inputs
+        - Rate limiting for API calls
+        - Proper error handling for API failures
+        - Cost controls (token limits)
+
+    - path: "**/server.py"
+      instructions: |
+        API endpoint checks:
+        - Authentication/authorization on all routes
+        - Input validation with Pydantic
+        - Proper HTTP status codes
+        - CORS configuration security
+        - Rate limiting implementation
+
+    - path: "**/*_test.py"
+      instructions: |
+        Test quality checks:
+        - Adequate test coverage for new code
+        - Edge cases covered
+        - Mock external dependencies
+        - Async tests properly configured
+
+    - path: "**/requirements*.txt"
+      instructions: |
+        Dependency checks:
+        - All versions pinned
+        - No known CVEs (check with pip-audit)
+        - Compatible version ranges
+        - License compatibility
+
+# ============================================================================
+# CHAT CONFIGURATION
+# ============================================================================
+chat:
+  auto_reply: true
+
+# ============================================================================
+# KNOWLEDGE BASE (Custom rules for this project)
+# ============================================================================
+knowledge_base:
+  opt_out: false
+  learnings:
+    scope: "auto"
+
+  # Project-specific patterns and conventions
+  custom_rules:
+    - name: "async_consistency"
+      description: "All I/O operations must be async"
+      pattern: "requests\\.(get|post|put|delete)"
+      message: "Use httpx async client instead of synchronous requests library"
+      severity: "error"
+
+    - name: "openai_client_pattern"
+      description: "Use new OpenAI client API"
+      pattern: "openai\\.ChatCompletion\\.create"
+      message: "Use AsyncOpenAI client instead of deprecated API"
+      severity: "error"
+
+    - name: "no_print_statements"
+      description: "Use proper logging instead of print"
+      pattern: "^\\s*print\\("
+      message: "Replace print() with proper logging (logger.info/debug/error)"
+      severity: "warning"
+
+    - name: "pydantic_v2_models"
+      description: "Use Pydantic v2 model configuration"
+      pattern: "class\\s+Config:"
+      message: "Use model_config = ConfigDict(...) for Pydantic v2"
+      severity: "warning"
+
+# ============================================================================
+# INTEGRATION SETTINGS
+# ============================================================================
+integration:
+  enabled: true
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# This configuration:
+# 1. Uses only v2-supported fields
+# 2. Focuses on security and correctness over style
+# 3. Provides project-specific guidance
+# 4. Enforces async patterns and modern Python practices
+# 5. Blocks merges on critical issues via request_changes_workflow
+# ============================================================================

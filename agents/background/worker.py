@@ -14,7 +14,6 @@ from collections import defaultdict
 from time import time as current_time
 
 from rq import Queue, Worker
- feat/architectural-improvements-9809589759324023108-13552811548169517820
 try:
     from database import redis_conn
 except ImportError:
@@ -23,7 +22,6 @@ except ImportError:
 
 from redis import Redis
 from redis.exceptions import RedisError
- main
 import requests
 from prometheus_client import Counter
 
@@ -43,13 +41,14 @@ SSRF_BLOCKS = Counter(
 
 def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
     """
-    Enforces a distributed rate limit for a given client using Redis.
+    Enforce a distributed per-client rate limit using Redis.
     
-    Uses a Redis-backed counter keyed by the client identifier and a sliding window (TTL) to track requests. Returns `True` when the client is within the allowed limit and `False` when the limit is exceeded. If the Redis connection is unavailable or a Redis error occurs, the function fails open and returns `True`.
+    Increments a Redis counter keyed by the provided client identifier and sets a TTL equal to the window on the counter's first increment. If the counter exceeds the limit, the request is disallowed. If Redis is unavailable or an error occurs, the function fails open and allows the request.
+    
     Parameters:
-        client_id (str): Identifier for the client being rate-limited.
-        limit (int): Maximum allowed requests within the window (default 100).
-        window (int): Time window in seconds for the rate limit (default 60).
+        client_id (str): Identifier used as the Redis key for rate limiting.
+        limit (int): Maximum allowed requests within the window.
+        window (int): Time window in seconds for counting requests.
     
     Returns:
         bool: `True` if the request is allowed, `False` if the rate limit has been exceeded.
@@ -59,33 +58,17 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
         return True
 
 
-    CRITICAL FIX: Uses atomic Redis counters instead of local memory.
-    """
- main
     key = f"rate_limit:{client_id}"
     try:
-        current_count = redis_conn.incr(key)
-        if current_count == 1:
+        if current_count == 1 or redis_conn.ttl(key) == -1:
             redis_conn.expire(key, window)
- feat/architectural-improvements-9809589759324023108-13552811548169517820
-        if current_count > limit:
-            return False
-        return True
-    except Exception as e:
-        logger.error(f"Redis rate limit error: {e}")
-        # Fail open for safety in case of Redis errors
-
-        elif redis_conn.ttl(key) == -1:
-            # Recover from orphaned key (no TTL set)
             redis_conn.expire(key, window)
-
         if current_count > limit:
             logger.warning(f"Rate limit exceeded for {client_id}")
             return False
         return True
     except RedisError as e:
         logger.error("Redis error during rate limit check", extra={"client_id": client_id, "error": str(e)})
- main
         return True
 
 def _domain_allowed(hostname: str) -> bool:
@@ -195,17 +178,26 @@ def _validate_and_resolve_target(url: str) -> tuple[bool, str, str]:
 
 
 def process_http_job(job_payload):
-    # Security: Rate Limit Check
-    client_id = payload.get('client_id', 'anonymous') if 'payload' in locals() else 'anonymous'
-    if not check_rate_limit(client_id):
-        return {"status": "failed", "reason": "Rate limit exceeded"}
-
-    # Security: Rate Limit Check
-    client_id = payload.get('client_id', 'anonymous') if 'payload' in locals() else 'anonymous'
-    if not check_rate_limit(client_id):
-        return {"status": "failed", "reason": "Rate limit exceeded"}
-
-    """Enhanced version with DNS rebinding protection"""
+    """
+    Process a single HTTP job payload and perform a validated, rate-limited outbound HTTP request.
+    
+    Parameters:
+        job_payload (dict): Job data with expected keys:
+            - "url" (str): Required. The target URL to request.
+            - "client_id" (str, optional): Identifier used for rate limiting; falls back to the URL hostname if omitted.
+            - "method" (str, optional): HTTP method to use (default "GET").
+            - "headers" (dict, optional): Request headers; if missing, a Host header for the original hostname will be added.
+            - "timeout" (number, optional): Request timeout in seconds (default 10.0, capped by MAX_TIMEOUT).
+    
+        client_id = urlparse(url).hostname or "unknown_hostname"
+        if not check_rate_limit(client_id):
+            - "status_code" (int): HTTP status code returned by the remote host.
+            - "elapsed_ms" (int): Round-trip elapsed time in milliseconds.
+            - "content_length" (int): Number of response bytes read (0 if empty).
+        On error:
+            - "error" (str): Short error identifier/message (e.g., "invalid payload", "missing url", "rate limit exceeded", "request not allowed: <reason>", "external requests disabled", "redirects not allowed", "response too large", "ssl verification failed", "request failed").
+            - "status_code" (int, optional): Present when a redirect was blocked.
+    """
     REQUESTS.inc()
     start = time.time()
 
@@ -216,23 +208,14 @@ def process_http_job(job_payload):
     if not url:
         return {"error": "missing url"}
 
- feat/architectural-improvements-9809589759324023108-13552811548169517820
     # Use a client_id from the job payload for rate limiting, or fall back to the URL's hostname.
-    client_id = job_payload.get("client_id", urlparse(url).hostname)
-    if not check_rate_limit(client_id):
-        logger.warning("Rate limit exceeded", extra={"client_id": client_id})
-        return {"error": "rate limit exceeded"}
-
     try:
-        parsed = urlparse(url)
-        target_host = parsed.hostname or "unknown_hostname"
-        if not check_rate_limit(client_id=target_host):
-            logger.warning("Rate limit exceeded", extra={"hostname": target_host})
+        client_id = job_payload.get("client_id", urlparse(url).hostname)
+        if not check_rate_limit(client_id):
+            logger.warning("Rate limit exceeded", extra={"client_id": client_id})
             return {"error": "rate limit exceeded"}
     except Exception:
         return {"error": "invalid url for rate limiting"}
- main
-
 
     # Validate and get resolved IP
     valid, why, resolved_ip = _validate_and_resolve_target(url)
@@ -322,6 +305,11 @@ def process_http_job(job_payload):
 
 def main():
     # Start metrics server
+    """
+    Start the Prometheus metrics server and run the RQ worker to process background jobs.
+    
+    Reads METRICS_PORT from the environment to bind the metrics server, logs startup information (including Redis URL and queue name), creates an RQ Worker listening on the configured queue, and runs it with scheduler support; this call blocks while the worker runs.
+    """
     metrics_port = int(os.getenv("METRICS_PORT", "8001"))
     start_metrics_server(metrics_port)
 

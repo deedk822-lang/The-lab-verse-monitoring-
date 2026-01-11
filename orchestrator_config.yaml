@@ -1,0 +1,30 @@
+# Rainmaker Orchestrator Configuration
+workspace_path: /app/workspace
+
+model_integrations:
+  kimi:
+    enabled: true
+    api_key: "${KIMI_API_KEY}"
+    base_url: "https://api.moonshot.cn/v1"
+    model: "moonshot-v1-8k"
+    timeout: 30
+    max_retries: 3
+
+  ollama:
+    enabled: true
+    base_url: "http://ollama:11434"
+    model: "llama2"
+    timeout: 60
+
+defaults:
+  max_concurrent_tasks: 5
+  task_timeout: 300
+  health_check_interval: 30
+
+logging:
+  level: "INFO"
+  format: "json"
+
+security:
+  require_auth: true
+  allowed_origins: ["*"]

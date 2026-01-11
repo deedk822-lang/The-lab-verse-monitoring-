@@ -1,0 +1,25 @@
+services:
+  # FastAPI Backend - FREE tier (750 hours/month)
+  - type: web
+    name: rainmaker-orchestrator
+    runtime: python
+    region: oregon # Choose: oregon, frankfurt, singapore
+    plan: free # FREE TIER!
+    rootDir: rainmaker_orchestrator
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: KIMI_API_KEY
+        sync: false # Set this in Render dashboard
+      - key: KIMI_API_BASE
+        value: https://api.moonshot.ai/v1
+      - key: LOG_LEVEL
+        value: INFO
+      - key: WORKSPACE_PATH
+        value: /opt/render/project/src/workspace
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true

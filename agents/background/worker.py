@@ -189,8 +189,8 @@ def process_http_job(job_payload):
             - "headers" (dict, optional): Request headers; if missing, a Host header for the original hostname will be added.
             - "timeout" (number, optional): Request timeout in seconds (default 10.0, capped by MAX_TIMEOUT).
     
-    Returns:
-        dict: On success:
+        client_id = urlparse(url).hostname or "unknown_hostname"
+        if not check_rate_limit(client_id):
             - "status_code" (int): HTTP status code returned by the remote host.
             - "elapsed_ms" (int): Round-trip elapsed time in milliseconds.
             - "content_length" (int): Number of response bytes read (0 if empty).

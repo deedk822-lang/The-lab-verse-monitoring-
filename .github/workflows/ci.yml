@@ -135,6 +135,7 @@ jobs:
           context: ./rainmaker_orchestrator
           file: ./rainmaker_orchestrator/Dockerfile
           push: false
+          load: true
           tags: rainmaker-orchestrator:test
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
@@ -243,7 +244,7 @@ jobs:
             # Build the image first to ensure it exists for compose
             docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
             # Start the orchestrator service (correct name from docker-compose file)
-            docker-compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
+            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
             sleep 15
           else
             echo "docker-compose.superstack.yml not found"
@@ -260,18 +261,18 @@ jobs:
             fi
             echo "Waiting for service... ($i/30)"
             # Log the last few lines of the container to see if it's crashing
-            docker logs rainmaker-orchestrator --tail 5 || true
+            docker logs task-router --tail 5 || true
             sleep 2
           done
           echo "Health check failed"
-          docker-compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
+          docker compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
           exit 1
 
       - name: Stop services
         if: always()
         run: |
           if [ -f docker-compose.superstack.yml ]; then
-            docker-compose -f docker-compose.superstack.yml down || true
+            docker compose -f docker-compose.superstack.yml down || true
           fi
 
   # Notify status

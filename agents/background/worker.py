@@ -54,7 +54,9 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
             return False
         return True
     except RedisError as e:
+    except RedisError as e:
         logger.error("Redis error during rate limit check", extra={"client_id": client_id, "error": str(e)})
+        return False  # Fail-closed to prevent traffic spikes during Redis outages.
         return True
 
 def _domain_allowed(hostname: str) -> bool:

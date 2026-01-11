@@ -19,5 +19,5 @@ reviews:
   high_level_summary_in_walkthrough: false
 
   # Auto-labeling (if supported in your plan, good for organization)
-  auto_label:
-    enabled: true
+  suggested_labels: true
+  auto_apply_labels: true

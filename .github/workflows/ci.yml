@@ -217,7 +217,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MINIMUM_GREEN: 80
           MINIMUM_ORANGE: 60
 
@@ -241,11 +241,13 @@ jobs:
       - name: Build and Start services
         run: |
           if [ -f docker-compose.superstack.yml ]; then
+            # Create dummy config file if it doesn't exist
+            touch orchestrator_config.yaml
             # Build the image first to ensure it exists for compose
             docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
             # Start the orchestrator service (correct name from docker-compose file)
             docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
-            sleep 15
+            sleep 20
           else
             echo "docker-compose.superstack.yml not found"
           fi
@@ -261,11 +263,12 @@ jobs:
             fi
             echo "Waiting for service... ($i/30)"
             # Log the last few lines of the container to see if it's crashing
-            docker logs task-router --tail 5 || true
+            docker logs task-router --tail 10 || true
             sleep 2
           done
           echo "Health check failed"
           docker compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
+          docker ps -a
           exit 1
 
       - name: Stop services

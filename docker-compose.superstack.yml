@@ -150,3 +150,19 @@ services:
     networks:
       ai-circuit:
         ipv4_address: 172.20.0.60
+
+  # Scheduler Service (Replaces Vercel Cron)
+  scheduler:
+    build:
+      context: ./scheduler
+      dockerfile: Dockerfile
+    container_name: labverse-scheduler
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_URL=http://rainmaker-orchestrator:8080
+    networks:
+      ai-circuit:
+        ipv4_address: 172.20.0.70
+    restart: unless-stopped
+    depends_on:
+      - rainmaker-orchestrator

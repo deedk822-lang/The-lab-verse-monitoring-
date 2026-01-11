@@ -1,13 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["**/*.js", "**/*.json", "**/*.txt"]
-      }
+  "framework": "nextjs",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
+      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
     }
+ fix/workflow-syntax-errors-13477659195332719743
   ],
   "routes": [
     {
@@ -27,39 +28,41 @@
     },
     {
       "src": "/api/(.*)",
-      "dest": "/server.js"
+      "dest": "${ORCHESTRATOR_URL}/$1"
+
+  },
+  "functions": {
+    "api/**/*.{js,ts}": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
+ main
     },
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
+    "api/health": {
+      "runtime": "edge"
     }
+ fix/workflow-syntax-errors-13477659195332719743
   ],
   "env": {
+    "ORCHESTRATOR_URL": "@ORCHESTRATOR_URL",
     "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
     "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
     "NODE_ENV": "production"
+
+ main
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
       ]
     }
-  ]
+  ],
+  "regions": ["iad1"]
 }

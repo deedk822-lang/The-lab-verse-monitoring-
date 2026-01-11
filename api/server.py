@@ -46,7 +46,7 @@ app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 async def health_check():
     return {"status": "healthy"}
 
-# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
+# Placeholder implementation - tracked separately for production replacement
 def get_market_intel(company_name: str):
     """
     Retrieves market intelligence for a given company.

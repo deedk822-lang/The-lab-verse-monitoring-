@@ -2,18 +2,39 @@ import os
 import sys
 import json
 import logging
+ feat/modernize-python-stack-2026-3829493454699415671
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from pydantic import BaseModel
+from typing import Optional
+from hubspot import HubSpot
+from hubspot.crm.deals import SimplePublicObjectInput
+
+# --- Pydantic Model Definition ---
+class HubSpotWebhookPayload(BaseModel):
+    objectId: int
+    message_body: str
+    subscriptionType: Optional[str] = None
+
+# --- Configuration ---
+DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+ main
 # Ensure the root directory is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 try:
+ feat/modernize-python-stack-2026-3829493454699415671
     from hubspot import HubSpot
     from hubspot.crm.deals import SimplePublicObjectInput
 except ImportError:
@@ -44,10 +65,29 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 app = FastAPI(title="Lab Verse API")
 orchestrator = RainmakerOrchestrator(workspace_path="./workspace")
 
+    from rainmaker_orchestrator import RainmakerOrchestrator
+    logging.info("✅ Successfully imported rainmaker_orchestrator in server")
+except ImportError:
+    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
+    raise
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    yield
+    # Shutdown
+    await orchestrator.aclose()
+
+app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+ main
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
+ feat/modernize-python-stack-2026-3829493454699415671
 @app.get("/intel/market")
 async def get_market_intel_endpoint(company_name: str):
     """Endpoint to retrieve market intelligence for a company."""
@@ -55,12 +95,15 @@ async def get_market_intel_endpoint(company_name: str):
     return JSONResponse(content=data)
 
 # TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
+
+# Placeholder implementation - tracked separately for production replacement
+ main
 def get_market_intel(company_name: str):
     """
     Retrieves market intelligence for a given company.
     This is a placeholder and returns static data.
     """
-    print(f"Fetching market intel for (placeholder): {company_name}")
+    logging.info(f"Fetching market intel for (placeholder): {company_name}")
     return {
       "latest_headline": "ArcelorMittal South Africa ceases production at Newcastle steel mill and exhausts IDC rescue facility, with exclusive sale talks to IDC ending without agreement (November 2025)",
       "financial_health_signal": "Severely Negative",
@@ -68,30 +111,38 @@ def get_market_intel(company_name: str):
       "sales_hook": "Avoid capital-heavy proposals. Focus on immediate crisis response services: short-term liquidity optimization, working capital advisory, retrenchment/restructuring consulting, employee transition support, and strategic advisory for asset divestment or operational wind-down to mitigate fallout from the Newcastle closure and broader long-steel shutdown"
     }
 
+ feat/modernize-python-stack-2026-3829493454699415671
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
     if not HubSpot:
         raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
 
+
+async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
+ main
     contact_id = payload.objectId
     chat_text = payload.message_body
 
-    print(f"Processing HubSpot webhook for contact: {contact_id}")
+    logging.info(f"Processing HubSpot webhook for contact: {contact_id}")
 
     # 1. "Zread" and Process with Ollama
+    # NOTE: Using the private method `_call_ollama` as the orchestrator's public
+    # `execute_task` method is designed for a different, more complex workflow.
+    # A future refactor should expose a dedicated public method for this type of analysis.
     try:
         prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
         ollama_task = {"context": prompt, "model": "ollama"}
-        ai_analysis_raw = await orchestrator._call_ollama(ollama_task, {})
+        ai_analysis_raw = await app.state.orchestrator._call_ollama(ollama_task, {})
 
         # The response from _call_ollama is a dict with the content being a stringified JSON
         ai_analysis_str = ai_analysis_raw["message"]["content"]
         parsed_ai = json.loads(ai_analysis_str)
-        print(f"AI Analysis successful: {parsed_ai}")
+        logging.info(f"AI Analysis successful: {parsed_ai}")
 
-    except Exception as e:
-        print(f"Error calling Ollama or parsing response: {e}")
-        raise HTTPException(status_code=500, detail="Failed to analyze lead with AI.")
+    except Exception:
+        logging.exception("Error calling Ollama or parsing response")
+        # In a real app, you might want to retry or send an alert
+        return
 
     # 2. Update HubSpot Contact
     try:
@@ -108,18 +159,18 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         }
 
         client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
-        print(f"Successfully updated contact {contact_id} with AI analysis.")
+        logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
 
-    except Exception as e:
-        print(f"Error updating HubSpot contact: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update HubSpot contact.")
+    except Exception:
+        logging.exception("Error updating HubSpot contact")
+        return
 
     # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
     try:
         intent_score = parsed_ai.get('intent_score', 0)
         if intent_score > DEAL_CREATION_INTENT_SCORE_THRESHOLD:
             company_name = parsed_ai.get('company_name', 'Unknown Company')
-            print(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
+            logging.info(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
 
             # Get market intelligence
             intel = get_market_intel(company_name)
@@ -143,12 +194,16 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
                 to_object_id=contact_id,
                 association_type='deal_to_contact'
             )
-            print(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
+            logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
-    except Exception as e:
-        print(f"Error creating HubSpot deal: {e}")
-        # Don't raise an exception here, as the contact update was successful.
-        # Log the error and return a success response.
-        return {"status": "processed_with_deal_creation_error", "contact_id": contact_id}
+    except Exception:
+        logging.exception("Error creating HubSpot deal")
 
+ feat/modernize-python-stack-2026-3829493454699415671
     return {"status": "processed", "contact_id": contact_id}
+
+@app.post("/webhook/hubspot")
+async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
+    background_tasks.add_task(process_webhook_data, payload, request.app)
+    return {"status": "accepted", "contact_id": payload.objectId}
+ main

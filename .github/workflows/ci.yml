@@ -132,7 +132,7 @@ jobs:
       - name: Build orchestrator image
         uses: docker/build-push-action@v5
         with:
-          context: ./rainmaker_orchestrator
+          context: .
           file: ./rainmaker_orchestrator/Dockerfile
           push: false
           tags: rainmaker-orchestrator:test

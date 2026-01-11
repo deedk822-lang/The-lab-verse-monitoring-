@@ -32,7 +32,15 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
-COPY . .
+# Copy shared components
+COPY database.py .
+COPY api/ ./api/
+COPY agents/ ./agents/
+# Copy the service-specific code
+COPY rainmaker_orchestrator/ ./rainmaker_orchestrator/
+
+# Set Python path to find modules from root
+ENV PYTHONPATH=/app
 
 # Create non-root user for security
 RUN useradd -m -u 1000 -s /bin/bash appuser && \
@@ -68,6 +76,5 @@ CMD gunicorn \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
-    --worker-class sync \
-    --threads 2 \
-    server:app
+    --worker-class uvicorn.workers.UvicornWorker \
+    api.server:app

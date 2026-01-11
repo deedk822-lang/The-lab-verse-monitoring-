@@ -1,6 +1,26 @@
-httpx
+# Core FastAPI & Server
 fastapi
 uvicorn
+gunicorn
 python-dotenv
-hubspot-api-client
+
+# Async & Database
+motor
+beanie
+redis
+
+# HTTP & API Clients
+httpx
 requests
+hubspot-api-client
+
+# Data Validation
+pydantic
+pydantic-settings
+email-validator
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock

@@ -85,8 +85,8 @@ class SelfHealingAgent:
                 return {"status": "hotfix_failed", "error": "Blueprint generation failed"}
 
             # In a real implementation, this would involve deploying the hotfix
-            logger.info(f"Generated hotfix for {service_name}: {blueprint}")
+            logger.info("Generated hotfix for service=%s (len=%d)", service_name, len(blueprint))
             return {"status": "hotfix_generated", "blueprint": blueprint}
         except Exception as e:
-            logger.exception(f"Exception while handling alert for {service_name}")
-            return {"status": "hotfix_failed", "error": str(e)}
+            logger.exception("Exception while handling alert for service=%s", service_name)
+            return {"status": "hotfix_failed", "error": f"{e!r}"}

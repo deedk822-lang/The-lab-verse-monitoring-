@@ -14,11 +14,16 @@ from collections import defaultdict
 from time import time as current_time
 
 from rq import Queue, Worker
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
 try:
     from database import redis_conn
 except ImportError:
     print("WARNING: database.py not found. Redis connection will fail.")
     redis_conn = None
+
+from redis import Redis
+from redis.exceptions import RedisError
+ main
 import requests
 from prometheus_client import Counter
 
@@ -39,22 +44,40 @@ SSRF_BLOCKS = Counter(
 def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
     """
     Distributed rate limiting using Redis.
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
     """
     if not redis_conn:
         logger.critical("Redis connection missing. Failing open for safety.")
         return True
 
+
+    CRITICAL FIX: Uses atomic Redis counters instead of local memory.
+    """
+ main
     key = f"rate_limit:{client_id}"
     try:
         current_count = redis_conn.incr(key)
         if current_count == 1:
             redis_conn.expire(key, window)
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
         if current_count > limit:
             return False
         return True
     except Exception as e:
         logger.error(f"Redis rate limit error: {e}")
         # Fail open for safety in case of Redis errors
+
+        elif redis_conn.ttl(key) == -1:
+            # Recover from orphaned key (no TTL set)
+            redis_conn.expire(key, window)
+
+        if current_count > limit:
+            logger.warning(f"Rate limit exceeded for {client_id}")
+            return False
+        return True
+    except RedisError as e:
+        logger.error("Redis error during rate limit check", extra={"client_id": client_id, "error": str(e)})
+ main
         return True
 
 def _domain_allowed(hostname: str) -> bool:
@@ -185,11 +208,22 @@ def process_http_job(job_payload):
     if not url:
         return {"error": "missing url"}
 
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
     # Use a client_id from the job payload for rate limiting, or fall back to the URL's hostname.
     client_id = job_payload.get("client_id", urlparse(url).hostname)
     if not check_rate_limit(client_id):
         logger.warning("Rate limit exceeded", extra={"client_id": client_id})
         return {"error": "rate limit exceeded"}
+
+    try:
+        parsed = urlparse(url)
+        target_host = parsed.hostname or "unknown_hostname"
+        if not check_rate_limit(client_id=target_host):
+            logger.warning("Rate limit exceeded", extra={"hostname": target_host})
+            return {"error": "rate limit exceeded"}
+    except Exception:
+        return {"error": "invalid url for rate limiting"}
+ main
 
 
     # Validate and get resolved IP

@@ -1,21 +1,12 @@
-from fastapi import FastAPI
-import sys
 import os
- feat/hubspot-ollama-integration-9809589759324023108
-
+import sys
 import json
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
-from pydantic import BaseModel
+import logging
 from typing import Optional
- main
- feat/jules-kimi-activation-16043666581364389657
 
-# --- Configuration ---
-DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
- main
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 # Ensure the root directory is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,25 +14,45 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 try:
-    from rainmaker_orchestrator import RainmakerOrchestrator
+    from hubspot import HubSpot
+    from hubspot.crm.deals import SimplePublicObjectInput
+except ImportError:
+    print(" HubSpot client not installed. Some functionality may not work.")
+    # Mocking for CI/CD without real credentials
+    HubSpot = None
+    SimplePublicObjectInput = dict
+
+
+try:
+    from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
     print(f"✅ Successfully imported rainmaker_orchestrator in server")
 except ImportError as e:
     print(f"❌ Import error in server: {e}")
     print(f"CWD: {os.getcwd()}")
     raise
 
+# --- Pydantic Models ---
+class HubSpotWebhookPayload(BaseModel):
+    objectId: int
+    message_body: str
+    # Add other fields from the webhook payload as needed
+
+# --- Configuration ---
+DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 app = FastAPI(title="Lab Verse API")
-orchestrator = RainmakerOrchestrator()
+orchestrator = RainmakerOrchestrator(workspace_path="./workspace")
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
- feat/hubspot-ollama-integration-9809589759324023108
- feat/jules-kimi-activation-16043666581364389657
 
-
- main
-
+@app.get("/intel/market")
+async def get_market_intel_endpoint(company_name: str):
+    """Endpoint to retrieve market intelligence for a company."""
+    data = get_market_intel(company_name)
+    return JSONResponse(content=data)
 
 # TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
 def get_market_intel(company_name: str):
@@ -59,6 +70,9 @@ def get_market_intel(company_name: str):
 
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
+    if not HubSpot:
+        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
+
     contact_id = payload.objectId
     chat_text = payload.message_body
 
@@ -100,10 +114,10 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         print(f"Error updating HubSpot contact: {e}")
         raise HTTPException(status_code=500, detail="Failed to update HubSpot contact.")
 
-    # 3. Logic: If Score > 8, Create and Enrich Deal Automatically
+    # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
     try:
         intent_score = parsed_ai.get('intent_score', 0)
-        if intent_score > 8:
+        if intent_score > DEAL_CREATION_INTENT_SCORE_THRESHOLD:
             company_name = parsed_ai.get('company_name', 'Unknown Company')
             print(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
 
@@ -117,7 +131,7 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
                 "dealstage": "appointmentscheduled", # Example stage
                 "news_latest_headline": intel.get('latest_headline'),
                 "news_sales_hook": intel.get('sales_hook'),
-                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel.get('key_pain_point')}\n\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
+                "description": f"**AI WAR ROOM BRIEF:**\\n\\nMARKET INTEL: {intel.get('key_pain_point')}\\n\\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
             }
             deal_input = SimplePublicObjectInput(properties=deal_properties)
             created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
@@ -138,4 +152,3 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         return {"status": "processed_with_deal_creation_error", "contact_id": contact_id}
 
     return {"status": "processed", "contact_id": contact_id}
- main

@@ -2,7 +2,8 @@ import os
 import sys
 import json
 import logging
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
 from typing import Optional
 from hubspot import HubSpot
@@ -27,12 +28,19 @@ try:
     from rainmaker_orchestrator import RainmakerOrchestrator
     logging.info("✅ Successfully imported rainmaker_orchestrator in server")
 except ImportError as e:
-    logging.error(f"❌ Import error in server: {e}")
-    logging.error(f"CWD: {os.getcwd()}")
+    logging.exception(f"❌ Import error in server: {e}. CWD: {os.getcwd()}")
     raise
 
-app = FastAPI(title="Lab Verse API")
-orchestrator = RainmakerOrchestrator()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    yield
+    # Shutdown
+    await orchestrator.aclose()
+
+app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 
 @app.get("/health")
 async def health_check():
@@ -52,17 +60,20 @@ def get_market_intel(company_name: str):
       "sales_hook": "Avoid capital-heavy proposals. Focus on immediate crisis response services: short-term liquidity optimization, working capital advisory, retrenchment/restructuring consulting, employee transition support, and strategic advisory for asset divestment or operational wind-down to mitigate fallout from the Newcastle closure and broader long-steel shutdown"
     }
 
-async def process_webhook_data(payload: HubSpotWebhookPayload):
+async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     contact_id = payload.objectId
     chat_text = payload.message_body
 
     logging.info(f"Processing HubSpot webhook for contact: {contact_id}")
 
     # 1. "Zread" and Process with Ollama
+    # NOTE: Using the private method `_call_ollama` as the orchestrator's public
+    # `execute_task` method is designed for a different, more complex workflow.
+    # A future refactor should expose a dedicated public method for this type of analysis.
     try:
         prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
         ollama_task = {"context": prompt, "model": "ollama"}
-        ai_analysis_raw = await orchestrator._call_ollama(ollama_task, {})
+        ai_analysis_raw = await app.state.orchestrator._call_ollama(ollama_task, {})
 
         # The response from _call_ollama is a dict with the content being a stringified JSON
         ai_analysis_str = ai_analysis_raw["message"]["content"]
@@ -70,7 +81,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload):
         logging.info(f"AI Analysis successful: {parsed_ai}")
 
     except Exception as e:
-        logging.error(f"Error calling Ollama or parsing response: {e}")
+        logging.exception(f"Error calling Ollama or parsing response: {e}")
         # In a real app, you might want to retry or send an alert
         return
 
@@ -92,7 +103,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload):
         logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
 
     except Exception as e:
-        logging.error(f"Error updating HubSpot contact: {e}")
+        logging.exception(f"Error updating HubSpot contact: {e}")
         return
 
     # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
@@ -127,9 +138,9 @@ async def process_webhook_data(payload: HubSpotWebhookPayload):
             logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
     except Exception as e:
-        logging.error(f"Error creating HubSpot deal: {e}")
+        logging.exception(f"Error creating HubSpot deal: {e}")
 
 @app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
-    background_tasks.add_task(process_webhook_data, payload)
+async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
+    background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}

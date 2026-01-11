@@ -15,6 +15,7 @@ from time import time as current_time
 
 from rq import Queue, Worker
 from redis import Redis
+from redis.exceptions import RedisError
 import requests
 from prometheus_client import Counter
 
@@ -48,13 +49,16 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
         current_count = redis_conn.incr(key)
         if current_count == 1:
             redis_conn.expire(key, window)
+        elif redis_conn.ttl(key) == -1:
+            # Recover from orphaned key (no TTL set)
+            redis_conn.expire(key, window)
 
         if current_count > limit:
             logger.warning(f"Rate limit exceeded for {client_id}")
             return False
         return True
-    except Exception as e:
-        logger.error(f"Redis error: {e}")
+    except RedisError as e:
+        logger.error("Redis error during rate limit check", extra={"client_id": client_id, "error": str(e)})
         return True
 
 def _domain_allowed(hostname: str) -> bool:
@@ -177,9 +181,9 @@ def process_http_job(job_payload):
 
     try:
         parsed = urlparse(url)
-        client_id = parsed.hostname or "unknown_hostname"
-        if not check_rate_limit(client_id=client_id):
-            logger.warning("Rate limit exceeded", extra={"hostname": client_id})
+        target_host = parsed.hostname or "unknown_hostname"
+        if not check_rate_limit(client_id=target_host):
+            logger.warning("Rate limit exceeded", extra={"hostname": target_host})
             return {"error": "rate limit exceeded"}
     except Exception:
         return {"error": "invalid url for rate limiting"}

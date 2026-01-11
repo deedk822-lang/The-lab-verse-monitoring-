@@ -7,12 +7,12 @@
   "outputDirectory": ".next",
   
   "env": {
-    "NEXT_PUBLIC_API_ENDPOINT": "https://rainmaker-orchestrator.onrender.com"
+    "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint"
   },
   
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_ENDPOINT": "https://rainmaker-orchestrator.onrender.com"
+      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint"
     }
   },
   

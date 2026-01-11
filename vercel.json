@@ -1,36 +1,41 @@
 {
-  "version": 2,
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
   "framework": "nextjs",
-  "installCommand": "npm ci --legacy-peer-deps",
+  "outputDirectory": ".next",
+  
+  "env": {
+    "NEXT_PUBLIC_API_ENDPOINT": "https://rainmaker-orchestrator.onrender.com"
+  },
+  
   "build": {
     "env": {
-      "NODE_ENV": "production",
-      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
-      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
+      "NEXT_PUBLIC_API_ENDPOINT": "https://rainmaker-orchestrator.onrender.com"
     }
   },
-  "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/health": {
-      "runtime": "edge"
-    }
-  },
+  
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     }
   ],
-  "regions": ["iad1"]
+  
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://rainmaker-orchestrator.onrender.com/:path*"
+    }
+  ]
 }

@@ -135,6 +135,7 @@ jobs:
           context: ./rainmaker_orchestrator
           file: ./rainmaker_orchestrator/Dockerfile
           push: false
+          load: true
           tags: rainmaker-orchestrator:test
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
@@ -147,11 +148,12 @@ jobs:
       - name: Test image
         run: |
           docker run --rm \
-            -e ANTHROPIC_API_KEY=test_key \
+            -e KIMI_API_KEY=test_key \
             -e HF_TOKEN=test_token \
+            -e WORKSPACE_PATH=/tmp/test_workspace \
             --entrypoint python \
             rainmaker-orchestrator:test \
-            -c "import server; print('Import successful')"
+            -c "import sys; sys.path.append('/app'); import server; print('Import successful')"
 
   # Run tests
   test:
@@ -215,7 +217,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MINIMUM_GREEN: 80
           MINIMUM_ORANGE: 60
 
@@ -236,34 +238,44 @@ jobs:
           LOG_LEVEL=INFO
           EOF
 
-      - name: Start services
+      - name: Build and Start services
         run: |
           if [ -f docker-compose.superstack.yml ]; then
-            docker-compose -f docker-compose.superstack.yml up -d orchestrator || true
-            sleep 10
+            # Create dummy config file if it doesn't exist
+            touch orchestrator_config.yaml
+            # Build the image first to ensure it exists for compose
+            docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
+            # Start the orchestrator service (correct name from docker-compose file)
+            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
+            sleep 20
           else
             echo "docker-compose.superstack.yml not found"
           fi
 
       - name: Test orchestrator health
         run: |
+          echo "Checking service status..."
+          docker ps
           for i in {1..30}; do
-            if curl -f http://localhost:8080/health; then
+            if curl -s -f http://localhost:8080/health; then
               echo "Health check passed"
               exit 0
             fi
             echo "Waiting for service... ($i/30)"
+            # Log the last few lines of the container to see if it's crashing
+            docker logs task-router --tail 10 || true
             sleep 2
           done
           echo "Health check failed"
-          docker-compose -f docker-compose.superstack.yml logs orchestrator || true
+          docker compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
+          docker ps -a
           exit 1
 
       - name: Stop services
         if: always()
         run: |
           if [ -f docker-compose.superstack.yml ]; then
-            docker-compose -f docker-compose.superstack.yml down || true
+            docker compose -f docker-compose.superstack.yml down || true
           fi
 
   # Notify status

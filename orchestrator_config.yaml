@@ -1,0 +1,9 @@
+# Rainmaker Orchestrator Configuration
+workspace_path: /workspace
+models:
+  kimi:
+    base_url: http://kimi-linear:8000/v1
+    default_model: moonshot-v1-8k
+  ollama:
+    base_url: http://ollama:11434
+    default_model: llama3

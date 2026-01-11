@@ -14,6 +14,11 @@ client = TestClient(app)
 @pytest.mark.asyncio
 async def test_hubspot_webhook_valid(mock_hubspot, mock_rainmaker_orchestrator):
     # Mock the instance that will be created inside the lifespan manager
+    """
+    Verifies that a valid HubSpot webhook payload is accepted and returns the expected accepted status and contact ID.
+    
+    Sets up mocked RainmakerOrchestrator (including a stubbed async Ollama response) and a mocked HubSpot client, posts a payload to /webhook/hubspot, and asserts the response status code is 200 with JSON {"status": "accepted", "contact_id": 123}.
+    """
     mock_orchestrator_instance = mock_rainmaker_orchestrator.return_value
     mock_orchestrator_instance.config = {'HUBSPOT_ACCESS_TOKEN': 'fake-token'}
     
@@ -46,6 +51,11 @@ def test_hubspot_webhook_invalid():
 
 # 2. TEST: Verify Market Intel Endpoint is a Placeholder
 def test_market_intel_is_structural():
+    """
+    Verify the market intelligence endpoint returns a structural placeholder response rather than the hardcoded "ArcelorMittal".
+    
+    Asserts that the JSON response for GET /intel/market?company=TestCorp does not contain the string "ArcelorMittal" and that the "status" field equals "Integration Pending - Configure Perplexity/Google API".
+    """
     response = client.get("/intel/market?company=TestCorp")
     data = response.json()
     # Ensure we are NOT getting the hardcoded "ArcelorMittal" text

@@ -6,6 +6,10 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'

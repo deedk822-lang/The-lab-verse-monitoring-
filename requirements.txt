@@ -4,3 +4,4 @@ uvicorn
 python-dotenv
 hubspot-api-client
 requests
+pytest-cov

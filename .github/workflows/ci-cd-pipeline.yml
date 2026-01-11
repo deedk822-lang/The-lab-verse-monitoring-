@@ -135,12 +135,12 @@ jobs:
         working-directory: ${{ matrix.workspace }}
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt pytest-cov; fi
       - name: Lint & Test
         working-directory: ${{ matrix.workspace }}
         run: |
           flake8 . || true
-          pytest -q || true
+          pytest --cov=. --cov-report=xml -q || true
 
   report:
     name: "📝 Build Report"

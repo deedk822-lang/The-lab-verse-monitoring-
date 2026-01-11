@@ -14,7 +14,11 @@ from collections import defaultdict
 from time import time as current_time
 
 from rq import Queue, Worker
-from redis import Redis
+try:
+    from database import redis_conn
+except ImportError:
+    print("WARNING: database.py not found. Redis connection will fail.")
+    redis_conn = None
 import requests
 from prometheus_client import Counter
 
@@ -26,36 +30,32 @@ ALLOW_EXTERNAL = os.getenv("ALLOW_EXTERNAL_REQUESTS", "no").lower() == "yes"
 MAX_TIMEOUT = 30.0
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB max
 
-redis_conn = Redis.from_url(REDIS_URL)
-
 SSRF_BLOCKS = Counter(
     'ssrf_blocked_requests_total',
     'Total SSRF attempts blocked',
     ['reason', 'hostname']
 )
 
-# Simple in-memory rate limiter (use Redis in production)
-request_counts = defaultdict(list)
-RATE_LIMIT_WINDOW = 60  # seconds
-RATE_LIMIT_MAX = 10     # requests per window
+def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
+    """
+    Distributed rate limiting using Redis.
+    """
+    if not redis_conn:
+        logger.critical("Redis connection missing. Failing open for safety.")
+        return True
 
-def check_rate_limit(domain: str) -> bool:
-    """Check if domain has exceeded rate limit"""
-    now = current_time()
-
-    # Clean old entries
-    request_counts[domain] = [
-        ts for ts in request_counts[domain]
-        if now - ts < RATE_LIMIT_WINDOW
-    ]
-
-    # Check limit
-    if len(request_counts[domain]) >= RATE_LIMIT_MAX:
-        return False
-
-    # Record request
-    request_counts[domain].append(now)
-    return True
+    key = f"rate_limit:{client_id}"
+    try:
+        current_count = redis_conn.incr(key)
+        if current_count == 1:
+            redis_conn.expire(key, window)
+        if current_count > limit:
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Redis rate limit error: {e}")
+        # Fail open for safety in case of Redis errors
+        return True
 
 def _domain_allowed(hostname: str) -> bool:
     # Placeholder for a domain allowlist/blocklist
@@ -175,13 +175,11 @@ def process_http_job(job_payload):
     if not url:
         return {"error": "missing url"}
 
-    try:
-        parsed = urlparse(url)
-        if not check_rate_limit(parsed.hostname):
-            logger.warning("Rate limit exceeded", extra={"hostname": parsed.hostname})
-            return {"error": "rate limit exceeded"}
-    except Exception:
-        return {"error": "invalid url for rate limiting"}
+    # Use a client_id from the job payload for rate limiting, or fall back to the URL's hostname.
+    client_id = job_payload.get("client_id", urlparse(url).hostname)
+    if not check_rate_limit(client_id):
+        logger.warning("Rate limit exceeded", extra={"client_id": client_id})
+        return {"error": "rate limit exceeded"}
 
 
     # Validate and get resolved IP

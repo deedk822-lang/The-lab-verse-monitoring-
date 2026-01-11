@@ -11,7 +11,7 @@ from typing import Dict, Any
 
 from flask import Flask, request, jsonify
 from orchestrator import RainmakerOrchestrator
-from agents.healer import SelfHealingAgent
+from handlers.healer import SelfHealingAgent
 
 # Configure logging
 logging.basicConfig(
@@ -37,6 +37,23 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize orchestrator: {e}", exc_info=True)
     raise
+
+
+def sanitize_error(e: Exception) -> str:
+    """
+    Sanitize exceptions to prevent leaking sensitive information.
+
+    Args:
+        e: The exception to sanitize
+
+    Returns:
+        A sanitized, safe error message string
+    """
+    # Log the full error for internal debugging
+    logger.error(f"Internal error: {e}", exc_info=True)
+
+    # Return a generic message to the user
+    return "An unexpected error occurred. Please check logs for details."
 
 
 def validate_execute_request(data: Dict[str, Any]) -> tuple[bool, str]:
@@ -91,8 +108,7 @@ def handle_alert():
         result = healer.handle_alert(alert_payload)
         return jsonify({"status": "success", "result": result}), 200
     except Exception as e:
-        logger.error(f"Failed to handle alert: {e}", exc_info=True)
-        return jsonify({"error": "Failed to handle alert", "details": str(e)}), 500
+        return jsonify({"error": "Failed to handle alert", "details": sanitize_error(e)}), 500
 
 
 @app.route("/execute", methods=["POST"])
@@ -185,10 +201,9 @@ def execute_task():
         }), 400
 
     except Exception as e:
-        logger.error(f"Task execution failed [{request_id}]: {e}", exc_info=True)
         return jsonify({
             "error": "Internal server error during task execution",
-            "details": str(e),
+            "details": sanitize_error(e),
             "status": "error",
             "request_id": request_id
         }), 500
@@ -248,10 +263,9 @@ def health_check():
         }), 200
 
     except Exception as e:
-        logger.error(f"Health check failed: {e}", exc_info=True)
         return jsonify({
             "status": "unhealthy",
-            "reason": str(e)
+            "reason": sanitize_error(e)
         }), 503
 
 
@@ -289,10 +303,9 @@ def list_workspace_files():
         }), 200
 
     except Exception as e:
-        logger.error(f"Failed to list workspace files: {e}", exc_info=True)
         return jsonify({
             "error": "Failed to list workspace files",
-            "details": str(e)
+            "details": sanitize_error(e)
         }), 500
 
 
@@ -323,10 +336,9 @@ def get_workspace_file(filename):
             }), 404 if "not found" in result["message"].lower() else 500
 
     except Exception as e:
-        logger.error(f"Failed to read file {filename}: {e}", exc_info=True)
         return jsonify({
             "error": "Failed to read file",
-            "details": str(e)
+            "details": sanitize_error(e)
         }), 500
 
 

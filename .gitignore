@@ -152,6 +152,7 @@ htmlcov/
 .coverage
 .coverage.*
 pytest_cache/
+coverage.xml
 # Go
 *.out
 *.test

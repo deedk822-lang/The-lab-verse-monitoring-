@@ -87,17 +87,17 @@ except ImportError as e:
     class RainmakerOrchestrator:
         def __init__(self):
             """
-            Initialize a fallback RainmakerOrchestrator with a mutable empty `config` dictionary.
+            Create a fallback RainmakerOrchestrator instance with an empty, mutable `config` dictionary.
             
-            The `config` attribute can be populated at runtime (for example in tests) to supply settings such as access tokens.
+            The `config` attribute is initialized as an empty dict and may be populated at runtime to provide settings (for example, access tokens or other integration parameters).
             """
             self.config = {}
         async def _call_ollama(self, *args, **kwargs):
             """
-            Fallback stub for the orchestrator's Ollama call used when a real orchestrator is not available.
+            Provide a fallback implementation that simulates an Ollama call when no real orchestrator is available.
             
             Returns:
-                dict: An empty dictionary.
+                dict: An empty dictionary (`{}`) used as a placeholder response.
             """
             return {}
 
@@ -111,9 +111,9 @@ except ImportError:
 async def lifespan(app: FastAPI):
     # Startup
     """
-    Manage the FastAPI application lifespan by initializing and tearing down the RainmakerOrchestrator.
+    Manage application lifespan by initializing a RainmakerOrchestrator on startup and closing it on shutdown.
     
-    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator; on shutdown, call its aclose() method to ensure a graceful cleanup.
+    Instantiates RainmakerOrchestrator and assigns it to app.state.orchestrator when the app starts. On shutdown, calls the orchestrator's aclose() method to perform graceful cleanup of resources.
     """
     orchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
@@ -132,10 +132,10 @@ class HubSpotWebhookPayload(BaseModel):
 @app.get("/health")
 async def health_check():
     """
-    Report service health status.
+    Return the current service health status.
     
     Returns:
-        dict: A JSON-serializable mapping with key "status" set to "healthy".
+        dict: A mapping with the key "status" set to the string "healthy".
     """
     return {"status": "healthy"}
 
@@ -144,10 +144,28 @@ async def health_check():
 @app.get("/intel/market")
 async def get_market_intel(company: str):
 
+ """
+ Fetches market intelligence for the given company name.
+ 
+ Parameters:
+     company (str): The company name to retrieve market intelligence for.
+ 
+ Returns:
+     dict: A payload containing market intelligence fields such as:
+         - source (str): Data source identifier.
+         - company (str): Echoed company name.
+         - status (str): High-level market status (e.g., "stable", "rising", "declining").
+         - timestamp (str): ISO-8601 timestamp when the intelligence was generated.
+ """
  feat/modernize-python-stack-2026-3829493454699415671
 @app.get("/intel/market")
 async def get_market_intel_endpoint(company_name: str):
-    """Endpoint to retrieve market intelligence for a company."""
+    """
+    Return market intelligence for the given company name.
+    
+    Returns:
+        A mapping containing market intelligence for the company, typically including keys such as `source`, `company`, `status`, and `timestamp`.
+    """
     data = get_market_intel(company_name)
     return JSONResponse(content=data)
 
@@ -158,19 +176,21 @@ async def get_market_intel_endpoint(company_name: str):
  main
 def get_market_intel(company_name: str):
  """
- Return simulated market intelligence for the given company.
- 
- This function provides a placeholder, structural market-intel response intended for testing and local development; replace with a real data integration (e.g., Perplexity/Google API) in production.
+ Return a simulated market intelligence payload for the given company.
  
  Parameters:
      company_name (str): Name or identifier of the company to query.
  
  Returns:
-     dict: A dictionary containing:
+     dict: Structured placeholder market intelligence containing:
          - source (str): Data source label (simulated).
          - company (str): Echo of the queried company name.
          - status (str): Integration or data-status message.
          - timestamp (float): Unix epoch timestamp of the response.
+         - latest_headline (str): Representative recent headline (simulated).
+         - financial_health_signal (str): High-level financial health assessment (simulated).
+         - key_pain_point (str): Primary operational/strategic challenge inferred (simulated).
+         - sales_hook (str): Suggested outreach angle or positioning based on the simulated intel.
  """
  main
     """

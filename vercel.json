@@ -32,5 +32,11 @@
       ]
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://rainmaker-orchestrator.onrender.com/:path*"
+    }
+  ],
   "regions": ["iad1"]
 }

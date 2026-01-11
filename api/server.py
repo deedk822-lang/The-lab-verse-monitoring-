@@ -14,6 +14,14 @@ import os
 import sys
 import json
 import logging
+ feat/modernize-python-stack-2026-3829493454699415671
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
@@ -32,12 +40,44 @@ class HubSpotWebhookPayload(BaseModel):
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+ main
 # Ensure the root directory is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 try:
+ feat/modernize-python-stack-2026-3829493454699415671
+    from hubspot import HubSpot
+    from hubspot.crm.deals import SimplePublicObjectInput
+except ImportError:
+    print(" HubSpot client not installed. Some functionality may not work.")
+    # Mocking for CI/CD without real credentials
+    HubSpot = None
+    SimplePublicObjectInput = dict
+
+
+try:
+    from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+    print(f"✅ Successfully imported rainmaker_orchestrator in server")
+except ImportError as e:
+    print(f"❌ Import error in server: {e}")
+    print(f"CWD: {os.getcwd()}")
+    raise
+
+# --- Pydantic Models ---
+class HubSpotWebhookPayload(BaseModel):
+    objectId: int
+    message_body: str
+    # Add other fields from the webhook payload as needed
+
+# --- Configuration ---
+DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+app = FastAPI(title="Lab Verse API")
+orchestrator = RainmakerOrchestrator(workspace_path="./workspace")
+
     from rainmaker_orchestrator import RainmakerOrchestrator
  feat/architectural-improvements-9809589759324023108-13552811548169517820
     print(f"✅ Successfully imported rainmaker_orchestrator in server")
@@ -82,6 +122,7 @@ async def lifespan(app: FastAPI):
     await orchestrator.aclose()
 
 app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+ main
 
 class HubSpotWebhookPayload(BaseModel):
     objectId: int
@@ -98,11 +139,23 @@ async def health_check():
     """
     return {"status": "healthy"}
 
+ coderabbitai/docstrings/52d56b6
  feat/architectural-improvements-9809589759324023108-13552811548169517820
 @app.get("/intel/market")
 async def get_market_intel(company: str):
 
+ feat/modernize-python-stack-2026-3829493454699415671
+@app.get("/intel/market")
+async def get_market_intel_endpoint(company_name: str):
+    """Endpoint to retrieve market intelligence for a company."""
+    data = get_market_intel(company_name)
+    return JSONResponse(content=data)
+
+# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
+ main
+
 # Placeholder implementation - tracked separately for production replacement
+ main
 def get_market_intel(company_name: str):
  """
  Return simulated market intelligence for the given company.
@@ -144,7 +197,15 @@ def get_market_intel(company_name: str):
     }
  main
 
+ feat/modernize-python-stack-2026-3829493454699415671
+@app.post("/webhook/hubspot")
+async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
+    if not HubSpot:
+        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
+
+
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
+ coderabbitai/docstrings/52d56b6
     """
     Process a HubSpot webhook by analyzing the incoming message with the orchestrator and updating the corresponding HubSpot contact with AI-derived fields.
     
@@ -157,6 +218,9 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         payload (HubSpotWebhookPayload): Incoming webhook payload containing `objectId` (contact id) and `message_body` (text to analyze).
         app (FastAPI): FastAPI application instance; used to access `app.state.orchestrator` for AI analysis and its configuration for HubSpot credentials.
     """
+
+ main
+ main
     contact_id = payload.objectId
     chat_text = payload.message_body
 
@@ -220,8 +284,15 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
             deal_properties = {
                 "dealname": f"{company_name} - WhatsApp Lead",
                 "pipeline": "default",
+ coderabbitai/docstrings/52d56b6
                 "dealstage": "appointmentscheduled",
                 "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel_status}"
+
+                "dealstage": "appointmentscheduled", # Example stage
+                "news_latest_headline": intel.get('latest_headline'),
+                "news_sales_hook": intel.get('sales_hook'),
+                "description": f"**AI WAR ROOM BRIEF:**\\n\\nMARKET INTEL: {intel.get('key_pain_point')}\\n\\nSUGGESTED APPROACH: {intel.get('sales_hook')}"
+ main
             }
             deal_input = SimplePublicObjectInput(properties=deal_properties)
             created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
@@ -245,6 +316,9 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     except Exception:
         logging.exception("Error creating HubSpot deal")
 
+ feat/modernize-python-stack-2026-3829493454699415671
+    return {"status": "processed", "contact_id": contact_id}
+
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
     """
@@ -258,4 +332,8 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
     """
     background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}
+ coderabbitai/docstrings/52d56b6
+ main
+
+ main
  main

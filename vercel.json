@@ -2,14 +2,13 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "npm ci --legacy-peer-deps",
-  "env": {
-    "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
-  },
   "build": {
     "env": {
       "NODE_ENV": "production",
       "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com",
-      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
+      "NEXT_PUBLIC_EVENT_DATE": "@event-date",
+      "ZAI_API_KEY": "@zai-api-key",
+      "PERPLEXITY_API_KEY": "@perplexity-api-key"
     }
   },
   "functions": {

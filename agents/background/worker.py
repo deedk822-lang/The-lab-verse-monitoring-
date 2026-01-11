@@ -43,8 +43,16 @@ SSRF_BLOCKS = Counter(
 
 def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
     """
-    Distributed rate limiting using Redis.
- feat/architectural-improvements-9809589759324023108-13552811548169517820
+    Enforces a distributed rate limit for a given client using Redis.
+    
+    Uses a Redis-backed counter keyed by the client identifier and a sliding window (TTL) to track requests. Returns `True` when the client is within the allowed limit and `False` when the limit is exceeded. If the Redis connection is unavailable or a Redis error occurs, the function fails open and returns `True`.
+    Parameters:
+        client_id (str): Identifier for the client being rate-limited.
+        limit (int): Maximum allowed requests within the window (default 100).
+        window (int): Time window in seconds for the rate limit (default 60).
+    
+    Returns:
+        bool: `True` if the request is allowed, `False` if the rate limit has been exceeded.
     """
     if not redis_conn:
         logger.critical("Redis connection missing. Failing open for safety.")

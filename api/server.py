@@ -1,4 +1,4 @@
- feat/architectural-improvements-9809589759324023108-13552811548169517820
+feat/architectural-improvements-9809589759324023108-13552811548169517820
 from fastapi import FastAPI, HTTPException
 import sys
 import os
@@ -46,8 +46,19 @@ except ImportError as e:
     # This allows tests to import the module and mock the orchestrator
     class RainmakerOrchestrator:
         def __init__(self):
+            """
+            Initialize a fallback RainmakerOrchestrator with a mutable empty `config` dictionary.
+            
+            The `config` attribute can be populated at runtime (for example in tests) to supply settings such as access tokens.
+            """
             self.config = {}
         async def _call_ollama(self, *args, **kwargs):
+            """
+            Fallback stub for the orchestrator's Ollama call used when a real orchestrator is not available.
+            
+            Returns:
+                dict: An empty dictionary.
+            """
             return {}
 
     logging.info("✅ Successfully imported rainmaker_orchestrator in server")
@@ -59,6 +70,11 @@ except ImportError:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    """
+    Manage the FastAPI application lifespan by initializing and tearing down the RainmakerOrchestrator.
+    
+    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator; on shutdown, call its aclose() method to ensure a graceful cleanup.
+    """
     orchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
     yield
@@ -74,6 +90,12 @@ class HubSpotWebhookPayload(BaseModel):
 
 @app.get("/health")
 async def health_check():
+    """
+    Report service health status.
+    
+    Returns:
+        dict: A JSON-serializable mapping with key "status" set to "healthy".
+    """
     return {"status": "healthy"}
 
  feat/architectural-improvements-9809589759324023108-13552811548169517820
@@ -82,6 +104,21 @@ async def get_market_intel(company: str):
 
 # Placeholder implementation - tracked separately for production replacement
 def get_market_intel(company_name: str):
+ """
+ Return simulated market intelligence for the given company.
+ 
+ This function provides a placeholder, structural market-intel response intended for testing and local development; replace with a real data integration (e.g., Perplexity/Google API) in production.
+ 
+ Parameters:
+     company_name (str): Name or identifier of the company to query.
+ 
+ Returns:
+     dict: A dictionary containing:
+         - source (str): Data source label (simulated).
+         - company (str): Echo of the queried company name.
+         - status (str): Integration or data-status message.
+         - timestamp (float): Unix epoch timestamp of the response.
+ """
  main
     """
     Retrieves market intelligence for a given company.
@@ -108,6 +145,18 @@ def get_market_intel(company_name: str):
  main
 
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
+    """
+    Process a HubSpot webhook by analyzing the incoming message with the orchestrator and updating the corresponding HubSpot contact with AI-derived fields.
+    
+    Performs two main actions:
+    1. Sends the payload's message_body to the orchestrator's Ollama analysis (expects JSON with keys `company_name`, `summary`, `intent_score`, `suggested_action`) and parses the result.
+    2. Updates the HubSpot contact identified by `payload.objectId` with properties derived from the AI analysis (`ai_lead_summary`, `ai_buying_intent`, `ai_suggested_action`).
+    
+    On error during analysis or contact update the function logs the exception and returns early; it does not raise.
+    Parameters:
+        payload (HubSpotWebhookPayload): Incoming webhook payload containing `objectId` (contact id) and `message_body` (text to analyze).
+        app (FastAPI): FastAPI application instance; used to access `app.state.orchestrator` for AI analysis and its configuration for HubSpot credentials.
+    """
     contact_id = payload.objectId
     chat_text = payload.message_body
 
@@ -198,6 +247,15 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
 
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
+    """
+    Enqueue processing of a HubSpot webhook payload in the background and acknowledge receipt.
+    
+    Parameters:
+    	payload (HubSpotWebhookPayload): The incoming HubSpot webhook payload containing the contact id and message text.
+    
+    Returns:
+    	A dict with keys "status" and "contact_id": "status" is "accepted", and "contact_id" is the HubSpot contact id from the payload.
+    """
     background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}
  main

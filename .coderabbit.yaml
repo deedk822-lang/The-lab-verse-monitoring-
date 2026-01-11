@@ -1,3 +1,4 @@
+ feature/anthropic-brain-integration-17755607396485422698
 version: "2"
   high_level_summary: true
   auto_review:
@@ -42,116 +43,32 @@ checks:
       in_files: ["src/**/*.{js,ts}", "!**/*.test.{js,ts}"]
       message: "Remove console.log - use proper logging instead"
 
+
+# CodeRabbit Configuration - Professional Grade
+ fix/coderabbit-yaml-parsing-error-14153990587715603946
 language: "en-US"
-early_access: true
-enable_free_tier: false
 
-# CRITICAL: Fix effort estimation
+# Instructing the AI to act as a Senior Architect
+tone_instructions: "You are a Senior Technical Reviewer. Provide professional, objective, and constructive feedback. Focus strictly on logic errors, security vulnerabilities (OWASP), performance bottlenecks, and architectural integrity. Avoid subjective style nitpicks unless they violate standard conventions (PEP8/ESLint). Be concise."
+
 reviews:
-  profile: "assertive"
-  effort_estimation:
-    # Use complexity scoring based on actual impact
-    factors:
-      - security_issues: 120  # 2 hours per security issue
-      - data_integrity: 90    # 1.5 hours per data issue
-      - error_handling: 60    # 1 hour per error path
-      - testing_required: 45   # 45 min per test suite
-      - documentation: 30      # 30 min per doc update
+  # 'chill' profile avoids excessive noise, relying on our specific instructions for depth
+  profile: "chill"
 
-    # Minimum effort thresholds
-    min_effort_hours:
-      trivial: 0.25
-      minor: 1
-      moderate: 3
-      complex: 6      # Changed from "60 minutes"
-      critical: 12    # Add critical category
+  # Workflow settings
+  request_changes_workflow: false
+  review_status: true
+  commit_status: true
 
-# Enhanced issue detection
-issue_detection:
-  security:
+  # Summary Configuration
+  high_level_summary: true
+  high_level_summary_instructions: "Provide a concise executive summary of the changes. Specifically highlight any modifications to: 1. Security mechanisms (Rate limits, Auth). 2. Database schemas. 3. External API integrations."
+  high_level_summary_in_walkthrough: false
+
+  # Auto-labeling (if supported in your plan, good for organization)
+  auto_label:
     enabled: true
-    severity: "high"
-    patterns:
-      - name: "command_injection"
-        pattern: '(for|while).*\$\(find.*\)'
-        message: "Shell word-splitting vulnerability: Filenames with spaces/newlines will break or enable injection"
-        severity: "critical"
-        remediation: |
-          Use null-delimited processing:
-          ```bash
-          while IFS= read -r -d '' file; do
-            # process "$file"
-          done < <(find . -name "*.py" -print0)
-          ```
-
-      - name: "secret_leakage"
-        pattern: 'except.*Exception.*:.*return.*\{.*["\']message["\'].*str\(e\)'
-        message: "Exception messages may leak sensitive data (API keys, passwords, internal paths)"
-        severity: "high"
-        remediation: |
-          Sanitize exception messages:
-          ```python
-          except SpecificError as e:
-              logger.error("Operation failed", exc_info=True)
-              return {"error": "Operation failed", "code": "ERROR_CODE"}
-          ```
-
-      - name: "bare_exception_catch"
-        pattern: 'except Exception:'
-        message: "Catching bare Exception masks critical errors (MemoryError, KeyboardInterrupt, SystemExit)"
-        severity: "high"
-        remediation: "Catch specific exceptions or use except Exception as e: raise to propagate unexpected errors"
-
-      - name: "unsafe_file_deletion"
-        pattern: 'rm -[rf].*\$\{?[A-Z_]+\}?'
-        message: "File deletion without backup or validation risks data loss"
-        severity: "critical"
-        remediation: |
-          Add safeguards:
-          1. Create timestamped backup before deletion
-          2. Log all deletions with timestamps
-          3. Add --dry-run mode
-          4. Require interactive confirmation by default
-
-  data_integrity:
-    enabled: true
-    patterns:
-      - name: "missing_transaction"
-        pattern: '(INSERT|UPDATE|DELETE).*(?!BEGIN|TRANSACTION)'
-        message: "Database modification without transaction wrapper"
-        severity: "high"
-
-      - name: "no_backup_before_modify"
-        pattern: 'rm -f|truncate|>.*file'
-        message: "Data modification without backup mechanism"
-        severity: "medium"
-
-  error_handling:
-    enabled: true
-    patterns:
-      - name: "http_status_lost"
-        pattern: 'throw new Error\(["\'].*["\']\)'
-        context: 'express|fastify|@nestjs'
-        message: "Plain Error objects lose HTTP status codes, all errors return 500"
-        severity: "high"
-        remediation: |
-          Create typed error hierarchy:
-          ```typescript
-          class HttpError extends Error {
-            constructor(public status: number, message: string) {
-              super(message);
-            }
-          }
-          throw new HttpError(429, 'Rate limit exceeded');
-          ```
-
-      - name: "empty_catch_block"
-        pattern: 'catch.*\{\s*\}'
-        message: "Empty catch blocks hide failures - at minimum log the error"
-        severity: "medium"
-
-  testing:
-    enabled: true
+ feature/anthropic-brain-integration-17755607396485422698
     require_tests_for:
       - "error_handling_changes"
       - "validation_logic"
@@ -424,3 +341,5 @@ tone:
   include_proof_of_concept: true  # Show how to exploit issues
   include_test_cases: true        # Show how to test fixes
   include_full_solutions: true    # Show complete, production-ready code
+
+ fix/coderabbit-yaml-parsing-error-14153990587715603946

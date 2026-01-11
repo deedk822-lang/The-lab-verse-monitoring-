@@ -27,7 +27,7 @@ if project_root not in sys.path:
 try:
     from rainmaker_orchestrator import RainmakerOrchestrator
     logging.info("✅ Successfully imported rainmaker_orchestrator in server")
-except ImportError as e:
+except ImportError:
     logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
     raise
 
@@ -80,7 +80,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         parsed_ai = json.loads(ai_analysis_str)
         logging.info(f"AI Analysis successful: {parsed_ai}")
 
-    except Exception as e:
+    except Exception:
         logging.exception("Error calling Ollama or parsing response")
         # In a real app, you might want to retry or send an alert
         return
@@ -102,8 +102,8 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
         logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
 
-    except Exception as e:
-        logging.exception(f"Error updating HubSpot contact: {e}")
+    except Exception:
+        logging.exception("Error updating HubSpot contact")
         return
 
     # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
@@ -137,8 +137,8 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
             )
             logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
-    except Exception as e:
-        logging.exception(f"Error creating HubSpot deal: {e}")
+    except Exception:
+        logging.exception("Error creating HubSpot deal")
 
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):

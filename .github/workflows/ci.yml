@@ -217,7 +217,7 @@ jobs:
       - name: Discover test files
         run: |
           echo "Searching for test files..."
-          find tests -name "test_*.py" -o -name "*_test.py" | head -20 || echo "No test files found"
+          find tests -type f \( -name "test_*.py" -o -name "*_test.py" \) 2>/dev/null | head -20 || echo "No test files found"
 
       - name: Run pytest
         run: |

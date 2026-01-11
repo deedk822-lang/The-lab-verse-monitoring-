@@ -13,15 +13,21 @@ client = TestClient(app)
 def test_hubspot_webhook_valid(mock_orchestrator, mock_hubspot):
     # Mock the orchestrator to prevent real network calls and config access
     """
-    Test that the HubSpot webhook endpoint processes a valid payload and returns a processed status with the original contact ID.
+    Verify the HubSpot webhook processes a valid payload and returns a processed status with the original contact ID.
     
-    Sets up fixtures to mock the orchestrator's external call and the HubSpot client to avoid real network interactions, posts a payload with `objectId` 123 to the webhook, and asserts the response status is either "processed" or "processed_with_deal_creation_error" and that `contact_id` equals 123.
-    
-    Parameters:
-        mock_orchestrator: pytest fixture providing a mocked orchestrator instance with `_call_ollama` and `config` behavior.
-        mock_hubspot: pytest fixture that yields a mocked HubSpot client.
+    Posts a payload with `objectId` 123 to `/webhook/hubspot` and asserts the response has HTTP 200, the `status` is either "processed" or "processed_with_deal_creation_error", and `contact_id` equals 123.
     """
     async def mock_call_ollama(*args, **kwargs):
+        """
+        Simulates an Ollama API call by returning a fixed response payload containing company analysis.
+        
+        Returns:
+            dict: A response dictionary with a "message" key whose "content" is a JSON string:
+                - "company_name" (str): "TestCorp"
+                - "summary" (str): "A test summary."
+                - "intent_score" (int): 9
+                - "suggested_action" (str): "Follow up."
+        """
         return {"message": {"content": '{"company_name": "TestCorp", "summary": "A test summary.", "intent_score": 9, "suggested_action": "Follow up."}'}}
     mock_orchestrator._call_ollama.return_value = mock_call_ollama()
     mock_orchestrator.config.get.return_value = "dummy-hubspot-token"

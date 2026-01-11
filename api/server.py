@@ -81,7 +81,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         logging.info(f"AI Analysis successful: {parsed_ai}")
 
     except Exception as e:
-        logging.exception(f"Error calling Ollama or parsing response: {e}")
+        logging.exception("Error calling Ollama or parsing response")
         # In a real app, you might want to retry or send an alert
         return
 

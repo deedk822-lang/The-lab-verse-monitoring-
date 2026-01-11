@@ -15,19 +15,18 @@ const config = {
   
   // Transform configuration for TypeScript and JavaScript
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
+    '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', {
       tsconfig: {
         jsx: 'react',
         esModuleInterop: true,
         allowSyntheticDefaultImports: true
       }
-    }],
-    '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }]
+    }]
   },
   
   // Transform ES modules in node_modules
   transformIgnorePatterns: [
-    'node_modules/(?!(node-fetch|@mswjs/interceptors|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)'
+    "node_modules/(?!(msw|node-fetch|@mswjs/interceptors|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)"
   ],
   
   // Module name mapping for aliases and CSS
@@ -37,7 +36,9 @@ const config = {
     '^@workflow/core$': '<rootDir>/workflows/core',
     '^../../src/gateway.js$': '<rootDir>/src/gateway.js',
     '^../services/ProviderFactory.js$': '<rootDir>/src/services/ProviderFactory.js',
-    '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js'
+    '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js',
+    '^msw/node$': '<rootDir>/node_modules/msw/lib/node/index.js',
+    '^msw$': '<rootDir>/node_modules/msw/lib/index.js'
   },
   
   // Setup files

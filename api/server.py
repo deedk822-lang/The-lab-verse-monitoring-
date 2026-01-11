@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 import sys
 import os
 import json
+import logging
 from hubspot import HubSpot
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
@@ -62,10 +63,10 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         # The response from _call_ollama is a dict with the content being a stringified JSON
         ai_analysis_str = ai_analysis_raw["message"]["content"]
         parsed_ai = json.loads(ai_analysis_str)
-        print(f"AI Analysis successful: {parsed_ai}")
+        logging.info(f"AI Analysis successful: {parsed_ai}")
 
     except Exception as e:
-        print(f"Error calling Ollama or parsing response: {e}")
+        logging.exception(f"Error calling Ollama or parsing response: {e}")
         raise HTTPException(status_code=500, detail="Failed to analyze lead with AI.")
 
     # 2. Update HubSpot Contact
@@ -83,10 +84,10 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
         }
 
         client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
-        print(f"Successfully updated contact {contact_id} with AI analysis.")
+        logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
 
     except Exception as e:
-        print(f"Error updating HubSpot contact: {e}")
+        logging.exception(f"Error updating HubSpot contact: {e}")
         raise HTTPException(status_code=500, detail="Failed to update HubSpot contact.")
 
     # 3. Logic: If Score > 8, Create and Enrich Deal Automatically
@@ -118,10 +119,10 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
                 to_object_id=contact_id,
                 association_type='deal_to_contact'
             )
-            print(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
+            logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
     except Exception as e:
-        print(f"Error creating HubSpot deal: {e}")
+        logging.exception(f"Error creating HubSpot deal: {e}")
         # Don't raise an exception here, as the contact update was successful.
         # Log the error and return a success response.
         return {"status": "processed_with_deal_creation_error", "contact_id": contact_id}

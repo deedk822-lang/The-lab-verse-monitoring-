@@ -1,4 +1,6 @@
-// tests/health.test.js
+/**
+ * @jest-environment node
+ */
 import request from 'supertest';
 import app from '../server.js';
 

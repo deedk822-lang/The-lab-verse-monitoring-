@@ -27,7 +27,7 @@
     },
     {
       "src": "/api/(.*)",
-      "dest": "/server.js"
+      "dest": "${ORCHESTRATOR_URL}/$1"
     },
     {
       "src": "/(.*)",
@@ -35,6 +35,7 @@
     }
   ],
   "env": {
+    "ORCHESTRATOR_URL": "@ORCHESTRATOR_URL",
     "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
     "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
     "NODE_ENV": "production"

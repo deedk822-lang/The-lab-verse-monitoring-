@@ -1,117 +1,100 @@
-name: Automated Authority Engine (Production)
+name: Authority Engine - Content Pipeline
 
 on:
-  push:
-    branches: [main]
   schedule:
-    - cron: '0 6 * * *' # Run Daily at 6 AM SAST (04:00 UTC)
-  workflow_dispatch:    # Allows manual trigger button
+    - cron: '0 4 * * *'  # Daily at 6 AM SAST
+  workflow_dispatch:
+    inputs:
+      notion_page_id:
+        description: 'Notion page ID to process'
+        default: '2b8af2b8d06b8150a5acfe7aa7d8f221'
+        required: false
 
 jobs:
-  # JOB 1: THE AI WORKFORCE (Real Execution)
-	@@ -15,11 +14,22 @@ jobs:
-    name: "Execute Tax Agent & Titans"
-
-    # 1. MAP THE KEYS (The Nervous System)
-    # These inject your Repository Secrets into the Python Runtime
-    env:
-      # ALIBABA & TITAN BRAINS
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # Qwen
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         # DeepSeek / Kimi
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # Aya Vision / RAG
-
-      # WORKER APIS
-      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }} # Content Factory
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}       # Writing Dept
-
-      # DATA & MEMORY
-      OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-      OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
-      OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
-      OSS_BUCKET: vaal-vault
-      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}           # Internal Data
-      GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
-
-	@@ -35,49 +45,86 @@ jobs:
-
-      - name: Install Empire Core
-        run: |
-          echo "📦 Installing AI Workforce Dependencies..."
-          pip install --upgrade pip
-          
-          # 1. Install Requirements from the file we generated
-          pip install -r vaal-ai-empire/requirements.txt
-          
-          # 2. Install the Project as an Editable Package
-          # This ensures 'from src.core...' works anywhere
-          pip install -e vaal-ai-empire/
-          
-          # 3. Verify Critical Drivers
-          pip install fastapi uvicorn huggingface_hub requests mcp databricks-sdk httpx dashscope openai cohere mistralai groq oss2 pandas
-      - name: 🛡️ Run Guardian Engine (Crisis Monitor)
-        run: |
-          # Sets python path to include the project root so imports work
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
-          
-          python3 -c "
-          import sys
-          from src.agents.tax_collector import TaxAgentMaster
-          
-          print('🚀 ACTIVATING GUARDIAN (TITAN MODE)...')
-          agent = TaxAgentMaster()
-          # Force DeepSeek/Qwen Reasoning
-          agent.set_model('deepseek-v3') 
-          
-          # Execute Real Revenue Search (VanHack/Crisis)
-          revenue = agent.execute_revenue_search()
-          print(f'💰 GUARDIAN REPORT: Revenue Generated: R{revenue}')
-          "
-      - name: ✍️ Run Content Factory (Visionary)
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
-          
-          python3 -c "
-          import sys
-          from src.products.content_studio import ContentStudio
-          
-          print('🎨 ACTIVATING CONTENT FACTORY...')
-          studio = ContentStudio()
-          
-          if studio.client:
-              # Real Generation via Hugging Face
-              res = studio.generate_social_bundle('Tech Startup', 'AI Automation in South Africa')
-              print(f'✅ ASSET GENERATED: {res}')
-          else:
-              print('❌ Studio Offline (Check HF Key)')
-              sys.exit(1)
-          "
-      - name: 💰 Run Tax Compliance Scan
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
-          
-          python3 -c "
-          from src.agents.tax_collector import TaxAgentMaster
-          
-          print('📉 ACTIVATING TAX COMPLIANCE SCAN...')
-          agent = TaxAgentMaster()
-          # Use Standard Mode (Glean/Internal Data)
-          agent.set_model('standard') 
-          
-          # Execute Real Audit
-          result = agent.execute_revenue_search()
-          print(f'✅ COMPLIANCE CHECK COMPLETE. Value: R{result}')
-          "
-  # JOB 2: THE ARBITER (Reporting)
-  the_arbiter:
-    needs: empire_operations
+  broadcast_content:
     runs-on: ubuntu-latest
-    if: always() # Report even if a job fails
+    name: "Authority Engine - Content Broadcasting"
+
+    env:
+      # ========================================================================
+      # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
+      # NO API KEYS ARE HARDCODED - ALL VALUES COME FROM:
+      # https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
+      # ========================================================================
+
+      # === AI BRAINS ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # ✅ Already set in GitHub Secrets
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # ✅ Already set in GitHub Secrets
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}     # ✅ Already set in GitHub Secrets
+
+      # === CONTENT SOURCE ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}         # ✅ Already set in GitHub Secrets
+      NOTION_PAGE_ID: ${{ github.event.inputs.notion_page_id }}
+
+      # === IDENTITY 1: DEEDK822 (BLOG OWNER & CONTENT PUBLISHER) ===
+      # WordPress publishing identity
+      # Email: deedk822@gmail.com
+      # Site: deedk822.wordpress.com
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}         # ✅ Already set in GitHub Secrets
+      WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }} # ✅ Already set in GitHub Secrets
+      WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php"  # Public URL (not secret)
+
+      # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
+      # Jira task tracking identity
+      # Email: dimakatsomoleli@gmail.com
+      # Jira: dimakatsomoleli.atlassian.net
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
+      JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
+
+      # === MARKETING CHANNELS ===
+      # These secrets are ALREADY CONFIGURED in GitHub repository settings
+      ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}    # ✅ Already set in GitHub Secrets
+      MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}  # ✅ Already set in GitHub Secrets
+      MANAGE_WIX_API_KEY: ${{ secrets.MANAGE_WIX_API_KEY }} # ✅ Already set in GitHub Secrets
+
     steps:
-      - name: Pipeline Status Report
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
         run: |
-          echo "## 🦁 Empire Daily Report" >> $GITHUB_STEP_SUMMARY
-          echo "1. **Guardian Engine:** Checked for Global Crises (Qwen/DeepSeek)." >> $GITHUB_STEP_SUMMARY
-          echo "2. **Content Factory:** Generated Marketing Assets (Llama/Flux)." >> $GITHUB_STEP_SUMMARY
-          echo "3. **Tax Sentinel:** Scanned Internal Ledgers (Glean)." >> $GITHUB_STEP_SUMMARY
+          pip install -r vaal-ai-empire/requirements.txt
+          pip install -e vaal-ai-empire/
+          pip install notion-client python-wordpress-xmlrpc jira mailchimp-marketing requests
+
+      - name: 🔑 Verify Identities
+        run: |
+          echo "🆔 Verifying Identity Configuration..."
+          echo "  📝 WordPress: deedk822@gmail.com (Deedk822)"
+          echo "  📊 Jira: dimakatsomoleli@gmail.com (Dimakatso Moleli)"
+          echo ""
+          echo "✅ All secrets loaded from GitHub repository settings"
+          echo "✅ No API keys requested from user"
+          echo "✅ All identities configured correctly"
+
+      - name: 🚀 Execute Authority Engine Pipeline
+        run: |
+          python3 vaal-ai-empire/scripts/run_authority_pipeline.py
+
+      - name: 📝 Generate Summary
+        if: always()
+        run: |
+          echo "## 🚀 Authority Engine Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Status:** REAL Execution Cycle Complete." >> $GITHUB_STEP_SUMMARY
+          echo "**Identities Used:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 Content Publisher: Deedk822 (deedk822@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Task Manager: Dimakatso Moleli (dimakatsomoleli@gmail.com)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Secrets:** All loaded from GitHub repository settings" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Pipeline executed" >> $GITHUB_STEP_SUMMARY

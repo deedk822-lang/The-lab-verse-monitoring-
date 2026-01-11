@@ -1,34 +1,47 @@
-from fastapi import FastAPI, HTTPException
-import sys
-import os
-import json
-import logging
-import time
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
-from pydantic import BaseModel
-from typing import Optional
-
-import os
-import sys
-import json
-import logging
-from typing import Optional
+from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks
+from fastapi.responses import JSONResponse, FileResponse
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from datetime import datetime
+import sys
+import os
+import json
+import httpx
 from hubspot import HubSpot
 from hubspot.crm.deals import SimplePublicObjectInput
+from prometheus_client import Counter, Histogram, generate_latest
+from pathlib import Path
+import logging
+import asyncio
+import time
 
-# --- Pydantic Model Definition ---
+# --- Prometheus Metrics ---
+request_count = Counter('http_requests_total', 'Total requests')
+request_duration = Histogram('http_request_duration_seconds', 'Request duration')
+
+# --- Pydantic Models ---
 class HubSpotWebhookPayload(BaseModel):
     objectId: int
     message_body: str
-    subscriptionType: Optional[str] = None
+
+class AlertPayload(BaseModel):
+    alert_name: str = Field(..., min_length=1)
+    severity: str = Field(..., pattern="^(warning|critical|info)$")
+    timestamp: datetime
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "alert_name": "HighCPU",
+                "severity": "critical",
+                "timestamp": "2025-01-11T10:00:00Z"
+            }
+        }
 
 # --- Configuration ---
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+WORKSPACE_ROOT = Path("/app/workspace").resolve()
 
 # Ensure the root directory is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,35 +51,51 @@ if project_root not in sys.path:
 try:
     from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
     logging.info("✅ Successfully imported rainmaker_orchestrator in server")
-except ImportError:
-    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
+except ImportError as e:
+    logging.error(f"❌ Import error in server: {e}")
+    logging.error(f"CWD: {os.getcwd()}")
     raise
 
+# --- Lifespan Management ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    """
-    Create a RainmakerOrchestrator on startup and close it on shutdown.
-    
-    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
-    """
-    orchestrator = RainmakerOrchestrator()
-    app.state.orchestrator = orchestrator
+    # Startup logic
+    logging.info("🚀 Starting up the server...")
+    app.state.orchestrator = RainmakerOrchestrator()
+    app.state.http_client = httpx.AsyncClient()
+    logging.info("✅ Server startup complete.")
     yield
-    # Shutdown
-    await orchestrator.aclose()
+    # Shutdown logic
+    logging.info("🔌 Shutting down the server...")
+    await app.state.http_client.aclose()
+    logging.info("✅ Server shutdown complete.")
 
 app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 
+# --- Middleware ---
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    request_count.inc()
+    with request_duration.time():
+        response = await call_next(request)
+    return response
+
+# --- Exception Handlers ---
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)}
+    )
+
+# --- Endpoints ---
 @app.get("/health")
 async def health_check():
-    """
-    Return the service health status.
-    
-    Returns:
-        A mapping with the key "status" set to "healthy".
-    """
     return {"status": "healthy"}
+
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type="text/plain")
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):
@@ -92,19 +121,15 @@ async def get_market_intel(company: str):
     }
 
 @app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
+async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
     """
-    Handle an incoming HubSpot webhook payload by validating that the HubSpot client is available.
+    Enqueue processing of a HubSpot webhook payload to run in the background and acknowledge receipt.
     
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing the HubSpot object ID and message body.
-    
-    Raises:
-        HTTPException: Raised with status code 501 if the HubSpot client is not installed or configured.
+    Returns:
+        dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
     """
-    if not HubSpot:
-        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
-
+    background_tasks.add_task(process_webhook_data, payload, request.app)
+    return {"status": "accepted", "contact_id": payload.objectId}
 
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
@@ -121,10 +146,6 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
 
     logging.info(f"Processing HubSpot webhook for contact: {contact_id}")
 
-    # 1. "Zread" and Process with Ollama
-    # NOTE: Using the private method `_call_ollama` as the orchestrator's public
-    # `execute_task` method is designed for a different, more complex workflow.
-    # A future refactor should expose a dedicated public method for this type of analysis.
     try:
         prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
         ollama_task = {"context": prompt, "model": "ollama"}
@@ -134,14 +155,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         parsed_ai = json.loads(ai_analysis_str)
         logging.info(f"AI Analysis successful: {parsed_ai}")
 
-    except Exception:
-        logging.exception("Error calling Ollama or parsing response")
-        # In a real app, you might want to retry or send an alert
-        return
-
-    # 2. Update HubSpot Contact
-    try:
-        hubspot_access_token = orchestrator.config.get('HUBSPOT_ACCESS_TOKEN')
+        hubspot_access_token = app.state.orchestrator.config.get('HUBSPOT_ACCESS_TOKEN')
         if not hubspot_access_token:
             raise ValueError("HUBSPOT_ACCESS_TOKEN is not set.")
 
@@ -156,32 +170,23 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
         logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
 
-    except Exception:
-        logging.exception("Error updating HubSpot contact")
-        return
-
-    # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
-    try:
         intent_score = parsed_ai.get('intent_score', 0)
         if intent_score > DEAL_CREATION_INTENT_SCORE_THRESHOLD:
             company_name = parsed_ai.get('company_name', 'Unknown Company')
             logging.info(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
 
-            # Get market intelligence status
             intel_data = await get_market_intel(company_name)
             intel_status = intel_data.get('status', 'Market intel pending.')
 
-            # Create the deal with enriched properties
             deal_properties = {
                 "dealname": f"{company_name} - WhatsApp Lead",
                 "pipeline": "default",
-                "dealstage": "appointmentscheduled", # Example stage
+                "dealstage": "appointmentscheduled",
                 "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel_status}"
             }
             deal_input = SimplePublicObjectInput(properties=deal_properties)
             created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
 
-            # Associate the new deal with the contact
             client.crm.deals.associations_api.create(
                 deal_id=created_deal.id,
                 to_object_type='contact',
@@ -191,16 +196,16 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
             logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
 
     except Exception as e:
-        logging.error(f"Error creating HubSpot deal for contact {contact_id}", exc_info=e)
-        # Do not return a value, this is a background task
+        logging.error(f"Error processing HubSpot webhook for contact {contact_id}: {e}")
 
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
-    """
-    Enqueue processing of a HubSpot webhook payload to run in the background and acknowledge receipt.
-    
-    Returns:
-        dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
-    """
-    background_tasks.add_task(process_webhook_data, payload, request.app)
-    return {"status": "accepted", "contact_id": payload.objectId}
+@app.get("/workspace/{filepath:path}")
+async def get_file(filepath: str):
+    requested_path = (WORKSPACE_ROOT / filepath).resolve()
+
+    if not requested_path.is_relative_to(WORKSPACE_ROOT):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not requested_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(requested_path)

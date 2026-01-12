@@ -1,114 +1,194 @@
-# performance_test.py
-import time
+ bolt/parallelize-daily-automation-8919749710849742159
+
+
+ bolt/cache-hf-model-loading-6086113376814306475
+import timeit
 import sys
-from unittest.mock import MagicMock, patch
 
-# To allow the test to run without installing the agent, we add it to the path
-sys.path.insert(0, ".")
+# Add the project directory to the Python path
+sys.path.insert(0, 'vaal-ai-empire')
 
-# --- Original (Sequential) Implementation ---
-def original_discover_services(creds):
-    """The original, sequential implementation for benchmarking."""
-    from googleapiclient.discovery import build
-    services = {}
-    time.sleep(0.1) # Simulate network latency
-    try:
-        gmail = build("gmail", "v1", credentials=creds)
-        gmail.users().getProfile(userId="me").execute()
-        services["Gmail"] = True
-    except Exception:
-        services["Gmail"] = False
-    time.sleep(0.1)
-    try:
-        gbp = build("mybusinessbusinessinformation", "v1", credentials=creds)
-        accounts = gbp.accounts().list().execute()
-        services["GoogleBusiness"] = bool(accounts.get("accounts"))
-    except Exception:
-        services["GoogleBusiness"] = False
-    time.sleep(0.1)
-    try:
-        yt = build("youtube", "v3", credentials=creds)
-        yt.channels().list(mine=True, part="id").execute()
-        services["YouTube"] = True
-    except Exception:
-        services["YouTube"] = False
-    time.sleep(0.1)
-    try:
-        cal = build("calendar", "v3", credentials=creds)
-        cal.calendarList().list(maxResults=1).execute()
-        services["Calendar"] = True
-    except Exception:
-        services["Calendar"] = False
-    return services
+# To benchmark the original, we need to simulate the old code
+from unittest.mock import patch
+from sentence_transformers import SentenceTransformer
 
-# --- Optimized (Concurrent) Implementation ---
-# We import the function from the agent that we modified
-from agent import _discover_services as optimized_discover_services
+# Original (simulated) implementation
+class OriginalHuggingFaceLab:
+    def __init__(self):
+        try:
+            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
+        except Exception:
+            self.seo_model = None
 
-def benchmark_function(func, creds):
-    """Benchmark a function."""
-    start = time.perf_counter()
-    func(creds)
-    end = time.perf_counter()
-    return end - start
+    def optimize_keywords(self, keywords: list):
+        if not self.seo_model: return 0
+        embeddings = self.seo_model.encode(keywords)
+        return len(embeddings)
 
-def test_optimization():
+# Optimized implementation
+from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab
+
+def benchmark():
     """Compare original vs optimized performance."""
     print("=" * 60)
-    print("⚡ Bolt Performance Test: Concurrent Service Discovery ⚡")
+    print("⚡ BOLT: PERFORMANCE COMPARISON TEST")
     print("=" * 60)
 
-    mock_creds = MagicMock()
+    # --- Correctness Check ---
+    # We need to install dependencies to run this check
+    try:
+        original_instance = OriginalHuggingFaceLab()
+        optimized_instance = OptimizedHuggingFaceLab()
 
-    # Mock the googleapiclient.discovery.build function
-    with patch('googleapiclient.discovery.build') as mock_build:
-        # Configure the mock to return a mock service object
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
+        test_keywords = ["python", "performance", "optimization"]
+        original_result = original_instance.optimize_keywords(test_keywords)
+        optimized_result = optimized_instance.optimize_keywords(test_keywords)
 
-        # Test correctness first
-        original_result = original_discover_services(mock_creds)
-
-        # Define a side effect that simulates latency and returns a mock
-        def mock_execute_with_latency(*args, **kwargs):
-            time.sleep(0.1)
-            # Return a new MagicMock to mimic the API returning an object
-            return MagicMock()
-
-        # Apply the side effect to all execute calls for the optimized function
-        mock_service.users.return_value.getProfile.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.accounts.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.channels.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-        mock_service.calendarList.return_value.list.return_value.execute.side_effect = mock_execute_with_latency
-
-        optimized_result = optimized_discover_services(mock_creds)
-
-        # Sort the results to ensure they are comparable
-        original_sorted = sorted(original_result.items())
-        optimized_sorted = sorted(optimized_result.items())
-
-        assert original_sorted == optimized_sorted, "Results don't match!"
+        assert original_result == optimized_result, f"Results do not match! Original: {original_result}, Optimized: {optimized_result}"
         print("✅ Correctness verified: Results match")
+    except ImportError as e:
+        print(f"⚠️ Skipping correctness check: Dependency not found ({e}). Please run 'pip install sentence-transformers'.")
+    except Exception as e:
+        print(f"❌ Correctness check failed: {e}")
+        return False
 
-        # Benchmark speed
-        original_time = benchmark_function(original_discover_services, mock_creds)
-        optimized_time = benchmark_function(optimized_discover_services, mock_creds)
+    # --- Speed Benchmark ---
+    iterations = 10  # Instantiation is slow, so we use fewer iterations
 
-        improvement = ((original_time - optimized_time) / original_time) * 100
+    # Measure original
+    original_setup = "from __main__ import OriginalHuggingFaceLab"
+    original_code = "OriginalHuggingFaceLab()"
+    original_time = timeit.timeit(original_code, setup=original_setup, number=iterations)
 
-        print(f"\nOriginal (Sequential): {original_time:.4f}s")
-        print(f"Optimized (Concurrent): {optimized_time:.4f}s")
-        print(f"Improvement: {improvement:.1f}% faster")
+    # Measure optimized
+    optimized_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab"
+    optimized_code = "OptimizedHuggingFaceLab()"
+    optimized_time = timeit.timeit(optimized_code, setup=optimized_setup, number=iterations)
 
-        if improvement > 50:
-            print("✅ SIGNIFICANT IMPROVEMENT")
+    # The first run of the optimized version will be slow due to model loading.
+    # We run it once to cache the model, then benchmark subsequent runs.
+    print("\nCaching optimized model...")
+    first_run_setup = "from src.core.hf_lab import HuggingFaceLab as OptimizedHuggingFaceLab; OptimizedHuggingFaceLab()"
+    cached_optimized_time = timeit.timeit(optimized_code, setup=first_run_setup, number=iterations)
+
+    print(f"\n--- Benchmark Results ({iterations} instantiations) ---")
+    print(f"Original Total Time:      {original_time:.4f}s")
+    print(f"Optimized (First Run):    {optimized_time:.4f}s (includes one-time model load)")
+    print(f"Optimized (Subsequent):   {cached_optimized_time:.4f}s (uses cached model)")
+
+    try:
+        improvement = ((original_time - cached_optimized_time) / original_time) * 100
+        print(f"\nImprovement (Subsequent): {improvement:.1f}% faster")
+
+        if improvement > 10:
+            print("✅ SIGNIFICANT IMPROVEMENT DETECTED")
         elif improvement > 0:
             print("✅ Minor improvement")
         else:
             print("⚠️ NO IMPROVEMENT - Optimization may not be effective")
-
         return improvement > 0
+    except ZeroDivisionError:
+        print("⚠️ Could not calculate improvement (division by zero).")
+        return False
+
+
+if __name__ == "__main__":
+    success = benchmark()
+
+ vercel/enable-vercel-speed-insights-o-6em3bz
+import time
+import sys
+import os
+from unittest.mock import patch, MagicMock
+
+# Ensure the script can find the vaal-ai-empire modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'vaal-ai-empire')))
+
+from scripts.daily_automation import DailyAutomation
+
+# Mock data for clients
+MOCK_CLIENTS = [
+    {"id": f"client_{i}", "name": f"Client {i}", "business_type": "butchery", "language": "afrikaans"}
+    for i in range(20)
+]
+
+def benchmark_sequential(automation_instance):
+    """Benchmarks the original sequential method."""
+    print("\n--- Benchmarking OLD Sequential Method ---")
+    start_time = time.perf_counter()
+
+    for client in MOCK_CLIENTS:
+        automation_instance._generate_for_client(client)
+
+    end_time = time.perf_counter()
+    return end_time - start_time
+
+def benchmark_parallel(automation_instance):
+    """Benchmarks the new parallelized method."""
+    print("\n--- Benchmarking NEW Parallel Method ---")
+    start_time = time.perf_counter()
+
+    with patch.object(automation_instance.db, 'get_active_clients', return_value=MOCK_CLIENTS):
+        automation_instance.generate_content_for_all_clients()
+
+    end_time = time.perf_counter()
+    return end_time - start_time
+
+@patch('scripts.daily_automation.ContentScheduler')
+@patch('scripts.daily_automation.ContentFactory')
+@patch('scripts.daily_automation.Database')
+def test_optimization(MockDatabase, MockFactory, MockScheduler):
+    """Compare original vs optimized performance."""
+    print("=" * 60)
+    print("⚡ Bolt: Performance Comparison Test ⚡")
+    print("=" * 60)
+    print(f"Simulating content generation for {len(MOCK_CLIENTS)} clients...")
+
+    # Mock the dependencies to isolate the concurrency logic
+    mock_db_instance = MockDatabase.return_value
+    mock_factory_instance = MockFactory.return_value
+    mock_scheduler_instance = MockScheduler.return_value
+
+    # Simulate a network delay in content generation
+    def fake_generation(business_type, language):
+        time.sleep(0.1)  # Simulate 100ms I/O delay
+        return {"posts": ["post1", "post2"]}
+
+    mock_factory_instance.generate_social_pack.side_effect = fake_generation
+    mock_scheduler_instance.schedule_pack.return_value = None
+
+    # Create an instance of the automation class with mocked dependencies
+    automation = DailyAutomation()
+    automation.db = mock_db_instance
+    automation.factory = mock_factory_instance
+    automation.scheduler = mock_scheduler_instance
+
+    # --- Benchmark Sequential ---
+    sequential_time = benchmark_sequential(automation)
+
+    # --- Benchmark Parallel ---
+    parallel_time = benchmark_parallel(automation)
+
+    # --- Report Results ---
+    improvement = ((sequential_time - parallel_time) / sequential_time) * 100
+
+    print("\n" + "=" * 60)
+    print("📊 RESULTS")
+    print("-" * 60)
+    print(f"Sequential Time: {sequential_time:.4f}s")
+    print(f"Parallel Time:   {parallel_time:.4f}s")
+    print("-" * 60)
+    print(f"🚀 Improvement: {improvement:.2f}% faster")
+    print("=" * 60)
+
+    if improvement > 50:
+        print("✅ SUCCESS: Significant performance improvement verified!")
+        return True
+    else:
+        print("⚠️ FAILURE: No significant improvement. Optimization may not be effective.")
+        return False
 
 if __name__ == "__main__":
     success = test_optimization()
+ main
     sys.exit(0 if success else 1)

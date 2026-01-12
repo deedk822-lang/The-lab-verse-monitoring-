@@ -1,0 +1,10 @@
+{
+  "title": "South Africa Economic Context",
+  "sme_landscape": {
+    "count": 2500000,
+    "gdp_contribution_percent": 34
+  },
+  "tax_compliance": {
+    "compliance_rate_percent": 52
+  }
+}

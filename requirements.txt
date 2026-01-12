@@ -1,3 +1,6 @@
-schedule==1.2.1
-requests==2.31.0
-annoy==1.17.3
+httpx
+fastapi
+uvicorn
+python-dotenv
+hubspot-api-client
+requests

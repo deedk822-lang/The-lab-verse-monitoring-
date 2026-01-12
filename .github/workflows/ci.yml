@@ -18,6 +18,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Python changes
+        id: changes
+        shell: bash
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+          else
+            CHANGED=$(git diff --name-only HEAD~1..HEAD || true)
+          fi
+
+          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          if echo "$CHANGED" | grep -Eq '^rainmaker_orchestrator/.*\.py$'; then
+            echo "python_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "python_changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,6 +49,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Cache pip dependencies
+        if: steps.changes.outputs.python_changed == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -33,9 +58,10 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install Python dependencies
+        if: steps.changes.outputs.python_changed == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black mypy pylint
+          pip install flake8 black mypy pylint interrogate
           if [ -f rainmaker_orchestrator/requirements.txt ]; then
             pip install -r rainmaker_orchestrator/requirements.txt
           else
@@ -43,44 +69,38 @@ jobs:
           fi
 
       - name: Run Black formatter check
+        if: steps.changes.outputs.python_changed == 'true'
         run: |
-          if [ -d rainmaker_orchestrator ]; then
-            black --check rainmaker_orchestrator/
-          else
-            echo "rainmaker_orchestrator directory not found, skipping black check..."
-          fi
+          black --check rainmaker_orchestrator/
 
       - name: Run Flake8
+        if: steps.changes.outputs.python_changed == 'true'
         run: |
-          if [ -d rainmaker_orchestrator ]; then
-            flake8 rainmaker_orchestrator/ \
-              --max-line-length=120 \
-              --extend-ignore=E203,W503,E501 \
-              --exclude=__pycache__,*.pyc,.git,build,dist
-          else
-            echo "rainmaker_orchestrator directory not found, skipping flake8..."
-          fi
+          flake8 rainmaker_orchestrator/ \
+            --max-line-length=120 \
+            --extend-ignore=E203,W503,E501 \
+            --exclude=__pycache__,*.pyc,.git,build,dist
 
       - name: Run Pylint
+        if: steps.changes.outputs.python_changed == 'true'
         run: |
-          if [ -d rainmaker_orchestrator ]; then
-            pylint rainmaker_orchestrator/*.py \
-              --disable=C0103,C0114,C0115,C0116,R0903,W0703
-          else
-            echo "rainmaker_orchestrator directory not found, skipping pylint..."
-          fi
+          pylint rainmaker_orchestrator/*.py \
+            --disable=C0103,C0114,C0115,C0116,R0903,W0703
 
       - name: Check docstring coverage
+        if: steps.changes.outputs.python_changed == 'true'
         run: |
-          if [ -d rainmaker_orchestrator ]; then
-            pip install interrogate
-            interrogate -v rainmaker_orchestrator/ \
-              --fail-under 66 \
-              --ignore-init-method \
-              --ignore-magic
-          else
-            echo "rainmaker_orchestrator directory not found, skipping docstring check..."
-          fi
+          interrogate -v rainmaker_orchestrator/ \
+            --fail-under 66 \
+            --ignore-init-method \
+            --ignore-magic
+
+      - name: Lint skipped (no Python changes)
+        if: steps.changes.outputs.python_changed != 'true'
+        run: |
+          echo "No Python files changed in rainmaker_orchestrator/*.py; skipping Python lint steps."
+          echo "Changed files:" 
+          echo "${{ steps.changes.outputs.changed_files }}"
 
   # Security scanning
   security:

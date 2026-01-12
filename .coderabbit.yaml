@@ -1,3 +1,14 @@
+ feature/anthropic-brain-integration-17755607396485422698-10248456466997321101
+version: "2"
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+language: en
+
 # CodeRabbit Configuration - Professional Grade
 language: "en-US"
 
@@ -21,3 +32,4 @@ reviews:
   # Auto-labeling (if supported in your plan, good for organization)
   suggested_labels: true
   auto_apply_labels: true
+ main

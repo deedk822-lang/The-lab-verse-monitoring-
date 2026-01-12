@@ -10,8 +10,8 @@ import os
 from typing import Dict, Any
 
 from flask import Flask, request, jsonify
-from orchestrator import RainmakerOrchestrator
-from agents.healer import SelfHealingAgent
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+from rainmaker_orchestrator.agents.healer import SelfHealingAgent
 
 # Configure logging
 logging.basicConfig(

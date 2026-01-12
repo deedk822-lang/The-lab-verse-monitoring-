@@ -182,6 +182,14 @@ jobs:
   test:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
+    env:
+      # LLM Keys for Opik Evaluations
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+      # Observability Keys
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      OPTIK_API_KEY: ${{ secrets.OPTIK_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -253,6 +261,14 @@ jobs:
   docker-compose-test:
     name: 🐳 Docker Compose Test
     runs-on: ubuntu-latest
+    env:
+      # LLM Keys for Opik Evaluations
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+      # Observability Keys
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      OPTIK_API_KEY: ${{ secrets.OPTIK_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List
 
+
 class ConfigManager:
     """Manages API keys and configuration"""
 
@@ -14,24 +15,30 @@ class ConfigManager:
 
         # Try to load from .env file
         if os.path.exists(self.config_file):
-            with open(self.config_file, 'r') as f:
+            with open(self.config_file, "r") as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#') and '=' in line:
-                        key, value = line.split('=', 1)
-                        config[key.strip()] = value.strip().strip('"\'')
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        config[key.strip()] = value.strip().strip("\"'")
 
         # Override with environment variables
-        config.update({
-            'KIMI_API_KEY': os.getenv('KIMI_API_KEY'),
-            'KIMI_API_BASE': os.getenv('KIMI_API_BASE', 'https://api.moonshot.ai/v1'),
-            'OLLAMA_API_BASE': os.getenv('OLLAMA_API_BASE', 'http://localhost:11434/api'),
-        })
+        config.update(
+            {
+                "KIMI_API_KEY": os.getenv("KIMI_API_KEY"),
+                "KIMI_API_BASE": os.getenv(
+                    "KIMI_API_BASE", "https://api.moonshot.ai/v1"
+                ),
+                "OLLAMA_API_BASE": os.getenv(
+                    "OLLAMA_API_BASE", "http://localhost:11434/api"
+                ),
+            }
+        )
 
         # Filter out None values so we can use .get() with defaults
         return {k: v for k, v in config.items() if v is not None}
 
-    def get(self, key: str, default: str = '') -> str:
+    def get(self, key: str, default: str = "") -> str:
         """Get configuration value"""
         return self.config.get(key, default)
 

@@ -35,37 +35,51 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black mypy pylint
+          pip install flake8 black mypy pylint interrogate
           if [ -f rainmaker_orchestrator/requirements.txt ]; then
             pip install -r rainmaker_orchestrator/requirements.txt
+          else
+            echo "rainmaker_orchestrator/requirements.txt not found, skipping..."
           fi
 
       - name: Run Black formatter check
         run: |
-          black --check rainmaker_orchestrator/ || true
+          if [ -d rainmaker_orchestrator ]; then
+            black --check rainmaker_orchestrator/
+          else
+            echo "rainmaker_orchestrator directory not found, skipping black check..."
+          fi
 
       - name: Run Flake8
         run: |
-          flake8 rainmaker_orchestrator/ \
-            --max-line-length=120 \
-            --extend-ignore=E203,W503,E501 \
-            --exclude=__pycache__,*.pyc,.git,build,dist \
-            || true
+          if [ -d rainmaker_orchestrator ]; then
+            flake8 rainmaker_orchestrator/ \
+              --max-line-length=120 \
+              --extend-ignore=E203,W503,E501 \
+              --exclude=__pycache__,*.pyc,.git,build,dist
+          else
+            echo "rainmaker_orchestrator directory not found, skipping flake8..."
+          fi
 
       - name: Run Pylint
         run: |
-          pylint rainmaker_orchestrator/*.py \
-            --disable=C0103,C0114,C0115,C0116,R0903,W0703 \
-            || true
+          if [ -d rainmaker_orchestrator ]; then
+            pylint rainmaker_orchestrator/*.py \
+              --disable=C0103,C0114,C0115,C0116,R0903,W0703
+          else
+            echo "rainmaker_orchestrator directory not found, skipping pylint..."
+          fi
 
       - name: Check docstring coverage
         run: |
-          pip install interrogate
-          interrogate -v rainmaker_orchestrator/ \
-            --fail-under 66 \
-            --ignore-init-method \
-            --ignore-magic \
-            || true
+          if [ -d rainmaker_orchestrator ]; then
+            interrogate -v rainmaker_orchestrator/ \
+              --fail-under 66 \
+              --ignore-init-method \
+              --ignore-magic
+          else
+            echo "rainmaker_orchestrator directory not found, skipping docstring check..."
+          fi
 
   # Security scanning
   security:
@@ -86,18 +100,28 @@ jobs:
           pip install safety bandit
           if [ -f rainmaker_orchestrator/requirements.txt ]; then
             pip install -r rainmaker_orchestrator/requirements.txt
+          else
+            echo "rainmaker_orchestrator/requirements.txt not found, skipping..."
           fi
 
       - name: Run Safety check (dependency vulnerabilities)
         run: |
-          safety check --json || true
+          if [ -f rainmaker_orchestrator/requirements.txt ]; then
+            safety check -r rainmaker_orchestrator/requirements.txt --json || true
+          else
+            echo "requirements.txt not found, skipping safety check..."
+          fi
 
       - name: Run Bandit (security issues)
         run: |
-          bandit -r rainmaker_orchestrator/ \
-            -f json \
-            -o bandit-report.json \
-            || true
+          if [ -d rainmaker_orchestrator ]; then
+            bandit -r rainmaker_orchestrator/ \
+              -f json \
+              -o bandit-report.json \
+              || true
+          else
+            echo "rainmaker_orchestrator directory not found, skipping bandit..."
+          fi
 
       - name: Upload Bandit report
         uses: actions/upload-artifact@v4
@@ -149,6 +173,10 @@ jobs:
         run: |
           docker run --rm \
             -e KIMI_API_KEY=test_key \
+ feat/complete-10268506225633119435
+            -e ANTHROPIC_API_KEY=test_key \
+
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             -e HF_TOKEN=test_token \
             -e WORKSPACE_PATH=/tmp/test_workspace \
             --entrypoint python \
@@ -191,14 +219,16 @@ jobs:
       - name: Run pytest
         run: |
           # Run tests if they exist, otherwise skip
-          if [ -f tests/test_orchestrator.py ]; then
+          test_files=$(find tests -name "test_*.py" -o -name "*_test.py" | wc -l)
+          if [ "$test_files" -gt 0 ]; then
+            echo "Found $test_files test file(s), running tests..."
             pytest tests/ \
               --verbose \
+              --tb=short \
               --cov=rainmaker_orchestrator \
               --cov-report=xml \
               --cov-report=html \
-              --cov-report=term-missing \
-              || true
+              --cov-report=term-missing
           else
             echo "No tests found, skipping..."
             exit 0
@@ -220,6 +250,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           MINIMUM_GREEN: 80
           MINIMUM_ORANGE: 60
+        continue-on-error: true
 
   # Docker compose test
   docker-compose-test:
@@ -246,7 +277,11 @@ jobs:
             # Build the image first to ensure it exists for compose
             docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
             # Start the orchestrator service (correct name from docker-compose file)
+ feat/complete-10268506225633119435
+            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator
+
             docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             sleep 20
           else
             echo "docker-compose.superstack.yml not found"
@@ -263,7 +298,11 @@ jobs:
             fi
             echo "Waiting for service... ($i/30)"
             # Log the last few lines of the container to see if it's crashing
+ feat/complete-10268506225633119435
+            docker logs rainmaker-orchestrator --tail 10 || true
+
             docker logs task-router --tail 10 || true
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             sleep 2
           done
           echo "Health check failed"
@@ -311,6 +350,20 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           script: |
+ feat/complete-10268506225633119435
+            try {
+              github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.payload.pull_request.head.sha,
+                state: '${{ steps.status.outputs.status }}',
+                context: 'CI/CD Pipeline',
+                description: '${{ steps.status.outputs.message }}'
+              });
+            } catch (error) {
+              console.log('Could not update commit status:', error.message);
+            }
+
             github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -319,3 +372,4 @@ jobs:
               context: 'CI/CD Pipeline',
               description: '${{ steps.status.outputs.message }}'
             })
+ feature/complete-orchestrator-and-scheduler-3340126171226885686

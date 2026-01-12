@@ -1,12 +1,16 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "nextjs",
   "installCommand": "npm ci --legacy-peer-deps",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "outputDirectory": ".next",
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint",
-      "NEXT_PUBLIC_EVENT_DATE": "@event-date"
+      "NEXT_PUBLIC_API_ENDPOINT": "@next-public-api-endpoint",
+      "NEXT_PUBLIC_EVENT_DATE": "@next-public-event-date"
     }
   },
   "functions": {

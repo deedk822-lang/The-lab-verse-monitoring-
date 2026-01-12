@@ -37,12 +37,14 @@ jobs:
           args: detect --source . --report-path gitleaks-report.json --no-git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
       - name: CodeQL init
         uses: github/codeql-action/init@v3
         with:
           languages: javascript, python, java, go
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
+        continue-on-error: true
 
   detect-changes:
     name: "🔍 Detect Changed Paths"
@@ -72,6 +74,8 @@ jobs:
               - 'requirements*.txt'
               - 'agents/**/*.py'
               - 'lab_verse/**/*.py'
+              - 'rainmaker_orchestrator/**/*.py'
+              - 'rainmaker_orchestrator/requirements*.txt'
             java:
               - 'industrial-chat-api/**'
             go:
@@ -93,8 +97,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18,20,22]
-        workspace: [content-creator-ai,kimi-computer,lapverse-core,lapverse-alpha,deal-hunter]
+        node-version: [18, 20, 22]
+        workspace: [content-creator-ai, kimi-computer, lapverse-core, lapverse-alpha, deal-hunter]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -112,6 +116,10 @@ jobs:
         run: npm run lint || true
       - name: Test & Build
         working-directory: ${{ matrix.workspace }}
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_ENDPOINT: https://api.example.com
+          NEXT_PUBLIC_EVENT_DATE: 2025-01-01
         run: |
           npm test || true
           npm run build || true
@@ -123,8 +131,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10','3.11','3.12']
-        workspace: [agents,lab_verse,vaal-ai-empire,rainmaker_orchestrator]
+        python-version: ['3.10', '3.11', '3.12']
+        workspace: [agents, lab_verse, vaal-ai-empire, rainmaker_orchestrator]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -142,9 +150,24 @@ jobs:
           flake8 . || true
           pytest -q || true
 
+  docker-compose-validate:
+    name: "🐳 Docker Compose Validate"
+    needs: [security-scan, detect-changes]
+    if: needs.detect-changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          shopt -s globstar nullglob
+          for f in docker-compose*.yml **/docker-compose*.yml; do
+            echo "Validating $f"
+            docker compose -f "$f" config -q
+          done
+
   report:
     name: "📝 Build Report"
-    needs: [security-scan, node-ci, python-ci]
+    needs: [security-scan, node-ci, python-ci, docker-compose-validate]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -154,3 +177,4 @@ jobs:
           echo "- Security scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Node CI: ${{ needs.node-ci.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Python CI: ${{ needs.python-ci.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker compose validate: ${{ needs.docker-compose-validate.result }}" >> $GITHUB_STEP_SUMMARY

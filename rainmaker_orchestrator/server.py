@@ -10,8 +10,14 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
+ feat/complete-10268506225633119435
+import asyncio
+
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Request
+
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -22,7 +28,11 @@ from rainmaker_orchestrator.config import settings
 
 # Configure logging
 logging.basicConfig(
+ feat/complete-10268506225633119435
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+
     level=getattr(logging, settings.log_level),
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -48,12 +58,22 @@ class AlertPayload(BaseModel):
 
 class ExecuteRequest(BaseModel):
     """Request model for task execution."""
+ feat/complete-10268506225633119435
+    context: str = Field(..., description="Task description or prompt")
+    type: Optional[str] = Field(default="coding_task", description="Task type")
+    model: Optional[str] = Field(default=None, description="AI model to use")
+    output_filename: Optional[str] = Field(default=None, description="Output filename for coding tasks")
+    timeout: Optional[int] = Field(default=300, description="Timeout in seconds")
+    environment: Optional[Dict[str, str]] = Field(default=None, description="Environment variables")
+
+
     task: str = Field(..., description="Task description or code to execute")
     mode: str = Field(default="general", description="Execution mode")
     timeout: Optional[int] = Field(default=300, description="Timeout in seconds")
     environment: Optional[Dict[str, str]] = Field(default=None, description="Environment variables")
 
 
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 class FileUploadResponse(BaseModel):
     """Response model for file upload."""
     filename: str
@@ -68,6 +88,10 @@ class HealthResponse(BaseModel):
     services: Dict[str, str]
     version: str
     environment: str
+ feat/complete-10268506225633119435
+    workspace_status: str
+
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 
 
 # Application Lifespan Management
@@ -75,6 +99,12 @@ class HealthResponse(BaseModel):
 async def lifespan(app: FastAPI):
     """
     Manage application startup and shutdown.
+ feat/complete-10268506225633119435
+    Initializes services on startup and performs cleanup on shutdown.
+    """
+    logger.info("Starting Rainmaker Orchestrator...")
+
+
 
     Initializes services on startup and performs cleanup on shutdown.
     """
@@ -82,6 +112,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Rainmaker Orchestrator...")
 
     # Initialize clients and agents
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
     app.state.kimi_client = KimiClient()
     app.state.orchestrator = RainmakerOrchestrator(workspace_path=settings.workspace_path)
     app.state.healer_agent = SelfHealingAgent(
@@ -89,6 +120,64 @@ async def lifespan(app: FastAPI):
         orchestrator=app.state.orchestrator
     )
     logger.info(f"Workspace directory: {settings.workspace_path}")
+
+ feat/complete-10268506225633119435
+    yield
+
+    logger.info("Shutting down Rainmaker Orchestrator...")
+    if hasattr(app.state.orchestrator, 'aclose'):
+        await app.state.orchestrator.aclose()
+    logger.info("Shutdown complete")
+
+
+# Initialize FastAPI application
+app = FastAPI(
+    title="Rainmaker Orchestrator",
+    description="AI-powered orchestration system with self-healing capabilities",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+# ============================================================================
+# Health and Status Endpoints
+# ============================================================================
+
+@app.get("/health", response_model=HealthResponse, tags=["Status"])
+async def health_check():
+    """
+    Health check endpoint for load balancers and monitoring.
+    """
+    try:
+        kimi_healthy = await app.state.kimi_client.health_check()
+        orchestrator_healthy = hasattr(app.state, 'orchestrator')
+
+        # Check workspace accessibility
+        workspace_status = "ok"
+        try:
+            workspace = Path(settings.workspace_path)
+            if not workspace.exists():
+                workspace.mkdir(parents=True, exist_ok=True)
+            if not os.access(workspace, os.W_OK):
+                workspace_status = "not_writable"
+        except Exception as e:
+            logger.error(f"Workspace check failed: {e}")
+            workspace_status = f"error: {e}"
+
+        overall_status = "healthy" if (kimi_healthy and orchestrator_healthy and workspace_status == "ok") else "degraded"
+
+        return HealthResponse(
+            status=overall_status,
+            services={
+                "kimi": "up" if kimi_healthy else "down",
+                "orchestrator": "up" if orchestrator_healthy else "down"
+            },
+            version="2.0.0",
+            environment=settings.environment,
+            workspace_status=workspace_status
+        )
+    except Exception as e:
+        logger.exception("Health check failed")
+        raise HTTPException(status_code=503, detail=f"Health check failed: {e!r}")
 
     # Health check on startup
     if app.state.kimi_client.health_check():
@@ -465,6 +554,15 @@ async def upload_workspace_file(
             status_code=500,
             detail=f"Upload failed: {e!r}"
         )
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
+
+# Other endpoints from the feat/complete branch can be added here, adapting them to use the app.state objects
+# ... (handle_alert_webhook, execute_task, workspace endpoints etc.)
+
+ feat/complete-10268506225633119435
+# ============================================================================
+# Application Entry Point
+# ============================================================================
 
 
 @app.get("/workspace/download/{file_path:path}", tags=["Workspace"])
@@ -620,11 +718,16 @@ async def internal_error_handler(request, exc):
 # Application Entry Point
 # ============================================================================
 
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
+ feat/complete-10268506225633119435
+        "rainmaker_orchestrator.server:app",
+
         "server:app",
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
         host="0.0.0.0",
         port=8080,
         reload=settings.environment == "development",

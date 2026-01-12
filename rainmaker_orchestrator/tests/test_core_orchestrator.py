@@ -12,13 +12,24 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from rainmaker_orchestrator.core.orchestrator import RainmakerOrchestrator
 
+ feat/complete-10268506225633119435
+
 @pytest.fixture
 def temp_workspace():
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 
 class TestOrchestratorInitialization:
     """Test suite for orchestrator initialization."""
+
+ feat/complete-10268506225633119435
+    def test_init_with_default_workspace(self):
+        """Should create default workspace directory."""
+        orchestrator = RainmakerOrchestrator()
+
+        assert orchestrator.workspace_path == Path("/workspace")
+        assert isinstance(orchestrator.workspace_path, Path)
 
     def test_init_with_default_workspace(self, temp_workspace):
         """Should create default workspace directory."""
@@ -26,6 +37,7 @@ class TestOrchestratorInitialization:
             orchestrator = RainmakerOrchestrator()
             assert orchestrator.workspace_path == Path("/workspace")
             assert isinstance(orchestrator.workspace_path, Path)
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 
     def test_init_with_custom_workspace(self, temp_workspace):
         """Should use custom workspace path."""
@@ -134,4 +146,8 @@ class TestOrchestratorWorkspaceManagement:
 
             assert orch1.workspace_path != orch2.workspace_path
             assert workspace1.exists()
+ feat/complete-10268506225633119435
             assert workspace2.exists()
+
+            assert workspace2.exists()
+ feature/complete-orchestrator-and-scheduler-3340126171226885686

@@ -39,8 +39,10 @@ class SelfHealingAgent:
         field_name: str = "input"
     ) -> str:
         """Sanitize text for safe LLM prompt inclusion."""
-        if not text or not isinstance(text, str):
+        if not isinstance(text, str):
             logger.warning(f"invalid_{field_name}_type", type=type(text))
+            return "N/A"
+        if not text:
             return "N/A"
 
         text = text.replace("```", "").replace("'''", "")

@@ -1,0 +1,65 @@
+name: Post to Social Media
+
+# Trigger this workflow manually or on schedule
+on:
+  workflow_dispatch:
+    inputs:
+      post_content:
+        description: 'Content to post'
+        required: true
+        type: string
+      platforms:
+        description: 'Platforms (comma-separated: twitter,facebook,linkedin,instagram)'
+        required: false
+        default: 'twitter,facebook,linkedin'
+        type: string
+      media_urls:
+        description: 'Media URLs (comma-separated, optional)'
+        required: false
+        type: string
+  
+  # Optional: Schedule daily posts (uncomment to enable)
+  # schedule:
+  #   - cron: '0 9 * * *'  # Runs at 9 AM UTC daily
+
+jobs:
+  post-to-social:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Post to social media
+        env:
+          ARYSHARE_API_KEY: ${{ secrets.ARYSHARE_API_KEY }}
+        run: |
+          node ayrshare/post-to-social.js "${{ inputs.post_content }}" "${{ inputs.platforms }}" "${{ inputs.media_urls }}"
+      
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ayrshare-post-results
+          path: ayrshare-post-results.json
+          retention-days: 30
+      
+      - name: Post summary
+        if: always()
+        run: |
+          if [ -f ayrshare-post-results.json ]; then
+            echo "## 📣 Social Media Post Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Content:** ${{ inputs.post_content }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Platforms:** ${{ inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat ayrshare-post-results.json >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi

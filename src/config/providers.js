@@ -39,15 +39,15 @@ export const providers = {
   },
 
   // Anthropic fallback 1: Mistral (via OpenAI-compatible API)
-  'mistral': {
+  'hermes-2-pro-mistral': {
     model: process.env.MISTRAL_API_KEY ?
       createOpenAI({
-        baseURL: 'https://api.mistral.ai/v1',
+        baseURL: 'process.env.MISTRAL_API_URL || "http://localhost:8080/v1"',
         apiKey: process.env.MISTRAL_API_KEY
-      })('mistral-large-latest') : null,
-    priority: 4,
-    enabled: !!process.env.MISTRAL_API_KEY,
-    name: 'Mistral Large',
+      })('hermes-2-pro-hermes-2-pro-mistral') : null,
+    priority: 3,
+    enabled: !!(process.env.MISTRAL_API_URL && process.env.MISTRAL_API_KEY),
+    name: 'Mistral (LocalAI)',
     category: 'anthropic-fallback'
   },
 
@@ -77,12 +77,12 @@ export const providers = {
   },
 
   // Local fallback (only enabled if explicitly configured)
-  'mistral-local': {
+  'hermes-2-pro-mistral-local': {
     model: (process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY) ?
       createOpenAI({
         baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
         apiKey: process.env.LOCALAI_API_KEY || 'localai'
-      })('mistral') : null,
+      })('hermes-2-pro-mistral') : null,
     priority: 10,
     enabled: !!(process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY),
     name: 'Mistral Local',
@@ -162,7 +162,7 @@ export function getProviderByName(providerName, useFallback = true) {
         return getActiveProvider('openai') || getActiveProvider();
       }
 
-      // Anthropic fallback chain: claude → mistral → gemini → groq → any available
+      // Anthropic fallback chain: claude → hermes-2-pro-mistral → gemini → groq → any available
       if (providerName === 'claude-sonnet') {
         return getActiveProvider('anthropic') || getActiveProvider();
       }
@@ -223,17 +223,19 @@ export function getProviderStatus() {
     providers: available,
     fallbackChains: {
       openai: ['gpt-4', 'perplexity'],
-      anthropic: ['claude-sonnet', 'mistral', 'gemini-pro', 'groq-llama'],
-      local: ['mistral-local']
+      anthropic: ['claude-sonnet', 'hermes-2-pro-mistral', 'gemini-pro', 'groq-llama'],
+      local: ['hermes-2-pro-mistral-local']
     }
   };
 }
 
-export default {
+const providersConfig = {
   providers,
   getActiveProvider,
-  getProviderByName,
-  getAvailableProviders,
-  hasAvailableProvider,
-  getProviderStatus
-};
+    getProviderByName,
+    getAvailableProviders,
+    hasAvailableProvider,
+    getProviderStatus
+  };
+
+export default providersConfig;

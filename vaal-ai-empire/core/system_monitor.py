@@ -473,6 +473,7 @@ class AlertSystem:
             }
 
  bolt-session-optimization-2600986726108823150
+            # TODO: Validate self.webhook_url against an allow-list of trusted domains to prevent SSRF.
             response = self.session.post(self.webhook_url, json=payload, timeout=5)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:

@@ -11,6 +11,15 @@ import openlit
 
 class RainmakerOrchestrator:
     def __init__(self, workspace_path="./workspace", config_file=".env"):
+        """
+        Initialize the orchestrator, configure tracing (unless running in CI), and prepare filesystem, configuration, and HTTP client resources.
+        
+        This sets up OpenTelemetry tracing via OpenLit when the CI environment variable is not "true", creates a FileSystemAgent rooted at the given workspace path, loads configuration from the specified config file via ConfigManager, and instantiates an HTTPX asynchronous client with a 120-second timeout.
+        
+        Parameters:
+            workspace_path (str): Path to the workspace directory used by the FileSystemAgent.
+            config_file (str): Filename or path to the configuration file to load with ConfigManager.
+        """
         if os.getenv("CI") != "true":
             openlit.init(
                 # This sends traces directly to Datadog's OTLP intake
@@ -28,6 +37,19 @@ class RainmakerOrchestrator:
 
     @track(name="healer_hotfix_generation_kimi")
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Call the KIMI chat completions endpoint using the task's context and return the API response as JSON.
+        
+        Parameters:
+            task (Dict[str, Any]): Task payload; must include "context" (the user prompt). May include "model" to override the default ("moonshot-v1-8k").
+            
+        Returns:
+            Dict[str, Any]: Parsed JSON response from the KIMI API.
+        
+        Raises:
+            ValueError: If the `KIMI_API_KEY` configuration value is not set.
+            HTTPStatusError: If the HTTP request to the KIMI API returns a non-success status.
+        """
         api_key = self.config.get('KIMI_API_KEY')
         if not api_key:
             raise ValueError("KIMI_API_KEY is not set.")
@@ -55,6 +77,17 @@ class RainmakerOrchestrator:
 
     @track(name="healer_hotfix_generation_ollama")
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Call the Ollama generate endpoint using the task's model and prompt and return the model response.
+        
+        Constructs a JSON payload with the task's model (defaults to "llama3") and the task's context as the prompt, posts it to the configured Ollama /generate endpoint, and returns a dictionary containing the raw response text.
+        
+        Returns:
+            dict: A dictionary with the shape {"message": {"content": <str>}} where `content` is the value of Ollama's "response" field (or "{}" if absent).
+        
+        Raises:
+            HTTPStatusError: If the HTTP request returns a non-success status.
+        """
         api_base = self.config.get('OLLAMA_API_BASE')
 
         payload = {

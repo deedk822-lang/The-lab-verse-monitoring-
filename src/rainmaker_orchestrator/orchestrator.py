@@ -16,6 +16,13 @@ class RainmakerOrchestrator:
         """Gracefully close the HTTP client."""
         await self.client.aclose()
 
+    async def health_check(self) -> Dict[str, Any]:
+        """Checks the health of the orchestrator and its dependencies."""
+        kimi_key = self.config.get('KIMI_API_KEY')
+        if not kimi_key:
+            return {"status": "degraded", "reason": "KIMI_API_KEY is not set."}
+        return {"status": "healthy"}
+
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         api_key = self.config.get('KIMI_API_KEY')
         if not api_key:
@@ -100,18 +107,32 @@ class RainmakerOrchestrator:
                     else:
                         model_res = await self._call_kimi(task_for_model, routing)
                         content = model_res["choices"][0]["message"]["content"]
-                except (httpx.HTTPStatusError, ValueError) as e:
-                    print(f"   API Call Error: {e}")
-                    return {"status": "failed", "message": f"API call failed: {e}"}
+                except httpx.HTTPStatusError as e:
+                    error_message = f"API call failed with status {e.response.status_code}"
+                    if e.response.status_code == 401:
+                        error_message = "HTTP 401: Invalid API key provided."
+                    elif e.response.status_code == 429:
+                        error_message = "HTTP 429: Rate limit exceeded or insufficient balance."
+
+                    print(f"   API Call Error: {error_message}")
+                    # In a real app, we'd use structured logging: logger.exception(...)
+                    return {"status": "failed", "message": error_message}
+                except ValueError as e:
+                    print(f"   Configuration Error: {e}")
+                    return {"status": "failed", "message": str(e)}
 
                 try:
                     json_str = re.sub(r'^```json\s*|\s*```$', '', content.strip(), flags=re.MULTILINE)
                     parsed = json.loads(json_str)
+
+                    if "code" not in parsed:
+                        raise KeyError("The 'code' key is missing from the model's JSON response.")
+
                     self.fs.write_file(filename, parsed["code"])
-                except Exception as e:
+                except (json.JSONDecodeError, KeyError) as e:
                     print(f"   JSON Parse Error: {e}")
                     current_try += 1
-                    execution_log.append({"status": "error", "message": f"Failed to parse model output: {e}"})
+                    execution_log.append({"status": "error", "message": f"Failed to parse model output: {e}. Raw content: {content[:200]}"})
                     continue
 
                 print(f"   Testing {filename}...")

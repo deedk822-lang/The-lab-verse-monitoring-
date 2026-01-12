@@ -30,17 +30,8 @@ class HubSpotWebhookPayload(BaseModel):
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Ensure the root directory is in sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
-    logging.info("✅ Successfully imported rainmaker_orchestrator in server")
-except ImportError:
-    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
-    raise
+# The new src-layout and editable install (`pip install -e .`) make this a standard import.
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,15 +49,35 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 
+class ExecuteTaskPayload(BaseModel):
+    type: str
+    context: str
+    model: Optional[str] = None
+    output_filename: Optional[str] = None
+
 @app.get("/health")
-async def health_check():
-    """
-    Return the service health status.
+async def health_check(request: Request):
+    """Return the service health status."""
+    orchestrator_health = await request.app.state.orchestrator.health_check()
     
-    Returns:
-        A mapping with the key "status" set to "healthy".
-    """
-    return {"status": "healthy"}
+    overall_status = "healthy"
+    if orchestrator_health["status"] != "healthy":
+        overall_status = "degraded"
+
+    return {
+        "status": overall_status,
+        "dependencies": {
+            "orchestrator": orchestrator_health
+        }
+    }
+
+@app.post("/execute")
+async def execute_task(payload: ExecuteTaskPayload, request: Request):
+    """Execute a task using the Rainmaker Orchestrator."""
+    result = await request.app.state.orchestrator.execute_task(payload.model_dump())
+    if result.get("status") == "failed":
+        raise HTTPException(status_code=500, detail=result.get("message", "Task execution failed"))
+    return result
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):

@@ -1,0 +1,6 @@
+httpx
+fastapi
+uvicorn
+python-dotenv
+hubspot-api-client
+requests

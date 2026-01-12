@@ -182,9 +182,6 @@ class SystemMonitor:
     def _check_ayrshare(self) -> str:
         """Check Ayrshare health"""
         api_key = os.getenv("AYRSHARE_API_KEY")
-        if not api_key:
-            return "not_configured"
-
         try:
             response = self.session.get(
                 "https://app.ayrshare.com/api/profiles",
@@ -193,8 +190,10 @@ class SystemMonitor:
             )
             response.raise_for_status()
             return "healthy"
+        except requests.exceptions.HTTPError:
+            return "error"  # Server responded with a non-2xx status
         except requests.exceptions.RequestException:
-            return "unreachable"
+            return "unreachable"  # e.g. DNS failure, connection refused
 
     def generate_health_report(self) -> Dict:
         """Generate detailed health report"""

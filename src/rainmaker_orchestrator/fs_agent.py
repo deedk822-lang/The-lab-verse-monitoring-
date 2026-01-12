@@ -47,16 +47,11 @@ class FileSystemAgent:
         if not self._is_safe_path(safe_name):
             return {"status": "error", "message": "Path traversal detected"}
 
- feature/elite-ci-cd-pipeline-1070897568806221897
-        if len(content.encode('utf-8')) > self.max_size:
-            return {"status": "error", "message": f"File exceeds {self.max_size / (1024*1024)}MB limit"}
-
         if len(content.encode("utf-8")) > self.max_size:
             return {
                 "status": "error",
                 "message": f"File exceeds {self.max_size / (1024*1024)}MB limit",
             }
- main
 
         full_path = os.path.join(self.workspace, safe_name)
         try:

@@ -297,7 +297,7 @@ def main():
     metrics_port = int(os.getenv("METRICS_PORT", "8001"))
     start_metrics_server(metrics_port)
 
-    logger.info("Starting RQ worker", extra={"redis": REDIS_URL, "queue": QUE_NAME})
+    logger.info("Starting RQ worker", extra={"redis": REDIS_URL, "queue": QUEUE_NAME})
 
     listen = [QUEUE_NAME]
     if not redis_conn:

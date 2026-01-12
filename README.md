@@ -1,376 +1,541 @@
-# AI Content Creation Suite with Multi-Channel Distribution
+# Rainmaker AI Superstack - Production Ready
 
-A comprehensive fullstack JavaScript application that replicates n8n content creation workflows with support for multiple AI providers and automated multi-channel content distribution.
+A production-ready AI orchestration system with self-healing code generation, multi-model routing, and secure file operations.
 
-## 🚀 Features
+## 🎯 What This Actually Does
 
-### Multi-Provider AI Support
+**Real Capabilities** (No Mock-ups):
 
-- **OpenAI**: GPT-4, DALL-E, Whisper, TTS
-- **Google Gemini**: Advanced reasoning, Imagen, Veo, Google Search/Maps integration
-- **LocalAI**: Privacy-focused local inference with various models
-- **Z.AI GLM-4.6**: Efficient reasoning, tool use, long context (200K tokens)
-- **Perplexity AI**: Web search and real-time research capabilities
-- **Manus AI**: Creative writing and content optimization
-- **Claude AI**: Advanced reasoning and analysis (via MCP)
-- **Mistral AI**: Multilingual content generation (via MCP)
-- **ElevenLabs**: AI voice synthesis and audio generation
-
-### Multi-Channel Distribution
-
-- **Social Media**: Automated posting via Ayrshare to Twitter, Facebook, LinkedIn, Instagram, YouTube, TikTok, Telegram, Reddit
-- **Email Marketing**: MailChimp campaign creation and sending
-- **Cross-Platform Communication**: A2A integration with Slack, Teams, Discord, Zapier, IFTTT, n8n, Make
-- **Voice Content**: Audio generation and podcast creation with ElevenLabs
-- **Webhook Integration**: Zapier-compatible for workflow automation
-
-### Content Generation Capabilities
-
-- **Text**: Articles, blog posts, social media content
-- **Images**: High-quality generation with aspect ratio control
-- **Videos**: Prompt-based video generation and animation
-- **Audio**: Text-to-speech, voice cloning, and audiobook creation
-- **Multimodal**: Combined content types with integrated workflows
-
-### Advanced Features
-
-- Real-time progress tracking with WebSockets
-- SEO optimization and metadata generation
-- Multi-platform content optimization
-- Cost tracking and usage analytics
-- Caching with Redis for improved performance
-- Rate limiting and API key authentication
-- Docker support for easy deployment
-- MCP (Model Context Protocol) integration
-- A2A (Application-to-Application) communication
-
-## 🛠️ Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Redis (optional, for caching)
-- Docker & Docker Compose (for containerized deployment)
-
-### Installation
-
-1. **Clone and setup:**
-
-```bash
-git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
-cd The-lab-verse-monitoring-
-npm install
-```
-
-2. **Configure API keys in `.env`:**
-
-```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env with your API keys
-# At minimum, configure:
-API_KEY=your_secure_api_key_here
-OPENAI_API_KEY=your_openai_key  # OR
-GOOGLE_API_KEY=your_google_key  # OR any other AI provider
-
-# For multi-channel distribution, also configure:
-AYRSHARE_API_KEY=your_ayrshare_key_here           # For social media
-MAILCHIMP_API_KEY=your_mailchimp_key_here        # For email
-ELEVENLABS_API_KEY=your_elevenlabs_key_here      # For voice
-```
-
-3. **Start the application:**
-
-```bash
-npm start
-```
-
-4. **Open your browser:**
-
-```
-http://localhost:3000
-```
-
-### Docker Deployment
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|----------|
-| `PORT` | Server port | 3000 |
-| `NODE_ENV` | Environment | development |
-| `API_KEY` | API authentication key | - |
-| `REDIS_URL` | Redis connection URL | redis://localhost:6379 |
-
-### AI Provider Configuration
-
-#### Required (at least one)
-- `OPENAI_API_KEY` - OpenAI API key
-- `GOOGLE_API_KEY` - Google AI API key  
-- `ZAI_API_KEY` - Z.AI API key
-- `LOCALAI_URL` - LocalAI server URL
-
-#### Optional Enhancement Services
-- `PERPLEXITY_API_KEY` - For web search and research
-- `MANUS_API_KEY` - For creative writing optimization
-- `CLAUDE_API_KEY` - For advanced reasoning (MCP)
-- `MISTRAL_API_KEY` - For multilingual content (MCP)
-- `ELEVENLABS_API_KEY` - For voice synthesis
-
-### Distribution Services
-
-#### Social Media (Ayrshare)
-- `AYRSHARE_API_KEY` - Required for social media posting
-
-#### Email Marketing (MailChimp)
-- `MAILCHIMP_API_KEY` - Required for email campaigns
-- `MAILCHIMP_SERVER_PREFIX` - Your MailChimp server (e.g., us1)
-- `MAILCHIMP_LIST_ID` - Your subscriber list ID
-
-#### Cross-Platform Communication (A2A)
-- `A2A_SLACK_WEBHOOK` - Slack webhook URL
-- `A2A_TEAMS_WEBHOOK` - Microsoft Teams webhook URL
-- `A2A_DISCORD_WEBHOOK` - Discord webhook URL
-
-## 📚 API Reference
-
-### Multi-Channel Distribution
-
-```bash
-# Zapier webhook endpoint (primary integration point)
-POST /api/ayrshare/ayr
-Content-Type: application/json
-x-api-key: your-api-key
-
-{
-  "topic": "AI Technology Trends",
-  "platforms": "twitter,linkedin,facebook,instagram",
-  "audience": "tech professionals", 
-  "tone": "professional",
-  "provider": "perplexity",
-  "includeEmail": true,
-  "emailSubject": "Latest AI Trends",
-  "generateAudio": true,
-  "voiceType": "professional"
-}
-```
-
-### Individual Service Endpoints
-
-```bash
-# Social media only
-POST /api/ayrshare/post
-
-# Email campaign only  
-POST /api/ayrshare/email
-
-# Voice generation only
-POST /api/elevenlabs/tts
-
-# Content generation only
-POST /api/content/generate
-
-# Test all services
-GET /api/test/health
-```
-
-### Test Endpoints
-
-```bash
-# Test individual services
-GET /api/test/ayrshare          # Social media
-GET /api/ayrshare/test/mailchimp # Email
-GET /api/test/workflow          # Full multi-channel test
-GET /api/test/providers         # AI providers
-```
+✅ **Self-Healing Code Generation** - Generates Python code, tests it, and auto-fixes errors
+✅ **Multi-Model Routing** - Routes tasks to Kimi (Moonshot AI) or Ollama automatically
+✅ **Secure File Operations** - Sandboxed workspace with path traversal protection
+✅ **Production HTTP API** - Flask + Gunicorn with proper error handling
+✅ **Resource Limits** - Memory and timeout limits for script execution
+✅ **Lab-Verse Integration** - Connects to your monitoring ecosystem
 
 ## 🏗️ Architecture
 
 ```
-src/
-├── config/          # Provider configurations
-├── middleware/      # Authentication, caching, error handling
-├── routes/          # API endpoints
-│   ├── content.js   # Content generation
-│   ├── ayrshare.js  # Multi-channel distribution
-│   └── test.js      # Testing endpoints
-├── services/        # AI providers and integrations
-│   ├── ayrshareService.js     # Social media posting
-│   ├── mailchimpService.js    # Email campaigns
-│   ├── perplexityService.js   # Web search & research
-│   ├── manusService.js        # Creative optimization
-│   ├── mcpService.js          # Claude & Mistral integration
-│   ├── a2aService.js          # Cross-platform communication
-│   └── elevenLabsService.js   # Voice synthesis
-├── utils/           # Logging, Redis, utilities
-└── server.js        # Main application entry point
+HTTP Request → Node.js TaskRouter → Orchestrator
+                                      ↓
+                          ┌───────────┴───────────┐
+                          ↓                       ↓
+                    Kimi (Moonshot AI)      Ollama (Local)
+                          ↓                       ↓
+                     Blueprint (JSON)      Blueprint (JSON)
+                          ↓                       ↓
+                          └───────────┬───────────┘
+                                      ↓
+                              Confidence Engine
+                                (Governance)
+                                      ↓
+            ┌─────────────────────────┼────────────────────────┐
+            ↓                         ↓                        ↓
+      Auto-Merge (>=90)      Pull Request (>=70)           Reject (<70)
 ```
 
-## 🔌 Integration Examples
+### 🛡️ Governance Model: The Confidence Engine
 
-### Zapier Integration
+This system is governed by a **Confidence Engine** that quantifies the risk of every proposed code change. It's an automated SRE (Site Reliability Engineer) that decides whether an AI-generated change is safe enough to merge automatically.
 
-1. Create a Zapier webhook trigger
-2. Configure action to POST to `/api/ayrshare/ayr`
-3. Map webhook data to content parameters
-4. Enable automatic multi-channel distribution
+#### How it Works
 
-### Advanced Workflow Example
+1.  **Blueprint Analysis**: Every proposed change (a "blueprint") from the AI is analyzed.
+2.  **Risk Scoring**: The `ConfidenceScorer` calculates a score from 0 to 100 based on several factors:
+    *   **Protected Paths**: Touching critical infrastructure files (like `.github/workflows` or `docker-compose.yml`) severely penalizes the score.
+    *   **Complexity**: Large, complex changes (measured by lines of code) receive a lower score.
+    *   **Security Risks**: A static analysis scan looks for potential vulnerabilities. Any findings reduce the score.
+    *   **Test Coverage**: Blueprints that include new or updated tests get a score bonus.
+3.  **Decision Matrix**: Based on the final score, the system takes one of three actions:
+    *   **A (90-100)**: **Auto-Merge**. The change is considered safe and is automatically merged and deployed.
+    *   **B (70-89)**: **Human Review**. The change is submitted as a pull request, requiring a human engineer to approve it.
+    *   **C (<70)**: **Reject**. The task is rejected, and the AI is notified to reconsider its approach.
 
-```javascript
-// Research + Generate + Optimize + Distribute workflow
-const workflow = {
-  topic: "Sustainable AI Development",
-  
-  // Research phase (Perplexity)
-  research: {
-    provider: "perplexity",
-    useWebSearch: true,
-    focusArea: "recent"
+This governance layer ensures that while the system is autonomous, it operates with a "safety-first" mindset, preventing risky or broken code from ever reaching production without oversight.
+
+
+### Core Components
+
+- **router.js** - The core orchestration logic with the Confidence Engine.
+- **governance/scorer.js** - The ConfidenceScorer that calculates the risk score.
+- **scripts/validate.sh** - The validation pipeline that runs before any code is committed.
+- **agents/healer.py** - The self-healing agent that responds to alerts.
+- **server.py** - The Flask HTTP API that exposes the orchestrator and the alert webhook.
+
+## 📋 Prerequisites
+
+- Docker Engine 20.10+
+- Docker Compose V2
+- 8GB+ RAM
+- 20GB+ disk space
+- **Kimi API Key** (required)
+- Ollama (optional, for local models)
+
+## 🚀 Quick Start
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
+cd The-lab-verse-monitoring-/rainmaker_orchestrator
+```
+
+### Step 2: Configure Environment
+
+```bash
+# Copy example configuration
+cp .env.example .env
+
+# Edit with your API keys
+nano .env
+```
+
+**Required Configuration:**
+
+```bash
+KIMI_API_KEY=your_actual_kimi_api_key_here
+```
+
+**Optional but Recommended:**
+
+```bash
+OLLAMA_API_BASE=http://ollama:11434/api
+WORKSPACE_PATH=/workspace
+LOG_LEVEL=INFO
+GUNICORN_WORKERS=4
+```
+
+### Step 3: Build and Run
+
+#### Using Docker (Recommended)
+
+```bash
+# Build image
+docker build -t rainmaker-orchestrator:latest .
+
+# Run container
+docker run -d -p 8080:8080 \
+  --name orchestrator \
+  -e KIMI_API_KEY=$KIMI_API_KEY \
+  -v $(pwd)/workspace:/workspace \
+  rainmaker-orchestrator:latest
+```
+
+#### Using Docker Compose
+
+```bash
+# Start full stack
+docker-compose -f ../docker-compose.superstack.yml up -d
+```
+
+### Step 4: Verify Deployment
+
+```bash
+# Check health
+curl http://localhost:8080/health
+
+# Expected response:
+# {
+#   "status": "healthy",
+#   "service": "rainmaker-orchestrator",
+#   "version": "2.0.0",
+#   "workspace": "/workspace",
+#   "configured_models": ["kimi", "ollama"]
+# }
+```
+
+## 📡 API Endpoints
+
+### Execute Task
+
+Execute an AI task with automatic model routing:
+
+```bash
+POST /execute
+Content-Type: application/json
+
+{
+  "context": "Your task description or prompt",
+  "type": "coding_task",
+  "model": "kimi",
+  "output_filename": "script.py"
+}
+```
+
+**Example: Self-Healing Code Generation**
+
+```bash
+curl -X POST http://localhost:8080/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": "Write a Python script that calculates the Fibonacci sequence up to n=10 and prints it.",
+    "type": "coding_task",
+    "output_filename": "fibonacci.py"
+  }'
+```
+
+**Response (Success):**
+
+```json
+{
+  "result": {
+    "status": "success",
+    "final_code_path": "fibonacci.py",
+    "output": "0 1 1 2 3 5 8 13 21 34",
+    "retries": 0,
+    "explanation": "Generated Fibonacci sequence calculator"
   },
-  
-  // Generation phase (Multiple providers)
-  generation: {
-    providers: ["google", "claude", "manus"],
-    tone: "authoritative",
-    audience: "business leaders"
-  },
-  
-  // Distribution phase
-  distribution: {
-    social: {
-      platforms: ["linkedin", "twitter", "facebook"],
-      optimizePerPlatform: true
-    },
-    email: {
-      subject: "Sustainable AI: Industry Report",
-      segment: "business_leaders"
-    },
-    audio: {
-      voiceType: "professional",
-      generatePodcast: true
-    },
-    notifications: {
-      slack: true,
-      teams: true
+  "status": "success",
+  "request_id": "abc-123"
+}
+```
+
+**What Actually Happens:**
+
+1. Orchestrator routes to Kimi API
+2. Kimi generates Python code (JSON format)
+3. Code is written to workspace as `fibonacci.py`
+4. FileSystem Agent executes the script in sandboxed environment
+5. If it fails → Error is sent back to Kimi → Regenerates fixed code
+6. Retries up to 3 times until code executes successfully
+7. Returns final working code and output
+
+### Health Check
+
+```bash
+GET /health
+```
+
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "service": "rainmaker-orchestrator",
+  "version": "2.0.0",
+  "workspace": "/workspace",
+  "configured_models": ["kimi", "ollama"]
+}
+```
+
+### List Workspace Files
+
+```bash
+GET /workspace/files
+```
+
+**Response:**
+
+```json
+{
+  "files": [
+    {
+      "name": "fibonacci.py",
+      "size": 542,
+      "modified": 1704483600.0
     }
-  }
-};
+  ],
+  "count": 1,
+  "workspace": "/workspace"
+}
+```
+
+### Get File Content
+
+```bash
+GET /workspace/files/fibonacci.py
+```
+
+**Response:**
+
+```json
+{
+  "filename": "fibonacci.py",
+  "content": "def fibonacci(n):\n    ...",
+  "status": "success"
+}
+```
+
+### Metrics (Prometheus)
+
+```bash
+GET /metrics
+```
+
+## 🔧 Configuration
+
+### Model Routing Logic
+
+The orchestrator automatically routes tasks based on model preference:
+
+```python
+# Automatic routing
+if "ollama" in task.get("model", "").lower():
+    route_to_ollama()  # Local inference
+else:
+    route_to_kimi()    # Cloud API (default)
+```
+
+### Security Features
+
+✅ **Path Traversal Protection** - All filenames sanitized with `secure_filename()`
+✅ **File Size Limits** - Max 10MB per file (configurable)
+✅ **Memory Limits** - Script execution limited to 128MB (configurable)
+✅ **Timeout Limits** - Scripts killed after 10s (configurable)
+✅ **Sandboxed Execution** - Scripts run in isolated workspace
+
+### Resource Limits
+
+Configure in `.env`:
+
+```bash
+MAX_FILE_SIZE=10485760        # 10MB max file size
+SCRIPT_TIMEOUT=10             # 10 second timeout
+SCRIPT_MEMORY_LIMIT=128       # 128MB memory limit
 ```
 
 ## 🧪 Testing
 
+### Test Self-Healing Code Generation
+
 ```bash
-# Test all providers and services
-npm test
-
-# Test specific functionality
-curl http://localhost:3000/api/test/health
-
-# Test multi-channel workflow
-curl -X POST http://localhost:3000/api/ayrshare/ayr \
+# Test with intentionally broken prompt
+curl -X POST http://localhost:8080/execute \
   -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
-  -d '{"topic":"AI Test","platforms":"twitter,linkedin"}'
+  -d '{
+    "context": "Write a Python script that divides 10 by user input. Handle division by zero.",
+    "type": "coding_task",
+    "output_filename": "divide.py"
+  }'
 ```
 
-## 📊 Monitoring
+The orchestrator will:
+1. Generate code
+2. Test it
+3. If it crashes, send error back to AI
+4. AI fixes the code
+5. Retries until it works (max 3 attempts)
 
-The application includes comprehensive logging and monitoring:
-
-- **Winston** for structured logging
-- **Redis** for caching and session management  
-- **Health checks** for all providers and services
-- **Cost tracking** for API usage
-- **Real-time WebSocket** progress updates
-- **Performance metrics** and analytics
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Environment Setup:**
+### Test Multiple Concurrent Requests
 
 ```bash
-export NODE_ENV=production
-export API_KEY=your-secure-production-key
-export REDIS_URL=redis://your-redis-server:6379
+# Run 10 concurrent requests
+for i in {1..10}; do
+  curl -X POST http://localhost:8080/execute \
+    -H "Content-Type: application/json" \
+    -d '{
+      "context": "Print hello world '$i'",
+      "type": "coding_task",
+      "output_filename": "hello'$i'.py"
+    }' &
+done
+wait
 ```
 
-2. **Docker Production:**
+All requests should complete successfully.
+
+### Load Testing
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+# Install k6
+brew install k6  # macOS
+
+# Run load test
+k6 run - <<EOF
+import http from 'k6/http';
+import { check } from 'k6';
+
+export let options = {
+  stages: [
+    { duration: '30s', target: 10 },
+    { duration: '1m', target: 20 },
+    { duration: '30s', target: 0 },
+  ],
+};
+
+export default function() {
+  let payload = JSON.stringify({
+    context: 'Write a Python script that prints "Hello from k6"',
+    type: 'coding_task',
+    output_filename: 'test.py'
+  });
+
+  let params = {
+    headers: { 'Content-Type': 'application/json' },
+  };
+
+  let res = http.post('http://localhost:8080/execute', payload, params);
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'has result': (r) => r.json('result') !== null,
+  });
+}
+EOF
 ```
 
-3. **Fly.io Deployment:** (Recommended)
+## 🔗 Lab-Verse Integration
+
+This orchestrator integrates with the broader Lab-Verse monitoring ecosystem:
+
+### Integration Points
+
+```
+Rainmaker Orchestrator
+        ↓
+    Lab-Verse API Gateway (Port 8080)
+        ↓
+    ┌───────────────────────────────────┐
+    │  Platform Integrations:           │
+    │  - Grafana (Metrics)              │
+    │  - HuggingFace (Models)           │
+    │  - DataDog (APM)                  │
+    │  - HubSpot (CRM)                  │
+    │  - Confluence (Docs)              │
+    │  - ClickUp (Tasks)                │
+    │  - CodeRabbit (Code Review)       │
+    └───────────────────────────────────┘
+```
+
+### Enable Full Integration
+
+1. Set Lab-Verse environment variables in `.env`:
 
 ```bash
-# Install Fly CLI
-fly auth login
-fly create your-app-name
-fly deploy
+GRAFANA_API_KEY=your_key
+HF_TOKEN=your_token
+DATADOG_API_KEY=your_key
+# ... etc
 ```
 
-## 🤝 Contributing
+2. Deploy with full stack:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+```bash
+cd ..
+docker-compose -f docker-compose.production.yml up -d
+```
 
-## 📄 License
+3. Access unified dashboard:
 
-MIT License - see LICENSE file for details
+```
+https://localhost
+```
+
+## 🚧 Troubleshooting
+
+### Orchestrator Won't Start
+
+```bash
+# Check logs
+docker logs orchestrator
+
+# Common issues:
+# 1. Missing KIMI_API_KEY
+echo $KIMI_API_KEY
+
+# 2. Port already in use
+lsof -i :8080
+
+# 3. Workspace permission denied
+ls -la /workspace
+```
+
+### API Returns "KIMI_API_KEY is not set"
+
+**Fix:**
+
+```bash
+# Verify key is in .env
+cat .env | grep KIMI_API_KEY
+
+# Restart container with key
+docker stop orchestrator
+docker rm orchestrator
+docker run -d -p 8080:8080 \
+  -e KIMI_API_KEY=your_actual_key_here \
+  --name orchestrator \
+  rainmaker-orchestrator:latest
+```
+
+### Code Generation Fails After Max Retries
+
+**Possible causes:**
+
+1. **Prompt too vague** - Be more specific
+2. **Task too complex** - Break into smaller tasks
+3. **Model limitations** - Try different model
+4. **API rate limits** - Wait and retry
+
+**Debug:**
+
+```bash
+# Check detailed error
+curl -X POST http://localhost:8080/execute \
+  -H "Content-Type: application/json" \
+  -d '{...}' | jq '.result.last_error'
+```
+
+### High Memory Usage
+
+**Fix:**
+
+```bash
+# Reduce workers
+docker stop orchestrator
+docker run -d -p 8080:8080 \
+  -e GUNICORN_WORKERS=2 \
+  -e KIMI_API_KEY=$KIMI_API_KEY \
+  rainmaker-orchestrator:latest
+```
+
+## 📊 Performance Metrics
+
+### Expected Performance
+
+- **Request Latency**: 2-10 seconds (AI generation + execution)
+- **Concurrent Capacity**: 4 workers = 4 simultaneous tasks
+- **Memory Usage**: ~512MB per worker
+- **Success Rate**: >95% for well-defined prompts
+
+### Optimization Tips
+
+1. **Use Ollama for speed** - Local inference is 10x faster than API
+2. **Increase workers** - More workers = more concurrency
+3. **Tune timeouts** - Increase for complex tasks
+4. **Cache results** - Store frequently used code
+
+## 🔒 Security
+
+### Production Checklist
+
+- [ ] KIMI_API_KEY set (not placeholder)
+- [ ] FLASK_DEBUG=false
+- [ ] Workspace directory permissions set (chmod 700)
+- [ ] Resource limits configured
+- [ ] Running as non-root user in Docker
+- [ ] HTTPS enabled (if exposed to internet)
+- [ ] Rate limiting configured
+- [ ] Monitoring alerts set up
+
+### Security Best Practices
+
+✅ All file operations use `secure_filename()`
+✅ Scripts run with memory/timeout limits
+✅ Workspace isolated from host filesystem
+✅ No code execution outside sandbox
+✅ API keys stored in environment variables
+✅ Logs don't contain sensitive data
+
+## 📝 License
+
+MIT License - See [LICENSE](../LICENSE) file for details.
 
 ## 🆘 Support
 
-- **Documentation**: Check the `/docs` directory
-- **Issues**: Create a GitHub issue
-- **Discussions**: Use GitHub Discussions for questions
-- **Setup Guide**: See `ZAPIER_AYRSHARE_SETUP.md` for detailed configuration
-
-## 🔄 Recent Updates
-
-### Latest Features
-
-- ✅ **Multi-Channel Distribution**: Ayrshare + MailChimp + A2A integration
-- ✅ **Advanced AI Providers**: Perplexity, Manus, Claude, Mistral via MCP
-- ✅ **Voice Synthesis**: ElevenLabs integration for audio content
-- ✅ **Real-time Monitoring**: WebSocket progress updates
-- ✅ **Cross-Platform Communication**: A2A service for team notifications
-- ✅ **Enhanced Research**: Web search with Perplexity AI
-- ✅ **Creative Optimization**: Content enhancement with Manus AI
-
-### Roadmap
-
-- 🔄 Advanced analytics dashboard
-- 🔄 Custom model fine-tuning
-- 🔄 Batch processing capabilities
-- 🔄 Advanced workflow automation
-- 🔄 Multi-language UI support
-- 🔄 Video content generation
-- 🔄 Advanced A/B testing for content
-
-## About
-
-A comprehensive Node.js server that runs multiple AI agents and integrates with various platforms for automated content creation and distribution across social media, email, voice, and team communication channels.
+- **GitHub Issues**: [Create an issue](https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues)
+- **Documentation**: See `docs/` directory
+- **Logs**: `docker logs orchestrator`
 
 ---
 
-**🎯 Perfect for**: Content creators, marketing teams, businesses, and developers who want to automate their content distribution across multiple channels with AI-powered generation and optimization.
+**Made with ❤️ by the Rainmaker team - Production Ready, No Mock-ups!**

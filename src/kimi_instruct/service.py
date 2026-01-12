@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict, field
 from enum import Enum
@@ -23,7 +23,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from prometheus_client import Counter, Histogram, Gauge, generate_latest
+    from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     print("Warning: prometheus_client not installed, metrics disabled")
@@ -60,6 +60,52 @@ logging.basicConfig(
         logging.FileHandler('logs/kimi_instruct.log') if Path('logs').exists() else logging.NullHandler()
     ]
 )
+# Prometheus metrics
+REQUEST_COUNT = Counter('kimi_requests_total', 'Total requests to Kimi API', ['method', 'endpoint', 'status'])
+REQUEST_DURATION = Histogram('kimi_request_duration_seconds', 'Request duration in seconds')
+TASK_COUNT = Counter('kimi_tasks_total', 'Total tasks created', ['priority', 'status'])
+
+def default_serializer(o):
+    if isinstance(o, (datetime, date)):
+        return o.isoformat()
+    if isinstance(o, Enum):
+        return o.value
+    raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
+
+async def handle_status(request):
+    """
+    Handles requests for the Kimi Instruct status report.
+    """
+    kimi = request.app['kimi']
+    report = await kimi.get_status_report()
+    return web.json_response(report, dumps=lambda x: json.dumps(x, default=default_serializer))
+
+async def handle_create_task(request):
+    """
+    Handles requests to create a new task.
+    """
+    try:
+        kimi = request.app['kimi']
+        data = await request.json()
+
+        task = await kimi.create_task(
+            title=data['title'],
+            description=data.get('description', ''),
+            priority=TaskPriority(data.get('priority', 'medium')),
+            assigned_to=data.get('assigned_to', 'kimi'),
+            human_approval_required=data.get('human_approval_required', False)
+        )
+        return web.json_response({'task_id': task.id}, status=201)
+    except (KeyError, ValueError) as e:
+        return web.json_response({'error': str(e)}, status=400)
+
+async def handle_health(request):
+    """
+    A simple health check endpoint.
+    """
+    return web.json_response({"status": "healthy"})
+
+
 logger = logging.getLogger('kimi_instruct')
 
 class TaskStatus(Enum):
@@ -483,501 +529,504 @@ Provide analysis in JSON format:
             "ethical_considerations": ["Standard compliance check"]
         }
 
-class KimiInstructService:
-    """Production Kimi Instruct Service"""
-    
+class KimiService:
+    """Web service for Kimi Instruct"""
+
     def __init__(self):
+        self.kimi = KimiInstruct()
         self.app = web.Application()
-        self.tasks: Dict[str, Task] = {}
-        self.config = self._load_config()
-        self.ai_engine = AIEngine(self.config)
-        
-        # Initialize metrics if Prometheus is available
-        if PROMETHEUS_AVAILABLE:
-            self.task_counter = Counter('kimi_tasks_total', 'Total tasks processed', ['status', 'type'])
-            self.task_duration = Histogram('kimi_task_duration_seconds', 'Task duration')
-            self.risk_gauge = Gauge('kimi_project_risk_score', 'Current project risk score')
-            self.efficiency_gauge = Gauge('kimi_efficiency_score', 'Current efficiency score')
-            self.revenue_gauge = Gauge('kimi_mrr_projection', 'Monthly Recurring Revenue projection')
-        else:
-            # Mock metrics
-            self.task_counter = Counter()
-            self.task_duration = Histogram()
-            self.risk_gauge = Gauge()
-            self.efficiency_gauge = Gauge()
-            self.revenue_gauge = Gauge()
-        
-        # Project metrics
-        self.project_metrics = ProjectMetrics()
-        
-        self._setup_routes()
-        self._setup_cors()
-        
-        logger.info(f"Kimi Instruct Service initialized with AI providers: {list(self.ai_engine.providers.keys())}")
+        self.setup_routes()
+        self.setup_cors()
 
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration with environment variable integration"""
-        default_config = {
-            "human_oversight_mode": os.getenv("HUMAN_OVERSIGHT_MODE", "collaborative"),
-            "auto_execution_threshold": float(os.getenv("AUTO_EXECUTION_THRESHOLD", "0.75")),
-            "max_concurrent_tasks": int(os.getenv("MAX_CONCURRENT_TASKS", "15")),
-            "risk_thresholds": {
-                "low": 0.2,
-                "medium": 0.5,
-                "high": float(os.getenv("RISK_THRESHOLD_HIGH", "0.8")),
-                "critical": float(os.getenv("RISK_THRESHOLD_CRITICAL", "0.95"))
-            },
-            "decision_authority": {
-                "auto_deploy_staging": True,
-                "auto_deploy_production": False,
-                "auto_cost_optimization": True,
-                "max_budget_decision": 5000,
-                "require_approval_keywords": ["production", "delete", "critical", "security", "budget", "revenue"]
-            },
-            "revenue_optimization": {
-                "enabled": True,
-                "target_mrr": int(os.getenv("TARGET_MRR", "75000")),
-                "optimization_frequency_hours": int(os.getenv("OPTIMIZATION_FREQUENCY_HOURS", "6")),
-                "a2a_negotiation_enabled": os.getenv("A2A_NEGOTIATION_ENABLED", "true").lower() == "true"
-            }
-        }
-        
-        # Load from file if exists
-        config_path = Path("config/kimi_instruct.json")
-        if config_path.exists():
-            try:
-                with open(config_path) as f:
-                    file_config = json.load(f)
-                    default_config.update(file_config)
-            except Exception as e:
-                logger.warning(f"Failed to load config file: {e}")
-        
-        return default_config
+    def setup_routes(self):
+        """Setup HTTP routes"""
+        self.app.router.add_get('/', self.index)
+        self.app.router.add_get('/health', self.health)
+        self.app.router.add_get('/metrics', self.metrics)
 
-    def _setup_cors(self):
-        """Setup CORS for web dashboard"""
-        if CORS_AVAILABLE:
-            try:
-                cors = cors_setup(self.app, defaults={
-                    "*": ResourceOptions(
-                        allow_credentials=True,
-                        expose_headers="*",
-                        allow_headers="*",
-                        allow_methods="*"
-                    )
-                })
-            except Exception as e:
-                logger.warning(f"CORS setup failed: {e}")
+        # Status and reporting
+        self.app.router.add_get('/status', self.get_status)
+        self.app.router.add_get('/tasks', self.list_tasks)
+        self.app.router.add_get('/tasks/{task_id}', self.get_task)
 
-    def _setup_routes(self):
-        """Setup comprehensive API routes"""
-        
-        # Core API routes
-        self.app.router.add_get('/', self._handle_root)
-        self.app.router.add_get('/health', self._handle_health)
-        self.app.router.add_get('/status', self._handle_status)
-        
-        if PROMETHEUS_AVAILABLE:
-            self.app.router.add_get('/metrics', self._handle_metrics)
-        
         # Task management
-        self.app.router.add_get('/api/v1/tasks', self._handle_list_tasks)
-        self.app.router.add_post('/api/v1/tasks', self._handle_create_task)
-        self.app.router.add_get('/api/v1/tasks/{task_id}', self._handle_get_task)
-        
-        # AI & Intelligence
-        self.app.router.add_get('/api/v1/next-actions', self._handle_next_actions)
-        self.app.router.add_post('/api/v1/analyze', self._handle_analyze)
-        self.app.router.add_get('/api/v1/optimize', self._handle_optimize)
-        
-        # Revenue optimization
-        self.app.router.add_post('/api/v1/revenue/optimize', self._handle_revenue_optimize)
-        
-        # Basic dashboard (serve static content if available)
-        self.app.router.add_get('/dashboard', self._handle_dashboard)
-        
-        # Add static file serving if directory exists
-        if Path("static").exists():
-            self.app.router.add_static('/', 'static', name='static')
+        self.app.router.add_post('/tasks', self.create_task)
+        self.app.router.add_post('/tasks/{task_id}/execute', self.execute_task)
+        self.app.router.add_post('/tasks/{task_id}/approve', self.approve_task)
+        self.app.router.add_post('/tasks/{task_id}/deny', self.deny_task)
 
-    async def _handle_root(self, request):
-        """Enhanced root endpoint with system info"""
-        return web.json_response({
-            "service": "Kimi Instruct AI Project Manager",
-            "version": "2.0.0-production",
-            "status": "operational",
-            "ai_providers": list(self.ai_engine.providers.keys()),
-            "features": [
-                "AI-powered task management",
-                "Multi-provider AI integration", 
-                "Revenue optimization",
-                "Real-time monitoring",
-                "Human-AI collaboration"
-            ],
-            "endpoints": {
-                "dashboard": "/dashboard",
-                "api": "/api/v1",
-                "health": "/health",
-                "metrics": "/metrics" if PROMETHEUS_AVAILABLE else None
-            }
+        # Human interaction
+        self.app.router.add_post('/checkin', self.human_checkin)
+        self.app.router.add_get('/next-actions', self.get_next_actions)
+
+        # Dashboard
+        self.app.router.add_get('/dashboard', self.dashboard)
+
+        # Static files for dashboard
+        self.app.router.add_static('/', path='static', name='static')
+
+    def setup_cors(self):
+        """Setup CORS for web dashboard"""
+        import aiohttp_cors
+        cors = cors_setup(self.app, defaults={
+            "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*"
+            )
         })
 
-    async def _handle_health(self, request):
-        """Comprehensive health check with AI provider status"""
-        health_data = {
+        # Configure CORS for all routes
+        for route in list(self.app.router.routes()):
+            cors.add(route)
+
+    async def index(self, request):
+        """Main index page"""
+        return web.json_response({
+            "service": "Kimi Instruct",
+            "version": "1.0.0",
+            "status": "running",
+            "endpoints": [
+                "/health", "/metrics", "/status", "/tasks", "/dashboard"
+            ]
+        })
+
+    async def health(self, request):
+        """Health check endpoint"""
+        return web.json_response({
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
-            "version": "2.0.0-production",
-            "components": {
-                "ai_engine": "healthy" if self.ai_engine.providers else "degraded",
-                "task_manager": "healthy",
-                "metrics": "healthy" if PROMETHEUS_AVAILABLE else "disabled"
-            },
-            "ai_providers": {
-                provider: "available" for provider in self.ai_engine.providers.keys()
-            },
-            "metrics": {
-                "total_tasks": self.project_metrics.total_tasks,
-                "active_tasks": len([t for t in self.tasks.values() 
-                                   if t.status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]]),
-                "success_rate": self._calculate_success_rate(),
-                "mrr_projection": self.project_metrics.mrr_projection
-            }
-        }
-        
-        return web.json_response(health_data)
-
-    async def _handle_status(self, request):
-        """Get comprehensive project status"""
-        return web.json_response({
-            "project_metrics": {
-                k: v.isoformat() if isinstance(v, datetime) else v 
-                for k, v in asdict(self.project_metrics).items()
-            },
-            "ai_providers": list(self.ai_engine.providers.keys()),
-            "active_tasks": len([t for t in self.tasks.values() 
-                               if t.status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]]),
-            "recent_tasks": [t.to_dict() for t in list(self.tasks.values())[-5:]],
-            "system_health": "operational"
+            "version": "1.0.0"
         })
 
-    async def _handle_metrics(self, request):
+    async def metrics(self, request):
         """Prometheus metrics endpoint"""
-        if not PROMETHEUS_AVAILABLE:
-            return web.Response(text="# Prometheus not available", content_type='text/plain')
-        return web.Response(text=generate_latest(), content_type='text/plain')
+        # Update task metrics
+        for task in self.kimi.tasks.values():
+            TASK_COUNT.labels(
+                priority=task.priority.value,
+                status=task.status.value
+            ).inc(0)  # Just to ensure labels exist
 
-    async def _handle_dashboard(self, request):
-        """Simple dashboard redirect"""
+        return web.Response(
+            text=generate_latest().decode('utf-8'),
+            content_type=CONTENT_TYPE_LATEST
+        )
+
+    async def get_status(self, request):
+        """Get project status"""
+        with REQUEST_DURATION.time():
+            try:
+                status = await self.kimi.get_status_report()
+                REQUEST_COUNT.labels(method='GET', endpoint='/status', status='200').inc()
+                return web.json_response(status, dumps=lambda x: json.dumps(x, default=default_serializer))
+            except Exception as e:
+                REQUEST_COUNT.labels(method='GET', endpoint='/status', status='500').inc()
+                return web.json_response(
+                    {"error": str(e)},
+                    status=500
+                )
+
+    async def list_tasks(self, request):
+        """List all tasks"""
+        try:
+            tasks = []
+            for task in self.kimi.tasks.values():
+                tasks.append({
+                    "id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "priority": task.priority.value,
+                    "status": task.status.value,
+                    "assigned_to": task.assigned_to,
+                    "created_at": task.created_at.isoformat(),
+                    "due_date": task.due_date.isoformat() if task.due_date else None,
+                    "human_approval_required": task.human_approval_required,
+                    "metadata": task.metadata
+                })
+
+            REQUEST_COUNT.labels(method='GET', endpoint='/tasks', status='200').inc()
+            return web.json_response({"tasks": tasks, "total": len(tasks)})
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='GET', endpoint='/tasks', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def get_task(self, request):
+        """Get specific task"""
+        task_id = request.match_info['task_id']
+
+        try:
+            task = self.kimi.tasks.get(task_id)
+            if not task:
+                REQUEST_COUNT.labels(method='GET', endpoint='/tasks/{id}', status='404').inc()
+                return web.json_response({"error": "Task not found"}, status=404)
+
+            task_data = {
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "priority": task.priority.value,
+                "status": task.status.value,
+                "assigned_to": task.assigned_to,
+                "created_at": task.created_at.isoformat(),
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "dependencies": task.dependencies,
+                "human_approval_required": task.human_approval_required,
+                "metadata": task.metadata
+            }
+
+            REQUEST_COUNT.labels(method='GET', endpoint='/tasks/{id}', status='200').inc()
+            return web.json_response(task_data)
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='GET', endpoint='/tasks/{id}', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def create_task(self, request):
+        """Create a new task"""
+        try:
+            data = await request.json()
+
+            # Validate required fields
+            if not data.get('title'):
+                return web.json_response({"error": "Title is required"}, status=400)
+
+            # Parse priority
+            priority_str = data.get('priority', 'medium')
+            try:
+                priority = TaskPriority(priority_str)
+            except ValueError:
+                return web.json_response(
+                    {"error": f"Invalid priority: {priority_str}"},
+                    status=400
+                )
+
+            # Parse due date if provided
+            due_date = None
+            if data.get('due_date'):
+                try:
+                    due_date = datetime.fromisoformat(data['due_date'])
+                except ValueError:
+                    return web.json_response(
+                        {"error": "Invalid due_date format. Use ISO format."},
+                        status=400
+                    )
+
+            # Create task
+            task = await self.kimi.create_task(
+                title=data['title'],
+                description=data.get('description', ''),
+                priority=priority,
+                assigned_to=data.get('assigned_to', 'kimi'),
+                due_date=due_date,
+                dependencies=data.get('dependencies', []),
+                human_approval_required=data.get('human_approval_required', False),
+                metadata=data.get('metadata', {})
+            )
+
+            TASK_COUNT.labels(priority=priority.value, status='created').inc()
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks', status='201').inc()
+
+            return web.json_response({
+                "id": task.id,
+                "title": task.title,
+                "status": task.status.value,
+                "message": "Task created successfully"
+            }, status=201)
+
+        except json.JSONDecodeError:
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks', status='400').inc()
+            return web.json_response({"error": "Invalid JSON"}, status=400)
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def execute_task(self, request):
+        """Execute a specific task"""
+        task_id = request.match_info['task_id']
+
+        try:
+            success = await self.kimi.execute_task(task_id)
+
+            if success:
+                REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/execute', status='200').inc()
+                return web.json_response({
+                    "message": "Task executed successfully",
+                    "task_id": task_id
+                })
+            else:
+                REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/execute', status='400').inc()
+                return web.json_response({
+                    "error": "Task execution failed",
+                    "task_id": task_id
+                }, status=400)
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/execute', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def approve_task(self, request):
+        """Approve a task requiring human approval"""
+        task_id = request.match_info['task_id']
+
+        try:
+            task = self.kimi.tasks.get(task_id)
+            if not task:
+                return web.json_response({"error": "Task not found"}, status=404)
+
+            # Remove approval requirement and execute
+            task.human_approval_required = False
+            task.status = TaskStatus.PENDING
+
+            success = await self.kimi.execute_task(task_id)
+
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/approve', status='200').inc()
+            return web.json_response({
+                "message": "Task approved and executed",
+                "task_id": task_id,
+                "success": success
+            })
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/approve', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def deny_task(self, request):
+        """Deny a task requiring human approval"""
+        task_id = request.match_info['task_id']
+
+        try:
+            data = await request.json()
+            reason = data.get('reason', 'No reason provided')
+
+            task = self.kimi.tasks.get(task_id)
+            if not task:
+                return web.json_response({"error": "Task not found"}, status=404)
+
+            # Mark task as cancelled
+            task.status = TaskStatus.CANCELLED
+            task.metadata['denial_reason'] = reason
+            task.metadata['denied_at'] = datetime.now().isoformat()
+
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/deny', status='200').inc()
+            return web.json_response({
+                "message": "Task denied",
+                "task_id": task_id,
+                "reason": reason
+            })
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='POST', endpoint='/tasks/{id}/deny', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def human_checkin(self, request):
+        """Process human checkin"""
+        try:
+            data = await request.json()
+
+            # Update context based on checkin data
+            self.kimi.context.last_human_checkin = datetime.now()
+
+            if 'objectives_update' in data:
+                self.kimi.context.objectives = data['objectives_update']
+
+            if 'constraints_update' in data:
+                self.kimi.context.constraints = data['constraints_update']
+
+            # Log the checkin
+            self.kimi.decision_history.append({
+                "type": "human_checkin",
+                "data": data,
+                "timestamp": datetime.now().isoformat()
+            })
+
+            REQUEST_COUNT.labels(method='POST', endpoint='/checkin', status='200').inc()
+            return web.json_response({
+                "message": "Checkin processed successfully",
+                "next_checkin": (datetime.now() +
+                               timedelta(hours=self.kimi.config['human_checkin_interval_hours'])).isoformat()
+            })
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='POST', endpoint='/checkin', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def get_next_actions(self, request):
+        """Get recommended next actions"""
+        try:
+            actions = await self.kimi.get_next_actions()
+            REQUEST_COUNT.labels(method='GET', endpoint='/next-actions', status='200').inc()
+            return web.json_response({"actions": actions})
+
+        except Exception as e:
+            REQUEST_COUNT.labels(method='GET', endpoint='/next-actions', status='500').inc()
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def dashboard(self, request):
+        """Serve dashboard HTML"""
         dashboard_html = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Kimi Instruct Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
-        .status-card { background: #e8f5e8; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #28a745; }
-        .api-links { display: flex; gap: 10px; flex-wrap: wrap; }
-        .api-link { background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; }
-        .api-link:hover { background: #0056b3; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; color: #333; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .metric { text-align: center; }
+        .metric-value { font-size: 2em; font-weight: bold; color: #007acc; }
+        .metric-label { color: #666; margin-top: 5px; }
+        .task-list { margin-top: 20px; }
+        .task { padding: 10px; border-left: 4px solid #007acc; margin: 5px 0; background: #f9f9f9; }
+        .task.critical { border-left-color: #ff4444; }
+        .task.high { border-left-color: #ff8800; }
+        .task.medium { border-left-color: #00aa44; }
+        .refresh-btn { background: #007acc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .refresh-btn:hover { background: #005a99; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 Kimi Instruct Dashboard</h1>
-        <div class="status-card">
-            <h3>Status: Operational</h3>
-            <p>AI-powered project management is active and ready.</p>
+        <div class="card">
+            <h1 class="header">🤖 Kimi Instruct Dashboard</h1>
+            <p style="text-align: center; color: #666;">Hybrid AI Project Manager for LabVerse Monitoring</p>
+            <div style="text-align: center;">
+                <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+            </div>
         </div>
-        
-        <h3>Quick Actions:</h3>
-        <div class="api-links">
-            <a href="/api/v1/tasks" class="api-link">View Tasks</a>
-            <a href="/health" class="api-link">System Health</a>
-            <a href="/status" class="api-link">Project Status</a>
-            <a href="/metrics" class="api-link">Metrics</a>
+
+        <div class="card">
+            <h2>Project Status</h2>
+            <div class="status-grid" id="status-grid">
+                <!-- Status metrics will be loaded here -->
+            </div>
         </div>
-        
-        <h3>CLI Usage:</h3>
-        <pre>
-# Get status
-./kimi-cli status --detailed
 
-# Create task
-./kimi-cli task --title "Deploy service" --priority high
+        <div class="card">
+            <h2>Active Tasks</h2>
+            <div class="task-list" id="task-list">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </div>
 
-# Revenue optimization
-./kimi-cli revenue --target-mrr 25000
-        </pre>
-        
-        <p><strong>Pro tip:</strong> Use the CLI for advanced operations and automation!</p>
+        <div class="card">
+            <h2>Next Actions</h2>
+            <div id="next-actions">
+                <!-- Next actions will be loaded here -->
+            </div>
+        </div>
     </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                // Load status
+                const statusResponse = await fetch('/status');
+                const status = await statusResponse.json();
+
+                // Load tasks
+                const tasksResponse = await fetch('/tasks');
+                const tasks = await tasksResponse.json();
+
+                // Load next actions
+                const actionsResponse = await fetch('/next-actions');
+                const actions = await actionsResponse.json();
+
+                // Update status grid
+                const statusGrid = document.getElementById('status-grid');
+                statusGrid.innerHTML = `
+                    <div class="metric">
+                        <div class="metric-value">${status.task_summary.completion_percentage.toFixed(1)}%</div>
+                        <div class="metric-label">Progress</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${status.task_summary.total}</div>
+                        <div class="metric-label">Total Tasks</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${status.task_summary.completed}</div>
+                        <div class.metric-label">Completed</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${status.task_summary.blocked}</div>
+                        <div class="metric-label">Blocked</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${status.risk_level.toUpperCase()}</div>
+                        <div class="metric-label">Risk Level</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">$${status.project_context.budget_remaining.toFixed(0)}</div>
+                        <div class="metric-label">Budget Remaining</div>
+                    </div>
+                `;
+
+                // Update task list
+                const taskList = document.getElementById('task-list');
+                taskList.innerHTML = tasks.tasks.slice(0, 10).map(task => `
+                    <div class="task ${task.priority}">
+                        <strong>${task.title}</strong>
+                        <span style="background: #eee; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${task.status}</span>
+                        <br>
+                        <small>${task.description}</small>
+                    </div>
+                `).join('');
+
+                // Update next actions
+                const nextActions = document.getElementById('next-actions');
+                nextActions.innerHTML = actions.actions.map(action => `
+                    <div class="task ${action.priority}">
+                        <strong>${action.action.replace('_', ' ').toUpperCase()}</strong>
+                        <br>
+                        <small>${action.description}</small>
+                    </div>
+                `).join('') || '<p>No immediate actions required.</p>';
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                document.getElementById('status-grid').innerHTML = '<p>Failed to load status</p>';
+            }
+        }
+
+        // Load dashboard on page load
+        window.onload = loadDashboard;
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
 </body>
 </html>
         """
+
         return web.Response(text=dashboard_html, content_type='text/html')
 
-    async def _handle_create_task(self, request):
-        """Create new task with AI analysis"""
-        try:
-            data = await request.json()
-            
-            task_id = f"task_{uuid.uuid4().hex[:8]}"
-            task = Task(
-                id=task_id,
-                title=data["title"],
-                description=data.get("description", ""),
-                status=TaskStatus.PENDING,
-                priority=Priority(data.get("priority", "medium")),
-                task_type=TaskType(data.get("type", "analysis")),
-                requires_approval=data.get("requires_approval", False),
-                metadata=data.get("metadata", {})
-            )
-            
-            # AI analysis
-            try:
-                analysis = await self.ai_engine.analyze_task(task)
-                task.metadata["ai_analysis"] = analysis
-                
-                # Determine if approval needed based on AI analysis
-                if analysis.get("risk_assessment") in ["high", "critical"]:
-                    task.requires_approval = True
-                    task.approval_reason = f"High risk detected: {analysis.get('risk_assessment')}"
-                    task.status = TaskStatus.REQUIRES_APPROVAL
-                    
-            except Exception as e:
-                logger.warning(f"AI analysis failed for task {task_id}: {e}")
-            
-            self.tasks[task_id] = task
-            self.project_metrics.total_tasks += 1
-            self.task_counter.labels(status="created", type=task.task_type.value).inc()
-            
-            logger.info(f"Task created: {task_id} - {task.title}")
-            
-            return web.json_response({
-                "task": task.to_dict(),
-                "message": "Task created successfully"
-            })
-            
-        except Exception as e:
-            logger.error(f"Task creation failed: {e}")
-            return web.json_response({"error": "Task creation failed"}, status=500)
+async def create_app():
+    """Create and configure the web application"""
+    service = KimiService()
+    return service.app
 
-    async def _handle_list_tasks(self, request):
-        """List tasks with filtering"""
-        status_filter = request.query.get("status")
-        priority_filter = request.query.get("priority")
-        limit = int(request.query.get("limit", 50))
-        
-        tasks = list(self.tasks.values())
-        
-        if status_filter:
-            tasks = [t for t in tasks if t.status.value == status_filter]
-        if priority_filter:
-            tasks = [t for t in tasks if t.priority.value == priority_filter]
-        
-        # Sort by created_at desc and limit
-        tasks.sort(key=lambda x: x.created_at, reverse=True)
-        tasks = tasks[:limit]
-        
-        return web.json_response({
-            "tasks": [t.to_dict() for t in tasks],
-            "total": len(tasks),
-            "filters_applied": {
-                "status": status_filter,
-                "priority": priority_filter,
-                "limit": limit
-            }
-        })
-
-    async def _handle_get_task(self, request):
-        """Get specific task details"""
-        task_id = request.match_info['task_id']
-        
-        if task_id not in self.tasks:
-            return web.json_response({"error": "Task not found"}, status=404)
-        
-        task = self.tasks[task_id]
-        return web.json_response({"task": task.to_dict()})
-
-    async def _handle_next_actions(self, request):
-        """Get AI-powered next action recommendations"""
-        recommendations = [
-            {
-                "action": "Review pending tasks",
-                "priority": "high",
-                "reason": "Multiple tasks require attention",
-                "estimated_time": 15
-            },
-            {
-                "action": "Run revenue optimization",
-                "priority": "medium", 
-                "reason": "MRR growth opportunity identified",
-                "estimated_time": 5
-            }
-        ]
-        
-        return web.json_response({"recommendations": recommendations})
-
-    async def _handle_analyze(self, request):
-        """Analyze arbitrary text/task with AI"""
-        try:
-            data = await request.json()
-            text = data.get("text", "")
-            
-            if not text:
-                return web.json_response({"error": "Text is required"}, status=400)
-            
-            # Create temporary task for analysis
-            temp_task = Task(
-                id="temp",
-                title="Analysis Request",
-                description=text,
-                status=TaskStatus.PENDING,
-                priority=Priority.MEDIUM
-            )
-            
-            analysis = await self.ai_engine.analyze_task(temp_task)
-            
-            return web.json_response({
-                "analysis": analysis,
-                "text_analyzed": text[:100] + "..." if len(text) > 100 else text
-            })
-            
-        except Exception as e:
-            logger.error(f"Analysis failed: {e}")
-            return web.json_response({"error": "Analysis failed"}, status=500)
-
-    async def _handle_optimize(self, request):
-        """Get optimization recommendations"""
-        return web.json_response({
-            "optimizations": [
-                {
-                    "type": "performance",
-                    "recommendation": "Optimize task scheduling algorithm",
-                    "impact": "15% efficiency improvement",
-                    "effort": "medium"
-                },
-                {
-                    "type": "cost",
-                    "recommendation": "Implement AI provider cost optimization",
-                    "impact": "$500/month savings",
-                    "effort": "low"
-                }
-            ],
-            "competitive_intelligence": {
-                "market_position": "Leading in AI automation",
-                "advantages": ["Multi-provider AI integration", "Real-time optimization"]
-            }
-        })
-
-    async def _handle_revenue_optimize(self, request):
-        """Handle revenue optimization requests"""
-        try:
-            data = await request.json()
-            
-            # Create revenue optimization task
-            task_id = f"rev_opt_{uuid.uuid4().hex[:8]}"
-            task = Task(
-                id=task_id,
-                title=f"Revenue Optimization: {data.get('target', 'General')}",
-                description=f"AI-powered revenue optimization targeting ${data.get('target_mrr', 10000):,}",
-                status=TaskStatus.IN_PROGRESS,
-                priority=Priority.HIGH,
-                task_type=TaskType.REVENUE_OPTIMIZATION,
-                metadata={
-                    "target_channels": data.get("channels", ["organic", "paid", "affiliate"]),
-                    "target_mrr": data.get("target_mrr", 10000),
-                    "optimization_type": data.get("type", "conversion")
-                }
-            )
-            
-            # AI analysis for revenue optimization
-            analysis = await self.ai_engine.analyze_task(task)
-            
-            # Simulate revenue projections
-            base_mrr = self.project_metrics.mrr_projection
-            optimization_factor = analysis.get("revenue_impact", 0.2)
-            projected_increase = base_mrr * optimization_factor if base_mrr > 0 else data.get("target_mrr", 10000) * 0.1
-            
-            self.tasks[task_id] = task
-            
-            # Update MRR projection
-            self.project_metrics.mrr_projection += projected_increase
-            self.revenue_gauge.set(self.project_metrics.mrr_projection)
-            
-            logger.info(f"Revenue optimization initiated: {task_id}, projected increase: ${projected_increase:.2f}")
-            
-            return web.json_response({
-                "task": task.to_dict(),
-                "analysis": analysis,
-                "projections": {
-                    "current_mrr": base_mrr,
-                    "projected_increase": projected_increase,
-                    "new_mrr_projection": self.project_metrics.mrr_projection,
-                    "confidence": analysis.get("automation_potential", 0.5)
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Revenue optimization failed: {e}")
-            return web.json_response({"error": "Revenue optimization failed"}, status=500)
-
-    def _calculate_success_rate(self) -> float:
-        """Calculate task success rate"""
-        if not self.tasks:
-            return 1.0
-        
-        completed = len([t for t in self.tasks.values() if t.status == TaskStatus.COMPLETED])
-        total = len(self.tasks)
-        return completed / total if total > 0 else 1.0
-
-    async def run_usaa_goal(self, goal: str, ctx: dict) -> dict:
-        """Legacy USAA goal method for compatibility"""
-        logger.info(f"Legacy USAA goal: {goal}")
-        return {
-            "goal": goal,
-            "status": "converted_to_modern_task",
-            "message": "Use the new task-based API instead"
-        }
-
-    async def start(self, host: str = "0.0.0.0", port: int = 8084):
-        """Start the production Kimi service"""
-        # Create data and logs directories
-        Path("data").mkdir(exist_ok=True)
-        Path("logs").mkdir(exist_ok=True)
-        
-        logger.info(f"Starting Kimi Instruct Production Service on {host}:{port}")
-        logger.info(f"AI providers: {list(self.ai_engine.providers.keys())}")
-        logger.info(f"Prometheus metrics: {'enabled' if PROMETHEUS_AVAILABLE else 'disabled'}")
-        
-        # Start web server
-        runner = web.AppRunner(self.app)
-        await runner.setup()
-        site = web.TCPSite(runner, host, port)
-        await site.start()
-        
-        logger.info(f"🤖 Kimi Instruct service started successfully!")
-        logger.info(f"   Dashboard: http://{host}:{port}/dashboard")
-        logger.info(f"   API: http://{host}:{port}/api/v1")
-        logger.info(f"   Health: http://{host}:{port}/health")
-        
-        try:
-            # Keep the server running
-            while True:
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Shutting down Kimi Instruct service")
-        finally:
-            await self.ai_engine.close_session()
-            await runner.cleanup()
-
-async def main():
+def main():
     """Main entry point"""
-    service = KimiInstructService()
-    await service.start()
+    import os
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    host = os.getenv('KIMI_HOST', '0.0.0.0')
+    port = int(os.getenv('KIMI_PORT', 8084))
+
+    print(f"🤖 Starting Kimi Instruct on {host}:{port}")
+
+    web.run_app(
+        create_app(),
+        host=host,
+        port=port,
+        access_log_format='%a %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"'
+    )
+
+if __name__ == '__main__':
+    main()

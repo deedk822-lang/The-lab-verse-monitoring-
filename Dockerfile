@@ -1,45 +1,16 @@
-# Use Node.js 18 LTS as base image
-FROM public.ecr.aws/docker/library/node:20-alpine
+# Use an official Python runtime as a parent image
+FROM python:3.10-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    ffmpeg \
-    imagemagick \
-    redis
+# Copy the new orchestrator and its requirements
+COPY rainmaker_orchestrator/ /app/rainmaker_orchestrator/
+COPY rainmaker_cli.py /app/
 
-# Copy package files
-COPY package*.json ./
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r /app/rainmaker_orchestrator/requirements.txt
 
-# Install Node.js dependencies
-RUN npm install --omit=dev
-
-# Copy application code
-COPY . .
-
-# Create logs directory
-RUN mkdir -p logs
-
-# Create uploads directory
-RUN mkdir -p uploads
-
-# Set permissions
-RUN chown -R node:node /app
-
-# Switch to non-root user
-USER node
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node healthcheck.js
-
-# Start the application
-CMD ["npm", "start"]
+# Set the default command to run the CLI
+# This allows passing arguments to the container to run the tool
+ENTRYPOINT ["python", "rainmaker_cli.py"]

@@ -5,17 +5,7 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  
-  "env": {
-    "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint"
-  },
-  
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_API_ENDPOINT": "@api-endpoint"
-    }
-  },
-  
+
   "headers": [
     {
       "source": "/(.*)",
@@ -31,7 +21,7 @@
       ]
     }
   ],
-  
+
   "rewrites": [
     {
       "source": "/api/:path*",

@@ -1,0 +1,11 @@
+model:
+  name: "Qwen/Qwen-72B-Instruct"
+  context_length: 32768
+
+server:
+  port: 8000
+  tensor_parallel_size: 4
+
+performance:
+  gpu_memory_utilization: 0.95
+  max_num_batched_tokens: 8192

@@ -1,32 +1,36 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "src/api/generate-article.ts",
-      "use": "@vercel/node"
+  "framework": "nextjs",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NEXT_PUBLIC_API_ENDPOINT": "@next-public-api-endpoint",
+      "NEXT_PUBLIC_EVENT_DATE": "@next-public-event-date"
+    }
+  },
+  "functions": {
+    "api/**/*.{js,ts}": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
     },
+    "api/health": {
+      "runtime": "edge"
+    }
+  },
+  "headers": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "public"
-      }
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
+      ]
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/src/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
-  ],
-  "env": {
-    "CDATA_CONNECT_API": "disabled",
-    "CDATA_API_KEY": "disabled",
-    "AIRTABLE_BASE_ID": "@airtable_base_id",
-    "AIRTABLE_API_KEY": "@airtable_api_key"
-  }
+  "regions": ["iad1"]
 }

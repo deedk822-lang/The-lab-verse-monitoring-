@@ -159,7 +159,8 @@ Generate a hotfix with confidence score and impact assessment."""
         """
         Handle alerts from Prometheus Alert Manager and generate a hotfix.
         """
-        logger.info(f"Processing alert: {alert_payload.get('status', 'unknown')}")
+        status = str(alert_payload.get('status', 'unknown')).replace('\n', ' ').replace('\r', '')[:50]
+        logger.info("Processing alert", extra={"alert_status": status})
 
         alerts = alert_payload.get('alerts', [])
         if not alerts:

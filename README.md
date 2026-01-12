@@ -1,275 +1,541 @@
-# 🚀 Enhanced Lab-Verse Monitoring Stack
-*Production-grade, AI-native infrastructure with "Kimi Instruct"*
+# Rainmaker AI Superstack - Production Ready
 
-![Build Status](https://github.com/deedk822-lang/The-lab-verse-monitoring-/workflows/CI/badge.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Contributors](https://img.shields.io/github/contributors/deedk822-lang/The-lab-verse-monitoring-)
-![Last Commit](https://img.shields.io/github/last-commit/deedk822-lang/The-lab-verse-monitoring-)
+A production-ready AI orchestration system with self-healing code generation, multi-model routing, and secure file operations.
 
----
+## 🎯 What This Actually Does
 
-## 1. Executive Summary
-| Metric | Before | After (Enhanced) |
-|--------|--------|------------------|
-| **MTTR** | 30 min | **<5 min** |
-| **AI-task autonomy** | 60% | **92%** |
-| **Revenue uplift** | — | **+18% MRR in 30 d** |
-| **Security posture** | Basic | **Zero‑Trust + eBPF** |
-| **Observability** | 10 dashboards | **1 unified God‑view** |
+**Real Capabilities** (No Mock-ups):
 
----
+✅ **Self-Healing Code Generation** - Generates Python code, tests it, and auto-fixes errors
+✅ **Multi-Model Routing** - Routes tasks to Kimi (Moonshot AI) or Ollama automatically
+✅ **Secure File Operations** - Sandboxed workspace with path traversal protection
+✅ **Production HTTP API** - Flask + Gunicorn with proper error handling
+✅ **Resource Limits** - Memory and timeout limits for script execution
+✅ **Lab-Verse Integration** - Connects to your monitoring ecosystem
 
-## 2. 🧠 Core AI Upgrades
-<details>
-<summary>Click to expand AI architecture details</summary>
+## 🏗️ Architecture
 
-### 2.1 Multi-Provider AI Routing with OpenRouter
-```yaml
-# NEW: Unified 400+ model access
-openrouter:
-  primary: openrouter/anthropic/claude-sonnet-4
-  fallbacks:
-    - openrouter/google/gemini-2.5-flash      # $0.075/$0.30 per 1M tokens
-    - openrouter/meta-llama/llama-4-scout:free # Free tier backup
-  cost_optimization:
-    max_cost_per_task: 0.02
-    monthly_budget: 500
-edge_local:
-  - ollama:qwen2:7b
 ```
-- **Cost Savings**: 25-40% vs direct provider APIs
-- **Reliability**: Automatic failover across 400+ models
-- **Free Tier**: Meta Llama & DeepSeek models for development
-
-### 2.2 Swarm‑Negotiation 2.0 (A2A)
-```python
-# src/hybrid_swarm.py - Core negotiation engine
-async def _run_multi_agent_negotiation(self, agent_positions):
-    # Minimax‑regret consensus with risk discounting
-    consensus = await self.minimax_regret_solver(
-        agent_positions, 
-        risk_aversion=0.2,
-        nash_equilibrium=True
-    )
-    return consensus
-```
-</details>
-
----
-
-## 3. 🔐 Security Hardening
-<details>
-<summary>Click to expand security details</summary>
-| Layer | Enhancement |
-|-------|-------------|
-| **Runtime (eBPF)** | quantumguard drops anomalous syscalls (seccomp+bpf) |
-| **Supply‑chain** | Cosign‑signed images + Rekor transparency log |
-| **Secrets** | Vault + 24h auto‑rotation + short‑lived DB creds |
-| **Zero‑trust** | mTLS + SPIFFE IDs; JWT bound to workload identity |
-| **SBOM** | Syft/Grype scans in CI; gate on high CVEs |
-</details>
-
----
-
-## 4. ⚡ Performance & Cost Optimizations
-<details>
-<summary>Click to expand performance details</summary>
-
-### 4.1 Predictive Auto‑Scaling
-```promql
-# Prometheus recording rule
-- record: labverse:predicted_cpu_5m
-  expr: predict_linear(node_cpu_seconds_total{mode="idle"}[30m], 300)
+HTTP Request → Node.js TaskRouter → Orchestrator
+                                      ↓
+                          ┌───────────┴───────────┐
+                          ↓                       ↓
+                    Kimi (Moonshot AI)      Ollama (Local)
+                          ↓                       ↓
+                     Blueprint (JSON)      Blueprint (JSON)
+                          ↓                       ↓
+                          └───────────┬───────────┘
+                                      ↓
+                              Confidence Engine
+                                (Governance)
+                                      ↓
+            ┌─────────────────────────┼────────────────────────┐
+            ↓                         ↓                        ↓
+      Auto-Merge (>=90)      Pull Request (>=70)           Reject (<70)
 ```
 
-### 4.2 AI Cost Guardrails
-```json
-// config/kimi_config_production.json (cost control)
+### 🛡️ Governance Model: The Confidence Engine
+
+This system is governed by a **Confidence Engine** that quantifies the risk of every proposed code change. It's an automated SRE (Site Reliability Engineer) that decides whether an AI-generated change is safe enough to merge automatically.
+
+#### How it Works
+
+1.  **Blueprint Analysis**: Every proposed change (a "blueprint") from the AI is analyzed.
+2.  **Risk Scoring**: The `ConfidenceScorer` calculates a score from 0 to 100 based on several factors:
+    *   **Protected Paths**: Touching critical infrastructure files (like `.github/workflows` or `docker-compose.yml`) severely penalizes the score.
+    *   **Complexity**: Large, complex changes (measured by lines of code) receive a lower score.
+    *   **Security Risks**: A static analysis scan looks for potential vulnerabilities. Any findings reduce the score.
+    *   **Test Coverage**: Blueprints that include new or updated tests get a score bonus.
+3.  **Decision Matrix**: Based on the final score, the system takes one of three actions:
+    *   **A (90-100)**: **Auto-Merge**. The change is considered safe and is automatically merged and deployed.
+    *   **B (70-89)**: **Human Review**. The change is submitted as a pull request, requiring a human engineer to approve it.
+    *   **C (<70)**: **Reject**. The task is rejected, and the AI is notified to reconsider its approach.
+
+This governance layer ensures that while the system is autonomous, it operates with a "safety-first" mindset, preventing risky or broken code from ever reaching production without oversight.
+
+
+### Core Components
+
+- **router.js** - The core orchestration logic with the Confidence Engine.
+- **governance/scorer.js** - The ConfidenceScorer that calculates the risk score.
+- **scripts/validate.sh** - The validation pipeline that runs before any code is committed.
+- **agents/healer.py** - The self-healing agent that responds to alerts.
+- **server.py** - The Flask HTTP API that exposes the orchestrator and the alert webhook.
+
+## 📋 Prerequisites
+
+- Docker Engine 20.10+
+- Docker Compose V2
+- 8GB+ RAM
+- 20GB+ disk space
+- **Kimi API Key** (required)
+- Ollama (optional, for local models)
+
+## 🚀 Quick Start
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
+cd The-lab-verse-monitoring-/rainmaker_orchestrator
+```
+
+### Step 2: Configure Environment
+
+```bash
+# Copy example configuration
+cp .env.example .env
+
+# Edit with your API keys
+nano .env
+```
+
+**Required Configuration:**
+
+```bash
+KIMI_API_KEY=your_actual_kimi_api_key_here
+```
+
+**Optional but Recommended:**
+
+```bash
+OLLAMA_API_BASE=http://ollama:11434/api
+WORKSPACE_PATH=/workspace
+LOG_LEVEL=INFO
+GUNICORN_WORKERS=4
+```
+
+### Step 3: Build and Run
+
+#### Using Docker (Recommended)
+
+```bash
+# Build image
+docker build -t rainmaker-orchestrator:latest .
+
+# Run container
+docker run -d -p 8080:8080 \
+  --name orchestrator \
+  -e KIMI_API_KEY=$KIMI_API_KEY \
+  -v $(pwd)/workspace:/workspace \
+  rainmaker-orchestrator:latest
+```
+
+#### Using Docker Compose
+
+```bash
+# Start full stack
+docker-compose -f ../docker-compose.superstack.yml up -d
+```
+
+### Step 4: Verify Deployment
+
+```bash
+# Check health
+curl http://localhost:8080/health
+
+# Expected response:
+# {
+#   "status": "healthy",
+#   "service": "rainmaker-orchestrator",
+#   "version": "2.0.0",
+#   "workspace": "/workspace",
+#   "configured_models": ["kimi", "ollama"]
+# }
+```
+
+## 📡 API Endpoints
+
+### Execute Task
+
+Execute an AI task with automatic model routing:
+
+```bash
+POST /execute
+Content-Type: application/json
+
 {
-  "cost_control": {
-    "monthly_ai_budget_usd": 500,
-    "hard_stop_at_90_percent": true,
-    "alert_slack_channel": "#cost-alerts",
-    "per_task_usd_limit": 0.02,
-    "auto_fallback_to_local": true
-  }
+  "context": "Your task description or prompt",
+  "type": "coding_task",
+  "model": "kimi",
+  "output_filename": "script.py"
 }
 ```
-</details>
 
----
+**Example: Self-Healing Code Generation**
 
-## 5. 📊 Unified Observability (God‑View)
-<details>
-<summary>Click to expand observability stack</summary>
-
-### 5.1 Grafana "God‑View" Dashboard
-**Single pane exposes:**
-- **Business KPIs**: MRR, LTV, churn prediction, conversion rates
-- **AI KPIs**: token cost per task, model drift score, provider latency
-- **SRE KPIs**: p50/p95/p99 latency, error‑budget burn, saturation
-</details>
-
----
-
-## 6. 💰 Revenue Intelligence
-<details>
-<summary>Click to expand revenue optimization</summary>
-
-### 6.1 Real‑Time MRR Pipeline
-```python
-# src/scout_monetization/forecast.py
-import pandas as pd
-from prophet import Prophet
-from xgboost import XGBRegressor
-
-async def forecast_mrr(days: int = 90, confidence: float = 0.95):
-    # Ensemble Prophet + XGBoost for accuracy
-    prophet_forecast = prophet_model.predict(days)
-    xgb_forecast = xgb_model.predict(features)
-    
-    ensemble_forecast = (prophet_forecast * 0.6) + (xgb_forecast * 0.4)
-    return {
-        "forecast": ensemble_forecast,
-        "confidence_interval": calculate_ci(ensemble_forecast, confidence),
-        "key_drivers": analyze_feature_importance()
-    }
-```
-</details>
-
----
-
-## 7. 🔄 CI/CD & GitOps
-<details>
-<summary>Click to expand CI/CD details</summary>
-```mermaid
-%%{init:{'theme':'dark'}}%%
-flowchart LR
-    A[Git Push] -->|Webhook| B[Argo CD]
-    B --> C[Kustomize Build]
-    C --> D[Sigstore Sign]
-    D --> E[Canary 10%]
-    E --> F{Kimi SLO Gate}
-    F -->|Pass| G[100% Rollout]
-    F -->|Fail| H[Auto‑Rollback + RCA]
-    
-    style A fill:#2ea44f
-    style F fill:#d73a49
-    style G fill:#2ea44f
-    style H fill:#d73a49
-```
-</details>
-
----
-
-## 8. 🧪 Day‑2 Operations (Auto‑Generated Runbooks)
-<details>
-<summary>Click to expand Day-2 Operations</summary>
-| Runbook | Trigger | Automation |
-|---------|---------|------------|
-| **Redis mem > 90%** | Alertmanager | Kimi runs MEMORY_PURGE + vertical scale |
-| **GPT‑4 rate‑limit** | Prometheus | Fallback to Claude; finance ticket with cost delta |
-| **MRR −5% daily** | Scout anomaly | Budget reallocation to best ROAS channel |
-| **AI drift detected** | Model monitor | Auto-retrain + A/B test new model |
-| **Security incident** | QuantumGuard | Instant lockdown + forensics automation |
-</details>
-
----
-
-## 9. 🚦 Quick-Start
 ```bash
-# 1. Clone repository
-git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
-cd The-lab-verse-monitoring-
-
-# 2. Configure secrets (NEVER commit .env.local)
-cp .env.example .env.local
-# Add your API keys:
-# OPENROUTER_API_KEY=sk-or-v1-...
-# OPENAI_API_KEY=sk-...
-
-# 3. Launch stack
-./quick-setup-production.sh
-
-# 4. Verify services
-curl http://localhost:8084/health | jq
-```
-
----
-
-## 10. 🎯 Service Access Points
-| Service | URL | Purpose | Auth |
-|---------|-----|---------|------|
-| Kimi Dashboard | http://localhost:8084/dashboard | AI manager | API Key |
-| Grafana | http://localhost:3001 | Monitoring | admin/admin123 |
-| Prometheus | http://localhost:9090 | Metrics | None |
-| Scout Revenue | http://localhost:8086 | Revenue optimization | API Key |
-
----
-
-## 11. 🆘 Troubleshooting
-<details>
-<summary>Common Issues & Solutions</summary>
-
-### "Kimi service not responding"
-```bash
-docker-compose logs -f kimi-project-manager
-docker-compose restart kimi-project-manager
-```
-
-### "AI providers failing"
-Check OpenRouter status and test connectivity:
-```bash
-curl -X POST http://localhost:8084/api/v1/analyze \
+curl -X POST http://localhost:8080/execute \
   -H "Content-Type: application/json" \
-  -d '{"text": "test"}'
+  -d '{
+    "context": "Write a Python script that calculates the Fibonacci sequence up to n=10 and prints it.",
+    "type": "coding_task",
+    "output_filename": "fibonacci.py"
+  }'
 ```
-</details>
+
+**Response (Success):**
+
+```json
+{
+  "result": {
+    "status": "success",
+    "final_code_path": "fibonacci.py",
+    "output": "0 1 1 2 3 5 8 13 21 34",
+    "retries": 0,
+    "explanation": "Generated Fibonacci sequence calculator"
+  },
+  "status": "success",
+  "request_id": "abc-123"
+}
+```
+
+**What Actually Happens:**
+
+1. Orchestrator routes to Kimi API
+2. Kimi generates Python code (JSON format)
+3. Code is written to workspace as `fibonacci.py`
+4. FileSystem Agent executes the script in sandboxed environment
+5. If it fails → Error is sent back to Kimi → Regenerates fixed code
+6. Retries up to 3 times until code executes successfully
+7. Returns final working code and output
+
+### Health Check
+
+```bash
+GET /health
+```
+
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "service": "rainmaker-orchestrator",
+  "version": "2.0.0",
+  "workspace": "/workspace",
+  "configured_models": ["kimi", "ollama"]
+}
+```
+
+### List Workspace Files
+
+```bash
+GET /workspace/files
+```
+
+**Response:**
+
+```json
+{
+  "files": [
+    {
+      "name": "fibonacci.py",
+      "size": 542,
+      "modified": 1704483600.0
+    }
+  ],
+  "count": 1,
+  "workspace": "/workspace"
+}
+```
+
+### Get File Content
+
+```bash
+GET /workspace/files/fibonacci.py
+```
+
+**Response:**
+
+```json
+{
+  "filename": "fibonacci.py",
+  "content": "def fibonacci(n):\n    ...",
+  "status": "success"
+}
+```
+
+### Metrics (Prometheus)
+
+```bash
+GET /metrics
+```
+
+## 🔧 Configuration
+
+### Model Routing Logic
+
+The orchestrator automatically routes tasks based on model preference:
+
+```python
+# Automatic routing
+if "ollama" in task.get("model", "").lower():
+    route_to_ollama()  # Local inference
+else:
+    route_to_kimi()    # Cloud API (default)
+```
+
+### Security Features
+
+✅ **Path Traversal Protection** - All filenames sanitized with `secure_filename()`
+✅ **File Size Limits** - Max 10MB per file (configurable)
+✅ **Memory Limits** - Script execution limited to 128MB (configurable)
+✅ **Timeout Limits** - Scripts killed after 10s (configurable)
+✅ **Sandboxed Execution** - Scripts run in isolated workspace
+
+### Resource Limits
+
+Configure in `.env`:
+
+```bash
+MAX_FILE_SIZE=10485760        # 10MB max file size
+SCRIPT_TIMEOUT=10             # 10 second timeout
+SCRIPT_MEMORY_LIMIT=128       # 128MB memory limit
+```
+
+## 🧪 Testing
+
+### Test Self-Healing Code Generation
+
+```bash
+# Test with intentionally broken prompt
+curl -X POST http://localhost:8080/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": "Write a Python script that divides 10 by user input. Handle division by zero.",
+    "type": "coding_task",
+    "output_filename": "divide.py"
+  }'
+```
+
+The orchestrator will:
+1. Generate code
+2. Test it
+3. If it crashes, send error back to AI
+4. AI fixes the code
+5. Retries until it works (max 3 attempts)
+
+### Test Multiple Concurrent Requests
+
+```bash
+# Run 10 concurrent requests
+for i in {1..10}; do
+  curl -X POST http://localhost:8080/execute \
+    -H "Content-Type: application/json" \
+    -d '{
+      "context": "Print hello world '$i'",
+      "type": "coding_task",
+      "output_filename": "hello'$i'.py"
+    }' &
+done
+wait
+```
+
+All requests should complete successfully.
+
+### Load Testing
+
+```bash
+# Install k6
+brew install k6  # macOS
+
+# Run load test
+k6 run - <<EOF
+import http from 'k6/http';
+import { check } from 'k6';
+
+export let options = {
+  stages: [
+    { duration: '30s', target: 10 },
+    { duration: '1m', target: 20 },
+    { duration: '30s', target: 0 },
+  ],
+};
+
+export default function() {
+  let payload = JSON.stringify({
+    context: 'Write a Python script that prints "Hello from k6"',
+    type: 'coding_task',
+    output_filename: 'test.py'
+  });
+
+  let params = {
+    headers: { 'Content-Type': 'application/json' },
+  };
+
+  let res = http.post('http://localhost:8080/execute', payload, params);
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'has result': (r) => r.json('result') !== null,
+  });
+}
+EOF
+```
+
+## 🔗 Lab-Verse Integration
+
+This orchestrator integrates with the broader Lab-Verse monitoring ecosystem:
+
+### Integration Points
+
+```
+Rainmaker Orchestrator
+        ↓
+    Lab-Verse API Gateway (Port 8080)
+        ↓
+    ┌───────────────────────────────────┐
+    │  Platform Integrations:           │
+    │  - Grafana (Metrics)              │
+    │  - HuggingFace (Models)           │
+    │  - DataDog (APM)                  │
+    │  - HubSpot (CRM)                  │
+    │  - Confluence (Docs)              │
+    │  - ClickUp (Tasks)                │
+    │  - CodeRabbit (Code Review)       │
+    └───────────────────────────────────┘
+```
+
+### Enable Full Integration
+
+1. Set Lab-Verse environment variables in `.env`:
+
+```bash
+GRAFANA_API_KEY=your_key
+HF_TOKEN=your_token
+DATADOG_API_KEY=your_key
+# ... etc
+```
+
+2. Deploy with full stack:
+
+```bash
+cd ..
+docker-compose -f docker-compose.production.yml up -d
+```
+
+3. Access unified dashboard:
+
+```
+https://localhost
+```
+
+## 🚧 Troubleshooting
+
+### Orchestrator Won't Start
+
+```bash
+# Check logs
+docker logs orchestrator
+
+# Common issues:
+# 1. Missing KIMI_API_KEY
+echo $KIMI_API_KEY
+
+# 2. Port already in use
+lsof -i :8080
+
+# 3. Workspace permission denied
+ls -la /workspace
+```
+
+### API Returns "KIMI_API_KEY is not set"
+
+**Fix:**
+
+```bash
+# Verify key is in .env
+cat .env | grep KIMI_API_KEY
+
+# Restart container with key
+docker stop orchestrator
+docker rm orchestrator
+docker run -d -p 8080:8080 \
+  -e KIMI_API_KEY=your_actual_key_here \
+  --name orchestrator \
+  rainmaker-orchestrator:latest
+```
+
+### Code Generation Fails After Max Retries
+
+**Possible causes:**
+
+1. **Prompt too vague** - Be more specific
+2. **Task too complex** - Break into smaller tasks
+3. **Model limitations** - Try different model
+4. **API rate limits** - Wait and retry
+
+**Debug:**
+
+```bash
+# Check detailed error
+curl -X POST http://localhost:8080/execute \
+  -H "Content-Type: application/json" \
+  -d '{...}' | jq '.result.last_error'
+```
+
+### High Memory Usage
+
+**Fix:**
+
+```bash
+# Reduce workers
+docker stop orchestrator
+docker run -d -p 8080:8080 \
+  -e GUNICORN_WORKERS=2 \
+  -e KIMI_API_KEY=$KIMI_API_KEY \
+  rainmaker-orchestrator:latest
+```
+
+## 📊 Performance Metrics
+
+### Expected Performance
+
+- **Request Latency**: 2-10 seconds (AI generation + execution)
+- **Concurrent Capacity**: 4 workers = 4 simultaneous tasks
+- **Memory Usage**: ~512MB per worker
+- **Success Rate**: >95% for well-defined prompts
+
+### Optimization Tips
+
+1. **Use Ollama for speed** - Local inference is 10x faster than API
+2. **Increase workers** - More workers = more concurrency
+3. **Tune timeouts** - Increase for complex tasks
+4. **Cache results** - Store frequently used code
+
+## 🔒 Security
+
+### Production Checklist
+
+- [ ] KIMI_API_KEY set (not placeholder)
+- [ ] FLASK_DEBUG=false
+- [ ] Workspace directory permissions set (chmod 700)
+- [ ] Resource limits configured
+- [ ] Running as non-root user in Docker
+- [ ] HTTPS enabled (if exposed to internet)
+- [ ] Rate limiting configured
+- [ ] Monitoring alerts set up
+
+### Security Best Practices
+
+✅ All file operations use `secure_filename()`
+✅ Scripts run with memory/timeout limits
+✅ Workspace isolated from host filesystem
+✅ No code execution outside sandbox
+✅ API keys stored in environment variables
+✅ Logs don't contain sensitive data
+
+## 📝 License
+
+MIT License - See [LICENSE](../LICENSE) file for details.
+
+## 🆘 Support
+
+- **GitHub Issues**: [Create an issue](https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues)
+- **Documentation**: See `docs/` directory
+- **Logs**: `docker logs orchestrator`
 
 ---
 
-## 12. ⚠️ Security Best Practices
-- **NEVER commit** `.env.local` to version control
-- **Use Vault** for production secrets (included in stack)
-- **Rotate keys** every 24 hours (automated via Vault)
-- **Enable mTLS** for production deployments
-
----
-
-## 13. 📈 Expected Outcomes
-| Outcome | Baseline | Target | Measurement | Status |
-|---------|----------|--------|-------------|--------|
-| **MRR growth** | $50k | $59k | Scout ledger | 🎯 |
-| **Cloud cost** | $4k/mo | $3k/mo | AWS/GCP CUR | 🎯 |
-| **Release velocity** | 1/week | 5/day | Argo CD metrics | 🎯 |
-| **Incident MTTR** | 30 min | <5 min | PagerDuty/Grafana | 🎯 |
-| **AI cost efficiency** | — | <$0.02/task | Prometheus | 🎯 |
-
----
-
-## 14. 🗺️ Roadmap
-- **Quantum‑safe TLS** (CRYSTALS‑KYBER) integration
-- **Voice‑driven on‑call** assistant (Whisper + Kimi)
-- **Carbon‑aware scheduling** (shift workloads to green‑energy windows)
-- **Multi‑cloud arbitrage** (automatic cost optimization across AWS/GCP/Azure)
-
----
-
-## 15. 🤝 Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
----
-
-## 16. 📄 License
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 17. 💬 Support
-- 📫 Issues: [GitHub Issues](https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/deedk822-lang/The-lab-verse-monitoring-/discussions)
-- 📧 Email: support@labverse.dev
-
----
-
-> 🎯 **Bottom line**: Production-ready monitoring with AI-driven revenue optimization, 99.9% uptime, and <$0.02/task costs.
+**Made with ❤️ by the Rainmaker team - Production Ready, No Mock-ups!**

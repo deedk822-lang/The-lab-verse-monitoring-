@@ -24,10 +24,12 @@ class RainmakerOrchestrator:
 
     def __init__(self, workspace_path: Optional[str] = None):
         """
-        Initialize the orchestrator.
-
-        Args:
-            workspace_path: Optional path to workspace directory
+        Initialize the orchestrator with a workspace directory.
+        
+        Creates the workspace directory on disk if it does not already exist.
+        
+        Parameters:
+            workspace_path (Optional[str]): Path to the workspace directory to use. Defaults to "/workspace".
         """
         self.workspace_path = Path(workspace_path or "/workspace")
         self.workspace_path.mkdir(parents=True, exist_ok=True)
@@ -41,23 +43,23 @@ class RainmakerOrchestrator:
         environment: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """
-        Execute a task or code.
-
-        Args:
-            task: Task description or code to execute
-            mode: Execution mode ('general', 'python', 'shell', 'docker')
-            timeout: Execution timeout in seconds
-            environment: Optional environment variables
-
+        Dispatch execution of the given task to the appropriate executor based on mode.
+        
+        Parameters:
+            task (str): Code or command to execute.
+            mode (str): Execution mode — "general", "python", "shell", or "docker".
+            timeout (int): Maximum allowed execution time in seconds.
+            environment (Optional[Dict[str, str]]): Environment variables to supply to the execution.
+        
         Returns:
-            Dictionary with execution results:
-            - status: 'success' or 'failed'
-            - output: Execution output
-            - error: Error message (if failed)
-            - duration: Execution duration in seconds
-
+            result (Dict[str, Any]): Execution result with keys:
+                - status (str): "success" or "failed".
+                - output (str): Captured standard output and/or result.
+                - error (str): Error message when status is "failed".
+                - duration (float): Execution duration in seconds (when available).
+        
         Raises:
-            TimeoutError: If execution exceeds timeout
+            TimeoutError: If execution exceeds the specified timeout.
         """
         logger.info(f"Executing task in {mode} mode (timeout: {timeout}s)")
 
@@ -89,15 +91,24 @@ class RainmakerOrchestrator:
         environment: Optional[Dict[str, str]]
     ) -> Dict[str, Any]:
         """
-        Execute Python code.
-
-        Args:
-            code: Python code to execute
-            timeout: Execution timeout in seconds
-            environment: Optional environment variables
-
+        Execute Python source code by running it in a temporary file.
+        
+        The code is written to a temporary .py file inside the orchestrator workspace and executed with the system Python interpreter; the temporary file is removed after execution.
+        
+        Parameters:
+            code (str): Python source code to execute.
+            timeout (int): Maximum execution time in seconds.
+            environment (Optional[Dict[str, str]]): Additional environment variables to merge with the current process environment.
+        
         Returns:
-            Execution result dictionary
+            Dict[str, Any]: Execution result containing:
+                - "status": "success" or "failed".
+                - "output": captured standard output as a string.
+                - "error": captured standard error as a string (present when status is "failed").
+                - "duration": wall-clock execution duration in seconds.
+        
+        Raises:
+            TimeoutError: If the execution exceeds the given timeout.
         """
         import time
         start_time = time.time()
@@ -163,20 +174,22 @@ class RainmakerOrchestrator:
         environment: Optional[Dict[str, str]]
     ) -> Dict[str, Any]:
         """
-        Execute shell command.
-
-        Args:
-            command: Shell command to execute
-            timeout: Execution timeout in seconds
-            environment: Optional environment variables
-
-        Returns:
-            Execution result dictionary
+        Run a shell command in the orchestrator workspace and return its result.
         
-        Security:
-            Note: shell=True is used for intentional shell feature support.
-            This is only safe when used with trusted input sources.
-            For production, consider using shlex.split() and shell=False.
+        Parameters:
+            command (str): The shell command to run.
+            timeout (int): Maximum execution time in seconds before a TimeoutError is raised.
+            environment (Optional[Dict[str, str]]): Additional environment variables to set for the command.
+        
+        Returns:
+            result (Dict[str, Any]): Execution metadata with keys:
+                - `status` (`"success"` or `"failed"`),
+                - `output` (str): captured standard output,
+                - `error` (str, optional): captured standard error when `status` is `"failed"`,
+                - `duration` (float, optional): elapsed time in seconds.
+        
+        Raises:
+            TimeoutError: If the command does not complete within `timeout` seconds.
         """
         import time
         start_time = time.time()
@@ -229,19 +242,19 @@ class RainmakerOrchestrator:
         environment: Optional[Dict[str, str]]
     ) -> Dict[str, Any]:
         """
-        Execute task in Docker container.
-
-        Args:
-            task: Task to execute
-            timeout: Execution timeout in seconds
-            environment: Optional environment variables
-
-        Returns:
-            Execution result dictionary
+        Placeholder executor for running a task inside a Docker container.
         
-        Note:
-            Docker execution is planned for future implementation.
-            Track progress at: https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues
+        Parameters:
+            task (str): The task or command intended to run inside Docker.
+            timeout (int): Maximum execution time in seconds.
+            environment (Optional[Dict[str, str]]): Environment variables to apply inside the container.
+        
+        Returns:
+            Dict[str, Any]: Result dictionary with keys:
+                - `status`: `"failed"` indicating Docker execution is not implemented.
+                - `error`: short error message.
+                - `output`: captured output (empty string).
+                - `message`: human-readable guidance (e.g., suggesting alternative modes).
         """
         logger.warning("Docker execution not yet implemented")
         return {
@@ -258,15 +271,15 @@ class RainmakerOrchestrator:
         environment: Optional[Dict[str, str]]
     ) -> Dict[str, Any]:
         """
-        Execute general task (delegates to appropriate executor).
-
-        Args:
-            task: Task description
-            timeout: Execution timeout in seconds
-            environment: Optional environment variables
-
+        Dispatches a textual task to the appropriate executor (Python or shell) based on the task content.
+        
+        Parameters:
+            task (str): The task text to run; may be source code or a shell command.
+            timeout (int): Maximum allowed runtime in seconds.
+            environment (Optional[Dict[str, str]]): Environment variables to apply during execution.
+        
         Returns:
-            Execution result dictionary
+            Dict[str, Any]: Execution result containing keys such as `status`, `output`, `duration`, and optionally `error`.
         """
         # Try to detect the task type
         if task.strip().startswith(('def ', 'import ', 'from ', 'class ')):
@@ -284,19 +297,21 @@ class RainmakerOrchestrator:
         deployment_type: str = "hotfix"
     ) -> Dict[str, Any]:
         """
-        Deploy code to a service.
-
-        Args:
-            service: Name of the service to deploy to
-            code: Code or patch to deploy
-            deployment_type: Type of deployment ('hotfix', 'update', 'rollback')
-
+        Save the provided code as a deployment artifact for a named service and simulate a deployment.
+        
+        Parameters:
+            service (str): Target service name.
+            code (str): Source code or patch to persist for deployment.
+            deployment_type (str): Deployment category (e.g., "hotfix", "update", "rollback").
+        
         Returns:
-            Dictionary with deployment status:
-            - status: 'deployed', 'failed', or 'pending'
-            - id: Deployment ID
-            - service: Service name
-            - type: Deployment type
+            dict: Deployment metadata including:
+                - status (str): One of `"deployed"` or `"failed"`.
+                - id (str): Short deployment identifier.
+                - service (str): Target service name.
+                - type (str): Provided deployment type.
+                - path (str): Filesystem path to the saved code (present on success).
+                - error (str): Error details (present on failure).
         """
         import uuid
         deployment_id = str(uuid.uuid4())[:8]
@@ -347,14 +362,18 @@ class RainmakerOrchestrator:
         deployment_id: str
     ) -> Dict[str, Any]:
         """
-        Rollback a deployment.
-
-        Args:
-            service: Name of the service
-            deployment_id: ID of the deployment to rollback
-
+        Roll back a previously recorded deployment for a service.
+        
+        Parameters:
+            service (str): Target service name.
+            deployment_id (str): Identifier of the deployment to roll back.
+        
         Returns:
-            Dictionary with rollback status
+            result (Dict[str, Any]): Rollback result containing:
+                - status (str): "rolled_back" on success or "failed" on error.
+                - service (str): The target service name.
+                - deployment_id (str): The deployment identifier.
+                - error (str, optional): Error details when status is "failed".
         """
         logger.info(f"Rolling back deployment {deployment_id} for service '{service}'")
 
@@ -385,14 +404,18 @@ class RainmakerOrchestrator:
         deployment_id: str
     ) -> Dict[str, Any]:
         """
-        Get the status of a deployment.
-
-        Args:
-            service: Name of the service
-            deployment_id: ID of the deployment
-
+        Retrieve status information for a specific deployment.
+        
+        Parameters:
+            service (str): Name of the service owning the deployment.
+            deployment_id (str): Identifier of the deployment to query.
+        
         Returns:
-            Dictionary with deployment status information
+            dict: Deployment status payload containing keys:
+                - `deployment_id` (str): The queried deployment identifier.
+                - `service` (str): The service name.
+                - `status` (str): Current status label (e.g., "unknown").
+                - `message` (str): Human-readable details or notes about the status.
         """
         logger.info(f"Checking deployment status for {deployment_id}")
 

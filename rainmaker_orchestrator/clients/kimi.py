@@ -10,6 +10,16 @@ class KimiClient:
     API wrapper for Kimi model, using an OpenAI-compatible client.
     """
     def __init__(self, api_key=None):
+        """
+        Initialize the KimiClient, configuring its OpenAI-compatible client and default model from environment variables or an explicit API key.
+        
+        Parameters:
+            api_key (str | None): Optional API key to use for the client; if omitted, the `KIMI_API_KEY` environment variable is used, falling back to `"EMPTY"`.
+        
+        Details:
+            - `KIMI_API_BASE` (env) is used for the client's base URL, defaulting to "http://kimi-linear:8000/v1".
+            - `KIMI_MODEL` (env) is used to set the default model name, defaulting to "moonshot-v1-8k".
+        """
         self.client = OpenAI(
             base_url=os.getenv("KIMI_API_BASE", "http://kimi-linear:8000/v1"),
             api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY")
@@ -18,14 +28,14 @@ class KimiClient:
 
     def generate(self, prompt: str, mode: str = "general") -> Optional[str]:
         """
-        Generates content using the Kimi model.
+        Generate content from the configured Kimi model based on the provided prompt and mode.
         
-        Args:
-            prompt: The prompt to send to the model
-            mode: The generation mode ('general' or 'hotfix')
-            
+        Parameters:
+        	prompt (str): The user prompt to send to the model.
+        	mode (str): Generation mode; "general" for assistant responses or "hotfix" to produce a concise site-reliability patch.
+        
         Returns:
-            Generated content as a string, or None if generation fails
+        	generated (Optional[str]): Generated text on success, or `None` if generation failed.
         """
         try:
             system_prompt = "You are Kimi, an expert AI assistant."

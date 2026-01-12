@@ -15,11 +15,11 @@ class SelfHealingAgent:
     
     def __init__(self, kimi_client=None, orchestrator=None):
         """
-        Initialize the self-healing agent.
+        Create a SelfHealingAgent with optional dependency injection for its clients.
         
-        Args:
-            kimi_client: Optional KimiClient instance. If not provided, creates a new one.
-            orchestrator: Optional RainmakerOrchestrator instance. If not provided, creates a new one.
+        Parameters:
+            kimi_client (KimiClient | None): Optional KimiClient instance to use for AI generation; when omitted, a new client is created.
+            orchestrator (RainmakerOrchestrator | None): Optional RainmakerOrchestrator instance to use for orchestration; when omitted, a new orchestrator is created.
         """
         self.kimi_client = kimi_client or self._init_kimi_client()
         self.orchestrator = orchestrator or self._init_orchestrator()
@@ -35,33 +35,30 @@ class SelfHealingAgent:
 
     def _init_orchestrator(self):
         """
-        Initialize a new RainmakerOrchestrator instance.
+        Create and return a new RainmakerOrchestrator instance.
         
         Returns:
-            RainmakerOrchestrator: A new orchestrator instance
+            RainmakerOrchestrator: A new orchestrator instance.
         """
         return RainmakerOrchestrator()
 
     def handle_alert(self, alert_payload):
         """
-        Handle an incoming alert and generate a hotfix.
+        Handle an incoming Prometheus Alertmanager payload and produce an AI-generated hotfix blueprint.
         
-        Receives a Prometheus Alert Manager webhook payload, analyzes the error,
-        and generates an AI-powered hotfix blueprint.
-        
-        Args:
-            alert_payload: Dictionary containing alert information:
-                - description: Error description or log
-                - service: Name of the affected service
-                - severity: Alert severity level (optional)
-                - labels: Additional labels (optional)
-                - annotations: Additional annotations (optional)
+        Parameters:
+            alert_payload (dict): Alert data with possible keys:
+                - description: error description or log (optional)
+                - service: affected service name (optional)
+                - severity: alert severity level (optional)
+                - labels: additional labels (optional)
+                - annotations: additional annotations (optional)
         
         Returns:
-            Dictionary with status and hotfix information:
-            - status: 'hotfix_generated', 'hotfix_failed'
-            - blueprint: Generated hotfix code (if successful)
-            - error: Error message (if failed)
+            dict: Result object containing:
+                - status: 'hotfix_generated' on success, 'hotfix_failed' on failure.
+                - blueprint: generated hotfix code when status is 'hotfix_generated'.
+                - error: error message when status is 'hotfix_failed'.
         """
         error_log = alert_payload.get('description', 'No description provided')
         service_name = alert_payload.get('service', 'Unknown service')

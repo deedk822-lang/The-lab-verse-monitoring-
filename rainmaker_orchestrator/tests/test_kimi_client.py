@@ -64,7 +64,13 @@ class TestKimiClientGenerate:
     """Test suite for content generation functionality."""
     
     def setup_method(self):
-        """Set up test fixtures before each test."""
+        """
+        Prepare a mocked OpenAI client and initialize a KimiClient instance that uses it.
+        
+        Creates a Mock conforming to the OpenAI spec, patches
+        rainmaker_orchestrator.clients.kimi.OpenAI to return that mock, and constructs
+        a KimiClient with api_key 'test-key' so subsequent tests interact with the mock.
+        """
         self.mock_openai_client = Mock(spec=OpenAI)
         with patch('rainmaker_orchestrator.clients.kimi.OpenAI', return_value=self.mock_openai_client):
             self.client = KimiClient(api_key='test-key')
@@ -282,7 +288,13 @@ class TestKimiClientHealthCheck:
     """Test suite for health check functionality."""
     
     def setup_method(self):
-        """Set up test fixtures before each test."""
+        """
+        Prepare a mocked OpenAI client and initialize a KimiClient instance that uses it.
+        
+        Creates a Mock conforming to the OpenAI spec, patches
+        rainmaker_orchestrator.clients.kimi.OpenAI to return that mock, and constructs
+        a KimiClient with api_key 'test-key' so subsequent tests interact with the mock.
+        """
         self.mock_openai_client = Mock(spec=OpenAI)
         with patch('rainmaker_orchestrator.clients.kimi.OpenAI', return_value=self.mock_openai_client):
             self.client = KimiClient(api_key='test-key')

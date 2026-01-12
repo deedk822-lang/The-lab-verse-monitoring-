@@ -6,7 +6,13 @@ import sys
 from pathlib import Path
 
 def validate_test_imports():
-    """Validate that all test files can be imported."""
+    """
+    Check that each listed test module can be imported.
+    
+    Checks a hard-coded list of test module names and prints per-file import status to stdout.
+    Returns:
+        True if all test modules imported successfully, False otherwise.
+    """
     test_files = [
         'test_healer',
         'test_kimi_client',

@@ -4,12 +4,30 @@ from agents.healer import SelfHealingAgent
 
 @pytest.fixture
 def mock_kimi_client():
+    """
+    Create a mock Kimi client with an asynchronous `generate_hotfix` method for use in tests.
+    
+    Returns:
+        MagicMock: A MagicMock instance with `generate_hotfix` set to an AsyncMock.
+    """
     client = MagicMock()
     client.generate_hotfix = AsyncMock()
     return client
 
 @pytest.fixture
 def valid_alert():
+    """
+    Provide a sample alert payload representing a firing HighCPU alert.
+    
+    Returns:
+        dict: Alert dictionary with keys:
+            - status: "firing"
+            - labels: contains "alertname": "HighCPU"
+            - annotations: contains "summary" and "description"
+            - startsAt: ISO-8601 start timestamp
+            - endsAt: ISO-8601 end timestamp
+            - generatorURL: source URL for the alert
+    """
     return {
         "status": "firing",
         "labels": {"alertname": "HighCPU"},

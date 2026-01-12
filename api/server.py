@@ -60,6 +60,11 @@ except ImportError as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
+    """
+    Manage application lifespan: initialize runtime resources on startup and clean them up on shutdown.
+    
+    On startup, attaches a RainmakerOrchestrator instance to `app.state.orchestrator` and an `httpx.AsyncClient` to `app.state.http_client`. On shutdown, closes the async HTTP client stored at `app.state.http_client`.
+    """
     print("🚀 Starting up the server...")
     app.state.orchestrator = RainmakerOrchestrator()
     app.state.http_client = httpx.AsyncClient()
@@ -75,6 +80,18 @@ app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 # --- Middleware ---
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
+    """
+    Collect Prometheus metrics for an incoming HTTP request and forward the request to the next handler.
+    
+    Increments the global request counter and measures the request duration while awaiting the downstream handler.
+    
+    Parameters:
+        request (Request): The incoming FastAPI request.
+        call_next (Callable[[Request], Response]): Callable that processes the request and returns a Response.
+    
+    Returns:
+        Response: The response returned by the downstream handler.
+    """
     request_count.inc()
     with request_duration.time():
         response = await call_next(request)
@@ -83,6 +100,15 @@ async def metrics_middleware(request: Request, call_next):
 # --- Exception Handlers ---
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
+    """
+    Translate a ValueError into an HTTP 400 JSON response containing the error message.
+    
+    Parameters:
+        exc (ValueError): The exception whose message will be returned in the response's `detail` field.
+    
+    Returns:
+        JSONResponse: Response with status code 400 and content `{"detail": "<error message>"}`.
+    """
     return JSONResponse(
         status_code=400,
         content={"detail": str(exc)}
@@ -91,16 +117,40 @@ async def value_error_handler(request: Request, exc: ValueError):
 # --- Endpoints ---
 @app.get("/health")
 async def health_check():
+    """
+    Report a basic service health status.
+    
+    Returns:
+        dict: Mapping containing the key "status" with the value "healthy".
+    """
     return {"status": "healthy"}
 
 @app.get("/metrics")
 async def metrics():
+    """
+    Serve Prometheus metrics in the Prometheus exposition (text) format.
+    
+    Returns:
+        Response: An HTTP response with the current Prometheus metrics as plaintext in the Prometheus exposition format.
+    """
     return Response(generate_latest(), media_type="text/plain")
 
 async def get_market_intel(company_name: str, client: httpx.AsyncClient):
     """
-    Retrieves market intelligence for a given company.
-    This is a placeholder and returns static data.
+    Return sample market intelligence for a given company.
+    
+    This placeholder simulates an async fetch and returns static example intelligence useful for testing and development.
+    
+    Parameters:
+        company_name (str): Name of the company to query.
+        client (httpx.AsyncClient): Asynchronous HTTP client that would be used for real external requests.
+    
+    Returns:
+        dict: A mapping with the following keys:
+            - latest_headline: A representative news headline string.
+            - financial_health_signal: A short label describing financial health.
+            - key_pain_point: A concise description of primary operational or financial challenges.
+            - sales_hook: Suggested immediate sales/engagement messaging tailored to the company's situation.
     """
     print(f"Fetching market intel for (placeholder): {company_name}")
     # In a real scenario, this would be an async call to an external API
@@ -115,10 +165,32 @@ async def get_market_intel(company_name: str, client: httpx.AsyncClient):
 
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
+    """
+    Queue a HubSpot webhook payload for background processing.
+    
+    Parameters:
+        payload (HubSpotWebhookPayload): Incoming webhook payload containing the contact ID and message body.
+    
+    Returns:
+        dict: A mapping with "status" set to "queued" indicating the payload was accepted for background processing.
+    """
     background_tasks.add_task(process_hubspot_webhook, payload)
     return {"status": "queued"}
 
 async def process_hubspot_webhook(payload: HubSpotWebhookPayload):
+    """
+    Process a HubSpot webhook payload by analyzing the lead with an AI model, updating the corresponding contact in HubSpot, and creating/enriching a deal when the AI indicates strong buying intent.
+    
+    The function:
+    - Extracts the contact ID and message text from `payload`.
+    - Sends the message to an AI analysis and expects JSON with keys `company_name`, `summary`, `intent_score` (0–10), and `suggested_action`.
+    - Updates the HubSpot contact's properties `ai_lead_summary`, `ai_buying_intent`, and `ai_suggested_action` with the analysis results.
+    - If `intent_score` exceeds the configured deal creation threshold, fetches market intelligence for the identified company, creates a new enriched deal with that intel, and associates the deal with the contact.
+    - Logs errors encountered during processing without propagating them.
+    
+    Parameters:
+        payload (HubSpotWebhookPayload): Webhook payload containing `objectId` (contact id) and `message_body` (lead message).
+    """
     contact_id = payload.objectId
     chat_text = payload.message_body
 
@@ -180,6 +252,18 @@ async def process_hubspot_webhook(payload: HubSpotWebhookPayload):
 
 @app.get("/workspace/{filepath:path}")
 async def get_file(filepath: str):
+    """
+    Serve a file from the workspace root if it exists and is within the workspace.
+    
+    Parameters:
+        filepath (str): Path relative to the workspace root to retrieve.
+    
+    Returns:
+        FileResponse: Response streaming the requested file.
+    
+    Raises:
+        HTTPException: 403 if the resolved path is outside the workspace; 404 if the file does not exist.
+    """
     requested_path = (WORKSPACE_ROOT / filepath).resolve()
 
     if not requested_path.is_relative_to(WORKSPACE_ROOT):

@@ -25,6 +25,10 @@ class SystemMonitor:
         self.warning_count = 0
         self.api_calls = {"success": 0, "failure": 0}
 
+    def close(self):
+        """Close the requests session."""
+        self.session.close()
+
     def record_error(self, component: str, error: Exception,
                     context: Optional[Dict] = None):
         """Record an error for monitoring"""
@@ -150,8 +154,9 @@ class SystemMonitor:
         """Check Ollama server health"""
         try:
             response = self.session.get("http://localhost:11434", timeout=2)
-            return "healthy" if response.status_code == 200 else "unreachable"
-        except:
+            response.raise_for_status()  # Raise an exception for bad status codes
+            return "healthy"
+        except requests.exceptions.RequestException:
             return "not_running"
 
     def _check_twilio(self) -> str:
@@ -181,8 +186,9 @@ class SystemMonitor:
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5
             )
-            return "healthy" if response.status_code == 200 else "error"
-        except:
+            response.raise_for_status()
+            return "healthy"
+        except requests.exceptions.RequestException:
             return "unreachable"
 
     def generate_health_report(self) -> Dict:
@@ -400,6 +406,10 @@ class AlertSystem:
         self.session = requests.Session()
         self.alert_history = []
 
+    def close(self):
+        """Close the requests session."""
+        self.session.close()
+
     def send_alert(self, severity: str, component: str,
                    message: str, details: Optional[Dict] = None):
         """
@@ -457,8 +467,9 @@ class AlertSystem:
                 ]
             }
 
-            self.session.post(self.webhook_url, json=payload, timeout=5)
-        except Exception as e:
+            response = self.session.post(self.webhook_url, json=payload, timeout=5)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
             logger.error(f"Failed to send webhook alert: {e}")
 
     def get_recent_alerts(self, count: int = 10,

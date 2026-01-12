@@ -13,6 +13,7 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 class MockHandler(BaseHTTPRequestHandler):
     """A simple handler that returns 200 OK to any request."""
     def do_GET(self):
+        time.sleep(0.01)  # Introduce a 10ms delay to simulate network latency
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'OK')
@@ -23,16 +24,32 @@ class MockHandler(BaseHTTPRequestHandler):
 
 class SystemMonitorOriginal:
     """A recreation of the original SystemMonitor's HTTP request logic."""
-    def _check_ollama(self) -> str:
+    def _check_ollama(self, url: str) -> str:
         try:
             # The original implementation creates a new connection for each call
-            response = requests.get("http://localhost:11434", timeout=2)
+            response = requests.get(url, timeout=2)
             return "healthy" if response.status_code == 200 else "unreachable"
         except requests.exceptions.RequestException:
             return "not_running"
 
 # Import the optimized class from the modified file
 from core.system_monitor import SystemMonitor
+
+
+class TestableSystemMonitor(SystemMonitor):
+    """A SystemMonitor subclass that allows overriding the Ollama URL for testing."""
+    def __init__(self, db=None, ollama_url="http://localhost:11434"):
+        super().__init__(db)
+        self.ollama_url = ollama_url
+
+    def _check_ollama(self) -> str:
+        """Override to use the test-specific URL."""
+        try:
+            response = self.session.get(self.ollama_url, timeout=2)
+            return "healthy" if response.status_code == 200 else "unreachable"
+        except requests.exceptions.RequestException:
+            return "not_running"
+
 
 def benchmark_function(func, iterations=100):
     """Benchmark a function over multiple iterations"""
@@ -44,32 +61,35 @@ def benchmark_function(func, iterations=100):
 
 def run_performance_test():
     """Compare original vs optimized performance and correctness."""
-    # Start mock server in a background thread
-    server = ThreadingHTTPServer(('localhost', 11434), MockHandler)
+    # Start mock server on a dynamic port
+    server = ThreadingHTTPServer(('localhost', 0), MockHandler)
+    port = server.server_address[1]
+    url = f"http://localhost:{port}"
+
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
 
-    # Give the server a moment to start
     time.sleep(0.1)
 
     print("=" * 60)
     print("⚡ BOLT: PERFORMANCE BENCHMARK ⚡")
     print("=" * 60)
     print("Target: HTTP Connection Pooling with requests.Session")
+    print(f"(Running on dynamic port: {port})")
     print("-" * 60)
 
     # Instantiate both versions
     original_monitor = SystemMonitorOriginal()
-    optimized_monitor = SystemMonitor()
+    optimized_monitor = TestableSystemMonitor(ollama_url=url)
 
     # 1. Verify Correctness
     print("1. Verifying correctness...")
-    original_result = original_monitor._check_ollama()
+    original_result = original_monitor._check_ollama(url)
     optimized_result = optimized_monitor._check_ollama()
 
     if original_result != "healthy" or optimized_result != "healthy":
-        print(f"  - ❌ FAILED: Health checks did not return 'healthy'.")
+        print("  - ❌ FAILED: Health checks did not return 'healthy'.")
         print(f"    Original: {original_result}, Optimized: {optimized_result}")
         server.shutdown()
         return False
@@ -77,14 +97,26 @@ def run_performance_test():
     print(f"  - ✅ PASSED: Both methods returned '{optimized_result}'.")
 
     # 2. Run Benchmark
-    iterations = 50
+    iterations = 200
     print(f"\n2. Running speed benchmark ({iterations} iterations)...")
 
-    original_time = benchmark_function(original_monitor._check_ollama, iterations)
-    optimized_time = benchmark_function(optimized_monitor._check_ollama, iterations)
+    # Use lambdas to pass the dynamic URL to the benchmarked functions
+    start = time.perf_counter()
+    original_monitor = SystemMonitorOriginal()
+    original_setup_time = time.perf_counter() - start
 
-    print(f"  - Original Implementation:  {original_time:.4f}s")
-    print(f"  - Optimized Implementation: {optimized_time:.4f}s")
+    start = time.perf_counter()
+    optimized_monitor = TestableSystemMonitor(ollama_url=url)
+    optimized_setup_time = time.perf_counter() - start
+
+    original_run_time = benchmark_function(lambda: original_monitor._check_ollama(url), iterations)
+    optimized_run_time = benchmark_function(lambda: optimized_monitor._check_ollama(), iterations)
+
+    original_time = original_setup_time + original_run_time
+    optimized_time = optimized_setup_time + optimized_run_time
+
+    print(f"  - Original Implementation:  {original_time:.4f}s (Setup: {original_setup_time:.4f}s, Run: {original_run_time:.4f}s)")
+    print(f"  - Optimized Implementation: {optimized_time:.4f}s (Setup: {optimized_setup_time:.4f}s, Run: {optimized_run_time:.4f}s)")
 
     # 3. Analyze Results
     print("\n3. Analyzing results...")
@@ -95,8 +127,9 @@ def run_performance_test():
         improvement = ((original_time - optimized_time) / original_time) * 100
         print(f"  - 🚀 IMPROVEMENT: {improvement:.2f}% faster")
 
-    # Stop the server
+    # Stop the server and close the session
     server.shutdown()
+    optimized_monitor.close()
 
     print("=" * 60)
 

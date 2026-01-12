@@ -4,6 +4,6 @@
 /src/rainmaker_orchestrator/agents/ @deedk8-lang
 
 # CI/CD
-/.github/workflows/               @deedk8-lang
-/pyproject.toml                   @deedk8-lang
-/setup.py                         @deedk8-lang
+/.github/workflows/               @deedk822-lang
+/pyproject.toml                   @deedk822-lang
+/setup.py                         @deedk822-lang

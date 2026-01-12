@@ -1,0 +1,8 @@
+
+environment:
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      # FIX: Use the correct plugin ID 'yesoreyeram-infinity-datasource'
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,redis-datasource,yesoreyeram-infinity-datasource
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - KAGGLE_API_TOKEN=${KAGGLE_API_TOKEN}

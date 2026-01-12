@@ -7,7 +7,7 @@ import asyncio
 import atexit
 import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from flask import Flask, request, jsonify
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator

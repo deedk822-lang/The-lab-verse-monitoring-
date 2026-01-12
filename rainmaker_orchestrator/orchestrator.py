@@ -8,17 +8,16 @@ from rainmaker_orchestrator.config import ConfigManager
 from opik import track
 
 import openlit
-import os
 
 class RainmakerOrchestrator:
     def __init__(self, workspace_path="./workspace", config_file=".env"):
-        openlit.init(
-            # This sends traces directly to Datadog's OTLP intake
-            otlp_endpoint="https://otlp.datadoghq.com:4318",
-            application_name="rainmaker-orchestrator",
-            environment="production",
-            disable_metrics=os.getenv("CI") == "true" # Disable tracing during standard unit tests to save quota
-        )
+        if os.getenv("CI") != "true":
+            openlit.init(
+                # This sends traces directly to Datadog's OTLP intake
+                otlp_endpoint="https://otlp.datadoghq.com:4318",
+                application_name="rainmaker-orchestrator",
+                environment="production"
+            )
         self.fs = FileSystemAgent(workspace_path=workspace_path)
         self.config = ConfigManager(config_file=config_file)
         self.client = httpx.AsyncClient(timeout=120.0)

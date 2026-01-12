@@ -27,12 +27,16 @@ ALLOW_EXTERNAL = os.getenv("ALLOW_EXTERNAL_REQUESTS", "no").lower() == "yes"
 MAX_TIMEOUT = 30.0
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB max
 
+ feat/complete-10268506225633119435
 try:
     redis_conn = Redis.from_url(REDIS_URL)
 except RedisError as e:
     logger.critical(f"Failed to connect to Redis: {e}")
     redis_conn = None
 
+
+redis_conn = Redis.from_url(REDIS_URL)
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 
 SSRF_BLOCKS = Counter(
     'ssrf_blocked_requests_total',
@@ -51,7 +55,11 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
     key = f"rate_limit:{client_id}"
     try:
         current_count = redis_conn.incr(key)
+ feat/complete-10268506225633119435
         if current_count == 1:
+
+        if current_count == 1 or redis_conn.ttl(key) == -1:
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             redis_conn.expire(key, window)
         if current_count > limit:
             logger.warning(f"Rate limit exceeded for {client_id}")
@@ -157,6 +165,30 @@ def _validate_and_resolve_target(url: str) -> tuple[bool, str, str]:
 
 
 def process_http_job(job_payload):
+ feat/complete-10268506225633119435
+
+    """
+    Process a single HTTP job payload and perform a validated, rate-limited outbound HTTP request.
+    
+    Parameters:
+        job_payload (dict): Job data with expected keys:
+            - "url" (str): Required. The target URL to request.
+            - "client_id" (str, optional): Identifier used for rate limiting; falls back to the URL hostname if omitted.
+            - "method" (str, optional): HTTP method to use (default "GET").
+            - "headers" (dict, optional): Request headers; if missing, a Host header for the original hostname will be added.
+            - "timeout" (number, optional): Request timeout in seconds (default 10.0, capped by MAX_TIMEOUT).
+    
+    Returns:
+        dict: A dictionary containing the result.
+        On success:
+            - "status_code" (int): HTTP status code returned by the remote host.
+            - "elapsed_ms" (int): Round-trip elapsed time in milliseconds.
+            - "content_length" (int): Number of response bytes read (0 if empty).
+        On error:
+            - "error" (str): Short error identifier/message (e.g., "invalid payload", "missing url", "rate limit exceeded", "request not allowed: <reason>", "external requests disabled", "redirects not allowed", "response too large", "ssl verification failed", "request failed").
+            - "status_code" (int, optional): Present when a redirect was blocked.
+    """
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
     REQUESTS.inc()
     start = time.time()
 
@@ -254,6 +286,14 @@ def process_http_job(job_payload):
     return result
 
 def main():
+ feat/complete-10268506225633119435
+
+    """
+    Start the Prometheus metrics server and run the RQ worker to process background jobs.
+    
+    Reads METRICS_PORT from the environment to bind the metrics server, logs startup information (including Redis URL and queue name), creates an RQ Worker listening on the configured queue, and runs it with scheduler support; this call blocks while the worker runs.
+    """
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
     metrics_port = int(os.getenv("METRICS_PORT", "8001"))
     start_metrics_server(metrics_port)
 

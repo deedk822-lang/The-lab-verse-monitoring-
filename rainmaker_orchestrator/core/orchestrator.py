@@ -10,6 +10,10 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional
 import asyncio
+ feat/complete-10268506225633119435
+
+import shlex
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 
 logger = logging.getLogger(__name__)
 
@@ -172,11 +176,14 @@ class RainmakerOrchestrator:
 
         Returns:
             Execution result dictionary
+ feat/complete-10268506225633119435
 
         Security:
             Note: shell=True is used for intentional shell feature support.
             This is only safe when used with trusted input sources.
             For production, consider using shlex.split() and shell=False.
+
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
         """
         import time
         start_time = time.time()
@@ -184,8 +191,12 @@ class RainmakerOrchestrator:
         try:
             env = environment.copy() if environment else {}
             result = subprocess.run(
+ feat/complete-10268506225633119435
                 command,
                 shell=True,
+
+                shlex.split(command),
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
                 capture_output=True,
                 text=True,
                 timeout=timeout,

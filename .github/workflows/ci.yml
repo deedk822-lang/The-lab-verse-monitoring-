@@ -173,7 +173,10 @@ jobs:
         run: |
           docker run --rm \
             -e KIMI_API_KEY=test_key \
+ feat/complete-10268506225633119435
             -e ANTHROPIC_API_KEY=test_key \
+
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             -e HF_TOKEN=test_token \
             -e WORKSPACE_PATH=/tmp/test_workspace \
             --entrypoint python \
@@ -274,7 +277,11 @@ jobs:
             # Build the image first to ensure it exists for compose
             docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
             # Start the orchestrator service (correct name from docker-compose file)
+ feat/complete-10268506225633119435
             docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator
+
+            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             sleep 20
           else
             echo "docker-compose.superstack.yml not found"
@@ -291,7 +298,11 @@ jobs:
             fi
             echo "Waiting for service... ($i/30)"
             # Log the last few lines of the container to see if it's crashing
+ feat/complete-10268506225633119435
             docker logs rainmaker-orchestrator --tail 10 || true
+
+            docker logs task-router --tail 10 || true
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
             sleep 2
           done
           echo "Health check failed"
@@ -339,6 +350,7 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           script: |
+ feat/complete-10268506225633119435
             try {
               github.rest.repos.createCommitStatus({
                 owner: context.repo.owner,
@@ -351,3 +363,13 @@ jobs:
             } catch (error) {
               console.log('Could not update commit status:', error.message);
             }
+
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: '${{ steps.status.outputs.status }}',
+              context: 'CI/CD Pipeline',
+              description: '${{ steps.status.outputs.message }}'
+            })
+ feature/complete-orchestrator-and-scheduler-3340126171226885686

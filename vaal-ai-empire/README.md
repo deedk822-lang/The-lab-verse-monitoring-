@@ -7,64 +7,10 @@ An enterprise-grade AI automation system for managing social media content, What
 ## ✨ Features
 
 ### 🤖 AI Content Generation
-- **Multi-Provider Support**: Cohere, Groq, Mistral (Ollama), HuggingFace, Kimi
+- **Multi-Provider Support**: Cohere, Groq, Mistral (Ollama), HuggingFace
 - **Automatic Fallback**: Seamlessly switches between providers if one fails
 - **Bilingual**: Generates content in Afrikaans and English
 - **Cost Optimization**: Uses most cost-effective provider available
-
-### 🆕 New: Multimodal Content Generation with Aya Vision
-
-This system now supports multimodal inputs (images and text) using the `CohereLabs/aya-vision-32b` model.
-
-**Special Installation Note:** This model requires a specific version of the `transformers` library. Install it directly from GitHub:
-```bash
-pip uninstall -y transformers
-pip install 'git+https://github.com/huggingface/transformers.git@v4.49.0-AyaVision'
-```
-
-**To test this feature**, run the demonstration script:
-```bash
-python vaal-ai-empire/scripts/test_aya_vision.py
-```
-
-# Kimi Linear Setup Guide (Production-Ready)
-
-## Quick Start
-```bash
-# 1. Install
-pip install vllm>=0.4.0
-
-# 2. Run (replace with actual model)
-vllm serve Qwen/Qwen-72B-Instruct \
-  --port 8000 \
-  --tensor-parallel-size 4 \
-  --max-model-len 32768 \
-  --trust-remote-code
-
-# 3. Test
-python test_client.py
-```
-
-## Requirements
-- 4x A100 80GB GPUs
-- Python 3.10+
-- CUDA 12.1+
-
-## Client Example
-```python
-from openai import OpenAI
-import os
-
-client = OpenAI(
-    base_url=os.getenv("KIMI_API_BASE", "http://localhost:8000/v1"),
-    api_key=os.getenv("KIMI_API_KEY", "EMPTY")
-)
-
-response = client.chat.completions.create(
-    model="Qwen/Qwen-72B-Instruct",
-    messages=[{"role": "user", "content": "Your prompt"}]
-)
-```
 
 ### 🖼️ Real Image Generation
 - **Multiple Providers**: Stable Diffusion, DALL-E, Replicate, HuggingFace
@@ -336,13 +282,6 @@ The system automatically selects providers in this order:
 
 ```env
 # === Core AI ===
-# For AutoGen Agents (used by the orchestrator)
-# You can provide a path to a JSON file (OAI_CONFIG_LIST)
-# or set the model and API key directly.
-# OAI_CONFIG_LIST="path/to/your/OAI_CONFIG_LIST.json"
-OPENAI_MODEL="your_model_name"
-OPENAI_API_KEY="your_openai_api_key"
-
 COHERE_API_KEY=          # Text generation (primary)
 GROQ_API_KEY=            # Text generation (fast)
 HUGGINGFACE_TOKEN=       # Models & inference

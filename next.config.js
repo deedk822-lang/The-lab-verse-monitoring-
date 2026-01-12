@@ -1,24 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // Don't fail the build on ESLint errors during development
+    // but still run linting
+    ignoreDuringBuilds: false,
+  },
+  typescript: {
+    // Don't fail the build on TypeScript errors during development
+    ignoreBuildErrors: false,
+  },
+  // Optimize for Vercel deployment
   swcMinify: true,
+  // Configure experimental features if needed
   experimental: {
-    appDir: true,
+    // Add any experimental features here
   },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'github.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.gravatar.com',
-      },
-    ],
-  },
-  env: {
-    NEXT_PUBLIC_VERSION: '1.0.0',
+  // Configure webpack if needed
+  webpack: (config, { isServer }) => {
+    // Add any custom webpack configuration here
+    return config;
   },
 };
 

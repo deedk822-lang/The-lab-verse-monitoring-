@@ -2,7 +2,7 @@ export const MODEL_CATALOG = {
   // ** TIER 1: LocalAI-Compatible (Loadshedding-Proof) **
   'mistral-7b-instruct-v0.2-q4': {
     provider: 'LocalAI',
-    endpoint: `${process.env.LOCALAI_ENDPOINT}/v1/chat/completions`,
+    endpoint: `${process.env.LOCALAI_ENDPOINT || 'http://your-public-localai-url'}/v1/chat/completions`,
     cost_per_1k_tokens: 0.0000, // Free, runs on Raspberry Pi
     capability: 6.5, // Out of 10
     specialization: 'content_generation',
@@ -13,7 +13,7 @@ export const MODEL_CATALOG = {
 
   'qwen2.5-coder-1.5b-q4': {
     provider: 'LocalAI',
-    endpoint: `${process.env.LOCALAI_ENDPOINT}/v1/completions`,
+    endpoint: `${process.env.LOCALAI_ENDPOINT || 'http://your-public-localai-url'}/v1/completions`,
     cost_per_1k_tokens: 0.0000,
     capability: 5.5,
     specialization: 'code_assistance',
@@ -77,16 +77,5 @@ export const MODEL_CATALOG = {
     specialization: 'rag_embeddings',
     languages: ['en', 'af', 'st', 'nso', 'zu'],
     location: 'All' // For multilingual search across Vaal
-  },
-
-  // ** TIER 4: CrewAI Agents **
-  'crewai-researcher': {
-    provider: 'CrewAI',
-    script: 'crewai/main.py',
-    cost_per_1k_tokens: 0.001, // Placeholder cost
-    capability: 7.0,
-    specialization: 'research',
-    languages: ['en'],
-    location: 'local'
   }
 };

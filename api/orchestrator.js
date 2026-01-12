@@ -1,22 +1,5 @@
-import { spawn } from 'child_process';
-import { retryWithBackoff } from '../utils/retryWithBackoff.js';
 import { MODEL_CATALOG } from '../models.config.js';
 import { sql } from '@vercel/postgres';
-import { Counter } from 'prom-client';
-
-const modelRequestCounter = new Counter({
-  name: 'model_requests_total',
-  help: 'Total number of requests for a specific model',
-  labelNames: ['model'],
-});
-
-function sanitizeInput(input) {
-  if (!input) {
-    return '';
-  }
-  // Allow alphanumeric characters, spaces, and a few safe punctuation marks.
-  return input.replace(/[^a-zA-Z0-9 .,!?'-]/g, '');
-}
 
 export default async function handler(req, res) {
   const { task, location, language, student_id: client_id } = req.body;
@@ -42,9 +25,6 @@ export default async function handler(req, res) {
     case 'rag_embeddings':
       model_id = 'cohere-embed-multilingual';
       break;
-    case 'crewai_research':
-      model_id = 'crewai-researcher';
-      break;
     default:
       model_id = 'mistral-7b-instruct-v0.2-q4'; // Default safe choice
   }
@@ -63,10 +43,7 @@ export default async function handler(req, res) {
   // 3. Execute on the specific model
   const result = await executeOnModel(model_id, req.body);
 
-  // 4. Increment metrics counter
-  modelRequestCounter.inc({ model: model_id });
-
-  // 5. Log cost for this query
+  // 4. Log cost for this query
   await sql`
     INSERT INTO model_usage_logs
     (model_id, location, task, tokens_used, cost_usd, client_id)
@@ -88,22 +65,22 @@ async function executeOnModel(modelId, payload) {
 
   // Route to correct provider
   if (model.provider === 'LocalAI') {
-    const response = await retryWithBackoff(async () => {
-      const res = await fetch(model.endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          model: modelId,
-          prompt: payload.query,
-          max_tokens: 500,
-          temperature: 0.3
-        })
-      });
-      if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
-      }
-      return res.json();
+    const res = await fetch(model.endpoint, {
+      method: 'POST',
+      body: JSON.stringify({
+        model: modelId,
+        prompt: payload.query,
+        max_tokens: 500,
+        temperature: 0.3
+      })
     });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`LocalAI API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
       output: response?.choices?.[0]?.text,
       usage: {
@@ -113,22 +90,22 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'OpenAI' || model.provider === 'Groq') {
-    const response = await retryWithBackoff(async () => {
-      const res = await fetch(model.endpoint, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [{ role: 'user', content: payload.query }],
-          max_tokens: 500
-        })
-      });
-      if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
-      }
-      return res.json();
+    const res = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [{ role: 'user', content: payload.query }],
+        max_tokens: 500
+      })
     });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`${model.provider} API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
       output: response?.choices?.[0]?.message?.content,
       usage: {
@@ -138,26 +115,26 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'Anthropic') {
-    const response = await retryWithBackoff(async () => {
-      const res = await fetch(model.endpoint, {
-        method: 'POST',
-        headers: {
-          'x-api-key': process.env[model.api_key_env],
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: modelId,
-          max_tokens: 500,
-          messages: [{ role: 'user', content: payload.query }]
-        })
-      });
-      if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
-      }
-      return res.json();
+    const res = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env[model.api_key_env],
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: 500,
+        messages: [{ role: 'user', content: payload.query }]
+      })
     });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
       output: response?.content?.[0]?.text,
       usage: {
@@ -167,69 +144,31 @@ async function executeOnModel(modelId, payload) {
   }
 
   if (model.provider === 'Cohere') {
-    const response = await retryWithBackoff(async () => {
-      const res = await fetch(model.endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          texts: [payload.query],
-          model: modelId,
-          input_type: 'search_document'
-        })
-      });
-      if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`Cohere API error (${res.status}): ${errorBody}`);
-      }
-      return res.json();
+    const res = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        texts: [payload.query],
+        model: modelId,
+        input_type: 'search_document'
+      })
     });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Cohere API error (${res.status}): ${errorBody}`);
+    }
+
+    const response = await res.json();
     return {
       output: response.embeddings,
       usage: {
         total_tokens: (response?.meta?.billed_units?.input_tokens || 0) + (response?.meta?.billed_units?.output_tokens || 0)
       }
     };
-  }
-
-  if (model.provider === 'CrewAI') {
-    return new Promise((resolve, reject) => {
-      const sanitizedQuery = sanitizeInput(payload.query);
-      const pythonProcess = spawn('python3', [model.script, sanitizedQuery]);
-
-      let output = '';
-      let errorOutput = '';
-
-      pythonProcess.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-
-      pythonProcess.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      pythonProcess.on('close', (code) => {
-        if (code !== 0) {
-          return reject(new Error(`CrewAI script exited with code ${code}: ${errorOutput}`));
-        }
-        try {
-          const parsedOutput = JSON.parse(output);
-          if (parsedOutput.error) {
-            return reject(new Error(`CrewAI script error: ${parsedOutput.error}`));
-          }
-          resolve({
-            output: parsedOutput.result,
-            usage: {
-              total_tokens: parsedOutput.token_usage.total_tokens || 0
-            }
-          });
-        } catch (e) {
-          reject(new Error(`Failed to parse CrewAI output: ${e.message}`));
-        }
-      });
-    });
   }
 }
 
@@ -239,42 +178,26 @@ async function checkModelHealth(modelId) {
     if (model.provider === 'LocalAI') {
         const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
         try {
-            return await retryWithBackoff(async () => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                try {
-                    const r = await fetch(`${baseUrl}/health`, { signal: controller.signal });
-                    if (!r.ok) {
-                        throw new Error(`Health check failed: ${r.status}`);
-                    }
-                    return true;
-                } finally {
-                    clearTimeout(timeoutId);
-                }
-            });
+            const r = await fetch(`${baseUrl}/health`, { timeout: 2000 });
+            return r.ok;
         } catch {
             return false;
         }
     } else {
         try {
-            return await retryWithBackoff(async () => {
-                const response = await fetch(model.endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: modelId,
-                        messages: [{ role: 'user', content: 'test' }],
-                        max_tokens: 1
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error(`Health check failed: ${response.status}`);
-                }
-                return true;
+            const response = await fetch(model.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: 'test' }],
+                    max_tokens: 1
+                })
             });
+            return response.ok;
         } catch {
             return false;
         }

@@ -1,6 +1,0 @@
-[
-  ".github/workflows/*",
-  "config/production.json",
-  "deploy.sh",
-  ".env"
-]

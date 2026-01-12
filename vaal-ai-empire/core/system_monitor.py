@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
 from functools import wraps
 import os
+import atexit
 import requests
 
 logger = logging.getLogger(__name__)
@@ -17,9 +18,10 @@ logger = logging.getLogger(__name__)
 class SystemMonitor:
     """Monitor system health and track errors"""
 
-    def __init__(self, db=None):
+    def __init__(self, db=None, ollama_url: str = "http://localhost:11434"):
         self.db = db
         self.session = requests.Session()
+        self.ollama_url = ollama_url
         self.start_time = datetime.now()
         self.error_count = 0
         self.warning_count = 0
@@ -31,7 +33,14 @@ class SystemMonitor:
 
     def record_error(self, component: str, error: Exception,
                     context: Optional[Dict] = None):
-        """Record an error for monitoring"""
+        """
+        Records an error, logs it, and stores it in the database if available.
+
+        Args:
+            component: The name of the component where the error occurred.
+            error: The exception object that was raised.
+            context: Optional dictionary of context to include with the error.
+        """
         self.error_count += 1
 
         error_data = {
@@ -59,13 +68,27 @@ class SystemMonitor:
         return error_data
 
     def record_warning(self, component: str, message: str):
-        """Record a warning"""
+        """
+        Records and logs a warning message.
+
+        Args:
+            component: The name of the component generating the warning.
+            message: The warning message.
+        """
         self.warning_count += 1
         logger.warning(f"[{component}] {message}")
 
     def record_api_call(self, success: bool, provider: str,
                        operation: str, cost: float = 0.0):
-        """Record API call statistics"""
+        """
+        Records statistics for an external API call.
+
+        Args:
+            success: Boolean indicating if the call was successful.
+            provider: The name of the API provider (e.g., 'cohere').
+            operation: The name of the operation performed (e.g., 'generate').
+            cost: The cost of the API call in USD, if applicable.
+        """
         if success:
             self.api_calls["success"] += 1
         else:
@@ -83,7 +106,13 @@ class SystemMonitor:
                 pass
 
     def get_system_status(self) -> Dict:
-        """Get comprehensive system status"""
+        """
+        Retrieves a comprehensive status report of the system.
+
+        Returns:
+            A dictionary containing uptime, error counts, API call stats,
+            and the health of external services.
+        """
         uptime = (datetime.now() - self.start_time).total_seconds()
 
         status = {
@@ -112,7 +141,13 @@ class SystemMonitor:
         return status
 
     def check_all_services(self) -> Dict:
-        """Check health of all external services"""
+        """
+        Performs health checks on all integrated external services.
+
+        Returns:
+            A dictionary where keys are service names and values are their
+            health status (e.g., 'healthy', 'not_configured').
+        """
         services = {}
 
         # Check AI providers
@@ -153,16 +188,10 @@ class SystemMonitor:
     def _check_ollama(self) -> str:
         """Check Ollama server health"""
         try:
-            response = self.session.get("http://localhost:11434", timeout=2)
-        try:
-            response = self.session.get("http://localhost:11434", timeout=2)
-            response.raise_for_status()
+            response = self.session.get(self.ollama_url, timeout=2)
+            response.raise_for_status()  # Raise an exception for bad status codes
             return "healthy"
-        except requests.exceptions.HTTPError:
-            # Server responded with an error status code (4xx or 5xx)
-            return "unreachable"
         except requests.exceptions.RequestException:
-            # Other request exceptions (e.g., connection error, timeout)
             return "not_running"
 
     def _check_twilio(self) -> str:
@@ -183,6 +212,9 @@ class SystemMonitor:
     def _check_ayrshare(self) -> str:
         """Check Ayrshare health"""
         api_key = os.getenv("AYRSHARE_API_KEY")
+        if not api_key:
+            return "not_configured"
+
         try:
             response = self.session.get(
                 "https://app.ayrshare.com/api/profiles",
@@ -191,13 +223,17 @@ class SystemMonitor:
             )
             response.raise_for_status()
             return "healthy"
-        except requests.exceptions.HTTPError:
-            return "error"  # Server responded with a non-2xx status
         except requests.exceptions.RequestException:
-            return "unreachable"  # e.g. DNS failure, connection refused
+            return "unreachable"
 
     def generate_health_report(self) -> Dict:
-        """Generate detailed health report"""
+        """
+        Generates a detailed health report with a summary and recommendations.
+
+        Returns:
+            A dictionary containing a health summary, key metrics,
+            service statuses, and actionable recommendations.
+        """
         status = self.get_system_status()
 
         report = {
@@ -412,7 +448,10 @@ class AlertSystem:
         self.alert_history = []
 
     def close(self):
-        """Close the requests session."""
+        """
+        Closes the underlying requests.Session to release connections.
+        Should be called on application shutdown.
+        """
         self.session.close()
 
     def send_alert(self, severity: str, component: str,
@@ -472,15 +511,9 @@ class AlertSystem:
                 ]
             }
 
- bolt-session-optimization-2600986726108823150
-            # TODO: Validate self.webhook_url against an allow-list of trusted domains to prevent SSRF.
             response = self.session.post(self.webhook_url, json=payload, timeout=5)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-
-            self.session.post(self.webhook_url, json=payload, timeout=5)
-        except Exception as e:
- main
             logger.error(f"Failed to send webhook alert: {e}")
 
     def get_recent_alerts(self, count: int = 10,
@@ -503,6 +536,7 @@ def get_monitor(db=None) -> SystemMonitor:
     global _monitor
     if _monitor is None:
         _monitor = SystemMonitor(db)
+        atexit.register(_monitor.close)
     return _monitor
 
 def get_alert_system(db=None) -> AlertSystem:
@@ -510,4 +544,5 @@ def get_alert_system(db=None) -> AlertSystem:
     global _alert_system
     if _alert_system is None:
         _alert_system = AlertSystem(db)
+        atexit.register(_alert_system.close)
     return _alert_system

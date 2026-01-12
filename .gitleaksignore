@@ -1,0 +1,3 @@
+# False positives - example API keys in documentation
+*.example
+.env.example

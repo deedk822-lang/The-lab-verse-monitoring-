@@ -2,7 +2,9 @@ name: PR Validation
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
 
 jobs:
   validate:
@@ -10,25 +12,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install openai python-dotenv requests
 
-      - name: Run validation
+      - name: Validate environment
         env:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
         run: |
           python validate_env.py
 
-      - name: Run brain test
+      - name: Test AI workflow
         env:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}

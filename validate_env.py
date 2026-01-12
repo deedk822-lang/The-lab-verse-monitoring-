@@ -6,11 +6,8 @@ Validates Z.ai GLM-4.7 and Perplexity Sonar Pro connectivity
 
 import os
 import sys
-import json
-import time
 from openai import OpenAI
 
-# Load environment
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -18,16 +15,17 @@ except ImportError:
     pass
 
 # Colors
-GREEN = "\033[92m"
-RED = "\033[91m"
-NC = "\033[0m"
+GREEN = '\033[92m'
+RED = '\033[91m'
+YELLOW = '\033[93m'
+NC = '\033[0m'
 
 
 def validate_zai():
     """Validates Z.ai GLM-4.7 connection"""
     api_key = os.getenv("ZAI_API_KEY")
     if not api_key:
-        return False, "ZAI_API_KEY missing"
+        return False, "ZAI_API_KEY missing from environment"
 
     try:
         client = OpenAI(
@@ -40,18 +38,30 @@ def validate_zai():
             messages=[{"role": "user", "content": "test"}],
             max_tokens=10
         )
-
-        return True, f"Z.ai Connected (model: {response.model})"
-
     except Exception as e:
-        return False, f"Z.ai Failed: {str(e)}"
+        error_msg = str(e)
+
+        # Check for specific error codes
+        if "429" in error_msg or "Insufficient balance" in error_msg:
+            return False, (
+                "Z.ai Failed: Insufficient balance or no resource package (HTTP 429). "
+                "Please recharge account at https://api.z.ai"
+            )
+        elif "401" in error_msg or "Unauthorized" in error_msg:
+            return False, "Z.ai Failed: Invalid API key (HTTP 401)"
+        elif "403" in error_msg or "Forbidden" in error_msg:
+            return False, "Z.ai Failed: Access forbidden (HTTP 403)"
+        else:
+            return False, f"Z.ai Failed: {error_msg}"
+    else:
+        return True, f"Z.ai Connected (model: {response.model})"
 
 
 def validate_perplexity():
     """Validates Perplexity Sonar Pro connection"""
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key:
-        return False, "PERPLEXITY_API_KEY missing"
+        return False, "PERPLEXITY_API_KEY missing from environment"
 
     try:
         client = OpenAI(
@@ -59,21 +69,33 @@ def validate_perplexity():
             base_url="https://api.perplexity.ai"
         )
 
-        client.chat.completions.create(
+        response = client.chat.completions.create(
             model="sonar-pro",
             messages=[{"role": "user", "content": "test"}],
             max_tokens=10
         )
-
-        return True, "Perplexity Connected (sonar-pro)"
-
     except Exception as e:
-        return False, f"Perplexity Failed: {str(e)}"
+        error_msg = str(e)
+
+        # Check for specific error codes
+        if "429" in error_msg:
+            return False, "Perplexity Failed: Rate limit exceeded (HTTP 429)"
+        elif "401" in error_msg or "Unauthorized" in error_msg:
+            return False, "Perplexity Failed: Invalid API key (HTTP 401)"
+        elif "403" in error_msg:
+            return False, "Perplexity Failed: Access forbidden (HTTP 403)"
+        else:
+            return False, f"Perplexity Failed: {error_msg}"
+    else:
+        return True, "Perplexity Connected (sonar-pro)"
 
 
 def main():
     """Main validation entry point"""
     print("🔍 Validating Agent Stack...")
+    print()
+
+    all_passed = True
 
     # Validate Z.ai
     z_ok, z_msg = validate_zai()
@@ -81,6 +103,7 @@ def main():
         print(f"{GREEN}✓ {z_msg}{NC}")
     else:
         print(f"{RED}✗ {z_msg}{NC}")
+        all_passed = False
 
     # Validate Perplexity
     p_ok, p_msg = validate_perplexity()
@@ -88,13 +111,22 @@ def main():
         print(f"{GREEN}✓ {p_msg}{NC}")
     else:
         print(f"{RED}✗ {p_msg}{NC}")
+        all_passed = False
 
-    # Exit code
-    if z_ok and p_ok:
-        print(f"\n{GREEN}✓ All validations passed{NC}")
+    print()
+
+    # Exit with appropriate status
+    if all_passed:
+        print(f"{GREEN}✓ All validations passed{NC}")
         sys.exit(0)
     else:
-        print(f"\n{RED}✗ Validation failed{NC}")
+        print(f"{RED}✗ Validation failed{NC}")
+        print()
+        print(f"{YELLOW}⚠ Action Required:{NC}")
+        if not z_ok and "429" in z_msg:
+            print(f"  • Recharge Z.ai account at https://api.z.ai/console")
+        if not p_ok and "429" in p_msg:
+            print(f"  • Check Perplexity rate limits at https://www.perplexity.ai/settings/api")
         sys.exit(1)
 
 

@@ -5,6 +5,7 @@ import re
 import json
 from werkzeug.utils import secure_filename
 import resource
+ feature/elite-ci-cd-pipeline-1070897568806221897
 import shlex
 from typing import Set, Dict, Any
 
@@ -16,6 +17,17 @@ ALLOWED_COMMANDS: Set[str] = {"python", "pytest", "python3"}
 class FileSystemAgent:
     def __init__(self, workspace_path="/workspace", max_file_size=10*1024*1024):  # 10MB max
         if 'pytest' in sys.modules:
+
+
+import tempfile
+
+
+class FileSystemAgent:
+    def __init__(
+        self, workspace_path="/workspace", max_file_size=10 * 1024 * 1024
+    ):  # 10MB max
+        if "pytest" in sys.modules:
+ main
             self.workspace = tempfile.mkdtemp()
         else:
             self.workspace = os.path.realpath(workspace_path)
@@ -35,8 +47,16 @@ class FileSystemAgent:
         if not self._is_safe_path(safe_name):
             return {"status": "error", "message": "Path traversal detected"}
 
+ feature/elite-ci-cd-pipeline-1070897568806221897
         if len(content.encode('utf-8')) > self.max_size:
             return {"status": "error", "message": f"File exceeds {self.max_size / (1024*1024)}MB limit"}
+
+        if len(content.encode("utf-8")) > self.max_size:
+            return {
+                "status": "error",
+                "message": f"File exceeds {self.max_size / (1024*1024)}MB limit",
+            }
+ main
 
         full_path = os.path.join(self.workspace, safe_name)
         try:
@@ -62,6 +82,7 @@ class FileSystemAgent:
         except Exception as e:
             return {"status": "error", "message": f"Disk read failed: {str(e)}"}
 
+ feature/elite-ci-cd-pipeline-1070897568806221897
     def execute_script(self, filename: str, timeout: int = 30, mem_limit_mb: int = 128) -> Dict[str, Any]:
         """
         Executes a python script safely using a whitelist.
@@ -72,10 +93,28 @@ class FileSystemAgent:
 
         command = f"{sys.executable} {safe_name}"
 
+    def execute_script(
+        self, filename: str, timeout: int = 10, mem_limit_mb: int = 128
+    ) -> dict:
+        """
+        Executes a Python script found in the workspace.
+        Captures stdout and stderr.
+        """
+        safe_name = secure_filename(filename)
+        if not self._is_safe_path(safe_name):
+            return {
+                "status": "error",
+                "message": "Security violation: Cannot execute outside workspace.",
+            }
+
+        full_path = os.path.join(self.workspace, safe_name)
+ main
+
         def set_limits():
             # Limit virtual memory (RLIMIT_AS)
             resource.setrlimit(
                 resource.RLIMIT_AS,
+ feature/elite-ci-cd-pipeline-1070897568806221897
                 (mem_limit_mb * 1024 * 1024, mem_limit_mb * 1024 * 1024)
             )
 
@@ -115,5 +154,41 @@ class FileSystemAgent:
 
         except subprocess.TimeoutExpired:
             return {"status": "failure", "message": f"Execution timed out after {timeout} seconds."}
+
+                (mem_limit_mb * 1024 * 1024, mem_limit_mb * 1024 * 1024),
+            )
+
+        try:
+            # Run the script in a subprocess
+            result = subprocess.run(
+                [sys.executable, full_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=self.workspace,
+                env={"PYTHONUNBUFFERED": "1"},  # Minimal env
+                preexec_fn=set_limits,
+            )
+
+            if result.returncode == 0:
+                return {
+                    "status": "success",
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                }
+            else:
+                return {
+                    "status": "failure",
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "returncode": result.returncode,
+                }
+
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "failure",
+                "message": f"Execution timed out after {timeout} seconds.",
+            }
+ main
         except Exception as e:
             return {"status": "error", "message": str(e)}

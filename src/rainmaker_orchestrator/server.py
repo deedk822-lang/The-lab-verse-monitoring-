@@ -3,7 +3,10 @@ Rainmaker Orchestrator HTTP Server
 Flask-based HTTP interface for the async orchestrator
 Aligned with actual orchestrator.py implementation
 """
+ feature/elite-ci-cd-pipeline-1070897568806221897
 
+
+ main
 import asyncio
 import atexit
 import logging
@@ -17,7 +20,11 @@ from agents.healer import SelfHealingAgent
 # Configure logging
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
+ feature/elite-ci-cd-pipeline-1070897568806221897
+    format='{"time":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s", "module":"%(name)s"}'
+
     format='{"time":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s", "module":"%(name)s"}',
+ main
 )
 logger = logging.getLogger(__name__)
 
@@ -30,7 +37,12 @@ try:
     workspace_path = os.getenv("WORKSPACE_PATH", "/workspace")
     config_file = os.getenv("CONFIG_FILE", ".env")
     orchestrator = RainmakerOrchestrator(
+ feature/elite-ci-cd-pipeline-1070897568806221897
+        workspace_path=workspace_path,
+        config_file=config_file
+
         workspace_path=workspace_path, config_file=config_file
+ main
     )
     healer = SelfHealingAgent()
     logger.info(f"Orchestrator initialized (workspace: {workspace_path})")
@@ -120,14 +132,25 @@ def execute_task():
         is_valid, error_msg = validate_execute_request(data)
         if not is_valid:
             logger.warning(f"Invalid request [{request_id}]: {error_msg}")
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "error": error_msg,
+                "status": "invalid_request"
+            }), 400
+
             return jsonify({"error": error_msg, "status": "invalid_request"}), 400
+ main
 
         # Build task dict for orchestrator
         task = {
             "context": data["context"],
             "type": data.get("type"),
             "model": data.get("model"),
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            "output_filename": data.get("output_filename")
+
             "output_filename": data.get("output_filename"),
+ main
         }
 
         # Log task details
@@ -141,6 +164,56 @@ def execute_task():
         # Check result status
         if result.get("status") == "success":
             logger.info(f"Task completed successfully [{request_id}]")
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "result": result,
+                "status": "success",
+                "request_id": request_id
+            }), 200
+
+        elif result.get("status") == "failed":
+            logger.warning(f"Task failed [{request_id}]: {result.get('message', 'Unknown error')}")
+            return jsonify({
+                "error": result.get("message", "Task execution failed"),
+                "details": result,
+                "status": "failed",
+                "request_id": request_id
+            }), 422  # Unprocessable Entity
+
+        else:
+            logger.error(f"Task error [{request_id}]: {result.get('message', 'Unknown error')}")
+            return jsonify({
+                "error": result.get("message", "Task execution error"),
+                "details": result,
+                "status": "error",
+                "request_id": request_id
+            }), 500
+
+    except asyncio.TimeoutError:
+        logger.error(f"Task timeout [{request_id}]")
+        return jsonify({
+            "error": "Task execution timed out",
+            "status": "timeout",
+            "request_id": request_id
+        }), 504
+
+    except ValueError as e:
+        logger.warning(f"Validation error [{request_id}]: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "validation_error",
+            "request_id": request_id
+        }), 400
+
+    except Exception as e:
+        logger.error(f"Task execution failed [{request_id}]: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error during task execution",
+            "details": str(e),
+            "status": "error",
+            "request_id": request_id
+        }), 500
+
             return (
                 jsonify(
                     {"result": result, "status": "success", "request_id": request_id}
@@ -219,6 +292,7 @@ def execute_task():
             ),
             500,
         )
+ main
 
 
 @app.route("/health", methods=["GET"])
@@ -232,18 +306,33 @@ def health_check():
     try:
         # Check if orchestrator is initialized
         if orchestrator is None:
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "status": "unhealthy",
+                "reason": "Orchestrator not initialized"
+            }), 503
+
             return (
                 jsonify(
                     {"status": "unhealthy", "reason": "Orchestrator not initialized"}
                 ),
                 503,
             )
+ main
 
         # Check required configuration
         missing_keys = orchestrator.config.validate(["KIMI_API_KEY"])
 
         if missing_keys:
             logger.warning(f"Missing configuration keys: {missing_keys}")
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "status": "degraded",
+                "reason": f"Missing configuration: {', '.join(missing_keys)}",
+                "service": "rainmaker-orchestrator",
+                "version": "2.0.0"
+            }), 200  # Still return 200 so container doesn't restart
+
             return (
                 jsonify(
                     {
@@ -255,6 +344,7 @@ def health_check():
                 ),
                 200,
             )  # Still return 200 so container doesn't restart
+ main
 
         # Check workspace accessibility
         try:
@@ -265,6 +355,30 @@ def health_check():
                 raise PermissionError("Workspace not writable")
         except Exception as e:
             logger.error(f"Workspace check failed: {e}")
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "status": "degraded",
+                "reason": f"Workspace issue: {str(e)}",
+                "service": "rainmaker-orchestrator",
+                "version": "2.0.0"
+            }), 200
+
+        # All checks passed
+        return jsonify({
+            "status": "healthy",
+            "service": "rainmaker-orchestrator",
+            "version": "2.0.0",
+            "workspace": orchestrator.fs.workspace,
+            "configured_models": ["kimi", "ollama"]
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Health check failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "unhealthy",
+            "reason": str(e)
+        }), 503
+
             return (
                 jsonify(
                     {
@@ -294,6 +408,7 @@ def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {e}", exc_info=True)
         return jsonify({"status": "unhealthy", "reason": str(e)}), 503
+ main
 
 
 @app.route("/workspace/files", methods=["GET"])
@@ -307,13 +422,40 @@ def list_workspace_files():
     try:
         workspace = orchestrator.fs.workspace
         if not os.path.exists(workspace):
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "files": [],
+                "workspace": workspace
+            }), 200
+
             return jsonify({"files": [], "workspace": workspace}), 200
+ main
 
         files = []
         for filename in os.listdir(workspace):
             filepath = os.path.join(workspace, filename)
             if os.path.isfile(filepath):
                 stat = os.stat(filepath)
+ feature/elite-ci-cd-pipeline-1070897568806221897
+                files.append({
+                    "name": filename,
+                    "size": stat.st_size,
+                    "modified": stat.st_mtime
+                })
+
+        return jsonify({
+            "files": files,
+            "count": len(files),
+            "workspace": workspace
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Failed to list workspace files: {e}", exc_info=True)
+        return jsonify({
+            "error": "Failed to list workspace files",
+            "details": str(e)
+        }), 500
+
                 files.append(
                     {"name": filename, "size": stat.st_size, "modified": stat.st_mtime}
                 )
@@ -329,6 +471,7 @@ def list_workspace_files():
             jsonify({"error": "Failed to list workspace files", "details": str(e)}),
             500,
         )
+ main
 
 
 @app.route("/workspace/files/<filename>", methods=["GET"])
@@ -346,6 +489,25 @@ def get_workspace_file(filename):
         result = orchestrator.fs.read_file(filename)
 
         if result["status"] == "success":
+ feature/elite-ci-cd-pipeline-1070897568806221897
+            return jsonify({
+                "filename": filename,
+                "content": result["content"],
+                "status": "success"
+            }), 200
+        else:
+            return jsonify({
+                "error": result["message"],
+                "status": result["status"]
+            }), 404 if "not found" in result["message"].lower() else 500
+
+    except Exception as e:
+        logger.error(f"Failed to read file {filename}: {e}", exc_info=True)
+        return jsonify({
+            "error": "Failed to read file",
+            "details": str(e)
+        }), 500
+
             return (
                 jsonify(
                     {
@@ -364,6 +526,7 @@ def get_workspace_file(filename):
     except Exception as e:
         logger.error(f"Failed to read file {filename}: {e}", exc_info=True)
         return jsonify({"error": "Failed to read file", "details": str(e)}), 500
+ main
 
 
 @app.route("/metrics", methods=["GET"])
@@ -394,6 +557,19 @@ orchestrator_tasks_total 0
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
+ feature/elite-ci-cd-pipeline-1070897568806221897
+    return jsonify({
+        "error": "Endpoint not found",
+        "status": "not_found",
+        "available_endpoints": [
+            "POST /execute",
+            "GET /health",
+            "GET /workspace/files",
+            "GET /workspace/files/<filename>",
+            "GET /metrics"
+        ]
+    }), 404
+
     return (
         jsonify(
             {
@@ -410,19 +586,34 @@ def not_found(error):
         ),
         404,
     )
+ main
 
 
 @app.errorhandler(405)
 def method_not_allowed(error):
     """Handle 405 errors"""
+ feature/elite-ci-cd-pipeline-1070897568806221897
+    return jsonify({
+        "error": "Method not allowed",
+        "status": "method_not_allowed"
+    }), 405
+
     return jsonify({"error": "Method not allowed", "status": "method_not_allowed"}), 405
+ main
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
     logger.error(f"Internal server error: {error}", exc_info=True)
+ feature/elite-ci-cd-pipeline-1070897568806221897
+    return jsonify({
+        "error": "Internal server error",
+        "status": "error"
+    }), 500
+
     return jsonify({"error": "Internal server error", "status": "error"}), 500
+ main
 
 
 def cleanup_orchestrator():
@@ -432,7 +623,11 @@ def cleanup_orchestrator():
     """
     logger.info("Shutting down orchestrator...")
     try:
+ feature/elite-ci-cd-pipeline-1070897568806221897
+        if hasattr(orchestrator, 'aclose'):
+
         if hasattr(orchestrator, "aclose"):
+ main
             # Create a new event loop for cleanup
             # (the main loop may already be closed)
             loop = asyncio.new_event_loop()
@@ -453,6 +648,14 @@ atexit.register(cleanup_orchestrator)
 # Only run development server if this file is executed directly
 if __name__ == "__main__":
     logger.info("Starting development server (not for production!)")
+ feature/elite-ci-cd-pipeline-1070897568806221897
+    logger.warning("Use Gunicorn for production: gunicorn --bind 0.0.0.0:8080 server:app")
+    app.run(
+        host="0.0.0.0",
+        port=8080,
+        debug=os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    )
+
     logger.warning(
         "Use Gunicorn for production: gunicorn --bind 0.0.0.0:8080 server:app"
     )
@@ -461,3 +664,4 @@ if __name__ == "__main__":
         port=8080,
         debug=os.getenv("FLASK_DEBUG", "false").lower() == "true",
     )
+ main

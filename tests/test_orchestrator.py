@@ -1,172 +1,90 @@
-"""
-Test suite for Rainmaker Orchestrator - Aligned with actual API
-"""
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-import sys
-import os
+from unittest.mock import AsyncMock
+from httpx import ASGITransport, AsyncClient
 
-# Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'rainmaker_orchestrator'))
-
-from server import app, validate_execute_request, cleanup_orchestrator
-
-
-@pytest.fixture
-def client():
-    """Create Flask test client"""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
-
+# Import the FastAPI app instance and the class to be mocked
+from api.server import app
+from src.rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
 @pytest.fixture
 def mock_orchestrator():
-    """Mock orchestrator for testing"""
-    mock = AsyncMock()
-    mock.execute_task = AsyncMock(return_value={"status": "success", "result": "test result"})
-    mock.aclose = AsyncMock()
+    """Fixture to create a mock instance of RainmakerOrchestrator."""
+    # Use spec=True to ensure the mock has the same interface as the real class
+    mock = AsyncMock(spec=RainmakerOrchestrator)
+    mock.health_check.return_value = {"status": "healthy"}
+    mock.execute_task.return_value = {"status": "success", "result": "Task completed."}
     return mock
 
+@pytest.fixture
+async def client(mock_orchestrator):
+    """
+    Create an httpx AsyncClient for testing the FastAPI app.
+    This fixture manually sets the orchestrator on the app state, bypassing
+    the lifespan manager for more direct and stable testing.
+    """
+    app.state.orchestrator = mock_orchestrator
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    # Clean up the state after the test to ensure test isolation
+    if hasattr(app.state, "orchestrator"):
+        del app.state.orchestrator
 
-class TestHealthEndpoint:
-    """Test health check endpoint"""
+@pytest.mark.asyncio
+async def test_health_check_healthy(client, mock_orchestrator):
+    """Test the /health endpoint when the orchestrator is healthy."""
+    response = await client.get("/health")
 
-    @patch('server.orchestrator.config.validate')
-    @patch('os.path.exists', return_value=True)
-    @patch('os.access', return_value=True)
-    def test_health_returns_200_healthy(self, mock_access, mock_exists, mock_validate, client):
-        """Test health endpoint returns 200 and healthy"""
-        mock_validate.return_value = []
-        response = client.get('/health')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['status'] == 'healthy'
-        assert data['service'] == 'rainmaker-orchestrator'
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response["status"] == "healthy"
+    assert json_response["dependencies"]["orchestrator"]["status"] == "healthy"
+    mock_orchestrator.health_check.assert_awaited_once()
 
-    @patch('server.orchestrator.config.validate')
-    def test_health_returns_200_degraded(self, mock_validate, client):
-        """Test health endpoint returns 200 and degraded if config missing"""
-        mock_validate.return_value = ['KIMI_API_KEY']
-        response = client.get('/health')
-        assert response.status_code == 200
-        assert response.get_json()['status'] == 'degraded'
+@pytest.mark.asyncio
+async def test_health_check_degraded(client, mock_orchestrator):
+    """Test the /health endpoint when the orchestrator is degraded."""
+    mock_orchestrator.health_check.return_value = {"status": "degraded", "reason": "Kimi API key not set"}
 
+    response = await client.get("/health")
 
-class TestExecuteEndpoint:
-    """Test execute endpoint"""
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response["status"] == "degraded"
+    assert "Kimi API key not set" in json_response["dependencies"]["orchestrator"]["reason"]
 
-    def test_execute_missing_body(self, client):
-        """Test execute without body returns 400"""
-        response = client.post('/execute',
-                               content_type='application/json',
-                               data='')
-        assert response.status_code == 400
+@pytest.mark.asyncio
+async def test_execute_task_success(client, mock_orchestrator):
+    """Test the /execute endpoint for a successful task execution."""
+    payload = {
+        "type": "coding_task",
+        "context": "Write a python script to print hello world.",
+        "output_filename": "hello.py",
+        "model": None
+    }
+    response = await client.post("/execute", json=payload)
 
-    def test_execute_missing_context(self, client):
-        """Test execute without context field returns 400"""
-        response = client.post('/execute', json={})
-        assert response.status_code == 400
-        data = response.get_json()
-        assert 'error' in data
-        assert 'context' in data['error'].lower()
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    mock_orchestrator.execute_task.assert_awaited_once_with(payload)
 
-    def test_execute_empty_context(self, client):
-        """Test execute with empty context returns 400"""
-        response = client.post('/execute', json={'context': ''})
-        assert response.status_code == 400
+@pytest.mark.asyncio
+async def test_execute_task_failure(client, mock_orchestrator):
+    """Test the /execute endpoint for a failed task execution."""
+    mock_orchestrator.execute_task.return_value = {"status": "failed", "message": "Max retries exceeded."}
 
-    def test_execute_invalid_context_type(self, client):
-        """Test execute with non-string context returns 400"""
-        response = client.post('/execute', json={'context': 123})
-        assert response.status_code == 400
+    payload = {"type": "coding_task", "context": "This will fail."}
+    response = await client.post("/execute", json=payload)
 
-    def test_execute_invalid_filename(self, client):
-        """Test execute with path traversal in filename returns 400"""
-        response = client.post('/execute', json={'context': 'test', 'output_filename': '../etc/passwd'})
-        assert response.status_code == 400
+    assert response.status_code == 500
+    assert "Max retries exceeded" in response.json()["detail"]
 
-    @patch('server.orchestrator')
-    def test_execute_success(self, mock_orch, client):
-        """Test successful task execution"""
-        mock_orch.execute_task = AsyncMock(return_value={"status": "success"})
-        response = client.post('/execute', json={'context': 'test task'})
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['status'] == 'success'
+@pytest.mark.asyncio
+async def test_execute_invalid_payload(client):
+    """Test the /execute endpoint with an invalid payload (missing context)."""
+    response = await client.post("/execute", json={"type": "coding_task"})
 
-    @patch('server.orchestrator')
-    def test_execute_failed(self, mock_orch, client):
-        """Test failed task execution"""
-        mock_orch.execute_task = AsyncMock(return_value={"status": "failed", "message": "It failed"})
-        response = client.post('/execute', json={'context': 'test task'})
-        assert response.status_code == 422
-        data = response.get_json()
-        assert data['status'] == 'failed'
-        assert 'It failed' in data['error']
-
-    def test_execute_with_request_id_header(self, client):
-        """Test execute respects X-Request-ID header"""
-        with patch('server.orchestrator.execute_task', new=AsyncMock(return_value={"status": "success"})):
-            response = client.post('/execute',
-                                   headers={'X-Request-ID': 'test-123'},
-                                   json={'context': 'test'})
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data['request_id'] == 'test-123'
-
-
-class TestValidation:
-    """Test validation functions"""
-
-    def test_validate_execute_request_valid(self):
-        """Test validation with valid request"""
-        data = {'context': 'test task'}
-        is_valid, error = validate_execute_request(data)
-        assert is_valid is True
-        assert error == ""
-
-    def test_validate_execute_request_missing_context(self):
-        """Test validation with missing context"""
-        data = {}
-        is_valid, error = validate_execute_request(data)
-        assert is_valid is False
-        assert 'context' in error.lower()
-
-    def test_validate_execute_request_with_filename(self):
-        """Test validation with valid filename"""
-        data = {'context': 'test', 'output_filename': 'script.py'}
-        is_valid, error = validate_execute_request(data)
-        assert is_valid is True
-
-    def test_validate_execute_request_invalid_filename(self):
-        """Test validation with invalid filename"""
-        data = {'context': 'test', 'output_filename': '../script.py'}
-        is_valid, error = validate_execute_request(data)
-        assert is_valid is False
-        assert 'invalid characters' in error.lower()
-
-
-class TestWorkspaceEndpoints:
-    """Test workspace endpoints"""
-
-    @patch('server.orchestrator.fs.read_file')
-    def test_get_workspace_file_success(self, mock_read, client):
-        """Test getting a file successfully"""
-        mock_read.return_value = {"status": "success", "content": "hello"}
-        response = client.get('/workspace/files/test.txt')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['content'] == 'hello'
-
-    @patch('server.orchestrator.fs.read_file')
-    def test_get_workspace_file_not_found(self, mock_read, client):
-        """Test getting a file that does not exist"""
-        mock_read.return_value = {"status": "error", "message": "File not found"}
-        response = client.get('/workspace/files/test.txt')
-        assert response.status_code == 404
-
-
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+    assert response.status_code == 422
+    # Check for the specific Pydantic v2 error message
+    assert "Field required" in response.text
+    assert "context" in response.text

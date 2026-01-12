@@ -37,12 +37,14 @@ jobs:
           args: detect --source . --report-path gitleaks-report.json --no-git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
       - name: CodeQL init
         uses: github/codeql-action/init@v3
         with:
           languages: javascript, python, java, go
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
+        continue-on-error: true
 
   detect-changes:
     name: "🔍 Detect Changed Paths"

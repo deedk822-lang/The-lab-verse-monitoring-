@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: Kaggle
+    type: yesoreyeram-infinity-datasource # Ensure this matches the plugin ID
+    access: proxy
+    url: "https://www.kaggle.com/api/v1"
+    # FIX: Removed 'httpMethod: GET' (It is configured per-query, not here)
+    jsonData:
+      httpHeaderName1: "Authorization"
+    secureJsonData:
+      httpHeaderValue1: "Bearer $KAGGLE_API_TOKEN"

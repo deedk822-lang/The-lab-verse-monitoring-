@@ -154,9 +154,14 @@ class SystemMonitor:
         """Check Ollama server health"""
         try:
             response = self.session.get("http://localhost:11434", timeout=2)
+ bolt-session-optimization-2600986726108823150
             response.raise_for_status()  # Raise an exception for bad status codes
             return "healthy"
         except requests.exceptions.RequestException:
+
+            return "healthy" if response.status_code == 200 else "unreachable"
+        except:
+ main
             return "not_running"
 
     def _check_twilio(self) -> str:
@@ -467,9 +472,14 @@ class AlertSystem:
                 ]
             }
 
+ bolt-session-optimization-2600986726108823150
             response = self.session.post(self.webhook_url, json=payload, timeout=5)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
+
+            self.session.post(self.webhook_url, json=payload, timeout=5)
+        except Exception as e:
+ main
             logger.error(f"Failed to send webhook alert: {e}")
 
     def get_recent_alerts(self, count: int = 10,

@@ -154,14 +154,15 @@ class SystemMonitor:
         """Check Ollama server health"""
         try:
             response = self.session.get("http://localhost:11434", timeout=2)
- bolt-session-optimization-2600986726108823150
-            response.raise_for_status()  # Raise an exception for bad status codes
+        try:
+            response = self.session.get("http://localhost:11434", timeout=2)
+            response.raise_for_status()
             return "healthy"
+        except requests.exceptions.HTTPError:
+            # Server responded with an error status code (4xx or 5xx)
+            return "unreachable"
         except requests.exceptions.RequestException:
-
-            return "healthy" if response.status_code == 200 else "unreachable"
-        except:
- main
+            # Other request exceptions (e.g., connection error, timeout)
             return "not_running"
 
     def _check_twilio(self) -> str:

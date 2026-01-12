@@ -1,0 +1,44 @@
+name: "SRE Autonomous Fix Loop"
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  summon-jules:
+    if: |
+      contains(github.event.comment.body, '#FIX-REQUIRED') &&
+      (github.event.comment.user.login == 'coderabbitai[bot]' || github.event.comment.user.login == 'coderabbitai')
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jules Remediation
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commentBody = `
+            @google-labs-jules
+
+            ### 🤖 SRE Automation Trigger
+            CodeRabbit has identified a **Critical Systemic Issue** in this PR that will block deployment or violate architectural integrity.
+
+            **Your Mission:**
+            1. Review the table in the CodeRabbit comment above.
+            2. Apply the "Jules-Ready Fix" immediately.
+            3. If the error is a "Config-Drift" (like missing Vercel secrets), update the .json/yaml files first.
+            4. Ensure no legacy dependencies (Airtable) remain in the modified files.
+
+            Please push the fix directly to this branch.
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });

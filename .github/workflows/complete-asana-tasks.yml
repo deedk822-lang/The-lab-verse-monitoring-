@@ -31,19 +31,13 @@ on:
       dry_run:
         description: 'Dry run mode (show what would be completed without completing)'
         required: false
-        default: 'false'
-        type: choice
-        options:
-        - 'true'
-        - 'false'
+        default: false
+        type: boolean
       check_dependencies:
         description: 'Check task dependencies before completion'
         required: false
-        default: 'false'
-        type: choice
-        options:
-        - 'true'
-        - 'false'
+        default: false
+        type: boolean
   pull_request:
     types: [closed]
 

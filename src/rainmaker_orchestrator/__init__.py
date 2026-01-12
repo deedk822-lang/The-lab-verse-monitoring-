@@ -1,6 +1,4 @@
- feature/elite-ci-cd-pipeline-1070897568806221897
-# This file makes this a Python package
-
+"""Rainmaker Orchestrator - AI-powered task orchestration and self-healing."""
 """Rainmaker Orchestrator - AI-powered task orchestration and self-healing."""
 
 __version__ = "0.1.0"

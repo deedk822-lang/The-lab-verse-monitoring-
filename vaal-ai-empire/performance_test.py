@@ -81,7 +81,7 @@ def test_optimization():
     elif optimized_time == 0:
         improvement = 0 # No change
     else:
-        improvement = 100 # Infinite improvement if original was 0 and new is not
+        improvement = -100  # Regression: optimized took time when original didn't
 
     print(f"\nOriginal (requests.get):  {original_time:.4f}s")
     print(f"Optimized (Session.get): {optimized_time:.4f}s")

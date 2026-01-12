@@ -297,7 +297,11 @@ class TestSelfHealingAgentEdgeCases:
         assert mock_kimi.generate.call_count == 3
     
     def test_handle_alert_with_none_payload(self):
-        """Should handle None payload gracefully."""
+        """
+        Verify that calling handle_alert with a None payload raises an AttributeError.
+        
+        Sets up a SelfHealingAgent with a mocked KimiClient and asserts that processing a None payload results in an AttributeError.
+        """
         mock_kimi = Mock(spec=KimiClient)
         mock_kimi.generate.return_value = 'fix'
         agent = SelfHealingAgent(kimi_client=mock_kimi)

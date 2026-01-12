@@ -6,6 +6,14 @@ import pytest
 # Create a dummy file in a temporary workspace for testing
 @pytest.fixture(scope="module")
 def test_workspace():
+    """
+    Create a temporary workspace directory containing app/workspace/test.txt and yield its root path for tests.
+    
+    The fixture sets up a workspace tree with a file named `test.txt` containing "hello", yields the temporary directory path to the caller, and ensures cleanup of the directory after the test completes.
+    
+    Returns:
+        tmpdir (str): Path to the temporary directory that contains the `app/workspace/test.txt` file.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         # This setup is a bit of a hack, as we can't easily change the WORKSPACE_ROOT in server.py
         # In a real app, you'd use dependency injection to provide the workspace path

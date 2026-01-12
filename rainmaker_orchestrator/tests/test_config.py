@@ -127,7 +127,12 @@ class TestSettingsEnvironment:
     
     @pytest.mark.parametrize('env', ['production', 'development', 'staging', 'test'])
     def test_common_environment_values(self, env):
-        """Should accept common environment values."""
+        """
+        Verify that Settings.environment mirrors common ENVIRONMENT values.
+        
+        Parameters:
+            env (str): Environment value to set in the process ENVIRONMENT variable for the test.
+        """
         with patch.dict(os.environ, {'ENVIRONMENT': env}, clear=True):
             test_settings = Settings()
             assert test_settings.environment == env
@@ -183,7 +188,9 @@ class TestSettingsModule:
     """Test suite for module-level settings instance."""
     
     def test_settings_instance_exists(self):
-        """Should provide a module-level settings instance."""
+        """
+        Verify the module-level `settings` object exists and is an instance of `Settings`.
+        """
         from rainmaker_orchestrator.config import settings
         
         assert settings is not None
@@ -230,7 +237,11 @@ class TestSettingsEdgeCases:
             assert test_settings.kimi_api_base == 'https://user:pass@api.example.com/v1'
     
     def test_whitespace_in_env_vars(self):
-        """Should preserve whitespace in environment variables."""
+        """
+        Ensure Settings preserves surrounding whitespace in environment variable values.
+        
+        Verifies that values read from environment variables are retained exactly as provided (including leading and trailing spaces) when constructing a Settings instance.
+        """
         with patch.dict(os.environ, {'LOG_LEVEL': '  INFO  '}, clear=True):
             test_settings = Settings()
             # The value should be preserved as-is (including whitespace)
@@ -241,7 +252,9 @@ class TestSettingsTypeAnnotations:
     """Test suite for type hints and annotations."""
     
     def test_log_level_type(self):
-        """Should have correct type for log_level."""
+        """
+        Ensure Settings.log_level is a string.
+        """
         with patch.dict(os.environ, {'LOG_LEVEL': 'INFO'}, clear=True):
             test_settings = Settings()
             assert isinstance(test_settings.log_level, str)
@@ -259,7 +272,11 @@ class TestSettingsTypeAnnotations:
             assert isinstance(test_settings.environment, str)
     
     def test_kimi_api_key_optional_type(self):
-        """Should allow None for kimi_api_key."""
+        """
+        Ensure Settings accepts a missing KIMI_API_KEY.
+        
+        Asserts that when no KIMI_API_KEY environment variable is provided, the Settings.kimi_api_key attribute is either `None` or a `str`.
+        """
         with patch.dict(os.environ, {}, clear=True):
             test_settings = Settings()
             assert test_settings.kimi_api_key is None or isinstance(test_settings.kimi_api_key, str)

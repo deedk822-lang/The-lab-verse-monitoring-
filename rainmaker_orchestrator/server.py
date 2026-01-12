@@ -120,7 +120,17 @@ app = FastAPI(
 
 @app.get("/", tags=["Status"])
 async def root():
-    """Root endpoint with API information."""
+    """
+    Provide basic API metadata for the service.
+    
+    Returns:
+        info (dict): Mapping with keys:
+            - service: Service name.
+            - version: API version string.
+            - status: Current service status.
+            - docs: Path to API documentation.
+            - health: Path to health endpoint.
+    """
     return {
         "service": "Rainmaker Orchestrator",
         "version": "1.0.0",
@@ -133,10 +143,10 @@ async def root():
 @app.get("/health", response_model=HealthResponse, tags=["Status"])
 async def health_check():
     """
-    Health check endpoint for load balancers and monitoring.
-
+    Health check endpoint that reports overall and per-service health for monitoring and load balancers.
+    
     Returns:
-        HealthResponse with service status information
+        HealthResponse: overall status ("healthy" or "degraded"), a `services` map with `kimi` and `orchestrator` statuses ("up" or "down"), `version`, and `environment`.
     """
     try:
         kimi_healthy = app.state.kimi_client.health_check()
@@ -161,9 +171,10 @@ async def health_check():
 @app.get("/metrics", response_class=PlainTextResponse, tags=["Status"])
 async def metrics_endpoint():
     """
-    Prometheus metrics endpoint.
-
-    Returns metrics in Prometheus text format for monitoring and alerting.
+    Expose service runtime metrics formatted for Prometheus scraping.
+    
+    Returns:
+        prometheus_text (str): Plain-text containing Prometheus metrics (alerts processed, hotfixes generated, tasks executed, and uptime in seconds).
     """
     uptime_seconds = int(time.time() - metrics["start_time"])
     
@@ -202,16 +213,16 @@ async def handle_alert_webhook(
     background_tasks: BackgroundTasks
 ):
     """
-    Handle Prometheus Alert Manager webhooks.
-
-    Receives critical alerts and triggers AI-powered hotfix generation.
-
-    Args:
-        alert: AlertPayload containing alert information
-        background_tasks: FastAPI background tasks for async processing
-
+    Process a Prometheus Alertmanager webhook payload and trigger remediation via the healer agent.
+    
+    Increments alert metrics and returns the healer agent's processing result.
+    
+    Parameters:
+        alert (AlertPayload): Alert payload with service, description, severity, and optional labels/annotations.
+        background_tasks (BackgroundTasks): FastAPI BackgroundTasks instance for scheduling any asynchronous work.
+    
     Returns:
-        Dictionary with processing status and hotfix information
+        dict: Processing result from the healer agent. The `status` key indicates the outcome (for example, `hotfix_generated`) and the dict may include hotfix details.
     """
     try:
         logger.info(f"Received alert for service: {alert.service}")
@@ -241,13 +252,12 @@ async def handle_alert_webhook(
 @app.post("/alerts/batch", tags=["Alerts"])
 async def handle_batch_alerts(alerts: List[AlertPayload]):
     """
-    Handle multiple alerts in batch.
-
-    Args:
-        alerts: List of AlertPayload objects
-
+    Process a list of AlertPayloads and return per-alert processing results and a total count.
+    
     Returns:
-        List of processing results for each alert
+        dict: Dictionary with:
+            - total (int): number of alerts processed.
+            - results (List[Dict]): processing result for each alert. Each result may include a `status` key; a value of `"hotfix_generated"` indicates a hotfix was produced.
     """
     try:
         results = []
@@ -282,13 +292,10 @@ async def handle_batch_alerts(alerts: List[AlertPayload]):
 @app.post("/execute", tags=["Execution"])
 async def execute_task(request: ExecuteRequest):
     """
-    Execute a task or code using the orchestrator.
-
-    Args:
-        request: ExecuteRequest with task details
-
+    Execute a task using the orchestrator.
+    
     Returns:
-        Execution result with output and status
+        dict: Execution result containing outcome details such as `status` and `output`.
     """
     try:
         logger.info(f"Executing task in {request.mode} mode")
@@ -326,16 +333,22 @@ async def execute_task_async(
     background_tasks: BackgroundTasks
 ):
     """
-    Execute a task asynchronously in the background.
-
-    Note: Task ID tracking is not yet implemented. This is fire-and-forget.
-
-    Args:
-        request: ExecuteRequest with task details
-        background_tasks: FastAPI background tasks
-
+    Queue a task for execution in the background and return a generated task identifier.
+    
+    Queues the provided ExecuteRequest to run via the orchestrator and returns a dictionary containing `task_id`, `status`, and `message`. Note: task status tracking is not implemented — the task is fire-and-forget after queuing.
+    
+    Parameters:
+        request (ExecuteRequest): Task definition including `task`, `mode`, optional `timeout`, and optional `environment`.
+        background_tasks (BackgroundTasks): FastAPI BackgroundTasks instance used to schedule the work.
+    
     Returns:
-        Task ID (for future status tracking)
+        dict: Dictionary with keys:
+            - task_id (str): Generated UUID for the queued task.
+            - status (str): Current queue status, typically "queued".
+            - message (str): Human-readable note about queuing and tracking.
+    
+    Raises:
+        HTTPException: If the task cannot be queued.
     """
     try:
         import uuid
@@ -374,13 +387,21 @@ async def execute_task_async(
 @app.get("/workspace/files", tags=["Workspace"])
 async def list_workspace_files(path: str = ""):
     """
-    List files in the workspace directory.
-
-    Args:
-        path: Optional subdirectory path within workspace
-
+    List entries in the application's workspace or a subdirectory.
+    
+    Parameters:
+        path (str): Relative subpath within the configured workspace to list; empty string lists the workspace root.
+    
     Returns:
-        List of files and directories
+        dict: Object containing:
+            - path (str): the requested relative path,
+            - files (List[dict]): entries with keys `name`, `type` ("file" or "directory"), `size` (bytes, 0 for directories), and `modified` (epoch seconds),
+            - count (int): number of entries returned.
+    
+    Raises:
+        HTTPException: with status 404 if the requested path does not exist,
+                       with status 403 if the requested path is outside the workspace,
+                       with status 500 for other failures while reading the filesystem.
     """
     try:
         workspace_path = Path(settings.workspace_path) / path
@@ -422,14 +443,17 @@ async def upload_workspace_file(
     path: str = ""
 ):
     """
-    Upload a file to the workspace.
-
-    Args:
-        file: File to upload
-        path: Optional subdirectory path within workspace
-
+    Save an uploaded file into the configured workspace and return metadata about the stored file.
+    
+    Parameters:
+        file (UploadFile): The uploaded file to save.
+        path (str): Optional subdirectory under the workspace where the file will be stored.
+    
     Returns:
-        FileUploadResponse with upload details
+        FileUploadResponse: Metadata for the stored file including `filename`, relative `path` within the workspace, `size` in bytes, and `status`.
+    
+    Raises:
+        HTTPException: `403` if the target path is outside the workspace, `500` if the upload or write operation fails.
     """
     try:
         workspace_path = Path(settings.workspace_path) / path
@@ -466,13 +490,16 @@ async def upload_workspace_file(
 @app.get("/workspace/download/{file_path:path}", tags=["Workspace"])
 async def download_workspace_file(file_path: str):
     """
-    Download a file from the workspace.
-
-    Args:
-        file_path: Path to file within workspace
-
+    Download a file from the configured workspace and return it as a FileResponse.
+    
+    Parameters:
+        file_path (str): Relative path to the file inside the configured workspace.
+    
     Returns:
-        FileResponse with the requested file
+        FileResponse: The file response for the requested file.
+    
+    Raises:
+        HTTPException: 404 if the file does not exist, 403 if the path is outside the workspace, 400 if the path is not a file, 500 for other failures.
     """
     try:
         full_path = Path(settings.workspace_path) / file_path
@@ -505,13 +532,18 @@ async def download_workspace_file(file_path: str):
 @app.delete("/workspace/delete/{file_path:path}", tags=["Workspace"])
 async def delete_workspace_file(file_path: str):
     """
-    Delete a file from the workspace.
-
-    Args:
-        file_path: Path to file within workspace
-
+    Delete a file or directory located under the configured workspace path.
+    
+    Parameters:
+        file_path (str): Relative path inside the workspace to the file or directory to delete.
+    
     Returns:
-        Deletion confirmation
+        dict: Deletion confirmation with keys `"status": "deleted"` and `"path"` set to the provided `file_path`.
+    
+    Raises:
+        HTTPException: 404 if the target does not exist.
+        HTTPException: 403 if the resolved path is outside the workspace.
+        HTTPException: 500 if deletion fails due to an internal error.
     """
     try:
         full_path = Path(settings.workspace_path) / file_path
@@ -548,13 +580,17 @@ async def delete_workspace_file(file_path: str):
 @app.post("/workspace/create-directory", tags=["Workspace"])
 async def create_workspace_directory(path: str):
     """
-    Create a directory in the workspace.
-
-    Args:
-        path: Directory path to create
-
+    Create a directory under the configured workspace path.
+    
+    Parameters:
+        path (str): Relative path within the workspace to create.
+    
     Returns:
-        Creation confirmation
+        dict: {"status": "created", "path": <path>} confirming creation.
+    
+    Raises:
+        HTTPException: 403 if the resolved path is outside the workspace.
+        HTTPException: 500 if directory creation fails.
     """
     try:
         dir_path = Path(settings.workspace_path) / path
@@ -587,7 +623,15 @@ async def create_workspace_directory(path: str):
 
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    """Custom 404 handler."""
+    """
+    Handle 404 (Not Found) errors by returning a JSON response with error details.
+    
+    Returns:
+        JSONResponse: JSON object with keys:
+          - `error`: short error code, `"Not Found"`.
+          - `message`: human-readable message explaining the error.
+          - `path`: the requested URL path that was not found.
+    """
     return JSONResponse(
         status_code=404,
         content={
@@ -600,7 +644,16 @@ async def not_found_handler(request, exc):
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
-    """Custom 500 handler."""
+    """
+    Handle uncaught exceptions and return a standardized 500 JSON response.
+    
+    Parameters:
+        request: The incoming Starlette/FastAPI request object that triggered the error.
+        exc: The exception instance that was raised.
+    
+    Returns:
+        JSONResponse: A response with status code 500 and a JSON body containing `error`, `message`, and `path` fields describing the internal server error.
+    """
     logger.exception("Internal server error")
     return JSONResponse(
         status_code=500,

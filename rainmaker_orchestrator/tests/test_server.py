@@ -6,7 +6,16 @@ from rainmaker_orchestrator.server import app
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    """Create a test client that handles lifespan events and a temporary workspace."""
+    """
+    Provide a FastAPI TestClient configured to use a temporary workspace and to run app lifespan events.
+    
+    Parameters:
+        tmp_path (pathlib.Path): Temporary directory to be used as the workspace.
+        monkeypatch (pytest.MonkeyPatch): Monkeypatch fixture used to override configuration.
+    
+    Returns:
+        TestClient: A TestClient for the application with lifespan events handled.
+    """
     from rainmaker_orchestrator.config import settings
     monkeypatch.setattr(settings, "workspace_path", str(tmp_path))
     with TestClient(app) as c:
@@ -15,14 +24,26 @@ def client(tmp_path, monkeypatch):
 
 @pytest.fixture
 def mock_healer():
-    """Mock the healer agent."""
+    """
+    Provide a pytest fixture that patches rainmaker_orchestrator.server.app.state.healer_agent and yields the mock.
+    
+    Returns:
+        mock (unittest.mock.MagicMock): The patched healer_agent mock yielded to the test.
+    """
     with patch('rainmaker_orchestrator.server.app.state.healer_agent') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_orchestrator():
-    """Mock the orchestrator."""
+    """
+    Provide a pytest fixture that patches app.state.orchestrator and yields the resulting mock.
+    
+    The fixture replaces the application's orchestrator with a unittest.mock.Mock for the duration of a test and restores the original afterwards.
+    
+    Returns:
+        mock: The mock object used in place of app.state.orchestrator.
+    """
     with patch('rainmaker_orchestrator.server.app.state.orchestrator') as mock:
         yield mock
 

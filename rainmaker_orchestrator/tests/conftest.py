@@ -10,13 +10,10 @@ from pathlib import Path
 @pytest.fixture
 def temp_workspace():
     """
-    Provide a temporary workspace directory for tests.
+    Create a temporary workspace directory for a test and yield its Path.
     
     Yields:
-        Path: Path to temporary workspace directory
-        
-    Cleanup:
-        Removes the temporary directory after test completion
+        Path: Path to the temporary workspace directory. The directory is removed after the test completes.
     """
     temp_dir = tempfile.mkdtemp(prefix='test_workspace_')
     workspace_path = Path(temp_dir)
@@ -31,10 +28,10 @@ def temp_workspace():
 @pytest.fixture
 def mock_env_vars():
     """
-    Provide a dictionary of mock environment variables.
+    Provide a mapping of environment variable names to example values for tests.
     
     Returns:
-        dict: Mock environment variables for testing
+        dict: Mapping of environment variable names to mock string values used by tests.
     """
     return {
         'LOG_LEVEL': 'DEBUG',
@@ -49,10 +46,12 @@ def mock_env_vars():
 @pytest.fixture
 def sample_alert_payload():
     """
-    Provide a sample alert payload for testing.
+    Return a representative Prometheus-style alert payload used in tests.
+    
+    Provides a dictionary with keys: `description`, `service`, `severity`, `labels` (containing `env` and `region`), and `annotations` (containing `summary` and `runbook_url`).
     
     Returns:
-        dict: Sample Prometheus-style alert payload
+        dict: Sample alert payload suitable for testing alert handling.
     """
     return {
         'description': 'Error: Connection timeout to database',
@@ -72,10 +71,10 @@ def sample_alert_payload():
 @pytest.fixture
 def sample_http_job():
     """
-    Provide a sample HTTP job payload for worker testing.
+    Provides a sample HTTP job payload used by worker tests.
     
     Returns:
-        dict: Sample HTTP job configuration
+        dict: HTTP job configuration with keys 'url', 'method', 'headers', and 'timeout'.
     """
     return {
         'url': 'http://api.example.com/endpoint',

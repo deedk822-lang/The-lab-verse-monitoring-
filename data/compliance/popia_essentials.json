@@ -1,0 +1,18 @@
+{
+  "title": "POPIA Essentials",
+  "act_url": "https://www.gov.za/documents/protection-personal-information-act",
+  "max_penalties": {
+    "fine_rand": 10000000,
+    "imprisonment_months": 12
+  },
+  "conditions_for_lawful_processing": [
+    "Accountability",
+    "Processing limitation",
+    "Purpose specification",
+    "Further processing limitation",
+    "Information quality",
+    "Openness",
+    "Security safeguards",
+    "Data subject participation"
+  ]
+}

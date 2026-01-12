@@ -125,7 +125,7 @@ class FileSystemAgent:
                 return {"status": "error", "message": "Empty command"}
 
             if os.path.basename(cmd_parts[0]) not in ALLOWED_COMMANDS:
-                 print(f"WARNING: Blocked command attempt: {cmd_parts[0]}")
+                 logger.warning(f"Blocked command attempt: {cmd_parts[0]}")
                  return {
                      "status": "failure",
                      "message": f"Command '{os.path.basename(cmd_parts[0])}' not in whitelist"

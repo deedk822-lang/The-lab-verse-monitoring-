@@ -1,7 +1,6 @@
- feature/elite-ci-cd-pipeline-1070897568806221897
-import setuptools
+from setuptools import setup, find_packages
 
-setuptools.setup()
+setup(
 
 from setuptools import setup, find_packages
 

@@ -4,6 +4,8 @@
 
 # Core dependencies (from original requirements.txt)
 httpx==0.28.1
+openlit
+opik
 
 # Web server dependencies
 # Flask 3.1.2 - Fixes CVE-2025-47278 (signing-order vulnerability)

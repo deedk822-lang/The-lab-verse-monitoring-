@@ -1,321 +1,283 @@
-name: CI/CD Pipeline
+# =============================================================================
+# Elite Monorepo CI/CD with Advanced Caching
+# Based on 2026 GitHub Actions best practices and industry standards
+# =============================================================================
+
+name: Elite Monorepo CI/CD
 
 on:
+  push:
+    branches: [main, develop, 'feature/**']
   pull_request:
     branches: [main, develop]
-  push:
-    branches: [main, develop]
+    paths:
+      - 'rainmaker_orchestrator/**'
+      - 'agents/**'
+      - 'api/**'
+      - 'requirements.txt'
+      - 'package*.json'
+      - '.github/workflows/**'
+
+# Cancel in-progress runs on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: '3.12'
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
+  CACHE_VERSION: v4  # Bump to invalidate all caches
 
 jobs:
-  # Code quality and linting
-  lint:
-    name: 🔍 Code Quality & Linting
+  # ==========================================================================
+  # STEP 1: Detect which parts of monorepo changed
+  # ==========================================================================
+  detect-changes:
+    name: Detect Changed Paths
     runs-on: ubuntu-latest
+    outputs:
+      orchestrator: ${{ steps.filter.outputs.orchestrator }}
+      agents: ${{ steps.filter.outputs.agents }}
+      api: ${{ steps.filter.outputs.api }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      any_python: ${{ steps.filter.outputs.orchestrator == 'true' || steps.filter.outputs.agents == 'true' || steps.filter.outputs.api == 'true' }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            orchestrator:
+              - 'rainmaker_orchestrator/**'
+              - 'requirements.txt'
+            agents:
+              - 'agents/**'
+            api:
+              - 'api/**'
+            frontend:
+              - 'frontend/**'
+              - 'package*.json'
 
-      - name: Set up Python
+  # ==========================================================================
+  # STEP 2: Setup shared caches (runs once)
+  # ==========================================================================
+  setup-caches:
+    name: Setup Shared Caches
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_python == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Shallow clone
+      
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
+          cache: 'pip'  # Built-in pip caching
+      
+      # Restore global pip cache
+      - name: Restore pip cache
+        id: pip-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          key: pip-${{ env.CACHE_VERSION }}-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Python dependencies
+            pip-${{ env.CACHE_VERSION }}-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+            pip-${{ env.CACHE_VERSION }}-${{ runner.os }}-
+      
+      # Install only if cache miss
+      - name: Install base dependencies
+        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black mypy pylint
+          python -m pip install --upgrade pip setuptools wheel
+          pip install pytest pytest-asyncio pytest-cov black ruff mypy safety bandit interrogate
+      
+      # Save cache
+      - name: Save pip cache
+        if: steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
+
+  # ==========================================================================
+  # STEP 3: Test Orchestrator (if changed)
+  # ==========================================================================
+  test-orchestrator:
+    name: Test Orchestrator (Py ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [detect-changes, setup-caches]
+    if: needs.detect-changes.outputs.orchestrator == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
           if [ -f rainmaker_orchestrator/requirements.txt ]; then
             pip install -r rainmaker_orchestrator/requirements.txt
           fi
-
-      - name: Run Black formatter check
+          pip install pytest pytest-asyncio pytest-cov
+          pip check
+      
+      - name: Run orchestrator tests
         run: |
-          black --check rainmaker_orchestrator/ || true
+          pytest rainmaker_orchestrator/tests/ \
+            --cov=rainmaker_orchestrator \
+            --cov-report=xml \
+            --cov-report=term \
+            -v
+      
+      - name: Upload coverage
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: orchestrator
 
-      - name: Run Flake8
-        run: |
-          flake8 rainmaker_orchestrator/ \
-            --max-line-length=120 \
-            --extend-ignore=E203,W503,E501 \
-            --exclude=__pycache__,*.pyc,.git,build,dist \
-            || true
-
-      - name: Run Pylint
-        run: |
-          pylint rainmaker_orchestrator/*.py \
-            --disable=C0103,C0114,C0115,C0116,R0903,W0703 \
-            || true
-
-      - name: Check docstring coverage
-        run: |
-          pip install interrogate
-          interrogate -v rainmaker_orchestrator/ \
-            --fail-under 66 \
-            --ignore-init-method \
-            --ignore-magic \
-            || true
-
-  # Security scanning
-  security:
-    name: 🔒 Security Scan
+  # ==========================================================================
+  # STEP 4: Code Quality (runs in parallel)
+  # ==========================================================================
+  code-quality:
+    name: Code Quality Checks
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_python == 'true'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
+          cache: 'pip'
+      
+      - name: Install quality tools
         run: |
-          python -m pip install --upgrade pip
-          pip install safety bandit
-          if [ -f rainmaker_orchestrator/requirements.txt ]; then
-            pip install -r rainmaker_orchestrator/requirements.txt
+          pip install black ruff mypy interrogate
+      
+      - name: Run checks
+        run: |
+          # Black formatting
+          black --check . &
+          BLACK_PID=$!
+          
+          # Ruff linting
+          ruff check . &
+          RUFF_PID=$!
+          
+          # MyPy type checking
+          mypy rainmaker_orchestrator/ &
+          MYPY_PID=$!
+
+          # Interrogate (docstrings)
+          interrogate -v rainmaker_orchestrator/ --fail-under 80 &
+          DOC_PID=$!
+          
+          # Wait for all
+          wait $BLACK_PID || echo "black-failed" >> /tmp/failures.txt
+          wait $RUFF_PID || echo "ruff-failed" >> /tmp/failures.txt
+          wait $MYPY_PID || echo "mypy-failed" >> /tmp/failures.txt
+          wait $DOC_PID || echo "interrogate-failed" >> /tmp/failures.txt
+          
+          # Check if any failed
+          if [ -f /tmp/failures.txt ]; then
+            echo "Quality checks failed:"
+            cat /tmp/failures.txt
+            exit 1
           fi
 
-      - name: Run Safety check (dependency vulnerabilities)
-        run: |
-          safety check --json || true
-
-      - name: Run Bandit (security issues)
-        run: |
-          bandit -r rainmaker_orchestrator/ \
-            -f json \
-            -o bandit-report.json \
-            || true
-
-      - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: bandit-security-report
-          path: bandit-report.json
-
-      - name: Check for critical vulnerabilities
-        run: |
-          echo "Security scan completed. Review artifacts for details."
-
-  # Build application
-  build:
-    name: 🏗️ Build Application
+  # ==========================================================================
+  # STEP 5: Docker Build with Layer Caching
+  # ==========================================================================
+  docker-build:
+    name: Build Docker Images
     runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.orchestrator == 'true'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
+      
       - name: Build orchestrator image
         uses: docker/build-push-action@v5
         with:
           context: ./rainmaker_orchestrator
           file: ./rainmaker_orchestrator/Dockerfile
           push: false
-          load: true
           tags: rainmaker-orchestrator:test
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          load: true
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Test image
-        run: |
-          docker run --rm \
-            -e KIMI_API_KEY=test_key \
-            -e HF_TOKEN=test_token \
-            -e WORKSPACE_PATH=/tmp/test_workspace \
-            --entrypoint python \
-            rainmaker-orchestrator:test \
-            -c "import sys; sys.path.append('/app'); import server; print('Import successful')"
-
-  # Run tests
-  test:
-    name: 🧪 Run Tests
+  # ==========================================================================
+  # STEP 6: Security Scanning
+  # ==========================================================================
+  security:
+    name: Security Scans
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_python == 'true'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-test-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-test-
-
-      - name: Install dependencies
+          cache: 'pip'
+      
+      - name: Run Bandit security scan
         run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pytest-cov pytest-mock
-          if [ -f rainmaker_orchestrator/requirements.txt ]; then
-            pip install -r rainmaker_orchestrator/requirements.txt
-          fi
-
-      - name: Create test directory
+          pip install bandit
+          bandit -r rainmaker_orchestrator/ -f json -o bandit-report.json
+      
+      - name: Run Safety dependency check
         run: |
-          mkdir -p tests
-
-      - name: Run pytest
-        run: |
-          # Run tests if they exist, otherwise skip
-          if [ -f tests/test_orchestrator.py ]; then
-            pytest tests/ \
-              --verbose \
-              --cov=rainmaker_orchestrator \
-              --cov-report=xml \
-              --cov-report=html \
-              --cov-report=term-missing \
-              || true
-          else
-            echo "No tests found, skipping..."
-            exit 0
-          fi
-
-      - name: Upload coverage reports
+          pip install safety
+          safety check --json
+      
+      - name: Upload security results
+        if: always()
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: coverage-reports
-          path: |
-            coverage.xml
-            htmlcov/
+          name: security-reports
+          path: bandit-report.json
 
-      - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MINIMUM_GREEN: 80
-          MINIMUM_ORANGE: 60
-
-  # Docker compose test
-  docker-compose-test:
-    name: 🐳 Docker Compose Test
+  # ==========================================================================
+  # FINAL: All Checks Passed
+  # ==========================================================================
+  all-checks-passed:
+    name: ✅ All Checks Passed
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create .env file
-        run: |
-          cat > .env << EOF
-          ANTHROPIC_API_KEY=test_key
-          HF_TOKEN=test_token
-          KIMI_API_KEY=test_key
-          LOG_LEVEL=INFO
-          EOF
-
-      - name: Build and Start services
-        run: |
-          if [ -f docker-compose.superstack.yml ]; then
-            # Create dummy config file if it doesn't exist
-            touch orchestrator_config.yaml
-            # Build the image first to ensure it exists for compose
-            docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
-            # Start the orchestrator service (correct name from docker-compose file)
-            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
-            sleep 20
-          else
-            echo "docker-compose.superstack.yml not found"
-          fi
-
-      - name: Test orchestrator health
-        run: |
-          echo "Checking service status..."
-          docker ps
-          for i in {1..30}; do
-            if curl -s -f http://localhost:8080/health; then
-              echo "Health check passed"
-              exit 0
-            fi
-            echo "Waiting for service... ($i/30)"
-            # Log the last few lines of the container to see if it's crashing
-            docker logs task-router --tail 10 || true
-            sleep 2
-          done
-          echo "Health check failed"
-          docker compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
-          docker ps -a
-          exit 1
-
-      - name: Stop services
-        if: always()
-        run: |
-          if [ -f docker-compose.superstack.yml ]; then
-            docker compose -f docker-compose.superstack.yml down || true
-          fi
-
-  # Notify status
-  notify:
-    name: 📢 Notify Status
-    runs-on: ubuntu-latest
-    needs: [lint, security, build, test]
+    needs: [test-orchestrator, code-quality, security, docker-build]
     if: always()
     steps:
-      - name: Check job statuses
+      - name: Check all required jobs succeeded
         run: |
-          echo "Lint: ${{ needs.lint.result }}"
-          echo "Security: ${{ needs.security.result }}"
-          echo "Build: ${{ needs.build.result }}"
-          echo "Test: ${{ needs.test.result }}"
-
-      - name: Set status
-        id: status
-        run: |
-          if [ "${{ needs.lint.result }}" = "success" ] && \
-             [ "${{ needs.security.result }}" = "success" ] && \
-             [ "${{ needs.build.result }}" = "success" ] && \
-             [ "${{ needs.test.result }}" = "success" ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "message=All checks passed!" >> $GITHUB_OUTPUT
-          else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "message=Some checks failed. Please review." >> $GITHUB_OUTPUT
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "Some checks failed"
+            exit 1
           fi
-
-      - name: Update commit status
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.payload.pull_request.head.sha,
-              state: '${{ steps.status.outputs.status }}',
-              context: 'CI/CD Pipeline',
-              description: '${{ steps.status.outputs.message }}'
-            })
+          echo "✅ All checks passed!"

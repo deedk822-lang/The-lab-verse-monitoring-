@@ -1,65 +1,36 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["**/*.js", "**/*.json", "**/*.txt"]
-      }
+  "framework": "nextjs",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NEXT_PUBLIC_API_ENDPOINT": "@next-public-api-endpoint",
+      "NEXT_PUBLIC_EVENT_DATE": "@next-public-event-date"
     }
-  ],
-  "routes": [
-    {
-      "src": "/health",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
+  },
+  "functions": {
+    "api/**/*.{js,ts}": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
     },
-    {
-      "src": "/ready",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
-    },
-    {
-      "src": "/live",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
+    "api/health": {
+      "runtime": "edge"
     }
-  ],
-  "env": {
-    "AIRTABLE_BASE_ID": "@AIRTABLE_BASE_ID",
-    "AIRTABLE_API_KEY": "@AIRTABLE_API_KEY",
-    "NODE_ENV": "production"
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
       ]
     }
-  ]
+  ],
+  "regions": ["iad1"]
 }

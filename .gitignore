@@ -308,3 +308,8 @@ g20-workflow-verified-state.json
 env-validation-report.json
 
 digest.txt
+.env
+.env.*
+*.pem
+*.key
+secrets.json

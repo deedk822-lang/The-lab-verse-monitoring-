@@ -1,20 +1,11 @@
-from fastapi import FastAPI, HTTPException
-import sys
 import os
+import sys
 import json
 import logging
 import time
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
-from pydantic import BaseModel
-from typing import Optional
-
-import os
-import sys
-import json
-import logging
 from typing import Optional
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
 from hubspot import HubSpot
@@ -30,12 +21,29 @@ class HubSpotWebhookPayload(BaseModel):
 DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# The new src-layout and editable install (`pip install -e .`) make this a standard import.
+import re
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+from rainmaker_orchestrator.agents.healer import SelfHealingAgent # For sanitization
 
-from api.app import app
+# Create a single healer instance to access its sanitization method
+_healer = SelfHealingAgent()
 
- feature/elite-ci-cd-pipeline-1070897568806221897
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    """
+    Create a RainmakerOrchestrator on startup and close it on shutdown.
+
+    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
+    """
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    yield
+    # Shutdown
+    await orchestrator.aclose()
+
+app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+
 class ExecuteTaskPayload(BaseModel):
     type: str
     context: str
@@ -61,12 +69,18 @@ async def health_check(request: Request):
 @app.post("/execute")
 async def execute_task(payload: ExecuteTaskPayload, request: Request):
     """Execute a task using the Rainmaker Orchestrator."""
-    result = await request.app.state.orchestrator.execute_task(payload.model_dump())
+
+    # Sanitize the user-provided context to prevent prompt injection
+    sanitized_context = _healer._sanitize_for_prompt(payload.context, field_name="execute_context")
+
+    # Create a new payload with the sanitized context
+    task_payload = payload.model_dump()
+    task_payload['context'] = sanitized_context
+
+    result = await request.app.state.orchestrator.execute_task(task_payload)
     if result.get("status") == "failed":
         raise HTTPException(status_code=500, detail=result.get("message", "Task execution failed"))
     return result
-
- main
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):

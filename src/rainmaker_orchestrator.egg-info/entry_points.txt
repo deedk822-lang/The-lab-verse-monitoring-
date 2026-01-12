@@ -1,2 +1,0 @@
-[console_scripts]
-rainmaker = rainmaker_orchestrator.cli:main

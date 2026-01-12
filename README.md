@@ -543,7 +543,7 @@ MIT License - See [LICENSE](../LICENSE) file for details.
 
 This project uses src-layout for proper packaging:
 
-```
+```text
 repo-root/
 ├── src/
 │   └── rainmaker_orchestrator/  # Main package

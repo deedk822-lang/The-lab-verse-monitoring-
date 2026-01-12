@@ -1,10 +1,9 @@
 import os
 from typing import Dict, List
 
- feature/elite-ci-cd-pipeline-1070897568806221897
+from typing import Dict, List
 
-
- main
+class ConfigManager:
 class ConfigManager:
     """Manages API keys and configuration"""
 

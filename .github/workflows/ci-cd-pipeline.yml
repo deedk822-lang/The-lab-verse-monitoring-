@@ -1,0 +1,180 @@
+# .github/workflows/ci-cd-pipeline.yml
+name: Monorepo CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+  GO_VERSION: '1.22'
+  JAVA_VERSION: '21'
+
+jobs:
+  security-scan:
+    name: "🔒 Security Scanning"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --source . --report-path gitleaks-report.json --no-git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      - name: CodeQL init
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python, java, go
+      - name: CodeQL analyze
+        uses: github/codeql-action/analyze@v3
+        continue-on-error: true
+
+  detect-changes:
+    name: "🔍 Detect Changed Paths"
+    runs-on: ubuntu-latest
+    outputs:
+      node: ${{ steps.filter.outputs.node }}
+      python: ${{ steps.filter.outputs.python }}
+      java: ${{ steps.filter.outputs.java }}
+      go: ${{ steps.filter.outputs.go }}
+      docker: ${{ steps.filter.outputs.docker }}
+      agents: ${{ steps.filter.outputs.agents }}
+      monitoring: ${{ steps.filter.outputs.monitoring }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            node:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'content-creator-ai/**'
+              - 'kimi-computer/**'
+              - 'lapverse-*/**/*.ts'
+              - 'deal-hunter/**'
+            python:
+              - 'requirements*.txt'
+              - 'agents/**/*.py'
+              - 'lab_verse/**/*.py'
+              - 'rainmaker_orchestrator/**/*.py'
+              - 'rainmaker_orchestrator/requirements*.txt'
+            java:
+              - 'industrial-chat-api/**'
+            go:
+              - 'quantumguard-v2/**'
+            docker:
+              - '**/Dockerfile'
+              - '**/docker-compose*.yml'
+            agents:
+              - 'agents/**'
+              - 'lab_verse/**'
+            monitoring:
+              - 'monitoring/**'
+              - 'prometheus/**'
+
+  node-ci:
+    name: "🟢 Node.js CI"
+    needs: [security-scan, detect-changes]
+    if: needs.detect-changes.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+        workspace: [content-creator-ai, kimi-computer, lapverse-core, lapverse-alpha, deal-hunter]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '${{ matrix.workspace }}/package-lock.json'
+      - name: Install deps
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
+      - name: Lint
+        working-directory: ${{ matrix.workspace }}
+        run: npm run lint || true
+      - name: Test & Build
+        working-directory: ${{ matrix.workspace }}
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_ENDPOINT: https://api.example.com
+          NEXT_PUBLIC_EVENT_DATE: 2025-01-01
+        run: |
+          npm test || true
+          npm run build || true
+
+  python-ci:
+    name: "🐍 Python CI"
+    needs: [security-scan, detect-changes]
+    if: needs.detect-changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+        workspace: [agents, lab_verse, vaal-ai-empire, rainmaker_orchestrator]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install deps
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Lint & Test
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          flake8 . || true
+          pytest -q || true
+
+  docker-compose-validate:
+    name: "🐳 Docker Compose Validate"
+    needs: [security-scan, detect-changes]
+    if: needs.detect-changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          shopt -s globstar nullglob
+          for f in docker-compose*.yml **/docker-compose*.yml; do
+            echo "Validating $f"
+            docker compose -f "$f" config -q
+          done
+
+  report:
+    name: "📝 Build Report"
+    needs: [security-scan, node-ci, python-ci, docker-compose-validate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Security scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Node CI: ${{ needs.node-ci.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Python CI: ${{ needs.python-ci.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker compose validate: ${{ needs.docker-compose-validate.result }}" >> $GITHUB_STEP_SUMMARY

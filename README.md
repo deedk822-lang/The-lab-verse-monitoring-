@@ -539,3 +539,20 @@ MIT License - See [LICENSE](../LICENSE) file for details.
 ---
 
 **Made with ❤️ by the Rainmaker team - Production Ready, No Mock-ups!**
+## Package Structure
+
+This project uses src-layout for proper packaging:
+
+```
+repo-root/
+├── src/
+│   └── rainmaker_orchestrator/  # Main package
+│       ├── core/                # Core orchestration logic
+│       ├── agents/              # Self-healing agents
+│       └── clients/             # API clients
+├── agents/                      # Standalone agent services
+├── api/                         # REST API layer
+└── pyproject.toml               # Package configuration
+```
+
+Install in editable mode: `pip install -e .[dev,test]`

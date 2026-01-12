@@ -1,6 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
+
+from setuptools import setup, find_packages
+
+setup(
     name="rainmaker-orchestrator",
     version="0.1.0",
     description="AI-powered task orchestration and self-healing system",

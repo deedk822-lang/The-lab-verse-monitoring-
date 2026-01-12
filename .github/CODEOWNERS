@@ -1,7 +1,7 @@
 # Package structure
-/src/rainmaker_orchestrator/     @deedk8-lang @rainmaker-team
-/src/rainmaker_orchestrator/core/ @deedk8-lang
-/src/rainmaker_orchestrator/agents/ @deedk8-lang
+/src/rainmaker_orchestrator/     @deedk822-lang @rainmaker-team
+/src/rainmaker_orchestrator/core/ @deedk822-lang
+/src/rainmaker_orchestrator/agents/ @deedk822-lang
 
 # CI/CD
 /.github/workflows/               @deedk822-lang

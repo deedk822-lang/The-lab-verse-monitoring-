@@ -42,17 +42,40 @@ except ImportError:
     logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
     raise
 
-from api.app import app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    """
+    Create a RainmakerOrchestrator on startup and close it on shutdown.
 
+    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
+    """
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    yield
+    # Shutdown
+    await orchestrator.aclose()
+
+app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+
+@app.get("/health")
+async def health_check():
+    """
+    Return the service health status.
+
+    Returns:
+        A mapping with the key "status" set to "healthy".
+    """
+    return {"status": "healthy"}
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):
     """
     Return a simulated market intelligence report for the specified company.
-    
+
     Parameters:
         company (str): The company name to retrieve market intelligence for.
-    
+
     Returns:
         dict: A structured market intelligence object with keys:
             - source (str): The data source label (simulated).
@@ -72,10 +95,10 @@ async def get_market_intel(company: str):
 async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
     """
     Handle an incoming HubSpot webhook payload by validating that the HubSpot client is available.
-    
+
     Parameters:
         payload (HubSpotWebhookPayload): Incoming webhook payload containing the HubSpot object ID and message body.
-    
+
     Raises:
         HTTPException: Raised with status code 501 if the HubSpot client is not installed or configured.
     """
@@ -86,9 +109,9 @@ async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
     Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
-    
+
     Sends payload.message_body to the orchestrator for JSON-formatted AI analysis, updates the contact identified by payload.objectId with properties `ai_lead_summary`, `ai_buying_intent`, and `ai_suggested_action`, and if the returned `intent_score` exceeds the configured threshold creates a new deal enriched with market intelligence and associates it with the contact. On errors during analysis or contact update the function logs the exception and returns early; errors during deal creation are logged and not propagated.
-    
+
     Parameters:
         payload (HubSpotWebhookPayload): Incoming webhook payload containing `objectId` (contact id) and `message_body` (text to analyze).
         app (FastAPI): FastAPI application instance used to access app.state.orchestrator and its configuration for HubSpot credentials.
@@ -175,7 +198,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
 async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
     """
     Enqueue processing of a HubSpot webhook payload to run in the background and acknowledge receipt.
-    
+
     Returns:
         dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
     """

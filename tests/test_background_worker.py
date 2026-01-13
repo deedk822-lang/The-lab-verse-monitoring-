@@ -365,11 +365,13 @@ class TestHTTPJobProcessing:
     @patch('agents.background.worker.requests.Session')
     def test_process_http_job_response_too_large(self, mock_session_cls):
         """Should block responses that are too large."""
-        # Create a mock response with large content
-        large_content = b'x' * (11 * 1024 * 1024)  # 11MB (exceeds 10MB limit)
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = large_content
+        # Simulate streaming chunks that exceed MAX_CONTENT_SIZE
+        def generate_large_chunks():
+            for _ in range(1400):  # 1400 * 8192 > 10MB
+                yield b'x' * 8192
+        mock_response.iter_content.return_value = generate_large_chunks()
         mock_response.elapsed.total_seconds.return_value = 1.0
 
         mock_session = Mock()
@@ -385,7 +387,6 @@ class TestHTTPJobProcessing:
 
         assert 'error' in result
         assert 'too large' in result['error'].lower()
-
 
 class TestExternalRequestsFlag:
     """Test suite for ALLOW_EXTERNAL flag handling."""

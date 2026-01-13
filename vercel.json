@@ -36,5 +36,16 @@
       ]
  main
     }
+ feat/optimize-ci-cd-workflows-16486858725137875660
   }
+
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://rainmaker-orchestrator.onrender.com/:path*"
+    }
+  ],
+  "regions": ["iad1"]
+ feature/complete-orchestrator-and-scheduler-3340126171226885686
 }

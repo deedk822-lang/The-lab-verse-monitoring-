@@ -15,6 +15,26 @@ client = TestClient(app)
 async def test_hubspot_webhook_valid(mock_hubspot, mock_rainmaker_orchestrator):
     # Mock the instance that will be created inside the lifespan manager
     """
+ coderabbitai/docstrings/52d56b6
+    Verify the HubSpot webhook processes a valid payload and returns a processed status with the original contact ID.
+    
+    Posts a payload with `objectId` 123 to `/webhook/hubspot` and asserts the response has HTTP 200, the `status` is either "processed" or "processed_with_deal_creation_error", and `contact_id` equals 123.
+    """
+    async def mock_call_ollama(*args, **kwargs):
+        """
+        Simulates an Ollama API call by returning a fixed response payload containing company analysis.
+        
+        Returns:
+            dict: A response dictionary with a "message" key whose "content" is a JSON string:
+                - "company_name" (str): "TestCorp"
+                - "summary" (str): "A test summary."
+                - "intent_score" (int): 9
+                - "suggested_action" (str): "Follow up."
+        """
+        return {"message": {"content": '{"company_name": "TestCorp", "summary": "A test summary.", "intent_score": 9, "suggested_action": "Follow up."}'}}
+    mock_orchestrator._call_ollama.return_value = mock_call_ollama()
+    mock_orchestrator.config.get.return_value = "dummy-hubspot-token"
+
     Verifies that a valid HubSpot webhook payload is accepted and returns the expected accepted status and contact ID.
     
     Sets up mocked RainmakerOrchestrator (including a stubbed async Ollama response) and a mocked HubSpot client, posts a payload to /webhook/hubspot, and asserts the response status code is 200 with JSON {"status": "accepted", "contact_id": 123}.
@@ -33,6 +53,7 @@ async def test_hubspot_webhook_valid(mock_hubspot, mock_rainmaker_orchestrator):
             })
         }
     })
+ main
 
     # Mock the HubSpot client to prevent real API calls
     mock_hubspot.return_value = MagicMock()

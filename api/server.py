@@ -1,13 +1,24 @@
-from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks
-from fastapi.responses import JSONResponse, FileResponse
-from contextlib import asynccontextmanager
-from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, generate_latest
+import os
 import logging
+from contextlib import asynccontextmanager
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from pydantic import BaseModel
+import opik
+
+# Internal Imports
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
-request_count = Counter('http_requests_total', 'Total requests')
-request_duration = Histogram('http_request_duration_seconds', 'Request duration')
+# Setup Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("api")
+
+class ExecuteTaskPayload(BaseModel):
+    type: str
+    context: str
+    model: Optional[str] = None
+    output_filename: Optional[str] = None
 
 class HubSpotWebhookPayload(BaseModel):
     objectId: int
@@ -15,25 +26,44 @@ class HubSpotWebhookPayload(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.orchestrator = RainmakerOrchestrator()
+    \"\"\"Manage lifecycle of the Authority Engine.\"\"\"
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    logger.info("Authority Engine initialized and ready.")
     yield
-    await app.state.orchestrator.aclose()
+    await orchestrator.aclose()
+    logger.info("Authority Engine shut down.")
 
-app = FastAPI(title="Lab Verse Unified API", lifespan=lifespan)
-
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    request_count.inc()
-    with request_duration.time():
-        return await call_next(request)
+app = FastAPI(
+    title="Rainmaker Authority API",
+    description="The secure gateway for the 4-Judge Authority Engine.",
+    version="1.1.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
-async def health(): return {"status": "healthy", "architecture": "4-Judge Authority Engine"}
-
-@app.get("/metrics")
-async def metrics(): return Response(generate_latest(), media_type="text/plain")
+async def health():
+    return {
+        "status": "connected",
+        "engine": "Authority Engine v1.1",
+        "features": ["4-Judge Flow", "Self-Healing", "Opik Telemetry"]
+    }
 
 @app.post("/webhook/hubspot")
-async def hubspot(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks, request: Request):
-    background_tasks.add_task(request.app.state.orchestrator.run_authority_flow, payload.model_dump())
-    return {"status": "accepted", "message": "Flow initiated."}
+async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks, request: Request):
+    \"\"\"Asynchronous entry point for HubSpot events.\"\"\"
+    orchestrator = request.app.state.orchestrator
+    # Use model_dump() for Pydantic v2 compatibility
+    background_tasks.add_task(orchestrator.run_authority_flow, payload.model_dump())
+    return {"status": "accepted", "message": "Authority Flow queued."}
+
+@app.post("/execute")
+async def execute(payload: ExecuteTaskPayload, request: Request):
+    \"\"\"Synchronous execution for direct agent tasks.\"\"\"
+    orchestrator = request.app.state.orchestrator
+    try:
+        result = await orchestrator.execute_task(payload.model_dump())
+        return result
+    except Exception as e:
+        logger.error(f"Execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

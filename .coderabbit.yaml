@@ -1,4 +1,4 @@
-# CodeRabbit Configuration - Professional Grade
+version: "2"
 language: "en-US"
 
 # Instructing the AI to act as a Senior Architect
@@ -18,6 +18,10 @@ reviews:
   high_level_summary_instructions: "Provide a concise executive summary of the changes. Specifically highlight any modifications to: 1. Security mechanisms (Rate limits, Auth). 2. Database schemas. 3. External API integrations."
   high_level_summary_in_walkthrough: false
 
-  # Auto-labeling (if supported in your plan, good for organization)
+  # Auto-labeling
   suggested_labels: true
   auto_apply_labels: true
+
+  auto_review:
+    enabled: true
+    drafts: false

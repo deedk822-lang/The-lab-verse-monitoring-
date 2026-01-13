@@ -7,8 +7,9 @@ pydantic-settings==2.7.1
 # Async HTTP Client
 httpx==0.28.1
 
-# OpenAI
+# AI Clients
 openai==1.59.5
+hubspot-api-client
 
 # Prometheus Client (for metrics)
 prometheus-client==0.21.1
@@ -17,12 +18,12 @@ prometheus-client==0.21.1
 python-dotenv==1.0.1
 pyyaml==6.0.2
 
-# Database (if used)
+# Database
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 aiomysql==0.2.0
 
-# Redis (if used for caching/queuing)
+# Redis
 redis[hiredis]==5.2.1
 aioredis==2.0.1
 
@@ -37,10 +38,9 @@ black==24.10.0
 ruff==0.8.6
 mypy==1.14.1
 
-# Production
+# Production & Utilities
 gunicorn==23.0.0
-hubspot-api-client
-requests
+requests>=2.32.0
 python-multipart
 autogen
 numpy
@@ -49,3 +49,8 @@ aiohttp
 torch
 python-json-logger
 pandas
+opik
+openlit
+interrogate
+safety
+bandit

@@ -135,13 +135,23 @@ services:
   rainmaker-orchestrator:
     build: ./rainmaker_orchestrator
     container_name: task-router
+    ports:
+      - "8080:8080"
     environment:
       - KIMI_URL=http://kimi-linear:8000
       - OLLAMA_URL=http://ollama:11434
       - PROMETHEUS_URL=http://prometheus:9090
       - LENS_API_TOKEN=${LENS_API_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
     volumes:
       - ./orchestrator_config.yaml:/app/config.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     depends_on:
       ollama:
         condition: service_healthy

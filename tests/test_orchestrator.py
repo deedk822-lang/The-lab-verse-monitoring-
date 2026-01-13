@@ -1,90 +1,87 @@
+from typing import Dict, Any
+from unittest.mock import AsyncMock, patch, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock
-from httpx import ASGITransport, AsyncClient
+import pytest_asyncio
 
-# Import the FastAPI app instance and the class to be mocked
-from api.server import app
-from src.rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
-@pytest.fixture
-def mock_orchestrator():
-    """Fixture to create a mock instance of RainmakerOrchestrator."""
-    # Use spec=True to ensure the mock has the same interface as the real class
-    mock = AsyncMock(spec=RainmakerOrchestrator)
-    mock.health_check.return_value = {"status": "healthy"}
-    mock.execute_task.return_value = {"status": "success", "result": "Task completed."}
-    return mock
 
-@pytest.fixture
-async def client(mock_orchestrator):
-    """
-    Create an httpx AsyncClient for testing the FastAPI app.
-    This fixture manually sets the orchestrator on the app state, bypassing
-    the lifespan manager for more direct and stable testing.
-    """
-    app.state.orchestrator = mock_orchestrator
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
-    # Clean up the state after the test to ensure test isolation
-    if hasattr(app.state, "orchestrator"):
-        del app.state.orchestrator
+@pytest_asyncio.fixture
+async def orchestrator() -> RainmakerOrchestrator:
+    orch: RainmakerOrchestrator = RainmakerOrchestrator()
+    yield orch
+    await orch.aclose()
+
 
 @pytest.mark.asyncio
-async def test_health_check_healthy(client, mock_orchestrator):
-    """Test the /health endpoint when the orchestrator is healthy."""
-    response = await client.get("/health")
+async def test_orchestrator_initialization(orchestrator: RainmakerOrchestrator) -> None:
+    assert orchestrator.client is not None
+    assert orchestrator.config is not None
 
-    assert response.status_code == 200
-    json_response = response.json()
-    assert json_response["status"] == "healthy"
-    assert json_response["dependencies"]["orchestrator"]["status"] == "healthy"
-    mock_orchestrator.health_check.assert_awaited_once()
 
 @pytest.mark.asyncio
-async def test_health_check_degraded(client, mock_orchestrator):
-    """Test the /health endpoint when the orchestrator is degraded."""
-    mock_orchestrator.health_check.return_value = {"status": "degraded", "reason": "Kimi API key not set"}
+async def test_judge_call_success(orchestrator: RainmakerOrchestrator) -> None:
+    with patch.object(orchestrator.client, "post") as mock_post:
+        mock_response: MagicMock = AsyncMock()
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": '{"analysis": "success"}'}}]
+        }
+        mock_post.return_value = mock_response
 
-    response = await client.get("/health")
+        result: Dict[str, Any] = await orchestrator._call_judge(
+            "auditor",
+            "Test context",
+        )
 
-    assert response.status_code == 200
-    json_response = response.json()
-    assert json_response["status"] == "degraded"
-    assert "Kimi API key not set" in json_response["dependencies"]["orchestrator"]["reason"]
+        assert result["choices"][0]["message"]["content"] == '{"analysis": "success"}'
 
-@pytest.mark.asyncio
-async def test_execute_task_success(client, mock_orchestrator):
-    """Test the /execute endpoint for a successful task execution."""
-    payload = {
-        "type": "coding_task",
-        "context": "Write a python script to print hello world.",
-        "output_filename": "hello.py",
-        "model": None
-    }
-    response = await client.post("/execute", json=payload)
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "success"
-    mock_orchestrator.execute_task.assert_awaited_once_with(payload)
 
 @pytest.mark.asyncio
-async def test_execute_task_failure(client, mock_orchestrator):
-    """Test the /execute endpoint for a failed task execution."""
-    mock_orchestrator.execute_task.return_value = {"status": "failed", "message": "Max retries exceeded."}
+async def test_execute_task_authority_flow(orchestrator: RainmakerOrchestrator) -> None:
+    with patch.object(orchestrator, "run_authority_flow", new_callable=AsyncMock) as mock_flow:
+        mock_flow.return_value = {"status": "success"}
 
-    payload = {"type": "coding_task", "context": "This will fail."}
-    response = await client.post("/execute", json=payload)
+        result: Dict[str, Any] = await orchestrator.execute_task(
+            {
+                "type": "authority_task",
+                "context": "Test lead data",
+            }
+        )
 
-    assert response.status_code == 500
-    assert "Max retries exceeded" in response.json()["detail"]
+        assert result["status"] == "success"
+        mock_flow.assert_called_once()
+
 
 @pytest.mark.asyncio
-async def test_execute_invalid_payload(client):
-    """Test the /execute endpoint with an invalid payload (missing context)."""
-    response = await client.post("/execute", json={"type": "coding_task"})
+async def test_execute_task_unsupported_type(orchestrator: RainmakerOrchestrator) -> None:
+    result: Dict[str, Any] = await orchestrator.execute_task(
+        {
+            "type": "unknown_type",
+            "context": "Test",
+        }
+    )
 
-    assert response.status_code == 422
-    # Check for the specific Pydantic v2 error message
-    assert "Field required" in response.text
-    assert "context" in response.text
+    assert result["status"] == "error"
+    assert "not supported" in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_authority_flow_complete(orchestrator: RainmakerOrchestrator) -> None:
+    with patch.object(orchestrator, "_call_judge", new_callable=AsyncMock) as mock_judge:
+        mock_judge.return_value = {
+            "choices": [{"message": {"content": '{"result": "ok"}'}}]
+        }
+
+        result: Dict[str, Any] = await orchestrator.run_authority_flow(
+            {
+                "lead_id": 123,
+                "action": "analyze",
+            }
+        )
+
+        assert result["status"] == "success"
+        assert "audit" in result
+        assert "strategy" in result
+        assert "implementation" in result
+        assert mock_judge.call_count == 3

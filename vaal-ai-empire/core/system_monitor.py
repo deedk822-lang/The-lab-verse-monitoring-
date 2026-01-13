@@ -464,6 +464,13 @@ class AlertSystem:
 
         # Send to webhook if configured
         if self.webhook_url and severity in ["error", "critical"]:
+            # SSRF Protection: Validate self.webhook_url against an allow-list of trusted domains
+            trusted_domains = ["hooks.slack.com", "discord.com", "api.telegram.org"]
+            from urllib.parse import urlparse
+            parsed_url = urlparse(self.webhook_url)
+            if parsed_url.netloc not in trusted_domains:
+                logger.error(f"Blocked potentially malicious webhook URL: {self.webhook_url}")
+                return
             self._send_webhook(alert)
 
         # Store in database

@@ -255,7 +255,14 @@ for (const customer of topCustomers) {
 }
 }
 
-private async executeWebhookAction(action: any, data: any): Promise<void> {}
+private async executeWebhookAction(action: any, data: any): Promise<void> {
+    console.log(`🔗 Executing webhook action for threshold: $${data.threshold}`);
+    await this.sendWebhookAlert({
+        type: 'webhook',
+        config: action.config,
+        enabled: true
+    }, data);
+}
 private async executeDiscountAction(action: any, data: any): Promise<void> {
 // Generate discount codes for loyal customers
 const discountCode = `MILESTONE${data.threshold}`;

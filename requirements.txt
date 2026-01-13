@@ -1,61 +1,22 @@
- feat/complete-packaging-and-security-fix-8139913407699837720
-# Core Framework
-fastapi==0.109.2
-uvicorn[standard]==0.27.1
-pydantic==2.6.1
+# Authority Engine Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.9.0
 pydantic-settings==2.1.0
 
-# HTTP & Async
-httpx==0.26.0
-aiohttp==3.9.5
-requests==2.31.0
-python-multipart==0.0.9
-
-# Redis
-redis[hiredis]==5.2.1
-rq==1.16.2
-
-# AI/ML
-openai==1.12.0
-anthropic==0.18.1
-autogen==0.2.35
-torch==2.2.1
-transformers==4.38.2
-numpy==1.26.4
-pandas==2.2.1
-
-# Explainability
-shap==0.45.0
-lime==0.2.0.1
-
-# Visualization
-plotly==5.18.0
-seaborn==0.13.2
-
-# Integrations
-hubspot-api-client==9.2.0
-
-# Monitoring
-prometheus-client==0.19.0
-
-# Utilities
-PyYAML==6.0.1
+# AI & Orchestration
+httpx==0.27.0
+openai==1.57.0
 python-dotenv==1.0.1
-python-json-logger==2.0.7
+hubspot-api-client==8.0.0
 
-# Testing
+# Observability
+openlit==1.0.0
+opik==1.0.0
+structlog==24.0.0
+
+# Testing & Quality
 pytest==8.0.0
 pytest-asyncio==0.23.5
-pytest-cov==4.1.0
-pytest-mock==3.12.0
-coverage==7.4.1
-
-# Code Quality
 black==24.3.0
-mypy==1.8.0
 ruff==0.2.2
-
-openai>=1.57.0
-python-dotenv>=1.0.0
-requests>=2.32.0
- main

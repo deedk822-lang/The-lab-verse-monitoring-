@@ -9,7 +9,7 @@ from rainmaker_orchestrator.config import ConfigManager
 from opik import track
 import openlit
 
-# Configuration for Judges
+# Configuration for Authority Engine Judges
 JUDGE_MODELS = {
     "visionary": "command-r-plus",
     "operator": "codestral-2501",
@@ -36,7 +36,8 @@ class RainmakerOrchestrator:
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         """Generic caller for the specialized Judges."""
-        api_key = self.config.get('MISTRAL_API_KEY') or self.config.get('KIMI_API_KEY')
+        # Prioritize ZAI_API_KEY as per the Vercel requirement
+        api_key = self.config.get('ZAI_API_KEY') or self.config.get('MISTRAL_API_KEY')
         api_base = self.config.get('MISTRAL_API_BASE') or "https://api.mistral.ai/v1"
         model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
 
@@ -51,33 +52,29 @@ class RainmakerOrchestrator:
         response.raise_for_status()
         return response.json()
 
-    @track(name="tax_collector_impact_loop")
-    async def trigger_impact_engine(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
-        """The core Impact Engine loop: Audit -> Vision -> Operation."""
-        self.logger.info("🚀 Triggering Impact Engine for verified lead...")
+    @track(name="authority_flow")
+    async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
+        """The canonical Authority Engine loop: Audit -> Vision -> Operation."""
+        self.logger.info("⚖️ Initiating Authority Flow...")
         
-        # 1. Auditor verifies hardship/need
-        audit_res = await self._call_judge("auditor", f"Analyze this lead for verifiable hardship: {lead_data['message_body']}")
-        if not audit_res['choices'][0]['message']['content']:
-            return {"status": "skipped", "reason": "No verifiable hardship detected by Auditor."}
+        # 1. Auditor verifies logic/compliance
+        audit_res = await self._call_judge("auditor", f"Analyze this request for compliance and logical consistency: {lead_data['message_body']}")
 
-        # 2. Visionary creates the content/intervention strategy
-        vision_res = await self._call_judge("visionary", f"Create a strategy to help this lead: {lead_data}")
+        # 2. Visionary creates the strategic blueprint
+        vision_res = await self._call_judge("visionary", f"Create a strategic execution plan: {lead_data}")
         
-        # 3. Operator generates the necessary assets
-        op_res = await self._call_judge("operator", f"Generate the deployment code for the intervention defined here: {vision_res}")
+        # 3. Operator generates the implementation
+        op_res = await self._call_judge("operator", f"Generate implementation code: {vision_res}")
 
         return {
             "status": "success",
             "audit": audit_res['choices'][0]['message']['content'],
             "strategy": vision_res['choices'][0]['message']['content'],
-            "assets": op_res['choices'][0]['message']['content']
+            "implementation": op_res['choices'][0]['message']['content']
         }
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Main execution entry point with self-healing support."""
-        if task.get("type") == "impact_task":
-            return await self.trigger_impact_engine(task)
-        
-        # Legacy/Coding task support (simplified for brevity)
-        return {"status": "error", "message": f"Task type {task.get('type')} not fully connected yet."}
+        """Entry point for task execution."""
+        if task.get("type") == "authority_task":
+            return await self.run_authority_flow(task)
+        return {"status": "error", "message": "Task type not supported."}

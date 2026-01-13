@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -27,21 +28,21 @@ async def lifespan(app: FastAPI):
     yield
     await orchestrator.aclose()
 
-app = FastAPI(title="Rainmaker Impact API", lifespan=lifespan)
+app = FastAPI(title="Rainmaker Authority API", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
-    return {"status": "connected", "engine": "Autonomous Authority v2.0"}
+    return {"status": "connected", "engine": "Authority Engine v1.0"}
 
 @app.post("/webhook/hubspot")
 async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks, request: Request):
-    """Entry point for the Autonomous Loop."""
+    """Entry point for the Authority Engine."""
     orchestrator = request.app.state.orchestrator
     
-    # Process the 'Impact Engine' in the background to avoid HubSpot timeouts
-    background_tasks.add_task(orchestrator.trigger_impact_engine, payload.model_dump())
+    # Trigger the Authority/Judge process
+    background_tasks.add_task(orchestrator.run_authority_flow, payload.model_dump())
     
-    return {"status": "accepted", "message": "Impact Engine triggered."}
+    return {"status": "accepted", "message": "Authority Flow initiated."}
 
 @app.post("/execute")
 async def execute(payload: ExecuteTaskPayload, request: Request):

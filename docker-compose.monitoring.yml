@@ -17,10 +17,17 @@ services:
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
 
   rainmaker-orchestrator:
-    build: ./src/rainmaker_orchestrator
+    build: ./rainmaker_orchestrator
     environment:
       - DATADOG_API_KEY=${DATADOG_API_KEY}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent:4318
       - ENABLE_OBSERVABILITY=true
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       - datadog-agent

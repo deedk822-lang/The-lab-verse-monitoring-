@@ -18,7 +18,8 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s"
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,8 @@ CONFIG = {
     "commission_rate": 0.15,  # 15% to humanitarian fund
     "output_file": "tax_agent_detections.json",
     "revenue_file": "revenue_attribution.json",
-    "intervention_log": "humanitarian_interventions.json",
+    "intervention_log": "humanitarian_interventions.json"
 }
-
 
 class TaxAgent:
     """Main Tax Agent class for humanitarian revenue generation"""
@@ -46,7 +46,7 @@ class TaxAgent:
         """Load JSON data from file"""
         try:
             if os.path.exists(filename):
-                with open(filename, "r") as f:
+                with open(filename, 'r') as f:
                     return json.load(f)
         except Exception as e:
             logger.warning(f"Could not load {filename}: {e}")
@@ -55,7 +55,7 @@ class TaxAgent:
     def save_data(self, filename: str, data):
         """Save JSON data to file"""
         try:
-            with open(filename, "w") as f:
+            with open(filename, 'w') as f:
                 json.dump(data, f, indent=2)
             logger.info(f"Saved data to {filename}")
         except Exception as e:
@@ -75,7 +75,7 @@ class TaxAgent:
             "mode": "ArtList",
             "maxrecords": 10,
             "format": "json",
-            "timespan": "24h",  # Last 24 hours
+            "timespan": "24h"  # Last 24 hours
         }
 
         try:
@@ -100,7 +100,7 @@ class TaxAgent:
                     "status": "detected",
                     "revenue_generated": 0,
                     "commission_collected": 0,
-                    "intervention_status": "pending",
+                    "intervention_status": "pending"
                 }
                 stories.append(story)
                 logger.info(f"   ✅ Detected: {story['title'][:60]}...")
@@ -130,7 +130,7 @@ class TaxAgent:
         judges_approval = {
             "VISIONARY": random.choice([True, True, True, False]),
             "OPERATOR": random.choice([True, True, True, False]),
-            "AUDITOR": random.choice([True, True, False, False]),
+            "AUDITOR": random.choice([True, True, False, False])
         }
 
         approved = sum(judges_approval.values())
@@ -140,9 +140,7 @@ class TaxAgent:
             status = "✅ APPROVE" if verdict else "❌ REJECT"
             logger.info(f"   {judge}: {status}")
 
-        logger.info(
-            f"   Consensus: {approved}/3 - {'APPROVED' if consensus else 'REJECTED'}"
-        )
+        logger.info(f"   Consensus: {approved}/3 - {'APPROVED' if consensus else 'REJECTED'}")
 
         return consensus
 
@@ -168,7 +166,7 @@ class TaxAgent:
             "video": f"video_{story['id']}.mp4",
             "images": [f"img_{story['id']}_{i}.jpg" for i in range(5)],
             "social_posts": 10,
-            "email_newsletter": f"email_{story['id']}.html",
+            "email_newsletter": f"email_{story['id']}.html"
         }
 
         logger.info(f"   ✅ Generated: {len(assets)} asset types")
@@ -178,7 +176,7 @@ class TaxAgent:
             "assets": assets,
             "distribution_channels": ["WordPress", "YouTube", "TikTok", "Email"],
             "revenue_target": 5000,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now().isoformat()
         }
 
     def track_revenue(self, story_id: str, amount: float, source: str):
@@ -195,13 +193,12 @@ class TaxAgent:
                 "total": 0,
                 "sources": {},
                 "commission": 0,
-                "intervention_funded": False,
+                "intervention_funded": False
             }
 
         self.revenue[story_id]["total"] += amount
-        self.revenue[story_id]["sources"][source] = (
+        self.revenue[story_id]["sources"][source] = \
             self.revenue[story_id]["sources"].get(source, 0) + amount
-        )
 
         commission = amount * CONFIG["commission_rate"]
         self.revenue[story_id]["commission"] += commission
@@ -213,10 +210,8 @@ class TaxAgent:
         self.save_data(CONFIG["revenue_file"], self.revenue)
 
         # Check if threshold reached for intervention
-        if (
-            self.revenue[story_id]["total"] >= CONFIG["revenue_threshold"]
-            and not self.revenue[story_id]["intervention_funded"]
-        ):
+        if (self.revenue[story_id]["total"] >= CONFIG["revenue_threshold"] and
+            not self.revenue[story_id]["intervention_funded"]):
             self.trigger_intervention(story_id)
 
     def trigger_intervention(self, story_id: str):
@@ -243,7 +238,7 @@ class TaxAgent:
             "commission_available": commission,
             "intervention_type": "security_course",  # Default
             "status": "pending_victim_contact",
-            "initiated_at": datetime.now().isoformat(),
+            "initiated_at": datetime.now().isoformat()
         }
 
         # TODO: Implement actual victim outreach
@@ -265,10 +260,10 @@ class TaxAgent:
         """
         Main Tax Agent execution loop
         """
-        logger.info("=" * 60)
+        logger.info("="*60)
         logger.info("TAX AGENT: Humanitarian Revenue Engine ACTIVATED")
         logger.info(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S SAST')}")
-        logger.info("=" * 60)
+        logger.info("="*60)
 
         # Step 1: Monitor for hardship events
         new_stories = self.monitor_gdelt()
@@ -292,22 +287,15 @@ class TaxAgent:
         self.save_data(CONFIG["output_file"], self.detections)
 
         # Report summary
-        logger.info("\n" + "=" * 60)
+        logger.info("\n" + "="*60)
         logger.info("TAX AGENT SUMMARY")
-        logger.info("=" * 60)
+        logger.info("="*60)
         logger.info(f"Total stories detected: {len(self.detections)}")
-        logger.info(
-            f"Approved for content: {len([s for s in self.detections if s['status'] == 'approved'])}"
-        )
-        logger.info(
-            f"Total revenue tracked: ${sum(r['total'] for r in self.revenue.values()):.2f}"
-        )
-        logger.info(
-            f"Commission collected: ${sum(r['commission'] for r in self.revenue.values()):.2f}"
-        )
+        logger.info(f"Approved for content: {len([s for s in self.detections if s['status'] == 'approved'])}")
+        logger.info(f"Total revenue tracked: ${sum(r['total'] for r in self.revenue.values()):.2f}")
+        logger.info(f"Commission collected: ${sum(r['commission'] for r in self.revenue.values()):.2f}")
         logger.info(f"Interventions funded: {len(self.interventions)}")
-        logger.info("=" * 60)
-
+        logger.info("="*60)
 
 if __name__ == "__main__":
     agent = TaxAgent()

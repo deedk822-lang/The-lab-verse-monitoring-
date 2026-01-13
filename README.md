@@ -144,6 +144,31 @@ curl http://localhost:8080/health
 # }
 ```
 
+## API Server
+
+Production FastAPI server with:
+- ✅ Type-safe endpoints (Pydantic models)
+- ✅ OpenLIT tracing for LLM calls
+- ✅ Prometheus metrics at `/metrics`
+- ✅ Auto-generated docs at `/docs`
+- ✅ Rate limiting and security middleware
+
+### Running the Server
+
+```bash
+# Development
+uvicorn api.server:app --reload
+
+# Production
+gunicorn api.server:app -w 4 -k uvicorn.workers.UvicornWorker
+```
+
+### Monitoring
+
+- Health: `GET /health`
+- Metrics: `GET /metrics` (Prometheus format)
+- Docs: `GET /docs` (Swagger UI)
+
 ## 📡 API Endpoints
 
 ### Execute Task
@@ -543,7 +568,7 @@ MIT License - See [LICENSE](../LICENSE) file for details.
 
 This project uses src-layout for proper packaging:
 
-```
+```text
 repo-root/
 ├── src/
 │   └── rainmaker_orchestrator/  # Main package

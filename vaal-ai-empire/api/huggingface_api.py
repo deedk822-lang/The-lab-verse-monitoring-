@@ -15,7 +15,8 @@ class HuggingFaceAPI:
             raise ValueError("HUGGINGFACE_TOKEN environment variable not set.")
 
         self.api_base = "https://api-inference.huggingface.co/models"
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.session = requests.Session()
+        self.session.headers.update({"Authorization": f"Bearer {self.api_token}"})
 
         # Available models for different tasks
         self.models = {
@@ -58,9 +59,8 @@ class HuggingFaceAPI:
         }
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
-                headers=self.headers,
                 json=payload,
                 timeout=60
             )
@@ -110,9 +110,8 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
-                headers=self.headers,
                 json={
                     "inputs": texts,
                     "options": {"wait_for_model": True}
@@ -142,9 +141,8 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
-                headers=self.headers,
                 json={
                     "inputs": text,
                     "parameters": {
@@ -208,9 +206,8 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
-                headers=self.headers,
                 json={"inputs": "test"},
                 timeout=5
             )

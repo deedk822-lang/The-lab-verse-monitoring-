@@ -10,13 +10,10 @@ from pathlib import Path
 @pytest.fixture
 def temp_workspace():
     """
-    Provide a temporary workspace directory for tests.
-
+    Create and provide a temporary workspace directory for a test.
+    
     Yields:
-        Path: Path to temporary workspace directory
-
-    Cleanup:
-        Removes the temporary directory after test completion
+        Path: Path to the temporary workspace directory
     """
     temp_dir = tempfile.mkdtemp(prefix='test_workspace_')
     workspace_path = Path(temp_dir)
@@ -31,10 +28,12 @@ def temp_workspace():
 @pytest.fixture
 def mock_env_vars():
     """
-    Provide a dictionary of mock environment variables.
-
+    Mock environment variables for tests.
+    
     Returns:
-        dict: Mock environment variables for testing
+        dict: Mapping of environment variable names to test values. Keys include
+            `LOG_LEVEL`, `WORKSPACE_PATH`, `ENVIRONMENT`, `KIMI_API_KEY`,
+            `KIMI_API_BASE`, and `OLLAMA_API_BASE`.
     """
     return {
         'LOG_LEVEL': 'DEBUG',
@@ -49,10 +48,15 @@ def mock_env_vars():
 @pytest.fixture
 def sample_alert_payload():
     """
-    Provide a sample alert payload for testing.
-
+    Sample Prometheus-style alert payload for use in tests.
+    
     Returns:
-        dict: Sample Prometheus-style alert payload
+        dict: Alert payload with keys:
+            - `description` (str): human-readable description of the alert
+            - `service` (str): affected service name
+            - `severity` (str): alert severity level
+            - `labels` (dict): string key/value pairs for alert labels (e.g., `env`, `region`)
+            - `annotations` (dict): string key/value pairs for alert annotations (e.g., `summary`, `runbook_url`)
     """
     return {
         'description': 'Error: Connection timeout to database',
@@ -72,10 +76,14 @@ def sample_alert_payload():
 @pytest.fixture
 def sample_http_job():
     """
-    Provide a sample HTTP job payload for worker testing.
-
+    Return a sample HTTP job payload used by worker tests.
+    
     Returns:
-        dict: Sample HTTP job configuration
+        dict: HTTP job configuration with keys:
+            url (str): Request URL.
+            method (str): HTTP method (e.g., 'GET').
+            headers (dict): Request headers.
+            timeout (int): Timeout in seconds.
     """
     return {
         'url': 'http://api.example.com/endpoint',

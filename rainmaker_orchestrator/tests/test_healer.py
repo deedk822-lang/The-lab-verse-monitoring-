@@ -315,7 +315,10 @@ class TestSelfHealingAgentEdgeCases:
             agent.handle_alert("invalid payload")
 
     def test_handle_alert_unicode_in_description(self):
-        """Should handle Unicode characters in alert description."""
+        """
+        Tests that the agent correctly generates a hotfix when the alert description contains Unicode characters.
+        
+        """
         mock_kimi = Mock(spec=KimiClient)
         mock_kimi.generate.return_value = 'unicode fix'
         agent = SelfHealingAgent(kimi_client=mock_kimi)

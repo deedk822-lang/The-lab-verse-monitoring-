@@ -6,7 +6,16 @@ from rainmaker_orchestrator.server import app
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    """Create a test client that handles lifespan events and a temporary workspace."""
+    """
+    Provide a TestClient configured to run the application's lifespan events and use a temporary workspace.
+    
+    Parameters:
+        tmp_path (pathlib.Path): Temporary directory to set as the application's workspace.
+        monkeypatch (pytest.MonkeyPatch): Fixture used to patch the application's settings.
+    
+    Returns:
+        TestClient: A FastAPI TestClient instance for the application, yielded within the fixture context.
+    """
     from rainmaker_orchestrator.config import settings
     monkeypatch.setattr(settings, "workspace_path", str(tmp_path))
     with TestClient(app) as c:
@@ -15,14 +24,24 @@ def client(tmp_path, monkeypatch):
 
 @pytest.fixture
 def mock_healer():
-    """Mock the healer agent."""
+    """
+    Provide a mock replacement for the healer agent stored at app.state.healer_agent.
+    
+    Yields:
+        mock: A patched mock object that replaces app.state.healer_agent for the duration of the test.
+    """
     with patch('rainmaker_orchestrator.server.app.state.healer_agent') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_orchestrator():
-    """Mock the orchestrator."""
+    """
+    Provide a pytest fixture that yields a mock replacing app.state.orchestrator in the server app.
+    
+    Returns:
+        mock (unittest.mock.MagicMock): Mock object used in place of the orchestrator.
+    """
     with patch('rainmaker_orchestrator.server.app.state.orchestrator') as mock:
         yield mock
 
@@ -181,7 +200,12 @@ class TestWorkspaceEndpoints:
         assert data["status"] == "uploaded"
 
     def test_create_directory(self, client, tmp_path, monkeypatch):
-        """Test directory creation."""
+        """
+        Ensure POST /workspace/create-directory creates a directory in the configured workspace.
+        
+        Patches the application's workspace path to a temporary directory, issues a POST to create "test_dir",
+        and asserts the endpoint responds with HTTP 200 and a JSON payload where "status" is "created".
+        """
         from rainmaker_orchestrator import config
         monkeypatch.setattr(config.settings, "workspace_path", str(tmp_path))
 

@@ -78,12 +78,12 @@ class RainmakerOrchestrator:
     @track(name="healer_hotfix_generation_ollama")
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Call the Ollama generate endpoint using the task's model and prompt and return the model response.
+        Send a non-streaming generation request to an Ollama backend and return the model's response content.
         
-        Constructs a JSON payload with the task's model (defaults to "llama3") and the task's context as the prompt, posts it to the configured Ollama /generate endpoint, and returns a dictionary containing the raw response text.
+        Uses task["model"] (default "llama3") and task["context"] as the prompt when constructing the request payload.
         
         Returns:
-            dict: A dictionary with the shape {"message": {"content": <str>}} where `content` is the value of Ollama's "response" field (or "{}" if absent).
+            dict: A dictionary with shape {"message": {"content": <str>}} where `content` is the value of Ollama's "response" field (or "{}" if that field is absent).
         
         Raises:
             HTTPStatusError: If the HTTP request returns a non-success status.
@@ -114,6 +114,29 @@ class RainmakerOrchestrator:
         return {"model": "kimi"}
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a task and, for coding tasks that specify an output filename, run a self-healing coding protocol that iteratively requests code, writes it to disk, and tests execution until success or retries are exhausted.
+        
+        For tasks where task["type"] == "coding_task" and task["output_filename"] is provided, the method:
+        - Determines the model routing for the task.
+        - Repeats up to three attempts of: requesting JSON-formatted code and explanation from the model, writing the returned `code` to the specified file, and executing the file.
+        - On failures, augments subsequent prompts with a concise error summary from the previous attempt to guide revisions.
+        - Returns a success result when execution succeeds, or a failure result when max retries are exceeded or an API-level error occurs.
+        
+        Parameters:
+            task (dict): Task descriptor containing at minimum:
+                - "type" (str): The task type, e.g., "coding_task".
+                - "output_filename" (str, optional): Path to write the generated code file.
+                - "context" (str): The prompt/context sent to the model.
+                - Optional model selection may be present and is used for routing.
+        
+        Returns:
+            dict: Result object with one of the following shapes:
+                - Success: {"status": "success", "final_code_path": <str>, "output": <str>, "retries": <int>, "explanation": <str>}
+                - Failure due to retries: {"status": "failed", "message": "Max retries exceeded.", "last_error": <dict_or_str>}
+                - Failure due to API error: {"status": "failed", "message": <error message>}
+                - Unsupported task: {"status": "error", "message": "Task type not supported."}
+        """
         routing = self.route_task(task)
 
         if task.get("type") == "coding_task" and task.get("output_filename"):

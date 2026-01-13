@@ -15,7 +15,12 @@ from server import app
 
 @pytest.fixture
 def client():
-    """Create FastAPI test client"""
+    """
+    Provide a TestClient for the FastAPI app for use in tests.
+    
+    Yields:
+        TestClient: A configured TestClient instance for making HTTP requests against the application. The client is properly closed when the fixture context exits.
+    """
     with TestClient(app) as client:
         yield client
 
@@ -42,7 +47,9 @@ class TestHealthEndpoint:
 
     @patch('server.app.state.kimi_client.health_check', return_value=False)
     def test_health_returns_200_degraded(self, mock_health_check, client):
-        """Test health endpoint returns 200 and degraded if config missing"""
+        """
+        Test that the health endpoint responds with status 200 and a 'degraded' status when the health check indicates degraded service.
+        """
         response = client.get('/health')
         assert response.status_code == 200
         assert response.json()['status'] == 'degraded'
@@ -57,7 +64,9 @@ class TestExecuteEndpoint:
         assert response.status_code == 422
 
     def test_execute_missing_context(self, client):
-        """Test execute without context field returns 422"""
+        """
+        Test that POST /execute with an empty JSON body returns a 422 status code and includes an error detail.
+        """
         response = client.post('/execute', json={})
         assert response.status_code == 422
         data = response.json()

@@ -37,14 +37,14 @@ SSRF_BLOCKS = Counter(
 
 def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
     """
-    Enforce a distributed per-client rate limit using Redis.
+    Enforces a per-client rate limit backed by Redis.
     
-    Increments a Redis counter keyed by the provided client identifier and sets a TTL equal to the window on the counter's first increment. If the counter exceeds the limit, the request is disallowed. If Redis is unavailable or an error occurs, the function fails open and allows the request.
+    Allows the request if the client's request count within the given time window is at or below the specified limit; returns `False` when the count exceeds the limit. If Redis is unavailable or an error occurs, the function fails open and allows the request.
     
     Parameters:
-        client_id (str): Identifier used as the Redis key for rate limiting.
-        limit (int): Maximum allowed requests within the window.
-        window (int): Time window in seconds for counting requests.
+        client_id (str): Identifier used to track the client's request count.
+        limit (int): Maximum allowed requests within the time window (default 100).
+        window (int): Time window in seconds for counting requests (default 60).
     
     Returns:
         bool: `True` if the request is allowed, `False` if the rate limit has been exceeded.
@@ -301,9 +301,9 @@ def process_http_job(job_payload):
 
 def main():
     """
-    Start the Prometheus metrics server and run the RQ worker to process background jobs.
+    Start the Prometheus metrics server and launch the RQ worker to process background jobs.
     
-    Reads METRICS_PORT from the environment to bind the metrics server, logs startup information (including Redis URL and queue name), creates an RQ Worker listening on the configured queue, and runs it with scheduler support; this call blocks while the worker runs.
+    Binds the metrics server to METRICS_PORT and starts an RQ Worker for QUEUE_NAME; this call blocks while the worker runs.
     """
     metrics_port = int(os.getenv("METRICS_PORT", "8001"))
     start_metrics_server(metrics_port)

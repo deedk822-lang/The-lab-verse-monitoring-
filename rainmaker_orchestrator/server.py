@@ -74,9 +74,9 @@ class HealthResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Manage application startup and shutdown.
-
-    Initializes services on startup and performs cleanup on shutdown.
+    Manage the application's startup and shutdown lifecycle.
+    
+    On startup, attaches a KimiClient to `app.state.kimi_client`, initializes a RainmakerOrchestrator using `settings.workspace_path` and assigns it to `app.state.orchestrator`, and creates a SelfHealingAgent assigned to `app.state.healer_agent`. Performs an initial health check of the Kimi client. Yields control for the running application and completes shutdown after the yield.
     """
     # Startup
     logger.info("Starting Rainmaker Orchestrator...")
@@ -120,7 +120,12 @@ app = FastAPI(
 
 @app.get("/", tags=["Status"])
 async def root():
-    """Root endpoint with API information."""
+    """
+    Return basic API information and root endpoints for the service.
+    
+    Returns:
+        dict: Mapping with keys 'service', 'version', 'status', 'docs', and 'health'.
+    """
     return {
         "service": "Rainmaker Orchestrator",
         "version": "1.0.0",
@@ -133,10 +138,17 @@ async def root():
 @app.get("/health", response_model=HealthResponse, tags=["Status"])
 async def health_check():
     """
-    Health check endpoint for load balancers and monitoring.
-
+    Return the application's health status for load balancers and monitoring.
+    
+    Performs checks for the Kimi client and the orchestrator presence and returns a HealthResponse whose top-level
+    `status` is "healthy" when both services are available and "degraded" otherwise. The `services` mapping uses
+    "up" or "down" for each service and `environment` reflects current settings.
+    
     Returns:
-        HealthResponse with service status information
+        HealthResponse: Overall health, per-service statuses, version, and environment.
+    
+    Raises:
+        HTTPException: with status code 503 if an internal error occurs during the health check.
     """
     try:
         kimi_healthy = app.state.kimi_client.health_check()
@@ -161,9 +173,12 @@ async def health_check():
 @app.get("/metrics", response_class=PlainTextResponse, tags=["Status"])
 async def metrics_endpoint():
     """
-    Prometheus metrics endpoint.
-
-    Returns metrics in Prometheus text format for monitoring and alerting.
+    Expose Prometheus-formatted metrics for the application.
+    
+    Metrics include total alerts processed, hotfixes generated, tasks executed, and uptime in seconds.
+    
+    Returns:
+        metrics_text (str): Plaintext in Prometheus exposition format containing counters for alerts, hotfixes, tasks and a gauge for uptime.
     """
     uptime_seconds = int(time.time() - metrics["start_time"])
 
@@ -202,16 +217,13 @@ async def handle_alert_webhook(
     background_tasks: BackgroundTasks
 ):
     """
-    Handle Prometheus Alert Manager webhooks.
-
-    Receives critical alerts and triggers AI-powered hotfix generation.
-
-    Args:
-        alert: AlertPayload containing alert information
-        background_tasks: FastAPI background tasks for async processing
-
+    Handle a single Prometheus Alertmanager webhook and trigger AI-driven hotfix generation when applicable.
+    
+    Parameters:
+        alert (AlertPayload): Incoming alert data with service, description, severity, labels, and annotations.
+    
     Returns:
-        Dictionary with processing status and hotfix information
+        result (dict): Processing outcome containing at least a `status` key (e.g., `"hotfix_generated"`, `"no_action"`) and, when applicable, additional hotfix information under keys such as `hotfix` or `details`.
     """
     try:
         logger.info(f"Received alert for service: {alert.service}")
@@ -241,13 +253,16 @@ async def handle_alert_webhook(
 @app.post("/alerts/batch", tags=["Alerts"])
 async def handle_batch_alerts(alerts: List[AlertPayload]):
     """
-    Handle multiple alerts in batch.
-
-    Args:
-        alerts: List of AlertPayload objects
-
+    Process a list of alert payloads and return per-alert processing results.
+    
+    Parameters:
+        alerts (List[AlertPayload]): Alerts to process; each alert will be converted to a dict and handled by the configured healer agent.
+    
     Returns:
-        List of processing results for each alert
+        dict: A summary containing `total` (int) number of alerts processed and `results` (List[dict]) with the healer agent's result for each alert.
+    
+    Raises:
+        HTTPException: If any unexpected error occurs while processing the batch, an HTTP 500 error is raised with failure details.
     """
     try:
         results = []
@@ -283,12 +298,21 @@ async def handle_batch_alerts(alerts: List[AlertPayload]):
 async def execute_task(request: ExecuteRequest):
     """
     Execute a task or code using the orchestrator.
-
-    Args:
-        request: ExecuteRequest with task details
-
+    
+    Parameters:
+        request (ExecuteRequest): Execution parameters including:
+            - task: the command or code to run
+            - mode: execution mode (e.g., "shell", "python")
+            - timeout: maximum execution time in seconds
+            - environment: environment variables to provide to the task
+    
     Returns:
-        Execution result with output and status
+        dict: Execution result containing at least a `status` field and any output or metadata produced by the orchestrator.
+    
+    Raises:
+        HTTPException: 422 if `request.task` is empty.
+        HTTPException: 408 if execution times out after `request.timeout` seconds.
+        HTTPException: 500 if execution fails for any other reason.
     """
     if not request.task:
         raise HTTPException(status_code=422, detail="Task cannot be empty")
@@ -328,16 +352,22 @@ async def execute_task_async(
     background_tasks: BackgroundTasks
 ):
     """
-    Execute a task asynchronously in the background.
-
-    Note: Task ID tracking is not yet implemented. This is fire-and-forget.
-
-    Args:
-        request: ExecuteRequest with task details
-        background_tasks: FastAPI background tasks
-
+    Queue a task for background execution.
+    
+    Validates that the request contains a non-empty task, schedules the orchestrator to execute it via FastAPI's BackgroundTasks, and increments execution metrics.
+    
+    Parameters:
+        request (ExecuteRequest): Task details including `task`, `mode`, `timeout`, and optional `environment`.
+        background_tasks (BackgroundTasks): FastAPI BackgroundTasks instance used to schedule the execution.
+    
     Returns:
-        Task ID (for future status tracking)
+        dict: A dictionary with keys:
+            - `task_id` (str): A UUID string identifying the queued task.
+            - `status` (str): The string "queued".
+            - `message` (str): A human-readable note about the queued task.
+    
+    Raises:
+        HTTPException: If `request.task` is empty (422) or if scheduling the task fails (500).
     """
     if not request.task:
         raise HTTPException(status_code=422, detail="Task cannot be empty")
@@ -378,13 +408,30 @@ async def execute_task_async(
 @app.get("/workspace/files", tags=["Workspace"])
 async def list_workspace_files(path: str = ""):
     """
-    List files in the workspace directory.
-
-    Args:
-        path: Optional subdirectory path within workspace
-
+    List files and directories within the configured workspace, optionally under a given subpath.
+    
+    Parameters:
+        path (str): Relative subpath inside the workspace to list; empty string lists the workspace root.
+    
     Returns:
-        List of files and directories
+        dict: {
+            "path": str,                 # the requested relative path
+            "files": [                   # list of entries in the directory
+                {
+                    "name": str,         # filename or directory name
+                    "type": "file"|"directory",
+                    "size": int,        # file size in bytes (0 for directories)
+                    "modified": float   # last modification time as POSIX timestamp
+                },
+                ...
+            ],
+            "count": int                 # number of entries in "files"
+        }
+    
+    Raises:
+        HTTPException: 404 if the requested path does not exist.
+        HTTPException: 403 if the requested path is outside the workspace.
+        HTTPException: 500 for other failures while listing files.
     """
     try:
         workspace_path = Path(settings.workspace_path) / path
@@ -426,14 +473,17 @@ async def upload_workspace_file(
     path: str = ""
 ):
     """
-    Upload a file to the workspace.
-
-    Args:
-        file: File to upload
-        path: Optional subdirectory path within workspace
-
+    Store an uploaded file into the orchestrator workspace.
+    
+    Parameters:
+        file (UploadFile): The file uploaded in the request.
+        path (str): Subdirectory inside the workspace where the file will be written; interpreted relative to the workspace root.
+    
     Returns:
-        FileUploadResponse with upload details
+        FileUploadResponse: Metadata for the stored file including filename, path relative to workspace, size in bytes, and status.
+    
+    Raises:
+        HTTPException: 403 if the target path is outside the workspace, 500 if the upload or file write fails.
     """
     try:
         workspace_path = Path(settings.workspace_path) / path
@@ -470,13 +520,19 @@ async def upload_workspace_file(
 @app.get("/workspace/download/{file_path:path}", tags=["Workspace"])
 async def download_workspace_file(file_path: str):
     """
-    Download a file from the workspace.
-
-    Args:
-        file_path: Path to file within workspace
-
+    Provide a FileResponse for a file located inside the configured workspace.
+    
+    Parameters:
+        file_path (str): Path to the file relative to the workspace root.
+    
     Returns:
-        FileResponse with the requested file
+        FileResponse: Response that streams the requested file with filename set to the file's basename and media type 'application/octet-stream'.
+    
+    Raises:
+        HTTPException: 404 if the file does not exist.
+        HTTPException: 403 if the resolved path is outside the workspace.
+        HTTPException: 400 if the path exists but is not a file.
+        HTTPException: 500 for unexpected server errors during preparation of the response.
     """
     try:
         full_path = Path(settings.workspace_path) / file_path
@@ -509,13 +565,16 @@ async def download_workspace_file(file_path: str):
 @app.delete("/workspace/delete/{file_path:path}", tags=["Workspace"])
 async def delete_workspace_file(file_path: str):
     """
-    Delete a file from the workspace.
-
-    Args:
-        file_path: Path to file within workspace
-
+    Delete a file or directory located under the configured workspace.
+    
+    Parameters:
+        file_path (str): Path relative to the workspace root to delete.
+    
     Returns:
-        Deletion confirmation
+        dict: Confirmation object with keys `status` (always `"deleted"`) and `path` (the provided `file_path`).
+    
+    Raises:
+        HTTPException: 404 if the path does not exist; 403 if the path is outside the workspace; 500 for other deletion failures.
     """
     try:
         full_path = Path(settings.workspace_path) / file_path
@@ -552,13 +611,18 @@ async def delete_workspace_file(file_path: str):
 @app.post("/workspace/create-directory", tags=["Workspace"])
 async def create_workspace_directory(path: str):
     """
-    Create a directory in the workspace.
-
-    Args:
-        path: Directory path to create
-
+    Create a directory under the configured workspace path.
+    
+    Ensures the provided path is inside the application's workspace and creates the directory (including parents) if it does not exist.
+    
+    Parameters:
+        path (str): Relative directory path to create inside the workspace.
+    
     Returns:
-        Creation confirmation
+        dict: A mapping with `status` set to `"created"` and `path` echoing the requested path.
+    
+    Raises:
+        HTTPException: Raised with status 403 if the path is outside the workspace, or 500 if directory creation fails.
     """
     try:
         dir_path = Path(settings.workspace_path) / path
@@ -591,7 +655,16 @@ async def create_workspace_directory(path: str):
 
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    """Custom 404 handler."""
+    """
+    Handle requests to missing endpoints by returning a JSON 404 response.
+    
+    Parameters:
+        request: The incoming request; its URL is included in the response `path`.
+        exc: The exception raised for the missing route.
+    
+    Returns:
+        JSONResponse: A response with `error` ("Not Found"), a human-readable `message`, and the request `path`.
+    """
     return JSONResponse(
         status_code=404,
         content={
@@ -604,7 +677,16 @@ async def not_found_handler(request, exc):
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
-    """Custom 500 handler."""
+    """
+    Handle internal server errors and return a standardized JSON 500 response.
+    
+    Parameters:
+        request (Request): The incoming HTTP request; its URL is included in the response.
+        exc (Exception): The exception that triggered this handler.
+    
+    Returns:
+        JSONResponse: HTTP 500 response with a JSON body containing "error", "message", and "path".
+    """
     logger.exception("Internal server error")
     return JSONResponse(
         status_code=500,

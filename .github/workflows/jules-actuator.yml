@@ -5,7 +5,7 @@ on:
   check_suite:
     types: [completed]
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled, synchronize, opened]
   pull_request_review:
     types: [submitted]
 
@@ -17,8 +17,8 @@ permissions:
 jobs:
   execute-merge:
     runs-on: ubuntu-latest
-    # Only run for jules/** branches
-    if: startsWith(github.event.pull_request.head.ref, 'jules/')
+    # Run for jules/** or fix/** branches
+    if: startsWith(github.event.pull_request.head.ref, 'jules/') || startsWith(github.event.pull_request.head.ref, 'fix/')
     
     steps:
       - uses: actions/checkout@v4

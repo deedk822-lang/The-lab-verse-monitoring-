@@ -2,17 +2,6 @@
   "env": {
     "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
   },
-  "build": {
-    "env": {
- feature/anthropic-brain-integration-17755607396485422698-10248456466997321101
-      "ZAI_API_KEY": "@zai-api-key",
-      "PERPLEXITY_API_KEY": "@perplexity-api-key"
-
-      "NODE_ENV": "production",
-      "NEXT_PUBLIC_API_ENDPOINT": "@next-public-api-endpoint",
-      "NEXT_PUBLIC_EVENT_DATE": "@next-public-event-date"
-    }
-  },
   "functions": {
     "api/**/*.{js,ts}": {
       "runtime": "nodejs20.x",
@@ -34,7 +23,6 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" }
       ]
- main
     }
-  }
+  ]
 }

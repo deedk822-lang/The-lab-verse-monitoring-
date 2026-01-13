@@ -1,0 +1,40 @@
+image: python:3.11
+
+pipelines:
+  default:
+    - parallel:
+        - step:
+            name: "Lint & Test"
+            caches:
+              - pip
+            script:
+              - pip install -r requirements.txt
+              - pip install pytest
+              - pytest tests/
+        - step:
+            name: "Security Scanning (Bandit)"
+            script:
+              - pip install bandit
+              - bandit -r src/
+  branches:
+    main:
+      - step:
+          name: "Deploy to Production & Security Loop"
+          script:
+            - echo "Deploying to production environment..."
+            # Triggering the Alibaba Security Analyzer via webhook or script
+            - python src/scripts/trigger_alibaba_scan.py
+          services:
+            - docker
+      - step:
+          name: "Jira Sync"
+          script:
+            # Syncing Jira status via API (using configured secrets)
+            - python src/scripts/sync_jira.py --status DONE
+    'feature/*':
+      - step:
+          name: "CI & CodeRabbit Verification"
+          script:
+            - pip install -r requirements.txt
+            - pytest tests/
+            - echo "PR ready for CodeRabbit review."

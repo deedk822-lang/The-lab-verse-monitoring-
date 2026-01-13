@@ -58,6 +58,30 @@ async def health_check(request: Request):
         }
     }
 
+ coderabbitai/docstrings/52d56b6
+    from rainmaker_orchestrator import RainmakerOrchestrator
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
+    print(f"✅ Successfully imported rainmaker_orchestrator in server")
+except ImportError as e:
+    print(f"❌ Import error in server: {e}. Using a dummy class for tests.")
+    # This allows tests to import the module and mock the orchestrator
+    class RainmakerOrchestrator:
+        def __init__(self):
+            """
+            Create a fallback RainmakerOrchestrator instance with an empty, mutable `config` dictionary.
+            
+            The `config` attribute is initialized as an empty dict and may be populated at runtime to provide settings (for example, access tokens or other integration parameters).
+            """
+            self.config = {}
+        async def _call_ollama(self, *args, **kwargs):
+            """
+            Provide a fallback implementation that simulates an Ollama call when no real orchestrator is available.
+            
+            Returns:
+                dict: An empty dictionary (`{}`) used as a placeholder response.
+            """
+            return {}
+
 @app.post("/execute")
 async def execute_task(payload: ExecuteTaskPayload, request: Request):
     """Execute a task using the Rainmaker Orchestrator."""
@@ -65,12 +89,97 @@ async def execute_task(payload: ExecuteTaskPayload, request: Request):
     if result.get("status") == "failed":
         raise HTTPException(status_code=500, detail=result.get("message", "Task execution failed"))
     return result
+ main
 
  main
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):
     """
+ coderabbitai/docstrings/52d56b6
+    Manage application lifespan by initializing a RainmakerOrchestrator on startup and closing it on shutdown.
+    
+    Instantiates RainmakerOrchestrator and assigns it to app.state.orchestrator when the app starts. On shutdown, calls the orchestrator's aclose() method to perform graceful cleanup of resources.
+    """
+    orchestrator = RainmakerOrchestrator()
+    app.state.orchestrator = orchestrator
+    yield
+    # Shutdown
+    await orchestrator.aclose()
+
+app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+ main
+
+class HubSpotWebhookPayload(BaseModel):
+    objectId: int
+    message_body: str
+    subscriptionType: Optional[str] = None
+
+@app.get("/health")
+async def health_check():
+    """
+    Return the current service health status.
+    
+    Returns:
+        dict: A mapping with the key "status" set to the string "healthy".
+    """
+    return {"status": "healthy"}
+
+ coderabbitai/docstrings/52d56b6
+ feat/architectural-improvements-9809589759324023108-13552811548169517820
+@app.get("/intel/market")
+async def get_market_intel(company: str):
+
+ """
+ Fetches market intelligence for the given company name.
+ 
+ Parameters:
+     company (str): The company name to retrieve market intelligence for.
+ 
+ Returns:
+     dict: A payload containing market intelligence fields such as:
+         - source (str): Data source identifier.
+         - company (str): Echoed company name.
+         - status (str): High-level market status (e.g., "stable", "rising", "declining").
+         - timestamp (str): ISO-8601 timestamp when the intelligence was generated.
+ """
+ feat/modernize-python-stack-2026-3829493454699415671
+@app.get("/intel/market")
+async def get_market_intel_endpoint(company_name: str):
+    """
+    Return market intelligence for the given company name.
+    
+    Returns:
+        A mapping containing market intelligence for the company, typically including keys such as `source`, `company`, `status`, and `timestamp`.
+    """
+    data = get_market_intel(company_name)
+    return JSONResponse(content=data)
+
+# TODO: Replace this with a real market intelligence API (e.g., Perplexity, Google Search)
+ main
+
+# Placeholder implementation - tracked separately for production replacement
+ main
+def get_market_intel(company_name: str):
+ """
+ Return a simulated market intelligence payload for the given company.
+ 
+ Parameters:
+     company_name (str): Name or identifier of the company to query.
+ 
+ Returns:
+     dict: Structured placeholder market intelligence containing:
+         - source (str): Data source label (simulated).
+         - company (str): Echo of the queried company name.
+         - status (str): Integration or data-status message.
+         - timestamp (float): Unix epoch timestamp of the response.
+         - latest_headline (str): Representative recent headline (simulated).
+         - financial_health_signal (str): High-level financial health assessment (simulated).
+         - key_pain_point (str): Primary operational/strategic challenge inferred (simulated).
+         - sales_hook (str): Suggested outreach angle or positioning based on the simulated intel.
+ """
+ main
+
     Return a simulated market intelligence report for the specified company.
     
     Parameters:
@@ -82,6 +191,7 @@ async def get_market_intel(company: str):
             - company (str): Echoes the requested company name.
             - status (str): Integration/configuration status or note.
             - timestamp (float): Unix timestamp of the report generation.
+ main
     """
     logging.info(f"Fetching market intel for (placeholder): {company}")
     return {
@@ -203,4 +313,13 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
         dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
     """
     background_tasks.add_task(process_webhook_data, payload, request.app)
+ coderabbitai/docstrings/52d56b6
     return {"status": "accepted", "contact_id": payload.objectId}
+ coderabbitai/docstrings/52d56b6
+ main
+
+ main
+ main
+
+    return {"status": "accepted", "contact_id": payload.objectId}
+ main

@@ -1,220 +1,142 @@
 import os
-import sys
-import json
 import logging
-import time
-from typing import Optional
 from contextlib import asynccontextmanager
+from typing import Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
-from pydantic import BaseModel
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
+from fastapi import FastAPI, HTTPException, Request, Depends # type: ignore
+from fastapi.responses import JSONResponse # type: ignore
+from pydantic import BaseModel, Field, validator # type: ignore
+from slowapi import Limiter # type: ignore
+from slowapi.util import get_remote_address # type: ignore
+from slowapi.errors import RateLimitExceeded # type: ignore
 
-# --- Pydantic Model Definition ---
-class HubSpotWebhookPayload(BaseModel):
-    objectId: int
-    message_body: str
-    subscriptionType: Optional[str] = None
+from src.rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+from src.rainmaker_orchestrator.agents.healer import SelfHealingAgent
+from src.rainmaker_orchestrator.clients.kimi import KimiApiClient # type: ignore
 
-# --- Configuration ---
-DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# --- Observability & Logging ---
+import openlit # type: ignore
+import structlog # type: ignore
+from prometheus_fastapi_instrumentator import Instrumentator # type: ignore
 
-import re
-from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
-from rainmaker_orchestrator.agents.healer import SelfHealingAgent # For sanitization
+logger = structlog.get_logger(__name__)
 
-# Create a single healer instance to access its sanitization method
-_healer = SelfHealingAgent()
+# --- Application Setup ---
+limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    """
-    Create a RainmakerOrchestrator on startup and close it on shutdown.
+    """Manage lifecycle of shared resources."""
+    logger.info("Application startup: Initializing resources.")
 
-    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
-    """
     orchestrator = RainmakerOrchestrator()
+    kimi_client = KimiApiClient()
+
     app.state.orchestrator = orchestrator
+    app.state.kimi_client = kimi_client
+
+    if os.getenv("OPENLIT_ENDPOINT"):
+        openlit.init(
+            otlp_endpoint=os.getenv("OPENLIT_ENDPOINT"),
+            application_name="rainmaker-orchestrator"
+        )
+        logger.info("OpenLIT tracing initialized.")
+
     yield
-    # Shutdown
+
+    logger.info("Application shutdown: Cleaning up resources.")
     await orchestrator.aclose()
+    await kimi_client.close()
 
-app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+app = FastAPI(
+    title="Rainmaker Orchestrator API",
+    version="3.0.0",
+    lifespan=lifespan
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"error": "Rate limit exceeded"}, status_code=429))
 
-class ExecuteTaskPayload(BaseModel):
-    type: str
-    context: str
+# Instrument for Prometheus
+Instrumentator().instrument(app).expose(app)
+
+
+# --- Dependency Injection ---
+async def get_orchestrator(request: Request) -> RainmakerOrchestrator:
+    if not hasattr(request.app.state, 'orchestrator'):
+        raise HTTPException(status_code=503, detail="Orchestrator not initialized")
+    return request.app.state.orchestrator
+
+async def get_kimi_client(request: Request) -> Optional[KimiApiClient]:
+    return getattr(request.app.state, 'kimi_client', None)
+
+# --- Pydantic Models ---
+class HealthResponse(BaseModel):
+    status: str
+    dependencies: Dict[str, Dict[str, Any]]
+
+class ExecuteRequest(BaseModel):
+    context: str = Field(..., min_length=1, max_length=10000)
+    type: str = "coding_task"
     model: Optional[str] = None
     output_filename: Optional[str] = None
 
-@app.get("/health")
-async def health_check(request: Request):
-    """Return the service health status."""
-    orchestrator_health = await request.app.state.orchestrator.health_check()
-    
-    overall_status = "healthy"
-    if orchestrator_health["status"] != "healthy":
-        overall_status = "degraded"
+    @validator('output_filename')
+    def validate_filename(cls, v):
+        if v and (".." in v or "/" in v or "\\" in v):
+            raise ValueError("Path traversal attempt detected")
+        return v
 
-    return {
-        "status": overall_status,
+# --- API Endpoints ---
+@app.get("/health", response_model=HealthResponse)
+@limiter.limit("100/minute")
+async def health_check(
+    request: Request,
+    orchestrator: RainmakerOrchestrator = Depends(get_orchestrator),
+    kimi_client: Optional[KimiApiClient] = Depends(get_kimi_client)
+) -> JSONResponse:
+    """Provides a detailed health check of the API and its dependencies."""
+    orchestrator_health = await orchestrator.health_check()
+    kimi_health = await kimi_client.health_check() if kimi_client else {"status": "not_configured"}
+
+    status = "healthy"
+    if orchestrator_health["status"] != "healthy" or kimi_health["status"] != "healthy":
+        status = "degraded"
+
+    response_data = {
+        "status": status,
         "dependencies": {
-            "orchestrator": orchestrator_health
+            "orchestrator": orchestrator_health,
+            "kimi_client": kimi_health
         }
     }
+    return JSONResponse(content=response_data)
 
 @app.post("/execute")
-async def execute_task(payload: ExecuteTaskPayload, request: Request):
-    """Execute a task using the Rainmaker Orchestrator."""
-
-    # Sanitize the user-provided context to prevent prompt injection
-    sanitized_context = _healer._sanitize_for_prompt(payload.context, field_name="execute_context")
-
-    # Create a new payload with the sanitized context
-    task_payload = payload.model_dump()
-    task_payload['context'] = sanitized_context
-
-    result = await request.app.state.orchestrator.execute_task(task_payload)
-    if result.get("status") == "failed":
-        raise HTTPException(status_code=500, detail=result.get("message", "Task execution failed"))
-    return result
-
-@app.get("/intel/market")
-async def get_market_intel(company: str):
-    """
-    Return a simulated market intelligence report for the specified company.
+@limiter.limit("10/minute")
+async def execute_task(
+    task_request: ExecuteRequest,
+    request: Request,
+    orchestrator: RainmakerOrchestrator = Depends(get_orchestrator)
+):
+    """Executes a task, with OpenLIT tracing."""
+    task_id = request.headers.get("X-Request-ID", "unknown")
     
-    Parameters:
-        company (str): The company name to retrieve market intelligence for.
-    
-    Returns:
-        dict: A structured market intelligence object with keys:
-            - source (str): The data source label (simulated).
-            - company (str): Echoes the requested company name.
-            - status (str): Integration/configuration status or note.
-            - timestamp (float): Unix timestamp of the report generation.
-    """
-    logging.info(f"Fetching market intel for (placeholder): {company}")
-    return {
-        "source": "Live Search (Simulated)",
-        "company": company,
-        "status": "Integration Pending - Configure Perplexity/Google API",
-        "timestamp": time.time()
-    }
-
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
-    """
-    Handle an incoming HubSpot webhook payload by validating that the HubSpot client is available.
-    
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing the HubSpot object ID and message body.
-    
-    Raises:
-        HTTPException: Raised with status code 501 if the HubSpot client is not installed or configured.
-    """
-    if not HubSpot:
-        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
-
-
-async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
-    """
-    Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
-    
-    Sends payload.message_body to the orchestrator for JSON-formatted AI analysis, updates the contact identified by payload.objectId with properties `ai_lead_summary`, `ai_buying_intent`, and `ai_suggested_action`, and if the returned `intent_score` exceeds the configured threshold creates a new deal enriched with market intelligence and associates it with the contact. On errors during analysis or contact update the function logs the exception and returns early; errors during deal creation are logged and not propagated.
-    
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing `objectId` (contact id) and `message_body` (text to analyze).
-        app (FastAPI): FastAPI application instance used to access app.state.orchestrator and its configuration for HubSpot credentials.
-    """
-    contact_id = payload.objectId
-    chat_text = payload.message_body
-
-    logging.info(f"Processing HubSpot webhook for contact: {contact_id}")
-
-    # 1. "Zread" and Process with Ollama
-    # NOTE: Using the private method `_call_ollama` as the orchestrator's public
-    # `execute_task` method is designed for a different, more complex workflow.
-    # A future refactor should expose a dedicated public method for this type of analysis.
-    try:
-        prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
-        ollama_task = {"context": prompt, "model": "ollama"}
-        ai_analysis_raw = await app.state.orchestrator._call_ollama(ollama_task, {})
-
-        ai_analysis_str = ai_analysis_raw["message"]["content"]
-        parsed_ai = json.loads(ai_analysis_str)
-        logging.info(f"AI Analysis successful: {parsed_ai}")
-
-    except Exception:
-        logging.exception("Error calling Ollama or parsing response")
-        # In a real app, you might want to retry or send an alert
-        return
-
-    # 2. Update HubSpot Contact
-    try:
-        hubspot_access_token = orchestrator.config.get('HUBSPOT_ACCESS_TOKEN')
-        if not hubspot_access_token:
-            raise ValueError("HUBSPOT_ACCESS_TOKEN is not set.")
-
-        client = HubSpot(access_token=hubspot_access_token)
-
-        properties_to_update = {
-            "ai_lead_summary": parsed_ai.get('summary', 'N/A'),
-            "ai_buying_intent": parsed_ai.get('intent_score', 0),
-            "ai_suggested_action": parsed_ai.get('suggested_action', 'N/A')
+    with openlit.trace(
+        name="execute_task",
+        metadata={
+            "task_id": task_id,
+            "task_type": task_request.type,
+            "model": task_request.model
         }
-
-        client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
-        logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
-
-    except Exception:
-        logging.exception("Error updating HubSpot contact")
-        return
-
-    # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
-    try:
-        intent_score = parsed_ai.get('intent_score', 0)
-        if intent_score > DEAL_CREATION_INTENT_SCORE_THRESHOLD:
-            company_name = parsed_ai.get('company_name', 'Unknown Company')
-            logging.info(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
-
-            # Get market intelligence status
-            intel_data = await get_market_intel(company_name)
-            intel_status = intel_data.get('status', 'Market intel pending.')
-
-            # Create the deal with enriched properties
-            deal_properties = {
-                "dealname": f"{company_name} - WhatsApp Lead",
-                "pipeline": "default",
-                "dealstage": "appointmentscheduled", # Example stage
-                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel_status}"
-            }
-            deal_input = SimplePublicObjectInput(properties=deal_properties)
-            created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
-
-            # Associate the new deal with the contact
-            client.crm.deals.associations_api.create(
-                deal_id=created_deal.id,
-                to_object_type='contact',
-                to_object_id=contact_id,
-                association_type='deal_to_contact'
+    ) as span:
+        try:
+            result = await orchestrator.execute_task(task_request.model_dump())
+            span.set_attribute("response_length", len(str(result)))
+            return result
+        except Exception as e:
+            logger.exception(
+                "execute_task_failed",
+                error=str(e),
+                request_id=task_id
             )
-            logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
-
-    except Exception as e:
-        logging.error(f"Error creating HubSpot deal for contact {contact_id}", exc_info=e)
-        # Do not return a value, this is a background task
-
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
-    """
-    Enqueue processing of a HubSpot webhook payload to run in the background and acknowledge receipt.
-    
-    Returns:
-        dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
-    """
-    background_tasks.add_task(process_webhook_data, payload, request.app)
-    return {"status": "accepted", "contact_id": payload.objectId}
+            raise HTTPException(status_code=500, detail="Task execution failed")

@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-import httpx
+import httpx # type: ignore
 from typing import Dict, Any, List, Optional
 from .config import ConfigManager
 from .fs_agent import FileSystemAgent as FSAgent
@@ -9,15 +9,15 @@ from .fs_agent import FileSystemAgent as FSAgent
 logger = logging.getLogger(__name__)
 
 class RainmakerOrchestrator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = ConfigManager()
         self.fs = FSAgent()
         self.client = httpx.AsyncClient(timeout=60.0)
 
         # Load API keys once to avoid global lookup overhead
-        self.kimi_key = self.config.get("KIMI_API_KEY")
-        self.kimi_base = self.config.get("KIMI_API_BASE", "https://api.moonshot.ai/v1")
-        self.ollama_base = self.config.get("OLLAMA_API_BASE", "http://localhost:11434/api")
+        self.kimi_key: str = self.config.get("KIMI_API_KEY")
+        self.kimi_base: str = self.config.get("KIMI_API_BASE", "https://api.moonshot.ai/v1")
+        self.ollama_base: str = self.config.get("OLLAMA_API_BASE", "http://localhost:11434/api")
 
     async def health_check(self) -> Dict[str, Any]:
         """Validates critical dependencies for the orchestrator."""
@@ -70,7 +70,7 @@ class RainmakerOrchestrator:
         model_preference = payload.get("model", "kimi")
         filename = payload.get("output_filename", "generated_code.py")
 
-        execution_log = []
+        execution_log: List[Dict[str, Any]] = []
 
         try:
             # Step 1: LLM Routing
@@ -103,6 +103,6 @@ class RainmakerOrchestrator:
             logger.exception("Task execution encountered a fatal error")
             return {"status": "failed", "message": str(e)}
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         """Cleanly close the HTTP client session."""
         await self.client.aclose()

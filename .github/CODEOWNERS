@@ -1,8 +1,15 @@
-# Package structure
-/src/rainmaker_orchestrator/     @deedk822-lang @rainmaker-team
-/src/rainmaker_orchestrator/agents/ @deedk822-lang
+# API Layer (Updated for FastAPI)
+/api/                    @deedk822-lang @rainmaker-api-team
+/api/server.py         @deedk822-lang  # FastAPI migration owner
+
+# Core Orchestrator
+/src/rainmaker_orchestrator/  @deedk822-lang @rainmaker-core-team
+
+# Tests
+/tests/                  @deedk822-lang
 
 # CI/CD
-/.github/workflows/               @deedk822-lang
-/pyproject.toml                   @deedk822-lang
-/setup.py                         @deedk822-lang
+/.github/workflows/      @deedk822-lang @rainmaker-devops
+
+# Dependencies
+/pyproject.toml        @deedk822-lang

@@ -8,7 +8,7 @@ import resource
 import shlex
 from typing import Set, Dict, Any
 import logging
-
+from werkzeug.utils import secure_filename # type: ignore
 import tempfile
 
 logger = logging.getLogger(__name__)
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 ALLOWED_COMMANDS: Set[str] = {"python", "pytest", "python3"}
 
 class FileSystemAgent:
-    def __init__(self, workspace_path="/workspace", max_file_size=10*1024*1024):  # 10MB max
+    def __init__(self, workspace_path: str = "/workspace", max_file_size: int = 10*1024*1024) -> None:  # 10MB max
         if 'pytest' in sys.modules:
-            self.workspace = tempfile.mkdtemp()
+            self.workspace: str = tempfile.mkdtemp()
         else:
             self.workspace = os.path.realpath(workspace_path)
         self.max_size = max_file_size
@@ -32,7 +32,7 @@ class FileSystemAgent:
         resolved_path = os.path.realpath(full_path)
         return os.path.commonpath([self.workspace, resolved_path]) == self.workspace
 
-    def write_file(self, filename: str, content: str) -> dict:
+    def write_file(self, filename: str, content: str) -> Dict[str, Any]:
         """Secure file write with size limits"""
         safe_name = secure_filename(filename)
         if not self._is_safe_path(safe_name):
@@ -49,7 +49,7 @@ class FileSystemAgent:
         except Exception as e:
             return {"status": "error", "message": f"Disk write failed: {str(e)}"}
 
-    def read_file(self, filename: str) -> dict:
+    def read_file(self, filename: str) -> Dict[str, Any]:
         """Secure file read"""
         safe_name = secure_filename(filename)
         if not self._is_safe_path(safe_name):
@@ -75,7 +75,7 @@ class FileSystemAgent:
 
         command = f"{sys.executable} {safe_name}"
 
-        def set_limits():
+        def set_limits() -> None:
             # Limit virtual memory (RLIMIT_AS)
             resource.setrlimit(
                 resource.RLIMIT_AS,

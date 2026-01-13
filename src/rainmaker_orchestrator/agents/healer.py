@@ -5,9 +5,10 @@ from typing import Dict, Any, Optional
 # Assuming a shared KimiApiClient is available, otherwise it needs to be imported and instantiated.
 # from ..clients.kimi import KimiApiClient
 
+from typing import List
 # A mock client for demonstration if the actual client is not available.
 class MockKimiApiClient:
-    async def generate_chat_completion(self, messages: list) -> str:
+    async def generate_chat_completion(self, messages: List[Dict[str, str]]) -> str:
         # Simulate a response for testing purposes
         return '{"hotfix": "This is a simulated hotfix.", "confidence": 0.9, "impact": "low"}'
 
@@ -17,7 +18,7 @@ class SelfHealingAgent:
     """
     Agent responsible for handling alerts and initiating self-healing protocols.
     """
-    def __init__(self, kimi_client=None):
+    def __init__(self, kimi_client: Any = None) -> None:
         logger.info("Self-Healing Agent initialized")
         # In a real application, the KimiApiClient would be injected.
         self.kimi_client = kimi_client or MockKimiApiClient()
@@ -30,7 +31,7 @@ class SelfHealingAgent:
     ) -> str:
         """Sanitize text for safe LLM prompt inclusion."""
         if not text or not isinstance(text, str):
-            logger.warning(f"invalid_{field_name}_type", type=type(text))
+            logger.warning("invalid_%s_type", field_name, extra={"type": type(text)})
             return "N/A"
 
         text = text.replace("```", "").replace("'''", "")
@@ -47,9 +48,9 @@ class SelfHealingAgent:
 
         if len(text) > max_length:
             logger.info(
-                f"{field_name}_truncated",
-                original_length=len(text),
-                truncated_length=max_length
+                "%s_truncated",
+                field_name,
+                extra={"original_length": len(text), "truncated_length": max_length}
             )
             text = text[:max_length] + "... [truncated for safety]"
 

@@ -3,11 +3,21 @@ import json
 import re
 import httpx
 from typing import Dict, Any
-from .fs_agent import FileSystemAgent
-from .config import ConfigManager
+from rainmaker_orchestrator.fs_agent import FileSystemAgent
+from rainmaker_orchestrator.config import ConfigManager
+from opik import track
+
+import openlit
 
 class RainmakerOrchestrator:
     def __init__(self, workspace_path="./workspace", config_file=".env"):
+        if os.getenv("CI") != "true":
+            openlit.init(
+                # This sends traces directly to Datadog's OTLP intake
+                otlp_endpoint="https://otlp.datadoghq.com:4318", 
+                application_name="rainmaker-orchestrator",
+                environment="production"
+            )
         self.fs = FileSystemAgent(workspace_path=workspace_path)
         self.config = ConfigManager(config_file=config_file)
         self.client = httpx.AsyncClient(timeout=120.0)
@@ -16,6 +26,7 @@ class RainmakerOrchestrator:
         """Gracefully close the HTTP client."""
         await self.client.aclose()
 
+    @track(name="healer_hotfix_generation_kimi")
     async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         api_key = self.config.get('KIMI_API_KEY')
         if not api_key:
@@ -42,6 +53,7 @@ class RainmakerOrchestrator:
         response.raise_for_status()
         return response.json()
 
+    @track(name="healer_hotfix_generation_ollama")
     async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
         api_base = self.config.get('OLLAMA_API_BASE')
 

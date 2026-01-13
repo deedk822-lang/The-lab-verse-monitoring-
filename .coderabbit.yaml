@@ -1,8 +1,19 @@
+ feature/anthropic-brain-integration-17755607396485422698-10248456466997321101
+version: "2"
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+language: en
+
 # CodeRabbit Configuration - Professional Grade
 language: "en-US"
 
 # Instructing the AI to act as a Senior Architect
-tone_instructions: "You are a Senior Technical Reviewer. Provide professional, objective, and constructive feedback. Focus strictly on logic errors, security vulnerabilities (OWASP), performance bottlenecks, and architectural integrity. Avoid subjective style nitpicks unless they violate standard conventions (PEP8/ESLint). Be concise."
+tone_instructions: "As a Senior Technical Reviewer, provide professional, objective, and constructive feedback. Focus on logic errors, security vulnerabilities, performance bottlenecks, and architectural integrity. Avoid subjective style nitpicks. Be concise."
 
 reviews:
   # 'chill' profile avoids excessive noise, relying on our specific instructions for depth
@@ -19,5 +30,6 @@ reviews:
   high_level_summary_in_walkthrough: false
 
   # Auto-labeling (if supported in your plan, good for organization)
-  auto_label:
-    enabled: true
+  suggested_labels: true
+  auto_apply_labels: true
+ main

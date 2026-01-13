@@ -1,37 +1,58 @@
 import logging
-import os
-from typing import Dict, Any
+import re
+import json
+import shlex
+from typing import Dict, Any, Optional
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger("healer")
+
 
 class SelfHealingAgent:
-    """
-    Agent responsible for handling alerts and initiating self-healing protocols.
-    """
-    def __init__(self):
-        logger.info("Self-Healing Agent initialized")
+    """Self-healing agent for command injection prevention and code repair."""
 
-    def handle_alert(self, alert_payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Handle alerts from Prometheus Alert Manager.
-        
-        Args:
-            alert_payload: The alert data from Prometheus
-            
-        Returns:
-            Status of the healing operation
-        """
-        logger.info(f"Processing alert: {alert_payload.get('status', 'unknown')}")
-        
-        # Extract alert details
-        alerts = alert_payload.get('alerts', [])
-        if not alerts:
-            return {"status": "ignored", "reason": "No alerts in payload"}
-            
-        # Basic healing logic: log and acknowledge
-        # In a real scenario, this would trigger specific recovery workflows
-        return {
-            "status": "acknowledged",
-            "alert_count": len(alerts),
-            "message": "Self-healing protocol initiated"
-        }
+    MAX_RETRIES: int = 3
+    COMMAND_INJECTION_PATTERNS: list = [
+        r"[;&|`$()]",  # Shell metacharacters
+        r"__import__",  # Python injection
+        r"eval\(",  # Dynamic code execution
+    ]
+
+    @staticmethod
+    def validate_command(command: str) -> bool:
+        """Validate command for injection patterns."""
+        for pattern in SelfHealingAgent.COMMAND_INJECTION_PATTERNS:
+            if re.search(pattern, command):
+                logger.warning(f"Potential injection detected: {pattern}")
+                return False
+        return True
+
+    @staticmethod
+    def safe_parse_command(command: str) -> list:
+        """Safely parse shell commands using shlex."""
+        try:
+            if not SelfHealingAgent.validate_command(command):
+                raise ValueError("Command failed security validation")
+            parsed: list = shlex.split(command)
+            logger.info(f"Command parsed safely: {len(parsed)} args")
+            return parsed
+        except ValueError as e:
+            logger.error(f"Command parsing failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def extract_json(response: str) -> Dict[str, Any]:
+        """Extract and validate JSON from LLM response."""
+        try:
+            # Remove markdown code blocks if present
+            clean: str = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=re.MULTILINE)
+            parsed: Dict[str, Any] = json.loads(clean)
+            logger.debug("JSON extraction successful")
+            return parsed
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON extraction failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def format_error_feedback(error: str, attempt: int) -> str:
+        """Format error feedback for retry loop."""
+        return f"Attempt {attempt + 1} failed:\n{error}\n\nPlease fix and try again."

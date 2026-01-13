@@ -1,206 +1,113 @@
-from fastapi import FastAPI, HTTPException
-import sys
-import os
-import json
 import logging
-import time
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
-from pydantic import BaseModel
-from typing import Optional
-
 import os
-import sys
-import json
-import logging
-from typing import Optional
 from contextlib import asynccontextmanager
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
-from pydantic import BaseModel
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
+from pydantic import BaseModel, Field
+import openlit
 
-# --- Pydantic Model Definition ---
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
+# Configure logging with structured format for Datadog
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+)
+logger: logging.Logger = logging.getLogger("api")
+
+
+class ExecuteTaskPayload(BaseModel):
+    """Task execution request payload."""
+    type: str = Field(..., description="Task type: authority_task or coding_task")
+    context: str = Field(..., description="Task context and requirements")
+    model: Optional[str] = Field(None, description="Override default model selection")
+    output_filename: Optional[str] = Field(None, description="Output file for coding tasks")
+
+
 class HubSpotWebhookPayload(BaseModel):
-    objectId: int
-    message_body: str
-    subscriptionType: Optional[str] = None
+    """HubSpot webhook event payload."""
+    objectId: int = Field(..., description="HubSpot contact or deal ID")
+    message_body: str = Field(..., description="Event message content")
 
-# --- Configuration ---
-DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Ensure the root directory is in sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
-    logging.info("✅ Successfully imported rainmaker_orchestrator in server")
-except ImportError:
-    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
-    raise
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    """
-    Create a RainmakerOrchestrator on startup and close it on shutdown.
+async def lifespan(app: FastAPI) -> None:
+    """Manage lifecycle of the Authority Engine."""
+    # Initialize OpenLIT only if not in CI environment
+    if os.getenv("CI") != "true":
+        try:
+            openlit.init(
+                otlp_endpoint=os.getenv(
+                    "OPENLIT_OTLP_ENDPOINT",
+                    "https://otlp.datadoghq.com:4318"
+                ),
+                application_name="rainmaker-orchestrator",
+                environment=os.getenv("ENVIRONMENT", "production"),
+            )
+            logger.info("OpenLIT telemetry initialized")
+        except Exception as e:
+            logger.warning(f"OpenLIT initialization warning: {e}")
     
-    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
-    """
-    orchestrator = RainmakerOrchestrator()
+    orchestrator: RainmakerOrchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
+    logger.info("✅ Authority Engine initialized and ready")
+    
     yield
-    # Shutdown
+    
     await orchestrator.aclose()
+    logger.info("🛑 Authority Engine shut down gracefully")
 
-app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 
-@app.get("/health")
-async def health_check():
-    """
-    Return the service health status.
-    
-    Returns:
-        A mapping with the key "status" set to "healthy".
-    """
-    return {"status": "healthy"}
+app: FastAPI = FastAPI(
+    title="Rainmaker Authority API",
+    description="Secure gateway for the 4-Judge Authority Engine",
+    version="1.2.0",
+    lifespan=lifespan,
+)
 
-@app.get("/intel/market")
-async def get_market_intel(company: str):
-    """
-    Return a simulated market intelligence report for the specified company.
-    
-    Parameters:
-        company (str): The company name to retrieve market intelligence for.
-    
-    Returns:
-        dict: A structured market intelligence object with keys:
-            - source (str): The data source label (simulated).
-            - company (str): Echoes the requested company name.
-            - status (str): Integration/configuration status or note.
-            - timestamp (float): Unix timestamp of the report generation.
-    """
-    logging.info(f"Fetching market intel for (placeholder): {company}")
+
+@app.get("/health", tags=["System"])
+async def health() -> dict:
+    """Health check endpoint."""
     return {
-        "source": "Live Search (Simulated)",
-        "company": company,
-        "status": "Integration Pending - Configure Perplexity/Google API",
-        "timestamp": time.time()
+        "status": "connected",
+        "engine": "Authority Engine v1.2",
+        "features": ["4-Judge Flow", "Self-Healing", "Opik Telemetry", "SSRF Protection"],
     }
 
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
-    """
-    Handle an incoming HubSpot webhook payload by validating that the HubSpot client is available.
-    
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing the HubSpot object ID and message body.
-    
-    Raises:
-        HTTPException: Raised with status code 501 if the HubSpot client is not installed or configured.
-    """
-    if not HubSpot:
-        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
 
-
-async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
-    """
-    Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
-    
-    Sends payload.message_body to the orchestrator for JSON-formatted AI analysis, updates the contact identified by payload.objectId with properties `ai_lead_summary`, `ai_buying_intent`, and `ai_suggested_action`, and if the returned `intent_score` exceeds the configured threshold creates a new deal enriched with market intelligence and associates it with the contact. On errors during analysis or contact update the function logs the exception and returns early; errors during deal creation are logged and not propagated.
-    
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing `objectId` (contact id) and `message_body` (text to analyze).
-        app (FastAPI): FastAPI application instance used to access app.state.orchestrator and its configuration for HubSpot credentials.
-    """
-    contact_id = payload.objectId
-    chat_text = payload.message_body
-
-    logging.info(f"Processing HubSpot webhook for contact: {contact_id}")
-
-    # 1. "Zread" and Process with Ollama
-    # NOTE: Using the private method `_call_ollama` as the orchestrator's public
-    # `execute_task` method is designed for a different, more complex workflow.
-    # A future refactor should expose a dedicated public method for this type of analysis.
+@app.post("/webhook/hubspot", tags=["Webhooks"])
+async def hubspot_webhook(
+    payload: HubSpotWebhookPayload,
+    background_tasks: BackgroundTasks,
+    request: Request,
+) -> dict:
+    """Asynchronous entry point for HubSpot webhook events."""
     try:
-        prompt = f"Analyze this lead: {chat_text}. Identify the lead's company. Return ONLY JSON with keys: company_name, summary, intent_score (0-10), suggested_action."
-        ollama_task = {"context": prompt, "model": "ollama"}
-        ai_analysis_raw = await app.state.orchestrator._call_ollama(ollama_task, {})
-
-        ai_analysis_str = ai_analysis_raw["message"]["content"]
-        parsed_ai = json.loads(ai_analysis_str)
-        logging.info(f"AI Analysis successful: {parsed_ai}")
-
-    except Exception:
-        logging.exception("Error calling Ollama or parsing response")
-        # In a real app, you might want to retry or send an alert
-        return
-
-    # 2. Update HubSpot Contact
-    try:
-        hubspot_access_token = orchestrator.config.get('HUBSPOT_ACCESS_TOKEN')
-        if not hubspot_access_token:
-            raise ValueError("HUBSPOT_ACCESS_TOKEN is not set.")
-
-        client = HubSpot(access_token=hubspot_access_token)
-
-        properties_to_update = {
-            "ai_lead_summary": parsed_ai.get('summary', 'N/A'),
-            "ai_buying_intent": parsed_ai.get('intent_score', 0),
-            "ai_suggested_action": parsed_ai.get('suggested_action', 'N/A')
-        }
-
-        client.crm.contacts.basic_api.update(contact_id, {"properties": properties_to_update})
-        logging.info(f"Successfully updated contact {contact_id} with AI analysis.")
-
-    except Exception:
-        logging.exception("Error updating HubSpot contact")
-        return
-
-    # 3. Logic: If Score > threshold, Create and Enrich Deal Automatically
-    try:
-        intent_score = parsed_ai.get('intent_score', 0)
-        if intent_score > DEAL_CREATION_INTENT_SCORE_THRESHOLD:
-            company_name = parsed_ai.get('company_name', 'Unknown Company')
-            logging.info(f"Intent score ({intent_score}) is high for {company_name}. Creating and enriching a new deal.")
-
-            # Get market intelligence status
-            intel_data = await get_market_intel(company_name)
-            intel_status = intel_data.get('status', 'Market intel pending.')
-
-            # Create the deal with enriched properties
-            deal_properties = {
-                "dealname": f"{company_name} - WhatsApp Lead",
-                "pipeline": "default",
-                "dealstage": "appointmentscheduled", # Example stage
-                "description": f"**AI WAR ROOM BRIEF:**\n\nMARKET INTEL: {intel_status}"
-            }
-            deal_input = SimplePublicObjectInput(properties=deal_properties)
-            created_deal = client.crm.deals.basic_api.create(simple_public_object_input=deal_input)
-
-            # Associate the new deal with the contact
-            client.crm.deals.associations_api.create(
-                deal_id=created_deal.id,
-                to_object_type='contact',
-                to_object_id=contact_id,
-                association_type='deal_to_contact'
-            )
-            logging.info(f"Successfully created and associated enriched deal {created_deal.id} for contact {contact_id}.")
-
+        orchestrator: RainmakerOrchestrator = request.app.state.orchestrator
+        background_tasks.add_task(
+            orchestrator.run_authority_flow,
+            payload.model_dump(),
+        )
+        logger.info(f"HubSpot event queued: contact_id={payload.objectId}")
+        return {"status": "accepted", "message": "Authority Flow queued"}
     except Exception as e:
-        logging.error(f"Error creating HubSpot deal for contact {contact_id}", exc_info=e)
-        # Do not return a value, this is a background task
+        logger.error(f"Webhook processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
 
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
-    """
-    Enqueue processing of a HubSpot webhook payload to run in the background and acknowledge receipt.
-    
-    Returns:
-        dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
-    """
-    background_tasks.add_task(process_webhook_data, payload, request.app)
-    return {"status": "accepted", "contact_id": payload.objectId}
+
+@app.post("/execute", tags=["Tasks"])
+async def execute(payload: ExecuteTaskPayload, request: Request) -> dict:
+    """Synchronous execution endpoint for direct agent tasks."""
+    try:
+        orchestrator: RainmakerOrchestrator = request.app.state.orchestrator
+        result: dict = await orchestrator.execute_task(payload.model_dump())
+        logger.info(f"Task executed: type={payload.type}, status={result.get('status')}")
+        return result
+    except ValueError as ve:
+        logger.warning(f"Validation error: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Task execution failed")

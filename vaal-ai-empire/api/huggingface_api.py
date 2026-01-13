@@ -16,6 +16,7 @@ class HuggingFaceAPI:
 
         self.api_base = "https://api-inference.huggingface.co/models"
         self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.session = requests.Session()
 
         # Available models for different tasks
         self.models = {
@@ -35,6 +36,16 @@ class HuggingFaceAPI:
 
         self.default_model = self.models["text_generation"]["small"]
         self.usage_log = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.close()
+
+    def close(self):
+        """Close the requests session to release resources."""
+        self.session.close()
 
     def generate(self, prompt: str, max_tokens: int = 500,
                 model: str = None, temperature: float = 0.7,
@@ -58,7 +69,7 @@ class HuggingFaceAPI:
         }
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json=payload,
@@ -110,7 +121,7 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json={
@@ -142,7 +153,7 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json={

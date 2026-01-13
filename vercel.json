@@ -4,11 +4,11 @@
   },
   "build": {
     "env": {
-      "ZAI_API_KEY": "@zai-api-key",
-      "PERPLEXITY_API_KEY": "@perplexity-api-key",
+      "ZAI_API_KEY": "ZAI_API_KEY",
+      "PERPLEXITY_API_KEY": "PERPLEXITY_API_KEY",
       "NODE_ENV": "production",
-      "NEXT_PUBLIC_API_ENDPOINT": "@next-public-api-endpoint",
-      "NEXT_PUBLIC_EVENT_DATE": "@next-public-event-date"
+      "NEXT_PUBLIC_API_ENDPOINT": "NEXT_PUBLIC_API_ENDPOINT",
+      "NEXT_PUBLIC_EVENT_DATE": "NEXT_PUBLIC_EVENT_DATE"
     }
   },
   "functions": {

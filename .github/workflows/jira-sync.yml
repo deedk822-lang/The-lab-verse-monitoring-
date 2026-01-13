@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, reopened, closed]
 
+env:
+  # Optional repo/org variable. If not set, a safe default is used.
+  # Example: ABC-[0-9]+  OR  [A-Z][A-Z0-9]+-[0-9]+
+  JIRA_ISSUE_KEY_REGEX: ${{ vars.JIRA_ISSUE_KEY_REGEX }}
+
 jobs:
   sync-jira-on-pr:
     runs-on: ubuntu-latest
@@ -13,22 +18,24 @@ jobs:
 
       - name: Extract Jira issue key from branch name
         id: extract_jira_key
+        shell: bash
         run: |
-          # The branch name is available in the GITHUB_HEAD_REF environment variable
           echo "Branch name: ${{ github.head_ref }}"
 
-          # Regex to find key like TC-123 (Change 'TC' if your project key is different)
-          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E 'TC-[0-9]+' | head -1)
+          # If JIRA_ISSUE_KEY_REGEX is not set as a GitHub variable, fall back to a generic Jira key regex.
+          REGEX="${JIRA_ISSUE_KEY_REGEX:-[A-Z][A-Z0-9]+-[0-9]+}"
+          echo "Using Jira key regex: ${REGEX}"
+
+          JIRA_KEY=$(echo "${{ github.head_ref }}" | grep -o -E "${REGEX}" | head -1 || true)
 
           if [ -z "$JIRA_KEY" ]; then
             echo "Jira key not found in branch name. Skipping."
-            echo "issue_key=" >> $GITHUB_OUTPUT
+            echo "issue_key=" >> "$GITHUB_OUTPUT"
           else
             echo "Found Jira key: $JIRA_KEY"
-            echo "issue_key=$JIRA_KEY" >> $GITHUB_OUTPUT
+            echo "issue_key=$JIRA_KEY" >> "$GITHUB_OUTPUT"
           fi
 
-      # FIX: Added Login Step (Required for gajira-transition to work)
       - name: Login to Jira
         if: steps.extract_jira_key.outputs.issue_key != ''
         uses: atlassian/gajira-login@v3

@@ -49,6 +49,21 @@ class RevenueTracker:
             "on_track": projected_monthly >= 25000
         }
 
+    def check_milestones(self):
+        """Check for revenue milestones and trigger alerts"""
+        from services.revenue_alert_bridge import RevenueAlertBridge
+        
+        summary = self.db.get_revenue_summary(days=30)
+        prev_summary = self.db.get_revenue_summary(days=60) # Simplified prev period
+        
+        bridge = RevenueAlertBridge()
+        metrics = bridge.format_metrics_from_db(summary, prev_summary)
+        
+        # Add top customers
+        metrics["topPayingCustomers"] = self.db.get_top_customers(limit=5)
+        
+        return bridge.trigger_milestone_alert(metrics)
+
     def export_report(self, filepath: str = None) -> str:
         """Export comprehensive report to JSON"""
         report = {

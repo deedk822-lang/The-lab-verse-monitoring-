@@ -35,7 +35,11 @@ class TestSettingsInitialization:
             assert test_settings.ollama_api_base == 'http://custom-ollama:12345/api'
 
     def test_init_with_default_values(self):
-        """Should use default values when env vars are not set."""
+        """
+        Use default configuration values when relevant environment variables are absent.
+        
+        Verifies that log_level defaults to 'INFO', workspace_path to '/workspace', environment to 'production', kimi_api_key to None, kimi_api_base to 'https://api.moonshot.ai/v1', and ollama_api_base to 'http://localhost:11434/api'.
+        """
         with patch.dict(os.environ, {}, clear=True):
             test_settings = Settings()
 
@@ -88,7 +92,7 @@ class TestSettingsLogLevel:
             assert test_settings.log_level == log_level
 
     def test_lowercase_log_level(self):
-        """Should preserve case of log level."""
+        """Preserves the case of the LOG_LEVEL environment variable when loaded into Settings."""
         with patch.dict(os.environ, {'LOG_LEVEL': 'debug'}, clear=True):
             test_settings = Settings()
             assert test_settings.log_level == 'debug'
@@ -110,7 +114,9 @@ class TestSettingsWorkspacePath:
             assert test_settings.workspace_path == '/absolute/path/workspace'
 
     def test_relative_workspace_path(self):
-        """Should accept relative workspace path."""
+        """
+        Verify that Settings correctly accepts and retains a relative workspace path from environment variables.
+        """
         with patch.dict(os.environ, {'WORKSPACE_PATH': './relative/workspace'}, clear=True):
             test_settings = Settings()
             assert test_settings.workspace_path == './relative/workspace'
@@ -212,13 +218,19 @@ class TestSettingsEdgeCases:
             assert test_settings.kimi_api_key == long_key
 
     def test_special_characters_in_paths(self):
-        """Should handle special characters in paths."""
+        """
+        Ensures workspace paths containing special characters from WORKSPACE_PATH are accepted and preserved.
+        
+        Verifies that a path with characters such as underscores and '@' set via the WORKSPACE_PATH environment variable is stored unchanged in Settings.workspace_path.
+        """
         with patch.dict(os.environ, {'WORKSPACE_PATH': '/path/with/special-chars_123/@test'}, clear=True):
             test_settings = Settings()
             assert test_settings.workspace_path == '/path/with/special-chars_123/@test'
 
     def test_unicode_in_environment_value(self):
-        """Should handle Unicode in environment value."""
+        """
+        Verifies that the Settings class correctly loads an environment value containing Unicode characters.
+        """
         with patch.dict(os.environ, {'ENVIRONMENT': 'test-环境'}, clear=True):
             test_settings = Settings()
             assert test_settings.environment == 'test-环境'
@@ -253,7 +265,11 @@ class TestSettingsTypeAnnotations:
             assert isinstance(test_settings.workspace_path, str)
 
     def test_environment_type(self):
-        """Should have correct type for environment."""
+        """
+        Verify that the Settings.environment attribute is a string.
+        
+        Constructs a Settings instance with no environment variables set and asserts that its `environment` attribute is of type `str`.
+        """
         with patch.dict(os.environ, {}, clear=True):
             test_settings = Settings()
             assert isinstance(test_settings.environment, str)

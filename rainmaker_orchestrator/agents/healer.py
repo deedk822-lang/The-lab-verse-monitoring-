@@ -17,11 +17,13 @@ class SelfHealingAgent:
 
     def __init__(self, kimi_client=None, orchestrator=None):
         """
-        Initialize the self-healing agent.
-
-        Args:
-            kimi_client: Optional KimiClient instance. If not provided, creates a new one.
-            orchestrator: Optional RainmakerOrchestrator instance. If not provided, creates a new one.
+        Create a SelfHealingAgent instance, initializing its Kimi client and orchestrator.
+        
+        If `kimi_client` or `orchestrator` are not provided, new instances are created via internal initializers.
+        
+        Parameters:
+            kimi_client (KimiClient | None): Optional KimiClient to use; when omitted, a new client is created.
+            orchestrator (RainmakerOrchestrator | None): Optional orchestrator to use; when omitted, a new orchestrator is created.
         """
         self.kimi_client = kimi_client or self._init_kimi_client()
         self.orchestrator = orchestrator or self._init_orchestrator()
@@ -29,10 +31,10 @@ class SelfHealingAgent:
 
     def _init_kimi_client(self):
         """
-        Initialize a new KimiClient instance.
-
+        Create and return a new KimiClient instance.
+        
         Returns:
-            KimiClient: A new KimiClient instance
+            KimiClient: A newly constructed KimiClient.
         """
         return KimiClient()
 
@@ -47,22 +49,20 @@ class SelfHealingAgent:
 
     def handle_alert(self, alert_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Handle an incoming alert and generate a hotfix.
-
-        Receives a Prometheus Alert Manager webhook payload, analyzes the error,
-        and generates an AI-powered hotfix blueprint.
-
-        Args:
-            alert_payload: Dictionary containing alert information:
-                - description: Error description or log
-                - service: Name of the affected service
-                - alerts: List of alerts (optional format)
-
+        Process an incoming alert payload and either generate an AI-produced hotfix blueprint, acknowledge multiple alerts, or ignore empty payloads.
+        
+        Parameters:
+            alert_payload (dict): Alert data. Expected keys:
+                - description (str, optional): Error description or log used to generate a hotfix when present and no `alerts` list is provided.
+                - service (str, optional): Name of the affected service; used for context in generated hotfixes.
+                - alerts (list, optional): List of alert entries; when present and non-empty, the function acknowledges multiple alerts instead of generating a hotfix.
+        
         Returns:
-            Dictionary with status and hotfix information:
-            - status: 'hotfix_generated', 'hotfix_failed', 'acknowledged', 'ignored'
-            - blueprint: Generated hotfix code (if successful)
-            - error: Error message (if failed)
+            dict: Result object with one of the following shapes:
+                - {"status": "ignored", "reason": <str>} when payload lacks both `alerts` and `description`.
+                - {"status": "acknowledged", "alert_count": <int>, "message": <str>} for multiple-alert payloads.
+                - {"status": "hotfix_generated", "blueprint": <str>} when a hotfix blueprint is successfully produced.
+                - {"status": "hotfix_failed", "error": <str>} when blueprint generation fails.
         """
         logger.info(f"Processing alert: {alert_payload.get('status', 'unknown')}")
         

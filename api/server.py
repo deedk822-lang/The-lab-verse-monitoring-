@@ -60,6 +60,14 @@ except ImportError as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
+    """
+    Manage the FastAPI application's startup and shutdown lifecycle resources.
+    
+    On startup, initializes and attaches a RainmakerOrchestrator instance to app.state.orchestrator and an httpx.AsyncClient to app.state.http_client. On shutdown, closes the http client to release network resources.
+    
+    Parameters:
+        app (FastAPI): The FastAPI application whose state will be populated and cleaned up.
+    """
     logging.info("🚀 Starting up the server...")
     app.state.orchestrator = RainmakerOrchestrator()
     app.state.http_client = httpx.AsyncClient()
@@ -75,6 +83,16 @@ app = FastAPI(title="Lab Verse API", lifespan=lifespan)
 # --- Middleware ---
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
+    """
+    Increment the Prometheus request counter and measure the duration of the incoming HTTP request.
+    
+    Parameters:
+        request (Request): The incoming FastAPI request.
+        call_next (Callable): The downstream request handler to invoke with `request`.
+    
+    Returns:
+        response (Response): The response produced by the downstream handler.
+    """
     request_count.inc()
     with request_duration.time():
         response = await call_next(request)
@@ -83,6 +101,15 @@ async def metrics_middleware(request: Request, call_next):
 # --- Exception Handlers ---
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
+    """
+    Handle ValueError exceptions by returning an HTTP 400 JSON response containing the error message.
+    
+    Parameters:
+        exc (ValueError): The exception whose message will be returned in the response body.
+    
+    Returns:
+        JSONResponse: A response with status code 400 and content {"detail": "<exception message>"}.
+    """
     return JSONResponse(
         status_code=400,
         content={"detail": str(exc)}
@@ -91,16 +118,38 @@ async def value_error_handler(request: Request, exc: ValueError):
 # --- Endpoints ---
 @app.get("/health")
 async def health_check():
+    """
+    Report service health.
+    
+    Returns:
+        dict: Mapping with key "status" set to "healthy".
+    """
     return {"status": "healthy"}
 
 @app.get("/metrics")
 async def metrics():
+    """
+    Expose current Prometheus metrics in the Prometheus text exposition format.
+    
+    Returns:
+        An HTTP Response containing the latest Prometheus metrics encoded in the Prometheus text exposition format with content type "text/plain".
+    """
     return Response(generate_latest(), media_type="text/plain")
 
 @app.get("/intel/market")
 async def get_market_intel(company: str):
     """
-    Return a simulated market intelligence report for the specified company.
+    Provide a simulated market intelligence payload for the given company.
+    
+    Parameters:
+        company (str): The company name to include in the simulated report.
+    
+    Returns:
+        dict: A payload with keys:
+            - `source`: human-readable source label for the simulated data.
+            - `company`: the provided company name.
+            - `status`: integration/setup status or notes for real intel providers.
+            - `timestamp`: Unix epoch time (float) indicating when the payload was generated.
     """
     logging.info(f"Fetching market intel for (placeholder): {company}")
     return {
@@ -113,14 +162,25 @@ async def get_market_intel(company: str):
 @app.post("/webhook/hubspot")
 async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks):
     """
-    Enqueue processing of a HubSpot webhook payload.
+    Enqueue background processing for a HubSpot webhook payload.
+    
+    Schedules processing of the provided HubSpotWebhookPayload as a background task and returns an acceptance response.
+    
+    Returns:
+        dict: A response containing `status` with value `"accepted"` and `contact_id` set to the webhook payload's `objectId`.
     """
     background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}
 
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
-    Analyze an incoming HubSpot webhook message.
+    Process a HubSpot webhook payload by running an AI analysis, updating the contact with AI-derived properties, and creating/enriching a deal when intent is high.
+    
+    The function extracts contact ID and message text from `payload`, sends the text to the orchestrator's AI (Ollama) to obtain `company_name`, `summary`, `intent_score`, and `suggested_action`, then updates the HubSpot contact with those values. If `intent_score` exceeds the configured threshold, it fetches market intelligence, creates a new deal, and associates the deal with the contact. All external interactions (AI call, HubSpot API) are performed via services available on `app.state` and the function logs errors encountered during processing.
+    
+    Parameters:
+        payload (HubSpotWebhookPayload): Incoming webhook data containing `objectId` (contact ID) and `message_body` (text to analyze).
+        app (FastAPI): FastAPI application instance used to access orchestrator, configuration, and HTTP clients.
     """
     contact_id = payload.objectId
     chat_text = payload.message_body
@@ -181,6 +241,18 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
 
 @app.get("/workspace/{filepath:path}")
 async def get_file(filepath: str):
+    """
+    Serve a file from the workspace root while enforcing path confinement.
+    
+    Parameters:
+    	filepath (str): Relative path (within the configured workspace root) to the requested file.
+    
+    Returns:
+    	FileResponse: A response object that streams the requested file.
+    
+    Raises:
+    	HTTPException: If the resolved path is outside the workspace root (403) or the file does not exist (404).
+    """
     requested_path = (WORKSPACE_ROOT / filepath).resolve()
 
     if not requested_path.is_relative_to(WORKSPACE_ROOT):

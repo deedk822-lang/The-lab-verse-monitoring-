@@ -64,7 +64,11 @@ class TestKimiClientGenerate:
     """Test suite for content generation functionality."""
 
     def setup_method(self):
-        """Set up test fixtures before each test."""
+        """
+        Prepare per-test fixtures by creating a mocked OpenAI client, patching the OpenAI constructor, and initializing a KimiClient with a test API key.
+        
+        Creates self.mock_openai_client as a Mock(spec=OpenAI), patches rainmaker_orchestrator.clients.kimi.OpenAI to return that mock, and sets self.client to a KimiClient initialized with api_key='test-key'.
+        """
         self.mock_openai_client = Mock(spec=OpenAI)
         with patch('rainmaker_orchestrator.clients.kimi.OpenAI', return_value=self.mock_openai_client):
             self.client = KimiClient(api_key='test-key')
@@ -282,7 +286,11 @@ class TestKimiClientHealthCheck:
     """Test suite for health check functionality."""
 
     def setup_method(self):
-        """Set up test fixtures before each test."""
+        """
+        Prepare per-test fixtures by creating a mocked OpenAI client, patching the OpenAI constructor, and initializing a KimiClient with a test API key.
+        
+        Creates self.mock_openai_client as a Mock(spec=OpenAI), patches rainmaker_orchestrator.clients.kimi.OpenAI to return that mock, and sets self.client to a KimiClient initialized with api_key='test-key'.
+        """
         self.mock_openai_client = Mock(spec=OpenAI)
         with patch('rainmaker_orchestrator.clients.kimi.OpenAI', return_value=self.mock_openai_client):
             self.client = KimiClient(api_key='test-key')
@@ -297,7 +305,14 @@ class TestKimiClientHealthCheck:
         self.mock_openai_client.models.list.assert_called_once()
 
     def test_health_check_api_error(self):
-        """Should return False on API error."""
+        """
+        Detects that the client's health check fails when the OpenAI client raises an APIError.
+        
+        Simulates an APIError from the OpenAI client's models.list call and verifies health_check reports the failure.
+        
+        Returns:
+            `False` if the OpenAI client's models.list raises an `APIError`, `True` otherwise.
+        """
         self.mock_openai_client.models.list.side_effect = APIError(
             message='API Error',
             request=Mock(),
@@ -433,7 +448,11 @@ def calculate_total(items):
         assert 'def calculate_total' in result
 
     def test_realistic_error_recovery_flow(self):
-        """Should handle realistic error recovery scenario."""
+        """
+        Simulates a timeout on the first generation attempt and verifies a successful retry returns the response content.
+        
+        First call to the OpenAI client raises APITimeoutError and client.generate(...) returns None; a subsequent call that succeeds returns the content 'Success'.
+        """
         mock_openai_client = Mock(spec=OpenAI)
         with patch('rainmaker_orchestrator.clients.kimi.OpenAI', return_value=mock_openai_client):
             client = KimiClient()

@@ -14,6 +14,12 @@ from rainmaker_orchestrator.core.orchestrator import RainmakerOrchestrator
 
 @pytest.fixture
 def temp_workspace():
+    """
+    Provides a temporary filesystem workspace as a pathlib.Path for use in a test, and removes it after the test completes.
+    
+    Returns:
+        Path: Path object pointing to a temporary directory that is deleted when the fixture teardown finishes.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
 

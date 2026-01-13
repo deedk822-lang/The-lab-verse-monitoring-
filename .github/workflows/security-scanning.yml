@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Semgrep
+        id: semgrep
         uses: semgrep/semgrep-action@v1
         with:
           config: >-
@@ -32,10 +33,11 @@ jobs:
         continue-on-error: true
 
       - name: Upload SARIF
-        if: always()
+        if: always() && steps.semgrep.outcome != 'skipped'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
+        continue-on-error: true
 
   codeql:
     name: "CodeQL Analysis"

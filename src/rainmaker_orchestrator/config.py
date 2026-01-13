@@ -1,9 +1,6 @@
 import os
 from typing import Dict, List
 
-from typing import Dict, List
-
-class ConfigManager:
 class ConfigManager:
     """Manages API keys and configuration"""
 
@@ -17,7 +14,6 @@ class ConfigManager:
 
         # Try to load from .env file
         if os.path.exists(self.config_file):
- feature/elite-ci-cd-pipeline-1070897568806221897
             with open(self.config_file, 'r') as f:
                 for line in f:
                     line = line.strip()
@@ -30,37 +26,15 @@ class ConfigManager:
             'KIMI_API_KEY': os.getenv('KIMI_API_KEY'),
             'KIMI_API_BASE': os.getenv('KIMI_API_BASE', 'https://api.moonshot.ai/v1'),
             'OLLAMA_API_BASE': os.getenv('OLLAMA_API_BASE', 'http://localhost:11434/api'),
+            'MISTRAL_API_KEY': os.getenv('MISTRAL_API_KEY'),
+            'MISTRAL_API_BASE': os.getenv('MISTRAL_API_BASE', 'https://api.mistral.ai/v1'),
+            'HUBSPOT_ACCESS_TOKEN': os.getenv('HUBSPOT_ACCESS_TOKEN'),
         })
 
-            with open(self.config_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, value = line.split("=", 1)
-                        config[key.strip()] = value.strip().strip("\"'")
-
-        # Override with environment variables
-        config.update(
-            {
-                "KIMI_API_KEY": os.getenv("KIMI_API_KEY"),
-                "KIMI_API_BASE": os.getenv(
-                    "KIMI_API_BASE", "https://api.moonshot.ai/v1"
-                ),
-                "OLLAMA_API_BASE": os.getenv(
-                    "OLLAMA_API_BASE", "http://localhost:11434/api"
-                ),
-            }
-        )
- main
-
-        # Filter out None values so we can use .get() with defaults
+        # Filter out None values
         return {k: v for k, v in config.items() if v is not None}
 
- feature/elite-ci-cd-pipeline-1070897568806221897
-    def get(self, key: str, default: str = '') -> str:
-
     def get(self, key: str, default: str = "") -> str:
- main
         """Get configuration value"""
         return self.config.get(key, default)
 

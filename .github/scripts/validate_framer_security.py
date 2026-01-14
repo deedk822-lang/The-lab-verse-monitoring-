@@ -97,8 +97,10 @@ class FramerSecurityValidator:
                     # Find process.env.NEXT_PUBLIC_*
                     matches = re.findall(r'process\.env\.(NEXT_PUBLIC_\w+)', content)
                     code_vars.update(matches)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Could not process {file_path}: {e}", file=sys.stderr)
                 continue
+
 
         # Find missing variables
         missing = code_vars - vercel_vars

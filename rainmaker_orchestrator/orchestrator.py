@@ -3,6 +3,7 @@ import json
 import re
 import httpx
 from typing import Dict, Any
+from hubspot import HubSpot
 from .fs_agent import FileSystemAgent
 from .config import ConfigManager
 
@@ -11,6 +12,13 @@ class RainmakerOrchestrator:
         self.fs = FileSystemAgent(workspace_path=workspace_path)
         self.config = ConfigManager(config_file=config_file)
         self.client = httpx.AsyncClient(timeout=120.0)
+
+        # Centralized HubSpot Client
+        hubspot_access_token = self.config.get('HUBSPOT_ACCESS_TOKEN')
+        if hubspot_access_token:
+            self.hubspot_client = HubSpot(access_token=hubspot_access_token)
+        else:
+            self.hubspot_client = None
 
     async def aclose(self):
         """Gracefully close the HTTP client."""

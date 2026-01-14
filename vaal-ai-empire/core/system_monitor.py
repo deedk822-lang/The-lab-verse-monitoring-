@@ -25,6 +25,14 @@ class SystemMonitor:
         self.warning_count = 0
         self.api_calls = {"success": 0, "failure": 0}
 
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager and close the session."""
+        self.close()
+
     def close(self):
         """Close the requests session."""
         self.session.close()
@@ -432,6 +440,14 @@ class AlertSystem:
         self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
         self.session = requests.Session()
         self.alert_history = []
+
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager and close the session."""
+        self.close()
 
     def close(self):
         """Close the requests session."""

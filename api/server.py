@@ -4,7 +4,6 @@ import os
 import json
 import logging
 import time
-from hubspot import HubSpot
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
 from typing import Optional
@@ -91,21 +90,6 @@ async def get_market_intel(company: str):
         "timestamp": time.time()
     }
 
-@app.post("/webhook/hubspot")
-async def handle_hubspot_webhook(payload: HubSpotWebhookPayload):
-    """
-    Handle an incoming HubSpot webhook payload by validating that the HubSpot client is available.
-    
-    Parameters:
-        payload (HubSpotWebhookPayload): Incoming webhook payload containing the HubSpot object ID and message body.
-    
-    Raises:
-        HTTPException: Raised with status code 501 if the HubSpot client is not installed or configured.
-    """
-    if not HubSpot:
-        raise HTTPException(status_code=501, detail="HubSpot client is not installed or configured.")
-
-
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
     Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
@@ -141,12 +125,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
 
     # 2. Update HubSpot Contact
     try:
-        hubspot_access_token = orchestrator.config.get('HUBSPOT_ACCESS_TOKEN')
-        if not hubspot_access_token:
-            raise ValueError("HUBSPOT_ACCESS_TOKEN is not set.")
-
-        client = HubSpot(access_token=hubspot_access_token)
-
+        client = app.state.orchestrator.hubspot_client
         properties_to_update = {
             "ai_lead_summary": parsed_ai.get('summary', 'N/A'),
             "ai_buying_intent": parsed_ai.get('intent_score', 0),
@@ -202,5 +181,7 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
     Returns:
         dict: `"status"` is `"accepted"`, `"contact_id"` is the HubSpot contact id from the payload.
     """
+    if not request.app.state.orchestrator.hubspot_client:
+        raise HTTPException(status_code=503, detail="HubSpot client is not configured")
     background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}

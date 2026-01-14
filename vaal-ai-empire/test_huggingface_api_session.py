@@ -22,11 +22,19 @@ class TestHuggingFaceAPISession(unittest.TestCase):
     """
 
     def setUp(self):
-        """Set up the test case"""
+        """
+        Initialize a HuggingFaceAPI instance for each test case.
+        
+        Creates a new HuggingFaceAPI and assigns it to `self.api` so each test uses a fresh client.
+        """
         self.api = HuggingFaceAPI()
 
     def tearDown(self):
-        """Tear down the test case"""
+        """
+        Clean up after each test by closing the HuggingFaceAPI client.
+        
+        Closes the HuggingFaceAPI instance created in setUp to release network resources.
+        """
         self.api.close()
 
     @patch('requests.Session.post')

@@ -93,7 +93,15 @@ class TestHuggingFaceAPISession(unittest.TestCase):
 
         self.assertIn("HuggingFace API error (500)", str(context.exception))
 
+def tearDownModule():
+    """Clean up module-level resources."""
+    if 'HUGGINGFACE_TOKEN' in os.environ:
+        del os.environ['HUGGINGFACE_TOKEN']
+
 if __name__ == '__main__':
     unittest.main()
+ coderabbitai/docstrings/c8c477f
     # Clean up the env var
     del os.environ['HUGGINGFACE_TOKEN']
+
+ bolt-huggingface-session-optimization-15848088382247996181

@@ -1,0 +1,116 @@
+name: Jules Analysis Engine
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ['jules/**', 'feature/**', 'fix/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # 🛠️ Tooling: Install yq for config parsing
+      - name: Install yq
+        run: |
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      # 🧠 Step 1: Load "The Brain" (Config)
+      - name: Load Configuration
+        id: config
+        run: |
+          if [ ! -f .jules/config.yml ]; then
+            echo "::error::Jules config missing!"
+            exit 1
+          fi
+          
+          echo "min_score=$(yq '.automation.min_confidence_score' .jules/config.yml)" >> $GITHUB_OUTPUT
+          echo "max_files=$(yq '.automation.max_file_churn' .jules/config.yml)" >> $GITHUB_OUTPUT
+          
+          # Convert list to bash-friendly regex (A|B|C)
+          PROTECTED_REGEX=$(yq '.protected_paths | join("|")' .jules/config.yml)
+          echo "protected_regex=$PROTECTED_REGEX" >> $GITHUB_OUTPUT
+
+      # 🔍 Step 2: Forensic Code Analysis
+      - name: Calculate Confidence Score
+        id: scoring
+        run: |
+          SCORE=100
+          REPORT=""
+          IS_PROTECTED="false"
+          
+          # Diff check
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          
+          # 2a. Protected Path Scan
+          if echo "$CHANGED_FILES" | grep -qE "${{ steps.config.outputs.protected_regex }}"; then
+            IS_PROTECTED="true"
+            REPORT+="- 🛡️ **Protected Critical Path Modified** (Blocking Auto-merge)\n"
+            SCORE=0
+          else
+            REPORT+="- ✅ Safe path verification passed\n"
+          fi
+          
+          # 2b. Code Smell Scan (TODOs)
+          TODO_COUNT=$(git diff origin/main...HEAD | grep -E "TODO|FIXME" | wc -l)
+          if [ "$TODO_COUNT" -gt 0 ]; then
+            PENALTY=$((TODO_COUNT * 5))
+            SCORE=$((SCORE - PENALTY))
+            REPORT+="- ⚠️ Found $TODO_COUNT 'TODO/FIXME' comments (-${PENALTY} pts)\n"
+          fi
+          
+          # 2c. Complexity Scan (File Churn)
+          FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+          MAX_FILES=${{ steps.config.outputs.max_files }}
+          if [ "$FILE_COUNT" -gt "$MAX_FILES" ]; then
+            SCORE=$((SCORE - 20))
+            REPORT+="- 📉 High Velocity Change ($FILE_COUNT files > $MAX_FILES) (-20 pts)\n"
+          fi
+          
+          # Floor score at 0
+          if [ "$SCORE" -lt 0 ]; then SCORE=0; fi
+          
+          echo "final_score=$SCORE" >> $GITHUB_OUTPUT
+          echo "is_protected=$IS_PROTECTED" >> $GITHUB_OUTPUT
+          
+          # Prepare Multi-line Env Var for Report
+          echo "SCORE_REPORT<<EOF" >> $GITHUB_ENV
+          echo -e "$REPORT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # 📢 Step 3: Public Report Card
+      - name: Post Jules Report
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🤖 Jules Analysis Report
+            
+            | Metric | Result |
+            |--------|--------|
+            | **Confidence Score** | **${{ steps.scoring.outputs.final_score }}/100** |
+            | Required Threshold | ${{ steps.config.outputs.min_score }} |
+            | Critical Files | ${{ steps.scoring.outputs.is_protected == 'true' && '⚠️ MODIFIED' || '✅ CLEAN' }} |
+            
+            **Analysis Details:**
+            ${{ env.SCORE_REPORT }}
+            
+            ${{ (steps.scoring.outputs.final_score >= steps.config.outputs.min_score && steps.scoring.outputs.is_protected == 'false') && '✅ **Auto-Merge Candidate**' || '⛔ **Manual Review Required**' }}
+
+      # 🏷️ Step 4: Labeling Logic
+      - name: Apply Decision Labels
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: |
+            ${{ (steps.scoring.outputs.final_score >= steps.config.outputs.min_score && steps.scoring.outputs.is_protected == 'false') && 'jules-approved' || 'human-review-required' }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

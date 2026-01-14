@@ -1,10 +1,12 @@
 import logging
 from typing import List, Dict, Any
 
+
 class SandboxRunner:
     """
     Simulates the execution of a plan in a sandboxed environment.
     """
+
     def __init__(self, base_service):
         self.base = base_service
         self.log = logging.getLogger("SandboxRunner")
@@ -20,9 +22,5 @@ class SandboxRunner:
         for step in plan.get("steps", []):
             # In a real system, this would call different adapters based on the step's action
             self.log.debug(f"Executing step: {step}")
-            results.append({
-                "step": step,
-                "ok": True,
-                "output": "Simulated success"
-            })
+            results.append({"step": step, "ok": True, "output": "Simulated success"})
         return results

@@ -1,87 +1,128 @@
-from typing import Dict, Any
-from unittest.mock import AsyncMock, patch, MagicMock
-
+"""
+Test suite for Rainmaker Orchestrator - Aligned with actual API
+"""
 import pytest
-import pytest_asyncio
+from unittest.mock import patch, AsyncMock
+import sys
+import os
+from fastapi.testclient import TestClient
 
-from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+# Add parent directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'rainmaker_orchestrator'))
 
-
-@pytest_asyncio.fixture
-async def orchestrator() -> RainmakerOrchestrator:
-    orch: RainmakerOrchestrator = RainmakerOrchestrator()
-    yield orch
-    await orch.aclose()
-
-
-@pytest.mark.asyncio
-async def test_orchestrator_initialization(orchestrator: RainmakerOrchestrator) -> None:
-    assert orchestrator.client is not None
-    assert orchestrator.config is not None
+from server import app
 
 
-@pytest.mark.asyncio
-async def test_judge_call_success(orchestrator: RainmakerOrchestrator) -> None:
-    with patch.object(orchestrator.client, "post") as mock_post:
-        mock_response: MagicMock = AsyncMock()
-        mock_response.json.return_value = {
-            "choices": [{"message": {"content": '{"analysis": "success"}'}}]
-        }
-        mock_post.return_value = mock_response
-
-        result: Dict[str, Any] = await orchestrator._call_judge(
-            "auditor",
-            "Test context",
-        )
-
-        assert result["choices"][0]["message"]["content"] == '{"analysis": "success"}'
+@pytest.fixture
+def client():
+    """Create FastAPI test client"""
+    with TestClient(app) as client:
+        yield client
 
 
-@pytest.mark.asyncio
-async def test_execute_task_authority_flow(orchestrator: RainmakerOrchestrator) -> None:
-    with patch.object(orchestrator, "run_authority_flow", new_callable=AsyncMock) as mock_flow:
-        mock_flow.return_value = {"status": "success"}
-
-        result: Dict[str, Any] = await orchestrator.execute_task(
-            {
-                "type": "authority_task",
-                "context": "Test lead data",
-            }
-        )
-
-        assert result["status"] == "success"
-        mock_flow.assert_called_once()
+@pytest.fixture
+def mock_orchestrator():
+    """Mock orchestrator for testing"""
+    mock = AsyncMock()
+    mock.execute_task = AsyncMock(return_value={"status": "success", "result": "test result"})
+    mock.aclose = AsyncMock()
+    return mock
 
 
-@pytest.mark.asyncio
-async def test_execute_task_unsupported_type(orchestrator: RainmakerOrchestrator) -> None:
-    result: Dict[str, Any] = await orchestrator.execute_task(
-        {
-            "type": "unknown_type",
-            "context": "Test",
-        }
-    )
+class TestHealthEndpoint:
+    """Test health check endpoint"""
 
-    assert result["status"] == "error"
-    assert "not supported" in result["message"]
+    @patch('server.app.state.kimi_client.health_check', return_value=True)
+    def test_health_returns_200_healthy(self, mock_health_check, client):
+        """Test health endpoint returns 200 and healthy"""
+        response = client.get('/health')
+        assert response.status_code == 200
+        data = response.json()
+        assert data['status'] == 'healthy'
+
+    @patch('server.app.state.kimi_client.health_check', return_value=False)
+    def test_health_returns_200_degraded(self, mock_health_check, client):
+        """Test health endpoint returns 200 and degraded if config missing"""
+        response = client.get('/health')
+        assert response.status_code == 200
+        assert response.json()['status'] == 'degraded'
 
 
-@pytest.mark.asyncio
-async def test_authority_flow_complete(orchestrator: RainmakerOrchestrator) -> None:
-    with patch.object(orchestrator, "_call_judge", new_callable=AsyncMock) as mock_judge:
-        mock_judge.return_value = {
-            "choices": [{"message": {"content": '{"result": "ok"}'}}]
-        }
+class TestExecuteEndpoint:
+    """Test execute endpoint"""
 
-        result: Dict[str, Any] = await orchestrator.run_authority_flow(
-            {
-                "lead_id": 123,
-                "action": "analyze",
-            }
-        )
+    def test_execute_missing_body(self, client):
+        """Test execute without body returns 422"""
+        response = client.post('/execute', data='')
+        assert response.status_code == 422
 
-        assert result["status"] == "success"
-        assert "audit" in result
-        assert "strategy" in result
-        assert "implementation" in result
-        assert mock_judge.call_count == 3
+    def test_execute_missing_context(self, client):
+        """Test execute without context field returns 422"""
+        response = client.post('/execute', json={})
+        assert response.status_code == 422
+        data = response.json()
+        assert 'detail' in data
+
+    def test_execute_empty_context(self, client):
+        """Test execute with empty context returns 422"""
+        response = client.post('/execute', json={'task': ''})
+        assert response.status_code == 422
+
+    def test_execute_invalid_context_type(self, client):
+        """Test execute with non-string context returns 422"""
+        response = client.post('/execute', json={'task': 123})
+        assert response.status_code == 422
+
+    @patch('server.app.state.orchestrator.execute')
+    def test_execute_success(self, mock_execute, client):
+        """Test successful task execution"""
+        mock_execute.return_value = {"status": "success"}
+        response = client.post('/execute', json={'task': 'test task'})
+        assert response.status_code == 200
+        data = response.json()
+        assert data['status'] == 'success'
+
+    @patch('server.app.state.orchestrator.execute')
+    def test_execute_failed(self, mock_execute, client):
+        """Test failed task execution"""
+        mock_execute.side_effect = Exception("It failed")
+        response = client.post('/execute', json={'task': 'test task'})
+        assert response.status_code == 500
+        data = response.json()
+        assert 'Execution failed' in data['detail']
+
+
+class TestWorkspaceEndpoints:
+    """Test workspace endpoints"""
+
+    @patch('server.Path.is_file')
+    @patch('server.Path.exists')
+    @patch('server.FileResponse')
+    def test_get_workspace_file_success(self, mock_file_response, mock_exists, mock_is_file, client):
+        """Test getting a file successfully"""
+        mock_exists.return_value = True
+        mock_is_file.return_value = True
+        response = client.get('/workspace/download/test.txt')
+        assert response.status_code == 200
+
+    @patch('server.Path.exists')
+    def test_get_workspace_file_not_found(self, mock_exists, client):
+        """Test getting a file that does not exist"""
+        mock_exists.return_value = False
+        response = client.get('/workspace/download/test.txt')
+        assert response.status_code == 404
+
+class TestRootEndpoint:
+    """Test root endpoint"""
+
+    def test_root_returns_200(self, client):
+        """Test root endpoint returns 200 and correct info"""
+        response = client.get('/')
+        assert response.status_code == 200
+        data = response.json()
+        assert data['service'] == 'Rainmaker Orchestrator'
+        assert data['version'] == '1.0.0'
+        assert data['status'] == 'running'
+
+if __name__ == '__main__':
+    pytest.main([__file__, '-v', '--tb=short'])

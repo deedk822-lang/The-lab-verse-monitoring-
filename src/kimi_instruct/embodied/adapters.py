@@ -2,6 +2,7 @@
 import aiohttp, logging
 from typing import Dict
 
+
 class A2AAdapter:
     def __init__(self, base_url: str = "http://localhost:3000/a2a"):
         self.url = base_url
@@ -11,7 +12,11 @@ class A2AAdapter:
         if dry_run:
             self.log.debug("A2A dry-run %s", step.get("action"))
             return {"status": "ok", "output": "sim-negotiate", "duration": 0.3}
-        payload = {"agents": step["agents"], "action": step["action"], "payload": step.get("data")}
+        payload = {
+            "agents": step["agents"],
+            "action": step["action"],
+            "payload": step.get("data"),
+        }
         async with aiohttp.ClientSession() as s:
             async with s.post(self.url, json=payload) as r:
                 r.raise_for_status()

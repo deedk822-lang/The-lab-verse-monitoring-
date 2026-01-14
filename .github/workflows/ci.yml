@@ -160,6 +160,7 @@ jobs:
           context: ./rainmaker_orchestrator
           file: ./rainmaker_orchestrator/Dockerfile
           push: false
+          load: true
           tags: rainmaker-orchestrator:test
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
@@ -172,8 +173,9 @@ jobs:
       - name: Test image
         run: |
           docker run --rm \
-            -e ANTHROPIC_API_KEY=test_key \
+            -e KIMI_API_KEY=test_key \
             -e HF_TOKEN=test_token \
+            -e WORKSPACE_PATH=/tmp/test_workspace \
             --entrypoint python \
             rainmaker-orchestrator:test \
             -c "import sys; sys.path.insert(0, '/app'); print('Docker image built successfully')" || echo "Import test skipped - image test completed"
@@ -182,6 +184,14 @@ jobs:
   test:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
+    env:
+      # LLM Keys for Opik Evaluations
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+      # Observability Keys
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      OPTIK_API_KEY: ${{ secrets.OPTIK_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -253,6 +263,14 @@ jobs:
   docker-compose-test:
     name: 🐳 Docker Compose Test
     runs-on: ubuntu-latest
+    env:
+      # LLM Keys for Opik Evaluations
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+      # Observability Keys
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      OPTIK_API_KEY: ${{ secrets.OPTIK_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -266,27 +284,36 @@ jobs:
           LOG_LEVEL=INFO
           EOF
 
-      - name: Start services
+      - name: Build and Start services
         run: |
           if [ -f docker-compose.superstack.yml ]; then
-            docker-compose -f docker-compose.superstack.yml up -d orchestrator || true
-            sleep 10
+            # Create dummy config file if it doesn't exist
+            touch orchestrator_config.yaml
+            # Build the image first to ensure it exists for compose
+            docker build -t rainmaker-orchestrator:latest ./rainmaker_orchestrator
+            # Start the orchestrator service (correct name from docker-compose file)
+            docker compose -f docker-compose.superstack.yml up -d rainmaker-orchestrator || true
+            sleep 20
           else
             echo "docker-compose.superstack.yml not found"
           fi
 
       - name: Test orchestrator health
         run: |
+          echo "Checking service status..."
+          docker ps
           for i in {1..30}; do
-            if curl -f http://localhost:8080/health; then
+            if curl -s -f http://localhost:8080/health; then
               echo "Health check passed"
               exit 0
             fi
             echo "Waiting for service... ($i/30)"
+            # Log the last few lines of the container to see if it's crashing
+            docker logs task-router --tail 10 || true
             sleep 2
           done
           echo "Health check failed - this is expected in CI environment without GPU"
-          docker-compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
+          docker compose -f docker-compose.superstack.yml logs rainmaker-orchestrator || true
           # Don't fail the job since GPU is not available in CI
           echo "Marking as success since GPU is not available in CI environment"
           exit 0
@@ -295,7 +322,7 @@ jobs:
         if: always()
         run: |
           if [ -f docker-compose.superstack.yml ]; then
-            docker-compose -f docker-compose.superstack.yml down || true
+            docker compose -f docker-compose.superstack.yml down || true
           fi
 
   # Notify status

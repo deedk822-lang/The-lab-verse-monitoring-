@@ -1,6 +1,9 @@
-httpx
-fastapi
-uvicorn
-python-dotenv
-hubspot-api-client
-requests
+fastapi==0.104.1
+uvicorn==0.24.0
+httpx==0.25.1
+pydantic==2.5.2
+python-dotenv==1.0.0
+opik==0.1.0
+openlit==0.1.1
+pytest==7.4.3
+pytest-asyncio==0.21.1

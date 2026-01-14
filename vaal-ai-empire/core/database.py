@@ -382,6 +382,20 @@ class Database:
 
         return summary
 
+    def get_top_customers(self, limit: int = 5) -> List[Dict]:
+        """Get top paying customers"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT c.name, SUM(r.amount) as total_amount
+            FROM revenue r
+            JOIN clients c ON r.client_id = c.id
+            GROUP BY r.client_id
+            ORDER BY total_amount DESC
+            LIMIT ?
+        """, (limit,))
+        return [{"name": row['name'], "amount": row['total_amount']} for row in cursor.fetchall()]
+
     def get_cost_summary(self, days: int = 30) -> Dict:
         """Get API and model cost summary"""
         conn = self.get_connection()

@@ -1,95 +1,61 @@
-from fastapi import FastAPI, HTTPException
-import sys
 import os
-import json
 import logging
+ feat/implement-authority-engine
 import time
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
+
+from contextlib import asynccontextmanager
+ main
 from typing import Optional
 
-import os
-import sys
-import json
-import logging
-from typing import Optional
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
-from hubspot import HubSpot
-from hubspot.crm.deals import SimplePublicObjectInput
+import opik
 
-# --- Pydantic Model Definition ---
+# Internal Imports
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
+# Setup Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("api")
+
+class ExecuteTaskPayload(BaseModel):
+    type: str
+    context: str
+    model: Optional[str] = None
+    output_filename: Optional[str] = None
+
 class HubSpotWebhookPayload(BaseModel):
     objectId: int
     message_body: str
-    subscriptionType: Optional[str] = None
-
-# --- Configuration ---
-DEAL_CREATION_INTENT_SCORE_THRESHOLD = 8
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Ensure the root directory is in sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
-    logging.info("✅ Successfully imported rainmaker_orchestrator in server")
-except ImportError:
-    logging.exception(f"❌ Import error in server. CWD: {os.getcwd()}")
-    raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    """
-    Create a RainmakerOrchestrator on startup and close it on shutdown.
-    
-    On startup, instantiate RainmakerOrchestrator and attach it to app.state.orchestrator. On shutdown, call its `aclose()` coroutine to release resources and perform cleanup.
-    """
+    \"\"\"Manage lifecycle of the Authority Engine.\"\"\"
     orchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
+    logger.info("Authority Engine initialized and ready.")
     yield
-    # Shutdown
     await orchestrator.aclose()
+    logger.info("Authority Engine shut down.")
 
-app = FastAPI(title="Lab Verse API", lifespan=lifespan)
+app = FastAPI(
+    title="Rainmaker Authority API",
+    description="The secure gateway for the 4-Judge Authority Engine.",
+    version="1.1.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
-async def health_check():
-    """
-    Return the service health status.
-    
-    Returns:
-        A mapping with the key "status" set to "healthy".
-    """
-    return {"status": "healthy"}
-
-@app.get("/intel/market")
-async def get_market_intel(company: str):
-    """
-    Return a simulated market intelligence report for the specified company.
-    
-    Parameters:
-        company (str): The company name to retrieve market intelligence for.
-    
-    Returns:
-        dict: A structured market intelligence object with keys:
-            - source (str): The data source label (simulated).
-            - company (str): Echoes the requested company name.
-            - status (str): Integration/configuration status or note.
-            - timestamp (float): Unix timestamp of the report generation.
-    """
-    logging.info(f"Fetching market intel for (placeholder): {company}")
+async def health():
     return {
-        "source": "Live Search (Simulated)",
-        "company": company,
-        "status": "Integration Pending - Configure Perplexity/Google API",
-        "timestamp": time.time()
+        "status": "connected",
+        "engine": "Authority Engine v1.1",
+        "features": ["4-Judge Flow", "Self-Healing", "Opik Telemetry"]
     }
 
+ feat/implement-authority-engine
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
     Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
@@ -185,3 +151,23 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
         raise HTTPException(status_code=503, detail="HubSpot client is not configured")
     background_tasks.add_task(process_webhook_data, payload, request.app)
     return {"status": "accepted", "contact_id": payload.objectId}
+
+@app.post("/webhook/hubspot")
+async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks, request: Request):
+    \"\"\"Asynchronous entry point for HubSpot events.\"\"\"
+    orchestrator = request.app.state.orchestrator
+    # Use model_dump() for Pydantic v2 compatibility
+    background_tasks.add_task(orchestrator.run_authority_flow, payload.model_dump())
+    return {"status": "accepted", "message": "Authority Flow queued."}
+
+@app.post("/execute")
+async def execute(payload: ExecuteTaskPayload, request: Request):
+    \"\"\"Synchronous execution for direct agent tasks.\"\"\"
+    orchestrator = request.app.state.orchestrator
+    try:
+        result = await orchestrator.execute_task(payload.model_dump())
+        return result
+    except Exception as e:
+        logger.error(f"Execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+ main

@@ -1,13 +1,19 @@
  feat/implement-authority-engine
+ feat/implement-authority-engine
 
 
 # performance_test.py
  main
+
+# vaal-ai-empire/performance_test.py
+ main
 import time
 import sys
+import os
 import requests
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+ feat/implement-authority-engine
  feat/implement-authority-engine
 import socketserver
 
@@ -53,58 +59,78 @@ def run_performance_test():
     server = ThreadingHTTPServer(('localhost', 11434), MockHandler)
 
 
-# A simple mock server to test against
-class MockServerRequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(b"OK")
-        # Introduce a small delay to simulate network latency
-        time.sleep(0.01)
+import json
+ main
 
-def run_server(server_class=HTTPServer, handler_class=MockServerRequestHandler, port=8001):
+# Set a dummy token for initialization
+os.environ['HUGGINGFACE_TOKEN'] = 'test-token'
+
+# --- Local Mock Server ---
+class MockAPIHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        response = [{"generated_text": "mocked response"}]
+        self.wfile.write(json.dumps(response).encode('utf-8'))
+
+def run_server(server_class=HTTPServer, handler_class=MockAPIHandler, port=8000):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     httpd.serve_forever()
 
-# --- Functions to be benchmarked ---
+# --- Code to Benchmark ---
 
-def original_function(url, iterations):
-    """Makes requests without a session."""
-    for _ in range(iterations):
-        try:
-            requests.get(url, timeout=1)
-        except requests.RequestException:
-            pass # Ignore errors in test
-    return "Original function complete"
+# Original (No Session)
+class OriginalHuggingFaceAPI:
+    def __init__(self, api_base="http://localhost:8000"):
+        self.api_token = os.getenv("HUGGINGFACE_TOKEN")
+        self.api_base = api_base
+        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.default_model = "test-model"
 
-def optimized_function(url, iterations):
-    """Makes requests with a persistent session."""
-    with requests.Session() as session:
-        for _ in range(iterations):
-            try:
-                session.get(url, timeout=1)
-            except requests.RequestException:
-                pass # Ignore errors in test
-    return "Optimized function complete"
+    def generate(self, prompt: str):
+        api_url = f"{self.api_base}/{self.default_model}"
+        payload = {"inputs": prompt}
+        response = requests.post(api_url, headers=self.headers, json=payload)
+        return response.json()
 
-def benchmark_function(func, url, iterations):
-    """Benchmark a function over multiple iterations"""
+# Optimized (With Session)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from api.huggingface_api import HuggingFaceAPI as OptimizedHuggingFaceAPI
+
+
+def benchmark(api_client, iterations=50):
+    """Benchmark an API client by making real local requests."""
     start = time.perf_counter()
-    func(url, iterations)
+    for i in range(iterations):
+        try:
+            api_client.generate(f"test prompt {i}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            # In a real scenario, you might want to handle this more gracefully
+            pass
     end = time.perf_counter()
     return end - start
 
+ feat/implement-authority-engine
 def test_optimization():
     """Compare original vs optimized performance"""
     server_port = 8001
     server = HTTPServer(('', server_port), MockServerRequestHandler)
  main
+
+def main():
+    """Main function to run the benchmark."""
+    port = 8000
+    server = HTTPServer(('', port), MockAPIHandler)
+ main
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
 
+ feat/implement-authority-engine
     # Give the server a moment to start
  feat/implement-authority-engine
     time.sleep(0.1)
@@ -173,49 +199,56 @@ if __name__ == "__main__":
     url = f"http://localhost:{server_port}"
     iterations = 50  # Number of requests to make
 
-    print("=" * 60)
-    print("PERFORMANCE COMPARISON: requests vs. requests.Session")
-    print("=" * 60)
-    print(f"Running {iterations} requests against a local mock server...")
+    time.sleep(1) # Give the server a moment to start
+ main
 
-    # Benchmark speed
-    original_time = benchmark_function(original_function, url, iterations)
-    optimized_time = benchmark_function(optimized_function, url, iterations)
+    print("=" * 60)
+    print("PERFORMANCE BENCHMARK: requests vs. requests.Session")
+    print("=" * 60)
+    print("Running a real local server to measure connection overhead.")
+    print("-" * 60)
 
-    # Shutdown the server
+    iterations = 50
+
+    # Benchmark Original
+    print(f"Benchmarking Original API ({iterations} requests)...")
+    original_api = OriginalHuggingFaceAPI(api_base=f"http://localhost:{port}")
+    original_time = benchmark(original_api, iterations)
+
+    # Benchmark Optimized
+    print(f"Benchmarking Optimized API ({iterations} requests)...")
+    with OptimizedHuggingFaceAPI() as optimized_api:
+        # We need to manually override the api_base for the test
+        optimized_api.api_base = f"http://localhost:{port}"
+        optimized_time = benchmark(optimized_api, iterations)
+
     server.shutdown()
     server.server_close()
 
-    # It's possible for the original time to be zero in very fast environments
-    if original_time > 0:
+    print("\n" + "=" * 60)
+    print("BENCHMARK RESULTS")
+    print("=" * 60)
+    print(f"Original API (new connection per request):  {original_time:.4f}s")
+    print(f"Optimized API (reusing connections):      {optimized_time:.4f}s")
+    print("-" * 60)
+
+    if original_time > optimized_time:
         improvement = ((original_time - optimized_time) / original_time) * 100
-    elif optimized_time == 0:
-        improvement = 0 # No change
+        print(f"Improvement: {improvement:.1f}% faster")
+        print("\n✅ SUCCESS: requests.Session is measurably faster.")
+        success = True
     else:
-        improvement = -100  # Regression: optimized took time when original didn't
+        print("\n⚠️ WARNING: No performance improvement was measured.")
+        success = False
 
-    print(f"\nOriginal (requests.get):  {original_time:.4f}s")
-    print(f"Optimized (Session.get): {optimized_time:.4f}s")
-    print("-" * 28)
-    print(f"Improvement: {improvement:.1f}% faster")
+    # Clean up the env var
+    del os.environ['HUGGINGFACE_TOKEN']
 
-    if improvement > 10:
-        print("\n✅ SIGNIFICANT IMPROVEMENT: Connection pooling is effective.")
-        return True
-    elif improvement > 0:
-        print("\n✅ Minor improvement detected.")
-        return True
-    else:
-        print("\n⚠️ NO IMPROVEMENT - Optimization may not be effective in this environment.")
-        return False
+    sys.exit(0 if success else 1)
+ feat/implement-authority-engine
+ main
+
 
 if __name__ == "__main__":
-    print("Starting performance benchmark for HTTP request optimization...")
-    success = test_optimization()
-    print("=" * 60)
-    if success:
-        print("Benchmark PASSED")
-    else:
-        print("Benchmark FAILED: No performance improvement shown.")
-    sys.exit(0 if success else 1)
+    main()
  main

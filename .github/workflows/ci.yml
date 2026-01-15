@@ -1,3 +1,4 @@
+---
 name: CI/CD Pipeline
 
 on:
@@ -49,6 +50,11 @@ jobs:
 
       - name: Run Prettier check
         run: npm run format:check
+
+      - name: Lint YAML files
+        run: |
+          pip install yamllint
+          yamllint .github/workflows/
 
   security:
     name: 🔒 Security Scan

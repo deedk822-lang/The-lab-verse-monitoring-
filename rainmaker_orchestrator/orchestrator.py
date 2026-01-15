@@ -1,5 +1,5 @@
 import os
-import json
+import orjson
 import re
 import httpx
  feat/implement-authority-engine
@@ -130,7 +130,7 @@ class RainmakerOrchestrator:
             try:
                 # Clean JSON markdown if present
                 clean_json = re.sub(r'^```json\s*|\s*```$', '', content.strip(), flags=re.MULTILINE)
-                parsed = json.loads(clean_json)
+                parsed = orjson.loads(clean_json)
                 
                 # Write and test
                 self.fs.write_file(filename, parsed["code"])

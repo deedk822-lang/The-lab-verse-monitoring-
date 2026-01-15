@@ -1,5 +1,6 @@
 import os
 import logging
+import orjson
  feat/implement-authority-engine
 import time
 from hubspot.crm.deals import SimplePublicObjectInput
@@ -81,7 +82,7 @@ async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
         ai_analysis_raw = await app.state.orchestrator._call_ollama(ollama_task, {})
 
         ai_analysis_str = ai_analysis_raw["message"]["content"]
-        parsed_ai = json.loads(ai_analysis_str)
+        parsed_ai = orjson.loads(ai_analysis_str)
         logging.info(f"AI Analysis successful: {parsed_ai}")
 
     except Exception:

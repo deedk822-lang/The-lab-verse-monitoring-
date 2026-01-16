@@ -1,3 +1,4 @@
+---
 name: CI/CD Pipeline
 
 on:
@@ -200,7 +201,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}`
+              body: >-
+                ✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}
             })
 
   # ========== Deploy: Production Environment ==========
@@ -244,7 +246,7 @@ jobs:
 
           # Health check: up to 15 retries
           for i in {1..15}; do
-            if curl -f https://the-lab-verse-monitoring.vercel.app/health  ; then
+            if curl -f https://the-lab-verse-monitoring.vercel.app/health; then
               echo "✅ Production health check passed"
               exit 0
             fi
@@ -277,9 +279,12 @@ jobs:
     steps:
       - name: Send notification
         run: |
-          if [ "${{ needs.deploy-preview.result }}" = "failure" ] || [ "${{ needs.deploy-production.result }}" = "failure" ]; then
+          if [ "${{ needs.deploy-preview.result }}" = "failure" ] ||
+             [ "${{ needs.deploy-production.result }}" = "failure" ]; then
             echo "❌ Pipeline failed: ${{ github.workflow }}"
-            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            P1="${{ github.server_url }}/${{ github.repository }}/actions/runs/"
+            P2="${{ github.run_id }}"
+            echo "Run: $P1$P2"
             exit 1
           else
             echo "✅ Pipeline completed successfully"

@@ -1,48 +1,43 @@
 import os
-from typing import Dict, List
+import logging
+from typing import Optional
+
+logger: logging.Logger = logging.getLogger("config")
 
 
 class ConfigManager:
-    """Manages API keys and configuration"""
+    """Centralized configuration management with environment variable support."""
 
-    def __init__(self, config_file: str = ".env"):
-        self.config_file = config_file
-        self.config = self._load_config()
+    def __init__(self, config_file: str = ".env") -> None:
+        self.config_file: str = config_file
+        if os.path.exists(config_file):
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(config_file)
+                logger.info("Configuration loaded from %s", config_file)
+            except ImportError:
+                logger.warning("python-dotenv not available, using environment variables only")
 
-    def _load_config(self) -> Dict[str, str]:
-        """Load configuration from environment or .env file"""
-        config = {}
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        value: Optional[str] = os.getenv(key, default)
+        if key.upper().endswith("_KEY") or key.upper().endswith("_TOKEN"):
+            logger.debug("Accessing credential key: %s", key)
+        return value
 
-        # Try to load from .env file
-        if os.path.exists(self.config_file):
-            with open(self.config_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, value = line.split("=", 1)
-                        config[key.strip()] = value.strip().strip("\"'")
+    def get_int(self, key: str, default: int = 0) -> int:
+        value: Optional[str] = self.get(key)
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except ValueError:
+            logger.warning("Invalid integer config: %s=%s, using default=%d", key, value, default)
+            return default
 
-        # Override with environment variables
-        config.update(
-            {
-                "KIMI_API_KEY": os.getenv("KIMI_API_KEY"),
-                "KIMI_API_BASE": os.getenv(
-                    "KIMI_API_BASE", "https://api.moonshot.ai/v1"
-                ),
-                "OLLAMA_API_BASE": os.getenv(
-                    "OLLAMA_API_BASE", "http://localhost:11434/api"
-                ),
-            }
-        )
-
-        # Filter out None values so we can use .get() with defaults
-        return {k: v for k, v in config.items() if v is not None}
-
-    def get(self, key: str, default: str = "") -> str:
-        """Get configuration value"""
-        return self.config.get(key, default)
-
-    def validate(self, required_keys: List[str]) -> List[str]:
-        """Validate that required keys are present"""
-        missing = [key for key in required_keys if not self.config.get(key)]
-        return missing
+    def get_bool(self, key: str, default: bool = False) -> bool:
+        value: str = (self.get(key, "") or "").lower()
+        if value in ("true", "1", "yes", "on"):
+            return True
+        if value in ("false", "0", "no", "off"):
+            return False
+        return default

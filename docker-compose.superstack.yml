@@ -133,7 +133,7 @@ services:
 
   # --- MODEL ORCHESTRATOR (The Rainmaker Agent) ---
   rainmaker-orchestrator:
-    build: ./rainmaker-orchestrator
+    build: ./rainmaker_orchestrator
     container_name: task-router
     ports:
       - "8080:8080"

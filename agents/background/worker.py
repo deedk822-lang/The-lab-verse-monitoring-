@@ -14,12 +14,6 @@ from collections import defaultdict
 from time import time as current_time
 
 from rq import Queue, Worker
-try:
-    from database import redis_conn
-except ImportError:
-    print("WARNING: database.py not found. Redis connection will fail.")
-    redis_conn = None
-
 from redis import Redis
 from redis.exceptions import RedisError
 import requests
@@ -33,6 +27,8 @@ ALLOW_EXTERNAL = os.getenv("ALLOW_EXTERNAL_REQUESTS", "no").lower() == "yes"
 MAX_TIMEOUT = 30.0
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB max
 
+redis_conn = Redis.from_url(REDIS_URL)
+
 SSRF_BLOCKS = Counter(
     'ssrf_blocked_requests_total',
     'Total SSRF attempts blocked',
@@ -41,6 +37,15 @@ SSRF_BLOCKS = Counter(
 
 def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool:
     """
+ coderabbitai/docstrings/52d56b6
+    Enforce a per-client distributed rate limit using Redis.
+    
+    Increments a Redis counter keyed by the provided client identifier and sets the key's TTL to the specified window on first increment. Returns whether the client is within the allowed request limit. If the Redis connection is unavailable or a Redis error occurs, the function fails open and returns `True`.
+    Parameters:
+        client_id (str): Identifier for the client being rate-limited.
+        limit (int): Maximum allowed requests within the window (default 100).
+        window (int): Time window in seconds for the rate limit (default 60).
+
     Enforce a distributed per-client rate limit using Redis.
     
     Increments a Redis counter keyed by the provided client identifier and sets a TTL equal to the window on the counter's first increment. If the counter exceeds the limit, the request is disallowed. If Redis is unavailable or an error occurs, the function fails open and allows the request.
@@ -50,6 +55,7 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
         limit (int): Maximum allowed requests within the window.
         window (int): Time window in seconds for counting requests.
     
+ main
     Returns:
         bool: `True` if the request is allowed, `False` if the rate limit has been exceeded.
     """
@@ -57,11 +63,10 @@ def check_rate_limit(client_id: str, limit: int = 100, window: int = 60) -> bool
         logger.critical("Redis connection missing. Failing open for safety.")
         return True
 
-
     key = f"rate_limit:{client_id}"
     try:
+        current_count = redis_conn.incr(key)
         if current_count == 1 or redis_conn.ttl(key) == -1:
-            redis_conn.expire(key, window)
             redis_conn.expire(key, window)
         if current_count > limit:
             logger.warning(f"Rate limit exceeded for {client_id}")
@@ -189,8 +194,9 @@ def process_http_job(job_payload):
             - "headers" (dict, optional): Request headers; if missing, a Host header for the original hostname will be added.
             - "timeout" (number, optional): Request timeout in seconds (default 10.0, capped by MAX_TIMEOUT).
     
-        client_id = urlparse(url).hostname or "unknown_hostname"
-        if not check_rate_limit(client_id):
+    Returns:
+        dict: A dictionary containing the result.
+        On success:
             - "status_code" (int): HTTP status code returned by the remote host.
             - "elapsed_ms" (int): Round-trip elapsed time in milliseconds.
             - "content_length" (int): Number of response bytes read (0 if empty).
@@ -304,7 +310,6 @@ def process_http_job(job_payload):
     return result
 
 def main():
-    # Start metrics server
     """
     Start the Prometheus metrics server and run the RQ worker to process background jobs.
     

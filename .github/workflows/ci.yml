@@ -11,84 +11,14 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/rainmaker-orchestrator
 
 jobs:
-  dual-agent-pipeline:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+  security-gate:
+    uses: ./.github/workflows/security-analysis.yml
+    secrets: inherit
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies for Architect Agent
-        run: pip install -r glm47_architect/requirements.txt
-
-      # NOTE: This is a placeholder for the Qwen agent.
-      # In a real implementation, this step would run the Qwen agent to fix code.
-      - name: Stage 1 - Qwen Code Fixer (Placeholder)
-        id: qwen_fixer
-        run: echo "Stage 1: Qwen agent would run here."
-
-      - name: Stage 2 - GLM-4.7 Architect Audit
-        id: glm_architect
-        env:
-          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python glm47_architect/scripts/glm47_architect.py \
-            --pr ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --output audit_result.json
-
-      - name: Upload Audit Result
-        uses: actions/upload-artifact@v3
-        with:
-          name: audit-result
-          path: audit_result.json
-
-      - name: Post Audit Comment to PR
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const result = JSON.parse(fs.readFileSync('audit_result.json', 'utf8'));
-            const { recommendation, validation_table, raw_result } = result;
-
-            const commentBody = `
-            ## GLM-4.7 Architect Audit Report
-
-            **Recommendation:** \`${recommendation}\`
-
-            ### Validation Summary
-            ${validation_table}
-
-            <details>
-            <summary>Full LLM Output</summary>
-
-            \`\`\`
-            ${raw_result}
-            \`\`\`
-            </details>
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
-
-            if (recommendation === 'REJECT' || recommendation === 'ERROR') {
-              core.setFailed(`Audit failed with recommendation: ${recommendation}`);
-            }
   build:
-    needs: [dual-agent-pipeline]
-    if: github.event_name == 'pull_request' && needs.dual-agent-pipeline.result == 'success'
+    needs: [security-gate]
+    if: github.event_name == 'pull_request' and needs.security-gate.result == 'success'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -157,48 +87,128 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-to-alibaba:
-    needs: [build-and-push]
+    needs: [build-and-push, security-gate]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout main branch
+        uses: actions/checkout@v4
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.2
+      - name: Configure Alibaba Cloud OIDC
+        uses: aliyun/aliyun-oidc-auth-action@v1
         with:
-          ssh-private-key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
+          aliyun-oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
+          aliyun-region-id: cn-hangzhou
 
-      - name: Deploy to Alibaba ECS
-        env:
-          ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER }}
+      - name: Install Alibaba Cloud CLI
         run: |
-          ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} '
-            cd /app/The-lab-verse-monitoring-
-            git pull
-            export PREVIOUS_IMAGE=$(docker-compose -f docker/compose/docker-compose.prod.yml config | grep image | awk "{print \$2}")
-            export IMAGE_TAG=${{ github.sha }}
-            docker-compose -f docker/compose/docker-compose.prod.yml pull
-            docker-compose -f docker/compose/docker-compose.prod.yml up -d
-          '
-      - name: Verify Deployment
-        env:
-          ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER }}
+          wget https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.zip
+          unzip aliyun-cli-linux-latest-amd64.zip
+          sudo mv aliyun /usr/local/bin
+
+      - name: Deploy to Alibaba Cloud ECS
+        id: deploy
         run: |
-          for i in {1..10}; do
-            if curl -f "http://${ECS_HOST}:8000/health"; then
-              echo "Health check passed!"
+          DEPLOY_SCRIPT=$(cat <<'EOF'
+          #!/bin/bash
+          set -ex
+          cd /app/The-lab-verse-monitoring-
+          # Save the current image for rollback
+          docker-compose -f docker/compose/docker-compose.prod.yml config | grep 'image:' | awk '{print $2}' > /tmp/previous_image.tag || echo "No previous image found, continuing."
+          git pull origin main
+          export IMAGE_TAG=${{ github.sha }}
+          docker-compose -f docker/compose/docker-compose.prod.yml pull
+          docker-compose -f docker/compose/docker-compose.prod.yml up -d --remove-orphans
+          EOF
+          )
+
+          ENCODED_SCRIPT=$(echo -n "$DEPLOY_SCRIPT" | base64 -w 0)
+
+          echo "🚀 Starting deployment to instance ${{ secrets.ECS_INSTANCE_ID }}..."
+          INVOKE_ID=$(aliyun ecs RunCommand --RegionId ${{ env.ALIYUN_REGION }} \
+            --InstanceId.1 ${{ secrets.ECS_INSTANCE_ID }} \
+            --Type RunShellScript \
+            --CommandContent "$ENCODED_SCRIPT" \
+            --ContentEncoding Base64 \
+            --Timeout 120 \
+            --query 'InvokeId' --output text)
+
+          if [ -z "$INVOKE_ID" ]; then
+            echo "❌ Failed to get Invoke ID."
+            exit 1
+          fi
+
+          echo "Deployment command sent. Invoke ID: $INVOKE_ID. Waiting for completion..."
+
+          # Poll for completion
+          TIMEOUT=300
+          INTERVAL=10
+          ELAPSED=0
+          while true; do
+            INVOKE_STATUS=$(aliyun ecs DescribeInvocations --RegionId ${{ env.ALIYUN_REGION }} --InvokeId "$INVOKE_ID" --query 'Invocations.Invocation[0].InvokeStatus' --output text)
+            if [[ "$INVOKE_STATUS" == "Finished" ]]; then
+              echo "✅ Deployment script finished successfully."
+              break
+            elif [[ "$INVOKE_STATUS" == "Failed" || "$INVOKE_STATUS" == "Stopped" ]]; then
+              echo "❌ Deployment script failed with status: $INVOKE_STATUS"
+              COMMAND_OUTPUT=$(aliyun ecs DescribeInvocations --RegionId ${{ env.ALIYUN_REGION }} --InvokeId "$INVOKE_ID" --query 'Invocations.Invocation[0].InvocationResults.InvocationResult[0].Output' --output text)
+              DECODED_OUTPUT=$(echo "$COMMAND_OUTPUT" | base64 -d)
+              echo "--- FAILED DEPLOYMENT OUTPUT ---"
+              echo "$DECODED_OUTPUT"
+              echo "--------------------------------"
+              exit 1
+            elif [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "❌ Deployment command timed out."
+              exit 1
+            else
+              echo "Deployment in progress (Status: $INVOKE_STATUS)... waiting."
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            fi
+          done
+
+      - name: Verify Deployment and Rollback if Necessary
+        run: |
+          echo "🔍 Verifying deployment..."
+          for i in {1..15}; do
+            if curl -sf "http://${{ secrets.ECS_HOST }}:8000/health"; then
+              echo "✅ Health check passed!"
               exit 0
             fi
-            echo "Health check failed. Retrying in 10 seconds..."
+            echo "Health check attempt $i failed. Retrying in 10 seconds..."
             sleep 10
           done
-          echo "Health check failed after multiple retries. Rolling back..."
-          ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} '
-            cd /app/The-lab-verse-monitoring-
-            export IMAGE_TAG=$(echo $PREVIOUS_IMAGE | cut -d: -f2)
-            docker-compose -f docker/compose/docker-compose.prod.yml up -d
-          '
+
+          echo "❌ Health check failed after multiple retries. Initiating rollback..."
+
+          ROLLBACK_SCRIPT=$(cat <<'EOF'
+          #!/bin/bash
+          set -ex
+          cd /app/The-lab-verse-monitoring-
+          # Read the previous image tag and redeploy
+          export IMAGE_TAG=$(cat /tmp/previous_image.tag)
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "Rollback failed: Could not find previous image tag."
+            exit 1
+          fi
+          echo "Rolling back to image: $IMAGE_TAG"
+          docker-compose -f docker/compose/docker-compose.prod.yml up -d --remove-orphans
+          EOF
+          )
+
+          ENCODED_ROLLBACK=$(echo -n "$ROLLBACK_SCRIPT" | base64 -w 0)
+
+          aliyun ecs RunCommand --RegionId ${{ env.ALIYUN_REGION }} \
+            --InstanceId.1 ${{ secrets.ECS_INSTANCE_ID }} \
+            --Type RunShellScript \
+            --CommandContent "$ENCODED_ROLLBACK" \
+            --ContentEncoding Base64 \
+            --Timeout 120
+
+          echo "Rollback command sent."
           exit 1

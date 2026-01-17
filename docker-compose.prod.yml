@@ -1,0 +1,37 @@
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: myapp:latest
+    container_name: myapp
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ALIBABA_CLOUD_REGION_ID=${ALIBABA_CLOUD_REGION_ID:-cn-hangzhou}
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/log/app:/var/log/app  # For logging
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+
+networks:
+  app-network:
+    driver: bridge

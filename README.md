@@ -53,6 +53,17 @@ This system is governed by a **Confidence Engine** that quantifies the risk of e
 
 This governance layer ensures that while the system is autonomous, it operates with a "safety-first" mindset, preventing risky or broken code from ever reaching production without oversight.
 
+### 🤖 Automated Governance with Jules
+
+All pull requests in this repository are automatically reviewed by **Jules**, our autonomous DevOps guardian. This process ensures that every change meets our quality and security standards before it can be merged.
+
+**How it Works:**
+
+1.  **PR Analysis:** When a pull request is created, the "Jules Governance" workflow is triggered.
+2.  **Confidence Score:** Jules analyzes the changes and calculates a "confidence score" based on a set of rules.
+3.  **PR Comment:** The results of the analysis are posted as a comment on the pull request, providing immediate feedback.
+
+A pull request will be blocked from merging if it modifies protected files or if its confidence score is below 85. For a detailed breakdown of the rules and how to interact with Jules, please see the [**`AGENTS.md`**](./AGENTS.md) file.
 
 ### Core Components
 

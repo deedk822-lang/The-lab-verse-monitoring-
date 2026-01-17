@@ -1,3 +1,4 @@
+---
 name: Kaggle Intelligence Pipeline
 
 on:
@@ -9,7 +10,7 @@ jobs:
   run-intelligence:
     runs-on: ubuntu-latest
     name: "Kaggle Intelligence Sync"
-    
+
     env:
       # ========================================================================
       # ALL CREDENTIALS BELOW ARE LOADED FROM GITHUB SECRETS
@@ -23,11 +24,11 @@ jobs:
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}      # ✅ Already set in GitHub Secrets
       KAGGLE_KEY: ${{ secrets.KAGGLE_API_KEY }}            # ✅ Already set in GitHub Secrets
-      
+
       # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
       # Jira tickets created by: dimakatsomoleli@gmail.com
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
-      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net" #✅ Public URL in GitHub secret
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net" # ✅ Public URL in GitHub secret
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
 

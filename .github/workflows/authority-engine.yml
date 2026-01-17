@@ -1,3 +1,4 @@
+---
 name: Authority Engine - Content Pipeline
 
 on:
@@ -40,7 +41,7 @@ jobs:
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}         # ✅ Already set in GitHub Secrets
       WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }} # ✅ Already set in GitHub Secrets
-      WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php"  # Public URL (not secret)
+      WORDPRESS_URL: "https://deedk822.wordpress.com/xmlrpc.php" # Public URL (not secret)
 
       # === IDENTITY 2: DIMAKATSO MOLELI (PROJECT MANAGER) ===
       # Jira task tracking identity
@@ -49,7 +50,7 @@ jobs:
       # These secrets are ALREADY CONFIGURED in GitHub repository settings
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}      # ✅ Already set in GitHub Secrets
       JIRA_API_TOKEN: ${{ secrets.JIRA_LINK }}             # ✅ Already set in GitHub Secrets
-      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net"  # Public URL (not secret)
+      JIRA_BASE_URL: "https://dimakatsomoleli.atlassian.net" # Public URL (not secret)
 
       # === MARKETING CHANNELS ===
       # These secrets are ALREADY CONFIGURED in GitHub repository settings

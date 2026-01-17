@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import asyncio
 import shlex
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +24,16 @@ class RainmakerOrchestrator:
     the execution environment.
     """
 
-    def __init__(self, workspace_path: Optional[str] = None):
+    def __init__(
+        self,
+        workspace_path: str,
+    ):
         """
         Initialize the orchestrator.
-
         Args:
-            workspace_path: Optional path to workspace directory
+            workspace_path: Path to workspace directory
         """
-        self.workspace_path = Path(workspace_path or "/workspace")
+        self.workspace_path = Path(workspace_path)
         self.workspace_path.mkdir(parents=True, exist_ok=True)
         logger.info(f"RainmakerOrchestrator initialized with workspace: {self.workspace_path}")
 

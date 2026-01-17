@@ -1,16 +1,42 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+# Dockerfile
+FROM node:18-alpine
 
-# Set the working directory in the container
-WORKDIR /app
+# Create app directory
+WORKDIR /opt/myapp
 
-# Copy the new orchestrator and its requirements
-COPY rainmaker_orchestrator/ /app/rainmaker_orchestrator/
-COPY rainmaker_cli.py /app/
+# Copy package files
+COPY package*.json ./
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r /app/rainmaker_orchestrator/requirements.txt
+# Install dependencies
+RUN npm ci --only=production
 
-# Set the default command to run the CLI
-# This allows passing arguments to the container to run the tool
-ENTRYPOINT ["python", "rainmaker_cli.py"]
+# Copy application code
+COPY . .
+
+# Remove any existing GLM-4.7 references to prevent conflicts with the Zhipu AI SDK.
+RUN rm -rf node_modules/*glm* || true
+RUN find . -name "*glm*" -delete || true
+
+# Install Python dependencies for security scanner
+RUN apk add --no-cache python3 py3-pip curl bash jq
+
+# Install Alibaba Cloud CLI
+RUN curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz && \
+    tar xzvf aliyun-cli-linux-latest-amd64.tgz && \
+    mv aliyun /usr/local/bin/ && \
+    rm aliyun-cli-linux-latest-amd64.tgz
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start the application
+CMD ["npm", "start"]

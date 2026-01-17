@@ -10,12 +10,18 @@ class HuggingFaceAPI:
     """HuggingFace Inference API wrapper"""
 
     def __init__(self):
+        """
+        Initialize the HuggingFaceAPI client by configuring authentication, network session, model mappings, and usage tracking.
+        
+        This constructor reads the HUGGINGFACE_TOKEN environment variable and raises ValueError if it is not set. It configures the API base URL and authorization headers, creates a persistent requests Session for reuse, defines available models grouped by task (text_generation, embeddings, summarization), sets the default text-generation model, and initializes an empty usage_log for recording request metadata.
+        """
         self.api_token = os.getenv("HUGGINGFACE_TOKEN")
         if not self.api_token:
             raise ValueError("HUGGINGFACE_TOKEN environment variable not set.")
 
         self.api_base = "https://api-inference.huggingface.co/models"
         self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.session = requests.Session()
 
         # Available models for different tasks
         self.models = {
@@ -36,10 +42,49 @@ class HuggingFaceAPI:
         self.default_model = self.models["text_generation"]["small"]
         self.usage_log = []
 
+    def __enter__(self):
+        """
+        Enter the context manager and return the HuggingFaceAPI instance.
+        
+        Returns:
+            self: The current HuggingFaceAPI instance, suitable for use within a `with` statement.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Close the internal HTTP session when exiting a context manager.
+        
+        Closes the client's persistent requests.Session to free network resources. This method does not suppress exceptions raised in the with-block; any exception will propagate.
+        """
+        self.session.close()
+
+    def close(self):
+        """Close the requests session to release resources."""
+        self.session.close()
+
     def generate(self, prompt: str, max_tokens: int = 500,
                 model: str = None, temperature: float = 0.7,
                 wait_for_model: bool = True) -> Dict:
-        """Generate text using HuggingFace models"""
+        """
+                Generate text from a HuggingFace model for a given prompt.
+                
+                Parameters:
+                    prompt (str): The input text prompt to generate from.
+                    max_tokens (int): Maximum number of tokens to generate.
+                    model (str | None): Model identifier to use; if None the instance's default_model is used.
+                    temperature (float): Sampling temperature controlling randomness of generation.
+                    wait_for_model (bool): If True, wait and retry once when the model endpoint returns a loading status.
+                
+                Returns:
+                    dict: A dictionary with keys:
+                        - text (str): The generated text.
+                        - model (str): The model identifier used.
+                        - cost_usd (float): Estimated cost in USD (0.0 for free tier).
+                
+                Raises:
+                    Exception: If the API returns a non-200 error status, or if the model remains unavailable after retrying.
+                """
         model = model or self.default_model
         api_url = f"{self.api_base}/{model}"
 
@@ -58,7 +103,7 @@ class HuggingFaceAPI:
         }
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json=payload,
@@ -105,12 +150,28 @@ class HuggingFaceAPI:
             raise e
 
     def embed(self, texts: list, model: str = None) -> Dict:
-        """Generate embeddings for text"""
+        """
+        Compute vector embeddings for a list of input texts.
+        
+        Parameters:
+            texts (list[str]): The input strings to embed.
+            model (str, optional): HuggingFace model name to use; defaults to the configured embeddings default.
+        
+        Returns:
+            dict: {
+                "embeddings": The raw embeddings payload returned by the API,
+                "model": The model name used,
+                "cost_usd": 0.0
+            }
+        
+        Raises:
+            Exception: If the API response status is not 200 or the request fails.
+        """
         model = model or self.models["embeddings"]["default"]
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json={
@@ -137,12 +198,26 @@ class HuggingFaceAPI:
 
     def summarize(self, text: str, max_length: int = 150,
                  min_length: int = 50) -> Dict:
-        """Summarize text"""
+        """
+                 Generate a concise summary of the input text using the configured summarization model.
+                 
+                 Parameters:
+                     text (str): The text to summarize.
+                     max_length (int): Maximum length of the generated summary (model-specific units, typically tokens).
+                     min_length (int): Minimum length of the generated summary (model-specific units, typically tokens).
+                 
+                 Returns:
+                     dict: {
+                         "summary": str — the generated summary text,
+                         "model": str — the model identifier used for summarization,
+                         "cost_usd": float — estimated cost for the operation (0.0 for free tier)
+                     }
+                 """
         model = self.models["summarization"]["default"]
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json={

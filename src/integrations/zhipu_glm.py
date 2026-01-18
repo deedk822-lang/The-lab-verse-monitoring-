@@ -1,10 +1,7 @@
 import asyncio
 import json
 import logging
- feat/integrate-alibaba-access-analyzer-12183567303830527494
 import re
-
- dual-agent-cicd-pipeline-1349139378403618497
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 import aiohttp
@@ -20,12 +17,8 @@ class GLMConfig(BaseModel):
 
 class GLMIntegration:
     """
- feat/integrate-alibaba-access-analyzer-12183567303830527494
     GLM-4.7 Integration Class with Security Hardening
-
-    GLM-4.7 Integration Class
     Provides advanced reasoning and content generation capabilities
- dual-agent-cicd-pipeline-1349139378403618497
     """
 
     def __init__(self, config: GLMConfig):
@@ -48,52 +41,37 @@ class GLMIntegration:
         if self.session:
             await self.session.close()
 
- feat/integrate-alibaba-access-analyzer-12183567303830527494
     def sanitize_input(self, user_input: str) -> str:
         """Prevent prompt injection by sanitizing user input"""
         # Remove potential injection patterns
         sanitized = re.sub(r'[{}[\]"\\]', '', user_input)[:1000]  # Length limit
         return f"<user_input>{sanitized}</user_input>"
 
-    async def generate_text(self, prompt: str, options: Optional[Dict] = None) -> str:
+    async def generate_text(self, prompt: str, options: Optional[Dict] = None, sanitize: bool = True) -> str:
         """
         Generate text using GLM-4.7 model with security measures
-
-    async def generate_text(self, prompt: str, options: Optional[Dict] = None) -> str:
-        """
-        Generate text using GLM-4.7 model
 
         Args:
             prompt: Input prompt for text generation
             options: Additional options for generation
+            sanitize: Whether to sanitize the input prompt
 
         Returns:
             Generated text response
- dual-agent-cicd-pipeline-1349139378403618497
         """
         if options is None:
             options = {}
 
- feat/integrate-alibaba-access-analyzer-12183567303830527494
-        # Sanitize the prompt to prevent injection
-        sanitized_prompt = self.sanitize_input(prompt)
+        # Sanitize the prompt to prevent injection if requested
+        final_prompt = self.sanitize_input(prompt) if sanitize else prompt
 
         payload = {
             "model": self.config.model,
             "messages": [
-                {"role": "user", "content": sanitized_prompt}
+                {"role": "user", "content": final_prompt}
             ],
             "temperature": options.get("temperature", 0.7),
-            "max_tokens": min(options.get("max_tokens", 1024), 4096),  # Max token limit
-
-        payload = {
-            "model": self.config.model,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": options.get("temperature", 0.7),
-            "max_tokens": options.get("max_tokens", 1024),
- dual-agent-cicd-pipeline-1349139378403618497
+            "max_tokens": min(options.get("max_tokens", 1024), 4096),
             "stream": False
         }
 
@@ -103,12 +81,8 @@ class GLMIntegration:
                 json=payload
             ) as response:
                 if response.status != 200:
- feat/integrate-alibaba-access-analyzer-12183567303830527494
                     self.logger.error(f"GLM API returned status {response.status}: {await response.text()}")
                     raise Exception(f"GLM API returned status {response.status}")
-
-                    raise Exception(f"GLM API returned status {response.status}: {await response.text()}")
- dual-agent-cicd-pipeline-1349139378403618497
 
                 data = await response.json()
                 return data["choices"][0]["message"]["content"]
@@ -120,27 +94,13 @@ class GLMIntegration:
     async def generate_structured_content(self, content_type: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate structured content using GLM-4.7
- feat/integrate-alibaba-access-analyzer-12183567303830527494
         """
-        # Sanitize inputs
-        sanitized_context = json.dumps(context, default=str)[:2000]
+        # Context is serialized to JSON for the prompt
+        context_json = json.dumps(context, indent=2)
 
         prompt = f"""
         Generate structured content of type "{content_type}" based on the following context:
-        {sanitized_context}
-
-
-        Args:
-            content_type: Type of content to generate
-            context: Context for content generation
-
-        Returns:
-            Structured content dictionary
-        """
-        prompt = f"""
-        Generate structured content of type "{content_type}" based on the following context:
-        {json.dumps(context, indent=2)}
- dual-agent-cicd-pipeline-1349139378403618497
+        {context_json}
 
         Respond in valid JSON format with the following structure:
         {{
@@ -151,7 +111,8 @@ class GLMIntegration:
         }}
         """
 
-        response = await self.generate_text(prompt, {"max_tokens": 2048})
+        # Call generate_text with sanitize=False to preserve JSON structure in prompt
+        response = await self.generate_text(prompt, {"max_tokens": 2048}, sanitize=False)
 
         try:
             return json.loads(response)
@@ -162,26 +123,10 @@ class GLMIntegration:
     async def analyze_content_security(self, content: str) -> Dict[str, Any]:
         """
         Analyze content for security issues using GLM-4.7
- feat/integrate-alibaba-access-analyzer-12183567303830527494
-        """
-        # Sanitize content input
-        sanitized_content = self.sanitize_input(content)
-
-        prompt = f"""
-        Analyze the following content for potential security issues:
-        {sanitized_content}
-
-
-        Args:
-            content: Content to analyze for security issues
-
-        Returns:
-            Security analysis results
         """
         prompt = f"""
         Analyze the following content for potential security issues:
         {content}
- dual-agent-cicd-pipeline-1349139378403618497
 
         Identify:
         1. Potential security vulnerabilities
@@ -199,7 +144,8 @@ class GLMIntegration:
         }}
         """
 
-        response = await self.generate_text(prompt, {"max_tokens": 2048})
+        # Call generate_text with sanitize=False to preserve content structure
+        response = await self.generate_text(prompt, {"max_tokens": 2048}, sanitize=False)
 
         try:
             return json.loads(response)
@@ -209,7 +155,10 @@ class GLMIntegration:
 
 
 # For backward compatibility
-async def create_glm_integration() -> GLMIntegration:
-    """Factory function to create GLM integration"""
+def create_glm_integration() -> GLMIntegration:
+    """
+    Factory function to create GLM integration.
+    Changed to synchronous to support 'async with create_glm_integration()'.
+    """
     config = GLMConfig(api_key=settings.ZHIPU_API_KEY)
     return GLMIntegration(config)

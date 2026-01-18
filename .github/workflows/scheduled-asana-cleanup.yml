@@ -36,7 +36,7 @@ jobs:
       completed_count: ${{ steps.cleanup.outputs.completed_count }}
       skipped_count: ${{ steps.cleanup.outputs.skipped_count }}
       error_count: ${{ steps.cleanup.outputs.error_count }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
               """Check if task is overdue"""
               if not task.get('due_date'):
                   return False
-              
+
               due_date = parser.parse(task['due_date']).date()
               today = datetime.now().date()
               return due_date < today
@@ -100,7 +100,7 @@ jobs:
               """Determine if task should be completed based on criteria"""
               if task['completed']:
                   return False, "Already completed"
-              
+
               if criteria == 'overdue':
                   if is_overdue_task(task):
                       return True, "Overdue task"
@@ -110,30 +110,30 @@ jobs:
               elif criteria == 'old_completed_subtasks':
                   if has_completed_subtasks(task, client):
                       return True, "All subtasks completed"
-              
+
               return False, "Does not meet criteria"
 
           def run_cleanup():
               dry_run = os.getenv('DRY_RUN', 'true').lower() == 'true'
               criteria = os.getenv('COMPLETION_CRITERIA', 'overdue')
-              
+
               print(f"🔍 Running {'DRY RUN' if dry_run else 'LIVE'} cleanup")
               print(f"📋 Criteria: {criteria}")
               print("=" * 60)
-              
+
               client = get_client()
               if not client:
                   return False
-              
+
               # Get user's workspaces
               workspaces = list(client.workspaces.find_all())
               if not workspaces:
                   print("❌ No workspaces found")
                   return False
-              
+
               workspace_id = workspaces[0]['gid']
               print(f"🏢 Workspace: {workspaces[0]['name']}")
-              
+
               # Get user's tasks
               me = client.users.me()
               tasks = list(client.tasks.find_by_user(me['gid'], {
@@ -141,21 +141,21 @@ jobs:
                   "opt_fields": "name,completed,due_date,projects.name,assignee.name",
                   "completed_since": "now"  # Only incomplete tasks
               }))
-              
+
               print(f"📊 Found {len(tasks)} incomplete tasks")
-              
+
               completed_count = 0
               skipped_count = 0
               error_count = 0
-              
+
               completion_log = []
-              
+
               for task in tasks:
                   should_complete, reason = should_complete_task(task, criteria, client)
-                  
+
                   project_names = [p['name'] for p in task.get('projects', [])]
                   project_info = f" (Projects: {', '.join(project_names)})" if project_names else ""
-                  
+
                   if should_complete:
                       if dry_run:
                           print(f"🔍 WOULD COMPLETE: {task['name']}{project_info}")
@@ -191,7 +191,7 @@ jobs:
                               error_count += 1
                   else:
                       skipped_count += 1
-              
+
               # Summary
               print("\n" + "=" * 60)
               print(f"📊 CLEANUP SUMMARY")
@@ -201,13 +201,13 @@ jobs:
               print(f"⏭️  Skipped: {skipped_count}")
               print(f"❌ Errors: {error_count}")
               print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
-              
+
               # Set outputs for GitHub Actions
               with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                   f.write(f"completed_count={completed_count}\n")
                   f.write(f"skipped_count={skipped_count}\n")
                   f.write(f"error_count={error_count}\n")
-              
+
               # Save detailed log
               log_data = {
                   "timestamp": datetime.now().isoformat(),
@@ -220,10 +220,10 @@ jobs:
                   },
                   "details": completion_log
               }
-              
+
               with open('cleanup_log.json', 'w') as f:
                   json.dump(log_data, f, indent=2)
-              
+
               return True
 
           if __name__ == "__main__":
@@ -235,7 +235,7 @@ jobs:
           export ASANA_PAT="${{ secrets.ASANA_PAT }}"
           export DRY_RUN="${{ github.event.inputs.dry_run || 'true' }}"
           export COMPLETION_CRITERIA="${{ github.event.inputs.completion_criteria || 'overdue' }}"
-          
+
           python scheduled_cleanup.py
 
       - name: Upload Cleanup Log
@@ -251,21 +251,21 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           ## 🧹 Scheduled Asana Cleanup Report
-          
+
           **Execution Time:** $(date -u)
           **Mode:** ${{ github.event.inputs.dry_run == 'true' && 'DRY RUN' || 'LIVE EXECUTION' }}
           **Criteria:** ${{ github.event.inputs.completion_criteria || 'overdue' }}
-          
+
           ### Results Summary
           - ✅ **${{ steps.cleanup.outputs.completed_count }}** tasks ${{ github.event.inputs.dry_run == 'true' && 'would be completed' || 'completed' }}
           - ⏭️ **${{ steps.cleanup.outputs.skipped_count }}** tasks skipped
           - ❌ **${{ steps.cleanup.outputs.error_count }}** errors encountered
-          
+
           ### Completion Criteria
           - **overdue**: Tasks past their due date
           - **ready_tag**: Tasks tagged with 'ready-for-completion'
           - **old_completed_subtasks**: Tasks with all subtasks completed
-          
+
           ### Next Steps
           ${{ github.event.inputs.dry_run == 'true' && '- Review the results and run in live mode if satisfied' || '- Check Asana to verify task completions' }}
           - Review the detailed log artifact for complete information
@@ -276,7 +276,7 @@ jobs:
     needs: scheduled-cleanup
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Prepare Notification Message
         id: message
@@ -286,22 +286,22 @@ jobs:
           else
             MODE="🟡 DRY RUN"
           fi
-          
+
           MESSAGE="Asana Cleanup $MODE Complete
           ✅ ${{ needs.scheduled-cleanup.outputs.completed_count }} tasks processed
-          ⏭️ ${{ needs.scheduled-cleanup.outputs.skipped_count }} tasks skipped  
+          ⏭️ ${{ needs.scheduled-cleanup.outputs.skipped_count }} tasks skipped
           ❌ ${{ needs.scheduled-cleanup.outputs.error_count }} errors
-          
+
           Criteria: ${{ github.event.inputs.completion_criteria || 'overdue' }}
           Repository: ${{ github.repository }}
           Time: $(date -u)"
-          
+
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$MESSAGE" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       # Uncomment and configure these steps when you're ready to add notifications
-      
+
       # - name: Notify Slack
       #   if: env.SLACK_WEBHOOK_URL != ''
       #   uses: 8398a7/action-slack@v3
@@ -329,19 +329,19 @@ jobs:
               repo: context.repo.repo,
               title: `🚨 Asana Cleanup Errors - ${new Date().toISOString().split('T')[0]}`,
               body: `## Scheduled Cleanup Encountered Errors
-              
+
               **Date:** ${new Date().toISOString()}
               **Workflow Run:** ${context.runId}
               **Errors:** ${{ needs.scheduled-cleanup.outputs.error_count }}
-              
+
               ### Summary
               - ✅ Completed: ${{ needs.scheduled-cleanup.outputs.completed_count }}
               - ⏭️ Skipped: ${{ needs.scheduled-cleanup.outputs.skipped_count }}
               - ❌ Errors: ${{ needs.scheduled-cleanup.outputs.error_count }}
-              
+
               ### Action Required
               Please review the workflow logs and cleanup log artifact to identify and resolve the errors.
-              
+
               **Workflow URL:** ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
               labels: ['bug', 'automation', 'asana-integration']
             });

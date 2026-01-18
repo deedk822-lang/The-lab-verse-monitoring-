@@ -57,7 +57,7 @@ class TestKimiClientInitialization:
                 client = KimiClient()
 
                 call_args = mock_openai.call_args
-                assert call_args[1]['api_key'] == 'EMPTY'
+                assert call_args[1]['api_key'] == ''
 
 
 class TestKimiClientGenerate:

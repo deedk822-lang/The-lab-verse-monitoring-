@@ -12,11 +12,11 @@ env:
 jobs:
   security-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Query Security Analyzer
         id: security_check
         continue-on-error: true
@@ -25,7 +25,7 @@ jobs:
           ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
         run: |
           # Simulate Security Analyzer query
-          
+
           TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           # We use a heredoc with a specific delimiter to avoid quote nesting issues
@@ -50,29 +50,29 @@ jobs:
           }
           EOF
           )
-          
+
           echo "$FINDINGS" > /tmp/security-findings.json
-          
+
           # Count critical findings
           CRITICAL_COUNT=$(echo "$FINDINGS" | jq '[.findings[] | select(.severity == "CRITICAL")] | length')
           HIGH_COUNT=$(echo "$FINDINGS" | jq '[.findings[] | select(.severity == "HIGH")] | length')
           MEDIUM_COUNT=$(echo "$FINDINGS" | jq '[.findings[] | select(.severity == "MEDIUM")] | length')
           TOTAL_COUNT=$(echo "$FINDINGS" | jq '.findings | length')
-          
+
           echo "critical_count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
           echo "high_count=$HIGH_COUNT" >> $GITHUB_OUTPUT
           echo "medium_count=$MEDIUM_COUNT" >> $GITHUB_OUTPUT
           echo "total_count=$TOTAL_COUNT" >> $GITHUB_OUTPUT
-          
+
           echo "Security scan complete: $TOTAL_COUNT findings ($CRITICAL_COUNT critical, $HIGH_COUNT high, $MEDIUM_COUNT medium)"
-      
+
       - name: Alert on Critical Findings
         # FIX 2: Quotes added around the condition containing '>'
         if: "steps.security_check.outputs.critical_count > 0"
         continue-on-error: true
         run: |
           echo "🚨 CRITICAL SECURITY ALERT: ${{ steps.security_check.outputs.critical_count }} critical findings detected"
-          
+
           curl -X POST https://app.asana.com/api/1.0/tasks \
             -H "Authorization: Bearer ${{ secrets.ASANA_TOKEN }}" \
             -H "Content-Type: application/json" \
@@ -84,14 +84,14 @@ jobs:
                 "due_on": "'$(date +%Y-%m-%d)'"
               }
             }' || echo "Asana alert skipped"
-      
+
       - name: Alert on High Findings
         # FIX 2: Quotes added around the condition containing '>' and '&&'
         if: "steps.security_check.outputs.high_count > 0 && steps.security_check.outputs.critical_count == 0"
         continue-on-error: true
         run: |
           echo "⚠️ HIGH PRIORITY: ${{ steps.security_check.outputs.high_count }} high-severity findings"
-          
+
           curl -X POST https://app.asana.com/api/1.0/tasks \
             -H "Authorization: Bearer ${{ secrets.ASANA_TOKEN }}" \
             -H "Content-Type: application/json" \
@@ -103,7 +103,7 @@ jobs:
                 "due_on": "'$(date -d '+1 day' +%Y-%m-%d)'"
               }
             }' || echo "Asana alert skipped"
-      
+
       - name: Update Grafana Dashboard
         continue-on-error: true
         run: |
@@ -115,7 +115,7 @@ jobs:
               "tags": ["security", "alibaba", "monitoring"],
               "time": '$(date +%s000)'
             }' || echo "Grafana update skipped"
-      
+
       - name: Send Datadog Metrics
         continue-on-error: true
         run: |
@@ -145,7 +145,7 @@ jobs:
                 }
               ]
             }' || echo "Datadog metrics skipped"
-      
+
       - name: Generate Security Report
         run: |
           # Determine status message using shell logic instead of JS ternary
@@ -185,7 +185,7 @@ jobs:
           EOF
 
           cat /tmp/security-report.md
-      
+
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
         with:
@@ -194,7 +194,7 @@ jobs:
             /tmp/security-report.md
             /tmp/security-findings.json
           retention-days: 30
-      
+
       - name: Workflow Summary
         run: |
           echo "## Security & Compliance Monitoring 🔒" >> $GITHUB_STEP_SUMMARY
@@ -207,7 +207,7 @@ jobs:
           echo "- **High:** ${{ steps.security_check.outputs.high_count }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Medium:** ${{ steps.security_check.outputs.medium_count }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.security_check.outputs.critical_count }}" -gt 0 ]; then
             echo "🚨 **CRITICAL ALERT:** Immediate action required!" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ steps.security_check.outputs.high_count }}" -gt 0 ]; then

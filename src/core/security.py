@@ -62,8 +62,11 @@ async def get_current_user(
                 detail="Rate limit exceeded"
             )
     except redis.RedisError:
-        # Fallback if Redis is down - log error but allow request in MVP
-        pass
+        # Failing closed is safer. If Redis is down, we can't enforce rate limits.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service is temporarily unavailable."
+        )
 
     # Verify token
     payload = verify_token(credentials.credentials)

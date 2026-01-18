@@ -1,12 +1,12 @@
-from fastapi import Depends, HTTPException, status
+import hashlib
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
- feat/integrate-alibaba-access-analyzer-12183567303830527494
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+import redis
 from ..models.user import User
 from ..core.config import settings
-import redis
 
 # Initialize Redis for rate limiting
 redis_client = redis.from_url(settings.REDIS_URL)
@@ -35,24 +35,35 @@ def verify_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> User:
     """
     Get current user from JWT token with rate limiting.
     """
     # Rate limiting
-    client_ip = "127.0.0.1"  # In a real app, get from request
-    key = f"rate_limit:{client_ip}:{credentials.credentials[:10]}"
+    # Derive client_ip from request.client.host
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    
+    # Use a non-reversible fingerprint of the token
+    token_fingerprint = hashlib.sha256(credentials.credentials.encode()).hexdigest()
+    key = f"rate_limit:{client_ip}:{token_fingerprint}"
 
     # Increment counter and check rate limit
-    current_requests = redis_client.incr(key)
-    if current_requests == 1:
-        redis_client.expire(key, 60)  # Reset after 1 minute
+    try:
+        current_requests = redis_client.incr(key)
+        if current_requests == 1:
+            redis_client.expire(key, 60)  # Reset after 1 minute
 
-    if current_requests > settings.REQUESTS_PER_MINUTE:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit exceeded"
-        )
+        if current_requests > settings.REQUESTS_PER_MINUTE:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded"
+            )
+    except redis.RedisError:
+        # Fallback if Redis is down - log error but allow request in MVP
+        pass
 
     # Verify token
     payload = verify_token(credentials.credentials)
@@ -66,8 +77,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # In a real app, fetch user from database with permissions
-    # For now, we'll create a mock user with tenant info
+    # Extract tenant and permissions
     tenant_id = payload.get("tenant_id", "default_tenant")
 
     # Return user with explicit permissions based on claims
@@ -79,21 +89,3 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         has_autoglm_access=payload.get("has_autoglm_access", False),
         has_billing_access=payload.get("has_billing_access", False)
     )
-
-from ..models.user import User
-
-security = HTTPBearer()
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
-    """
-    Mock authentication dependency.
-    In production, verify the JWT token here.
-    """
-    # For MVP, we accept any bearer token and return a mock user
-    if not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
-    return User(id="user_123", email="admin@rainmaker.local")
- dual-agent-cicd-pipeline-1349139378403618497

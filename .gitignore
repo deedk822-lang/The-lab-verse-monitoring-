@@ -79,3 +79,4 @@ secrets.json
 security-reports/
 .trivyignore
  main
+\n# Python cache files\n__pycache__/\n*.pyc

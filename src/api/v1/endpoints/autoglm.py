@@ -68,7 +68,7 @@ async def generate_with_glm(
             "success": True,
             "content": content,
  feat/integrate-alibaba-access-analyzer-12183567303830527494
-            "timestamp": asyncio.get_event_loop().time(),
+            "timestamp": asyncio.get_running_loop().time(),
             "tenant_id": current_user.tenant_id
 
             "timestamp": asyncio.get_event_loop().time()

@@ -1,14 +1,16 @@
-name: Dual-Agent CI/CD Pipeline
+# .github/workflows/ci.yml (updated)
+name: CI/CD Pipeline with Alibaba Cloud
 
 on:
   push:
-    branches: [main, develop, release/*]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/rainmaker-orchestrator
+  ALIYUN_REGION: cn-hangzhou
 
 jobs:
   security-gate:
@@ -16,8 +18,8 @@ jobs:
     secrets: inherit
 
   build:
-    needs: [security-gate]
-    if: github.event_name == 'pull_request' and needs.security-gate.result == 'success'
+    needs: security-gate
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -39,14 +41,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run security scan
-        run: |
-          if command -v docker &> /dev/null; then
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-              aquasec/trivy image --security-checks vuln ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          fi
-
   build-and-push:
+    needs: security-gate
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -87,8 +83,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-to-alibaba:
-    needs: [build-and-push, security-gate]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-and-push]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -101,22 +96,23 @@ jobs:
       - name: Configure Alibaba Cloud OIDC
         uses: aliyun/aliyun-oidc-auth-action@v1
         with:
-          aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
-          aliyun-oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
-          aliyun-region-id: cn-hangzhou
+          aliyun-oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ARN }}
+          aliyun-role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          aliyun-region-id: ${{ env.ALIYUN_REGION }}
 
       - name: Install Alibaba Cloud CLI
         run: |
-          wget https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.zip
-          unzip aliyun-cli-linux-latest-amd64.zip
-          sudo mv aliyun /usr/local/bin
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
 
       - name: Deploy to Alibaba Cloud ECS
         id: deploy
         run: |
           DEPLOY_SCRIPT=$(cat <<'EOF'
           #!/bin/bash
-          set -ex
+          set -euo pipefail
           cd /app/The-lab-verse-monitoring-
           # Save the current image for rollback
           docker-compose -f docker/compose/docker-compose.prod.yml config | grep 'image:' | awk '{print $2}' > /tmp/previous_image.tag || echo "No previous image found, continuing."
@@ -172,7 +168,7 @@ jobs:
             fi
           done
 
-      - name: Verify Deployment and Rollback if Necessary
+      - name: Verify Deployment
         run: |
           echo "🔍 Verifying deployment..."
           for i in {1..15}; do
@@ -184,31 +180,69 @@ jobs:
             sleep 10
           done
 
-          echo "❌ Health check failed after multiple retries. Initiating rollback..."
+          echo "❌ Health check failed after multiple retries."
+          exit 1
+
+  rollback-on-failure:
+    needs: [deploy-to-alibaba]
+    if: failure()
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud OIDC
+        uses: aliyun/aliyun-oidc-auth-action@v1
+        with:
+          aliyun-oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ARN }}
+          aliyun-role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          aliyun-region-id: ${{ env.ALIYUN_REGION }}
+
+      - name: Install Alibaba Cloud CLI
+        run: |
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
+
+      - name: Initiate Rollback
+        run: |
+          echo "❌ Deployment failed. Initiating rollback..."
 
           ROLLBACK_SCRIPT=$(cat <<'EOF'
           #!/bin/bash
-          set -ex
+          set -euo pipefail
           cd /app/The-lab-verse-monitoring-
           # Read the previous image tag and redeploy
-          export IMAGE_TAG=$(cat /tmp/previous_image.tag)
+          export IMAGE_TAG=$(cat /tmp/previous_image.tag | cut -d':' -f2)
           if [ -z "$IMAGE_TAG" ]; then
             echo "Rollback failed: Could not find previous image tag."
             exit 1
           fi
           echo "Rolling back to image: $IMAGE_TAG"
+          docker-compose -f docker/compose/docker-compose.prod.yml pull
           docker-compose -f docker/compose/docker-compose.prod.yml up -d --remove-orphans
           EOF
           )
 
           ENCODED_ROLLBACK=$(echo -n "$ROLLBACK_SCRIPT" | base64 -w 0)
 
-          aliyun ecs RunCommand --RegionId ${{ env.ALIYUN_REGION }} \
+          echo "Sending rollback command..."
+          ROLLBACK_INVOKE_ID=$(aliyun ecs RunCommand --RegionId ${{ env.ALIYUN_REGION }} \
             --InstanceId.1 ${{ secrets.ECS_INSTANCE_ID }} \
             --Type RunShellScript \
             --CommandContent "$ENCODED_ROLLBACK" \
             --ContentEncoding Base64 \
-            --Timeout 120
+            --Timeout 120 \
+            --query 'InvokeId' --output text)
 
-          echo "Rollback command sent."
+          echo "Rollback command sent. Invoke ID: $ROLLBACK_INVOKE_ID."
+
+          # Wait for rollback completion using the script
+          chmod +x ./scripts/verify-rollback.sh
+          ./scripts/verify-rollback.sh $ROLLBACK_INVOKE_ID ${{ env.ALIYUN_REGION }}
           exit 1

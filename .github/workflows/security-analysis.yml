@@ -1,157 +1,53 @@
-name: 🔒 Security Analysis Pipeline
+name: Security Analysis with Alibaba Cloud Access Analyzer
+
 on:
+  push:
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-    paths:
-      - 'rainmaker_orchestrator/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
-  push:
-    branches: [ main ]
 
-env:
-  ALIYUN_REGION: cn-hangzhou  # Adjust to your region
-  SECURITY_ANALYZER: acs:accessanalyzer:cn
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+  security-events: write
 
 jobs:
   security-scan:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      id-token: write  # For OIDC authentication
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
+          fetch-depth: 0
 
       - name: Configure Alibaba Cloud OIDC
         uses: aliyun/aliyun-oidc-auth-action@v1
         with:
-          aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
-          aliyun-oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
-          aliyun-region-id: ${{ env.ALIYUN_REGION }}
+          aliyun-oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ARN }}
+          aliyun-role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
 
       - name: Install Alibaba Cloud CLI
         run: |
-          wget https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.zip
-          unzip aliyun-cli-linux-latest-amd64.zip
-          sudo mv aliyun /usr/local/bin
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
 
-      - name: Run Alibaba Cloud Access Analyzer Scan
-        id: security_analysis
+      - name: Run Security Analysis
+        id: analyze
         run: |
-          ANALYZER_NAME="GitHubActionsAnalyzer"
-          SCAN_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          echo "Starting Access Analyzer scan..."
-          aliyun accessanalyzer StartResourceScan --analyzer-name "$ANALYZER_NAME"
-
-          # Poll for scan completion (adjust timeout as needed)
-          TIMEOUT=300 # 5 minutes
-          INTERVAL=15
-          ELAPSED=0
-
-          while true; do
-            STATUS=$(aliyun accessanalyzer GetAnalyzer --analyzer-name "$ANALYZER_NAME" --query 'Analyzer.Status' --output text)
-            if [ "$STATUS" == "Active" ]; then
-              echo "✅ Scan complete."
-              break
-            elif [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-              echo "❌ Scan timed out after $TIMEOUT seconds."
-              exit 1
-            else
-              echo "Scan in progress (Status: $STATUS)... waiting $INTERVAL seconds."
-              sleep $INTERVAL
-              ELAPSED=$((ELAPSED + INTERVAL))
-            fi
-          done
-
-          echo "Fetching new security findings since $SCAN_START_TIME..."
-          FINDINGS=$(aliyun accessanalyzer ListFindings --analyzer-name "$ANALYZER_NAME" --filter "generatedAt > '$SCAN_START_TIME' && (severity == 'High' || severity == 'Critical')" --output json)
-
-          # Create analysis report from actual findings
-          jq -n --argjson findings "$FINDINGS" '
-          {
-            "scan_time": "'"$SCAN_START_TIME"'",
-            "repository": "${{ github.repository }}",
-            "branch": "${{ github.ref_name }}",
-            "pull_request": "${{ github.event.pull_request.number }}",
-            "analyzer": "acs:accessanalyzer:cn",
-            "security_findings": ($findings.Findings | map({
-              severity: .Severity,
-              path: .Resource,
-              issue: .FindingType,
-              recommendation: .Remediation.Recommendation.Description
-            }))
-          }' > security_report.json
-
-          echo "Generated security report:"
-          cat security_report.json
-
-          # Upload report as artifact
-          mkdir -p security-reports
-          mv security_report.json security-reports/
-          echo "report_path=security-reports/security_report.json" >> $GITHUB_OUTPUT
+          chmod +x scripts/alibaba_cloud_security_analyzer.py
+          ./scripts/alibaba_cloud_security_analyzer.py
 
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
         with:
           name: security-analysis-report
-          path: security-reports/security_report.json
+          path: security-report.json
 
-      - name: Comment on Pull Request
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
+      - name: Publish Security Findings
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          script: |
-            const report = require('./security-reports/security_report.json');
-            const findings = report.security_findings;
-
-            let comment = `## 🔒 Security Analysis Report\n\n`;
-            comment += `**Analyzer:** Alibaba Cloud Access Analyzer\n`;
-            comment += `**Scan Time:** ${report.scan_time}\n\n`;
-
-            if (findings.length === 0) {
-              comment += `✅ **No security vulnerabilities detected**\n\n`;
-              comment += `All changes pass security analysis requirements.`;
-            } else {
-              comment += `⚠️ **Security Findings** (${findings.length})\n\n`;
-              findings.forEach(finding => {
-                comment += `### ${finding.severity} - ${finding.path}\n`;
-                comment += `**Issue:** ${finding.issue}\n`;
-                comment += `**Recommendation:** ${finding.recommendation}\n\n`;
-              });
-              comment += `\n**Action Required:** Please address the security findings above before merging.`;
-            }
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-
-      - name: Block Merge on Critical Findings
-        run: |
-          CRITICAL_COUNT=$(jq '.security_findings | map(select(.severity == "CRITICAL")) | length' security-reports/security_report.json)
-          if [ "$CRITICAL_COUNT" -gt 0 ]; then
-            echo "❌ CRITICAL SECURITY VULNERABILITIES FOUND - BLOCKING MERGE"
-            echo "Found $CRITICAL_COUNT critical vulnerabilities"
-            exit 1
-          fi
-          echo "✅ No critical vulnerabilities - proceeding with pipeline"
-
-  approve-merge:
-    needs: security-scan
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://your-app-url.com  # Update with your actual URL
-
-    steps:
-      - name: Manual Approval Required
-        run: echo "✅ Security analysis passed - manual approval required for production deployment"
+          sarif_file: security-report.json

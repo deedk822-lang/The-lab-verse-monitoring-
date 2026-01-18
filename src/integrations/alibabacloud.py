@@ -1,10 +1,11 @@
 import asyncio
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_accessanalyzer20200901 import models as accessanalyzer_models
 from alibabacloud_accessanalyzer20200901.client import Client as AccessAnalyzerClient
+from ..core.config import settings
 
 
 class AlibabaCloudConfig(BaseModel):
@@ -14,13 +15,33 @@ class AlibabaCloudConfig(BaseModel):
     region_id: str = Field(default="cn-hangzhou", description="Alibaba Cloud Region ID")
 
 
+class AlibabacloudAPIError(Exception):
+    """Custom exception for Alibaba Cloud API errors"""
+    def __init__(self, message: str, original_exception: Optional[Exception] = None):
+        """
+        Initialize the AlibabacloudAPIError with a message and an optional original exception.
+        
+        Parameters:
+            message (str): Human-readable description of the error.
+            original_exception (Optional[Exception]): The underlying exception that caused this error, if available; stored on the `original_exception` attribute.
+        """
+        super().__init__(message)
+        self.original_exception = original_exception
+
+
 class AlibabaCloudIntegration:
     """
-    Alibaba Cloud Integration Class
+    Alibaba Cloud Integration Class with Security Hardening
     Provides integration with Alibaba Cloud services (Access Analyzer)
     """
 
     def __init__(self, config: AlibabaCloudConfig):
+        """
+        Initialize the integration with the provided AlibabaCloudConfig.
+        
+        Parameters:
+            config (AlibabaCloudConfig): Configuration containing credentials and region used to create Alibaba Cloud clients and control integration behavior.
+        """
         self.config = config
         self.access_analyzer_client = None
         self.logger = logging.getLogger(__name__)
@@ -42,8 +63,15 @@ class AlibabaCloudIntegration:
 
     async def get_security_findings(self) -> List[Dict[str, Any]]:
         """
-        Get security findings from Alibaba Cloud Access Analyzer.
-        Uses asyncio.to_thread to run the synchronous SDK in a non-blocking way.
+        Retrieve security findings from Alibaba Cloud Access Analyzer.
+        
+        Aggregates findings from all available analyzers into a list of dictionaries. Each finding dictionary contains the keys: `id`, `resource`, `status`, `severity`, `principal`, `condition`, `created_at`, `analyzer_name`, and `analyzer_type`.
+        
+        Returns:
+            List[Dict[str, Any]]: A list of finding dictionaries as described above.
+        
+        Raises:
+            AlibabacloudAPIError: If the Alibaba Cloud API calls fail or an error occurs while fetching findings.
         """
         try:
             # 1. List Analyzers (Synchronous call wrapped in thread)
@@ -90,17 +118,24 @@ class AlibabaCloudIntegration:
             return all_findings
 
         except Exception as e:
-            self.logger.error(f"Error getting security findings: {str(e)}")
-            # Return empty list to avoid crashing the orchestrator on API failure
-            return []
+            self.logger.exception(f"Alibaba Cloud API error: {str(e)}")
+            raise AlibabacloudAPIError(f"Failed to retrieve security findings: {str(e)}", original_exception=e)
 
 
 # For backward compatibility
 async def create_alibaba_cloud_integration() -> AlibabaCloudIntegration:
-    """Factory function to create Alibaba Cloud integration"""
+    """
+    Create an AlibabaCloudIntegration configured from application settings.
+    
+    Constructs an AlibabaCloudConfig using ALIBABA_CLOUD_ACCESS_KEY_ID, ALIBABA_CLOUD_SECRET_KEY,
+    and ALIBABA_CLOUD_REGION_ID from the global settings and returns an integration instance.
+    
+    Returns:
+        AlibabaCloudIntegration: Integration initialized with credentials and region from settings.
+    """
     config = AlibabaCloudConfig(
-        access_key_id="",
-        secret_key="",
-        region_id="cn-hangzhou"
+        access_key_id=settings.ALIBABA_CLOUD_ACCESS_KEY_ID,
+        secret_key=settings.ALIBABA_CLOUD_SECRET_KEY,
+        region_id=settings.ALIBABA_CLOUD_REGION_ID
     )
     return AlibabaCloudIntegration(config)

@@ -1,3 +1,12 @@
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+name: Security Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
 name: 🔒 Security Analysis Pipeline
 on:
   workflow_call:
@@ -5,10 +14,28 @@ on:
 env:
   ALIYUN_REGION: cn-shanghai
   ACCESS_ANALYZER_ARN: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
+ dual-agent-cicd-pipeline-1349139378403618497
 
 jobs:
   security-scan:
     runs-on: ubuntu-latest
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
     permissions:
       contents: read
       security-events: write
@@ -141,3 +168,4 @@ jobs:
           fi
 
           echo "✅ Security analysis passed - proceeding with pipeline"
+ dual-agent-cicd-pipeline-1349139378403618497

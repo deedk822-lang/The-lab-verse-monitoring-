@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_APM_ENABLED=true
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318
+    ports:
+      - "8126:8126" # Trace Ingest
+      - "4318:4318" # OpenTelemetry HTTP
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+
+  rainmaker-orchestrator:
+    build: ./src/rainmaker_orchestrator
+    environment:
+      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent:4318
+      - ENABLE_OBSERVABILITY=true
+    depends_on:
+      - datadog-agent

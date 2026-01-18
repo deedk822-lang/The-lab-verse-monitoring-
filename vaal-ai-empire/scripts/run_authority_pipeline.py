@@ -84,7 +84,7 @@ class AyrshareTool:
     def post_to_socials(self, text: str, image_url: Optional[str] = None) -> str:
         if not self.api_key:
             return "SKIPPED: Ayrshare API key not configured"
-        
+
         if not AVAILABLE_TOOLS.get('requests'):
             return "ERROR: requests library not installed"
         
@@ -125,7 +125,7 @@ class WixTool:
     def create_blog_post(self, title: str, content: str) -> str:
         if not all([self.api_key, self.site_id, self.account_id]):
             return "SKIPPED: Wix credentials not configured (need WIX_API_KEY, WIX_SITE_ID, WIX_ACCOUNT_ID)"
-        
+
         if not AVAILABLE_TOOLS.get('requests'):
             return "ERROR: requests library not installed"
         
@@ -173,9 +173,9 @@ class MailChimpTool:
         self.api_key = os.getenv("MAILCHIMP_API_KEY")
         self.server = os.getenv("MAILCHIMP_SERVER_PREFIX", "us6")
         self.list_id = os.getenv("MAILCHIMP_LIST_ID")  # REQUIRED
-        
+
         self.client = None
-        
+
         if not self.api_key:
             logger.warning("MAILCHIMP_API_KEY not set - newsletter disabled")
             return
@@ -201,7 +201,7 @@ class MailChimpTool:
     def send_campaign(self, subject: str, body_text: str) -> str:
         if not self.client:
             return "SKIPPED: MailChimp not configured (need MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_SERVER_PREFIX)"
-        
+
         logger.info(f"📧 MAILCHIMP: Preparing Campaign '{subject}'...")
         
         try:
@@ -249,7 +249,7 @@ class WordPressTool:
     def publish_article(self, title: str, content: str, tags: list = None) -> str:
         if not all([self.site_url, self.username, self.app_password]):
             return "SKIPPED: WordPress not configured (need WORDPRESS_SITE_URL, WORDPRESS_USERNAME, WORDPRESS_APP_PASSWORD)"
-        
+
         if not AVAILABLE_TOOLS.get('requests'):
             return "ERROR: requests library not installed"
         

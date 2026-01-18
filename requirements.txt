@@ -29,4 +29,12 @@ passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 redis==5.0.1
 zhipu-api-sdk==1.0.0
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+python-jose==3.3.0
+SQLAlchemy==2.0.23
+alembic==1.12.1
+async-exit-stack==1.0.1
+async-generator==1.10
+
  dual-agent-cicd-pipeline-1349139378403618497
+ main

@@ -71,7 +71,7 @@ jobs:
           TOTAL=$(jq -r '.summary.total' completion_results.json)
           CRITERIA=$(jq -r '.criteria' completion_results.json)
           DRY_RUN_MODE=$(jq -r '.dry_run' completion_results.json)
-          
+
           ACTION_TEXT="Completed"
           if [[ "$DRY_RUN_MODE" == "true" ]]; then
             ACTION_TEXT="Would Complete"

@@ -19,7 +19,7 @@ class User(BaseModel):
     has_billing_access: bool = Field(default=False, description="User has access to billing features")
 
     # Validate email format
-    @validator('email')
+    @field_validator('email')
     def validate_email(cls, v):
         if '@' not in v:
             raise ValueError('Invalid email format')

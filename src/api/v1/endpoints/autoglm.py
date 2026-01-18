@@ -76,7 +76,7 @@ async def generate_with_glm(
         }
     except Exception as e:
         logger.error(f"GLM generation failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred during GLM generation.")
 
 
 @router.post("/security-analysis", summary="Perform autonomous security analysis")

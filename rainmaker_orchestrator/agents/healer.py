@@ -43,7 +43,8 @@ class SelfHealingAgent:
         Returns:
             RainmakerOrchestrator: A new orchestrator instance
         """
-        return RainmakerOrchestrator()
+        from rainmaker_orchestrator.server import settings
+        return RainmakerOrchestrator(workspace_path=settings.workspace_path)
 
     def handle_alert(self, alert_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -68,10 +69,12 @@ class SelfHealingAgent:
         
         # Check for multiple alerts in payload
         alerts = alert_payload.get('alerts', [])
-        if not alerts and 'description' not in alert_payload:
-            return {"status": "ignored", "reason": "No alerts or description in payload"}
+        if not alerts and 'description' not in alert_payload and 'service' not in alert_payload:
+            return {"status": "ignored", "reason": "No alerts, description or service in payload"}
 
-        error_log = alert_payload.get('description', 'No description provided')
+        error_log = alert_payload.get('description')
+        if not error_log:
+            error_log = 'No description provided'
         service_name = alert_payload.get('service', 'Unknown service')
 
         if not alerts:

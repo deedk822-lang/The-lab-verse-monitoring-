@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: the-lab-verse-monitoring:latest
+    container_name: the-lab-verse-monitoring
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ALIBABA_CLOUD_REGION_ID=${ALIBABA_CLOUD_REGION_ID:-cn-hangzhou}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/opt/myapp/logs  # For logging
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Need write access for logs
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,14 +1,23 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
-from rainmaker_orchestrator.server import app
+
+# Mock the security config before importing the app
+with patch('rainmaker_orchestrator.src.config.security.get_security_config') as mock_get_security_config:
+    from rainmaker_orchestrator.src.config.security import SecurityConfig
+    mock_get_security_config.return_value = SecurityConfig(
+        aliyun_access_key_id='test',
+        aliyun_access_key_secret='test',
+        zai_api_key='test',
+        ifcloud_api_key='test'
+    )
+    from rainmaker_orchestrator.server import app
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Create a test client that handles lifespan events and a temporary workspace."""
-    from rainmaker_orchestrator.config import settings
-    monkeypatch.setattr(settings, "workspace_path", str(tmp_path))
+    monkeypatch.setenv("WORKSPACE_PATH", str(tmp_path))
     with TestClient(app) as c:
         yield c
 
@@ -57,7 +66,7 @@ class TestAlertEndpoints:
         """Test successful alert handling."""
         mock_healer.handle_alert.return_value = {
             "status": "hotfix_generated",
-            "blueprint": "def fix():\n    pass",
+            "blueprint": "def fix():\\n    pass",
             "service": "api-service"
         }
 
@@ -153,13 +162,10 @@ class TestExecutionEndpoints:
 class TestWorkspaceEndpoints:
     """Test workspace management endpoints."""
 
-    def test_list_workspace_files(self, client, tmp_path, monkeypatch):
+    def test_list_workspace_files(self, client, tmp_path):
         """Test listing workspace files."""
         # Create temporary workspace
         (tmp_path / "test.txt").write_text("test content")
-
-        from rainmaker_orchestrator import config
-        monkeypatch.setattr(config.settings, "workspace_path", str(tmp_path))
 
         response = client.get("/workspace/files")
         assert response.status_code == 200
@@ -167,11 +173,8 @@ class TestWorkspaceEndpoints:
         assert "files" in data
         assert "count" in data
 
-    def test_upload_file(self, client, tmp_path, monkeypatch):
+    def test_upload_file(self, client, tmp_path):
         """Test file upload."""
-        from rainmaker_orchestrator import config
-        monkeypatch.setattr(config.settings, "workspace_path", str(tmp_path))
-
         files = {"file": ("test.txt", b"test content")}
         response = client.post("/workspace/upload", files=files)
 
@@ -180,11 +183,8 @@ class TestWorkspaceEndpoints:
         assert data["filename"] == "test.txt"
         assert data["status"] == "uploaded"
 
-    def test_create_directory(self, client, tmp_path, monkeypatch):
+    def test_create_directory(self, client, tmp_path):
         """Test directory creation."""
-        from rainmaker_orchestrator import config
-        monkeypatch.setattr(config.settings, "workspace_path", str(tmp_path))
-
         response = client.post("/workspace/create-directory?path=test_dir")
         assert response.status_code == 200
         data = response.json()

@@ -18,11 +18,14 @@ from pydantic import BaseModel, Field
 from rainmaker_orchestrator.agents.healer import SelfHealingAgent
 from rainmaker_orchestrator.clients.kimi import KimiClient
 from rainmaker_orchestrator.core.orchestrator import RainmakerOrchestrator
-from rainmaker_orchestrator.config import settings
+from rainmaker_orchestrator.src.config.security import get_security_config
+
+# Unified configuration
+settings = get_security_config()
 
 # Configure logging
 logging.basicConfig(
-    level=getattr(logging, settings.log_level),
+    level=settings.log_level.upper(),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -83,7 +86,9 @@ async def lifespan(app: FastAPI):
 
     # Initialize clients and agents
     app.state.kimi_client = KimiClient()
-    app.state.orchestrator = RainmakerOrchestrator(workspace_path=settings.workspace_path)
+    app.state.orchestrator = RainmakerOrchestrator(
+        workspace_path=settings.workspace_path
+    )
     app.state.healer_agent = SelfHealingAgent(
         kimi_client=app.state.kimi_client,
         orchestrator=app.state.orchestrator

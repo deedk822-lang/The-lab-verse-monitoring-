@@ -219,28 +219,21 @@ class AutoGLM:
             "summary": "All remediation steps executed successfully"
         }
 
-    async def generate_final_report(
+async def generate_final_report(
         self,
         initial_findings: List[Dict[str, Any]],
         post_fix_findings: List[Dict[str, Any]],
         execution_results: Dict[str, Any]
     ) -> str:
         """Generate final security report"""
+        execution_json = json.dumps(execution_results, indent=2)
         report_prompt = f"""
         Generate a comprehensive security report comparing the state before and after remediation:
 
         Initial findings count: {len(initial_findings)}
         Post-fix findings count: {len(post_fix_findings)}
-        Execution results: {json.dumps(execution_results, indent=2)}
-
-        Include:
-        1. Executive summary
-        2. Remediation effectiveness
-        3. Remaining issues
-        4. Recommendations for ongoing security
-        """
-
-        return await self.glm.generate_text(report_prompt)
+        
+        <execution_data>
 
     async def generate_secure_content(self, content_type: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """

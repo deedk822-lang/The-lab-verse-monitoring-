@@ -39,7 +39,22 @@ async def generate_with_glm(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate content using GLM-4.7 model
+    Generate structured content using the GLM-4.7 model for the given request.
+    
+    Generates content of the specified content_type using request.context and returns a payload with the generated content, a Unix timestamp, and the tenant identifier from the authenticated user.
+    
+    Parameters:
+        request (GLMGenerateRequest): Request containing `content_type` (the kind of content to generate) and `context` (data used to guide generation).
+    
+    Returns:
+        dict: Response payload with keys:
+            - `success` (bool): `True` on successful generation.
+            - `content` (Any): Generated structured content.
+            - `timestamp` (float): Unix timestamp when the response was created.
+            - `tenant_id` (str): Tenant identifier of the authenticated user.
+    
+    Raises:
+        HTTPException: 403 if the user lacks the "glm" permission; 500 on internal errors during generation.
     """
     # Check user permissions
     if not current_user.has_permission("glm"):
@@ -102,7 +117,20 @@ async def autoglm_secure_content(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate content with security awareness using AutoGLM
+    Generate security-reviewed content for the given content type and context using the AutoGLM orchestrator.
+    
+    Parameters:
+        request (AutoGLMSecureContentRequest): Request containing `content_type` (the kind of content to produce) and `context` (data used to inform generation).
+        
+    Returns:
+        dict: A payload with keys:
+            - `success`: `True` on successful generation.
+            - `content`: The generated secure content.
+            - `timestamp`: Unix epoch time when the response was produced.
+            - `tenant_id`: Tenant identifier of the requesting user.
+    
+    Raises:
+        HTTPException: 403 if the current user lacks the "autoglm" permission; 500 on internal errors during generation.
     """
     # Check user permissions
     if not current_user.has_permission("autoglm"):
@@ -132,7 +160,16 @@ async def autoglm_secure_content(
 @router.get("/health", summary="Health check for GLM and AutoGLM services")
 async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     """
-    Health check for GLM and AutoGLM services
+    Perform health checks for configured GLM and AutoGLM services and assemble an overall health status.
+    
+    Only services for which the current user has permission and for which required configuration is present are checked; unchecked services are reported as "not configured". The returned payload includes a POSIX timestamp and the requesting user's tenant identifier.
+    
+    Returns:
+        dict: A mapping containing:
+            - "status" (str): overall health status.
+            - "timestamp" (float): POSIX timestamp of the check.
+            - "tenant_id" (str): tenant identifier of the requesting user.
+            - "services" (dict): per-service health information (each entry contains at minimum a "status" and may include "response" or "error").
     """
     health_status = {
         "status": "healthy",

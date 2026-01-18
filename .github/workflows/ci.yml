@@ -1,3 +1,219 @@
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+# .github/workflows/ci.yml
+name: CI/CD Pipeline with Alibaba Cloud
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ALIBABA_CLOUD_REGION_ID: ${{ secrets.ALIBABA_CLOUD_REGION_ID }}
+  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Lint code
+        run: npm run lint
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud OIDC
+        uses: aliyun/aliyun-oidc-auth-action@v2
+        with:
+          provider-id: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+
+      - name: Install Alibaba Cloud CLI
+        run: |
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
+
+      - name: Run Security Analysis
+        run: |
+          python3 scripts/alibaba_cloud_security_scan.py
+
+      - name: Build and Push Docker Image
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker pull ${{ secrets.DOCKER_REGISTRY }}/myapp:latest || true
+          docker tag ${{ secrets.DOCKER_REGISTRY }}/myapp:latest ${{ secrets.DOCKER_REGISTRY }}/myapp:previous || true
+          docker build -t ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+
+      - name: Deploy to Production
+        id: deploy
+        run: |
+          # Create deployment script on target host
+          DEPLOY_SCRIPT='#!/bin/bash
+          cd /opt/myapp
+          export NODE_ENV=production
+          export APP_VERSION=${{ github.sha }}
+          docker pull ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }}
+          docker stop myapp || true
+          docker rm myapp || true
+          docker run -d --name myapp -p 3000:3000 --restart unless-stopped \
+            -e NODE_ENV=$NODE_ENV \
+            -e APP_VERSION=$APP_VERSION \
+            ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }}
+          sleep 10
+          # Health check
+          if ! curl -f http://localhost:3000/health; then
+            echo "Health check failed"
+            exit 1
+          fi
+          echo "Deployment successful"'
+
+          # Execute deployment via Alibaba Cloud Assistant
+          COMMAND_ID=$(aliyun ecs RunCommand \
+            --RegionId ${{ env.ALIBABA_CLOUD_REGION_ID }} \
+            --InstanceIds ${{ secrets.ECS_INSTANCE_ID }} \
+            --Type RunShellScript \
+            --CommandContent "echo '$DEPLOY_SCRIPT' > /tmp/deploy.sh && chmod +x /tmp/deploy.sh && /tmp/deploy.sh" \
+            --output text \
+            --query 'CommandId')
+
+          echo "Deployment command submitted: $COMMAND_ID"
+          echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
+
+          # Wait for command completion
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            STATUS_OUTPUT=$(aliyun ecs DescribeCommandResult \
+              --RegionId ${{ env.ALIBABA_CLOUD_REGION_ID }} \
+              --CommandId $COMMAND_ID \
+              --output json)
+
+            if [ $? -ne 0 ]; then
+              echo "Error getting command result, retrying..."
+              sleep 10
+              continue
+            fi
+
+            STATUS=$(echo "$STATUS_OUTPUT" | jq -r '.InvokeInstances.InvokeInstance[0].Command.Output' 2>/dev/null | base64 -d)
+
+            if [[ "$STATUS" == *"Deployment successful"* ]]; then
+              echo "Deployment completed successfully"
+              break
+            elif [[ "$STATUS" == *"Health check failed"* ]]; then
+              echo "Deployment failed: Health check failed"
+              exit 1
+            else
+              echo "Deployment in progress... (attempt $((ATTEMPT+1))/$MAX_ATTEMPTS)"
+              sleep 10
+            fi
+
+            ATTEMPT=$((ATTEMPT+1))
+          done
+
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "Timeout waiting for deployment to complete"
+            exit 1
+          fi
+
+      - name: Rollback on Failure
+        if: failure()
+        run: |
+          echo "Initiating rollback due to deployment failure..."
+
+          ROLLBACK_SCRIPT='#!/bin/bash
+          cd /opt/myapp
+          # Stop current container
+          docker stop myapp || true
+          docker rm myapp || true
+          # Start previous version if available
+          if [ -n "$(docker images -q ${{ secrets.DOCKER_REGISTRY }}/myapp:previous 2>/dev/null)" ]; then
+            docker run -d --name myapp -p 3000:3000 --restart unless-stopped \
+              ${{ secrets.DOCKER_REGISTRY }}/myapp:previous
+            echo "Rollback to previous version completed"
+          else
+            echo "No previous version to rollback to"
+            exit 1
+          fi'
+
+          # Execute rollback via Alibaba Cloud Assistant
+          ROLLBACK_COMMAND_ID=$(aliyun ecs RunCommand \
+            --RegionId ${{ env.ALIBABA_CLOUD_REGION_ID }} \
+            --InstanceIds ${{ secrets.ECS_INSTANCE_ID }} \
+            --Type RunShellScript \
+            --CommandContent "echo '$ROLLBACK_SCRIPT' > /tmp/rollback.sh && chmod +x /tmp/rollback.sh && /tmp/rollback.sh" \
+            --output text \
+            --query 'CommandId')
+
+          echo "Rollback command submitted: $ROLLBACK_COMMAND_ID"
+
+          # Wait for rollback completion
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ROLLBACK_STATUS_OUTPUT=$(aliyun ecs DescribeCommandResult \
+              --RegionId ${{ env.ALIBABA_CLOUD_REGION_ID }} \
+              --CommandId $ROLLBACK_COMMAND_ID \
+              --output json)
+
+            if [ $? -ne 0 ]; then
+              echo "Error getting rollback command result, retrying..."
+              sleep 10
+              continue
+            fi
+
+            ROLLBACK_STATUS=$(echo "$ROLLBACK_STATUS_OUTPUT" | jq -r '.InvokeInstances.InvokeInstance[0].Command.Output' 2>/dev/null | base64 -d)
+
+            if [[ "$ROLLBACK_STATUS" == *"Rollback to previous version completed"* ]]; then
+              echo "Rollback completed successfully"
+              break
+            elif [[ "$ROLLBACK_STATUS" == *"No previous version to rollback to"* ]]; then
+              echo "Rollback failed: No previous version available"
+              exit 1
+            else
+              echo "Rollback in progress... (attempt $((ATTEMPT+1))/$MAX_ATTEMPTS)"
+              sleep 10
+            fi
+
+            ATTEMPT=$((ATTEMPT+1))
+          done
+
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "Timeout waiting for rollback to complete"
+            exit 1
+          fi
+
 name: Monorepo CI/CD Pipeline
 
 on:
@@ -325,3 +541,4 @@ jobs:
           echo "- Build and Push: ${{ needs.build-and-push.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Gate: ${{ needs.security-gate.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy to Alibaba: ${{ needs.deploy-to-alibaba.result }}" >> $GITHUB_STEP_SUMMARY
+ main

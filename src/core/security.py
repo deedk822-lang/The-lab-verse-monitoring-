@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
@@ -78,3 +79,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         has_autoglm_access=payload.get("has_autoglm_access", False),
         has_billing_access=payload.get("has_billing_access", False)
     )
+
+from ..models.user import User
+
+security = HTTPBearer()
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+    """
+    Mock authentication dependency.
+    In production, verify the JWT token here.
+    """
+    # For MVP, we accept any bearer token and return a mock user
+    if not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+    return User(id="user_123", email="admin@rainmaker.local")
+ dual-agent-cicd-pipeline-1349139378403618497

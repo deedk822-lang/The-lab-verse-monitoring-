@@ -1,3 +1,4 @@
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
 annotated-types==0.7.0
 anyio==4.12.1
 cachetools==6.2.4
@@ -15,3 +16,17 @@ PyJWT==2.8.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 zhipuai @ git+https://github.com/MetaGLM/zhipuai-sdk-python-v4.git@ccbec4c7b53ca23dabac69aa1a0b5599cf29a848
+
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+aiohttp==3.9.0
+alibabacloud-tea-openapi==0.3.8
+alibabacloud-accessanalyzer20200901==2.0.6
+python-multipart==0.0.6
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+redis==5.0.1
+zhipu-api-sdk==1.0.0
+ dual-agent-cicd-pipeline-1349139378403618497

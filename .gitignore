@@ -1,315 +1,71 @@
-# ======================================================================
-#   🔐  Sensitive data – make sure nothing with credentials ever gets
-#        checked in.  A rival would never risk a leaked key!
-# ======================================================================
-
-# Generic secret files
-*.key
-*.pem
-*.p12
-*.crt
-*.cer
-*.pub
-*.jks
-*.pfx
-*.asc
-*.enc
-*.gpg
-*.pgp
-
-# Environment variables (dotenv)
+# Environment variables
 .env
-.env.*
-.env.*.local
 .env.local
-.envrc
-# Keep an example for newcomers, but never the real values
-!.env.example
+.env.development
+.env.production
+.env.staging
 
-# Cloud provider credentials
-.aws/
-.gcloud/
-.kube/
-.terraform/
-# (If you *do* need a local copy, store it outside the repo!)
-
-# NPM / Yarn / PNPM auth tokens (never commit)
-.npmrc
-.yarnrc
-.yarnrc.yml
-.pnpmrc
-
-# Other credential stores
-# .ssh/  # <– usually not part of a repo, but keep here if ever added
-# .git-credentials  # Git credential helper – keep out of VCS
-
-# ----------------------------------------------------------------------
-#   🤖  LocalAI / LLM Models – large files that should not be committed
-# ----------------------------------------------------------------------
-localai-data/
-models/*.gguf
-models/*.bin
-models/*.safetensors
-# Keep model configs but not downloaded models
-!models/*.yaml
-!models/*.json
-
-# ----------------------------------------------------------------------
-#   📦  Dependencies / Packages – generated code you never edit
-# ----------------------------------------------------------------------
+# Node modules
 node_modules/
-vendor/
-__pycache__/
-# Ruby gems
-/.bundle
-# Go module cache
-/pkg/
-# Rust build folder
-/target/
-# Java / Gradle / Maven artifacts
-/gradle
-/build/
-out/
-target/
-*.class
-*.jar
-*.war
-*.ear
-# Python virtual environments (optional – if you keep them local)
-venv/
-ENV/
-env/
-.venv/
-__pypackages__/
-# Composer / PHP vendor folder
-/vendor/
-# .NET / C# binaries
-/bin/
-/obj/
-# Elixir / Erlang
-/_build/
-/deps/
 
-# ----------------------------------------------------------------------
-#   🛠️  Build artefacts – everything that can be recreated
-# ----------------------------------------------------------------------
+# Build artifacts
 dist/
 build/
-*.tar.gz
-*.zip
-*.7z
-*.rar
-*.egg
-*.whl
-*.exe
-*.dll
-*.so
-*.dylib
-*.o
-*.obj
-*.a
-*.lib
-*.pyc
-*.pyo
-*.pyd
-*.class
-*.apk
-*.ipa
-*.app
-*.dmg
-*.pkg
-*.deb
-*.rpm
-*.msi
-*.pdb
-*.sym
-*.pch
-*.idb
-*.sdf
-*.suo
-*.cache
 *.log
 *.tmp
 *.temp
+coverage/
+
+# IDE and editor files
+.vscode/
+.idea/
 *.swp
 *.swo
-*.bak
-*.old
-*.orig
-
-# ----------------------------------------------------------------------
-#   📊  Test & coverage artefacts – can be regenerated locally
-# ----------------------------------------------------------------------
-coverage/
-.nyc_output/
-*.lcov
-*.codecov.yml
-.jest/
-.jest-cache/
-.mocha/
-# Python
-htmlcov/
-.coverage
-.coverage.*
-pytest_cache/
-# Go
-*.out
-*.test
-# .NET
-TestResult.xml
-TestResults/
-*.trx
-# Java
-surefire-reports/
-jacoco/
-# Cypress / Playwright
-cypress/screenshots/
-cypress/videos/
-playwright-report/
-
-# ----------------------------------------------------------------------
-#   📦  Editor / IDE / OS cruft – noisy files that add no value
-# ----------------------------------------------------------------------
-# OS generated
 .DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# Security and secrets
+*.pem
+*.key
+*.crt
+*.cert
+*.der
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# OS generated files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-Icon?
-._*
-.Spotlight-V100
-.Trashes
-# Windows
-$RECYCLE.BIN/
-# Linux
-*~
-.#*
-.#*.
-# macOS
-.AppleDouble/
-.LSOverride
 
-# IDEs / Editors
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-*.user
-*.sw?
-*.suo
-*.ncb
-*.opt
-*.plg
+# Backup files
+*~
+*.bak
 *.tmp
-*.orig
-*.rej
-*.sbr
-*.sdf
-*.opensdf
-*.VC.db
-*.VC.opendb
-*.tlog
-*.vcxproj.*
-# JetBrains
-*.iml
-*.iws
-*.ipr
-# Vim/Neovim
-*.swp
-*.swo
-*.vim
-# Emacs
-*~
-\#*\#
-/\#*\#
-# Eclipse / Android Studio
-.project
-.classpath
-.csettings
-.settings/
-bin/
-gen/
-out/
-.gradle/
-# Xcode / iOS / macOS
-*.xcworkspace
-*.xcuserstate
-*.xcodeproj/*
-DerivedData/
-xcuserdata/
-*.moved-aside
-*.xcuserdatad
-*.hmap
-*.ipa
-*.dSYM/
-*.xctest/
-# Android
-*.apk
-*.aar
-*.ap_
-*.dex
-*.class
-*.jar
-*.keystore
+*.temp
 
-# === Add‑ons (comment‑out if not used) ===
+# Logs
+logs/
+*.log
 
-# Next.js / React
-.next/
-out/
-.vercel/
-# SvelteKit
-.svelte-kit/
-# Nuxt.js
-.nuxt/
-.dist/
-# Angular
-.angular/
-.angular/cache/
-# Nx workspace
-/nx/
-# Yarn Berry (Berry-specific caches)
-.yarn/cache/
-.yarn/unplugged/
-.yarn/install-state.gz
-.yarn/build-state.yml
-.yarn/patches/
-# PNPM
-.pnpm-store/
-# Deno
-.deno/
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.backup
-crash.log
-# Docker
-.docker/
-Dockerfile.*
-docker-compose.override.yml
-# Kubernetes / Helm
-helm/
-*.tgz
-charts/
-# VS Code Server
-.vscode-server/
-# Jupyter notebooks
-.ipynb_checkpoints/
+# Dependencies
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Secrets directory for Docker
-secrets/
+# Runtime data
+tmp/
+temp/
 
-# Generated workflow artifacts
-*-state.json
-*-results.json
-g20-workflow-verified-state.json
+# Environment specific
+config/*.json
+!config/*.example.json
+!config/*.schema.json
 
-# Generated validation reports
-env-validation-report.json
-
-digest.txt
-.env
-.env.*
-*.pem
-*.key
-secrets.json
+# Security scans
+security-reports/
+.trivyignore

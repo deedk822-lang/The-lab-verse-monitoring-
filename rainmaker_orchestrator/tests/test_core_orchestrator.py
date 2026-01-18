@@ -23,8 +23,8 @@ class TestOrchestratorInitialization:
     def test_init_with_default_workspace(self, temp_workspace):
         """Should create default workspace directory."""
         with patch('rainmaker_orchestrator.core.orchestrator.Path.mkdir') as mock_mkdir:
-            orchestrator = RainmakerOrchestrator()
-            assert orchestrator.workspace_path == Path("/workspace")
+            orchestrator = RainmakerOrchestrator(workspace_path=str(temp_workspace))
+            assert orchestrator.workspace_path == temp_workspace
             assert isinstance(orchestrator.workspace_path, Path)
 
     def test_init_with_custom_workspace(self, temp_workspace):

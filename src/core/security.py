@@ -24,7 +24,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def verify_token(token: str) -> dict:
-    """Verify JWT token and extract payload"""
+    """
+    Verify a JWT and return its decoded payload.
+    
+    Returns:
+        dict: Decoded JWT payload.
+    
+    Raises:
+        HTTPException: If the token is invalid or cannot be decoded — responds with 401 Unauthorized and a `WWW-Authenticate: Bearer` header.
+    """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
@@ -40,7 +48,21 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
     """
-    Get current user from JWT token with rate limiting.
+    Retrieve the authenticated User from the provided JWT while enforcing a per-client-and-token rate limit.
+    
+    This function derives the client IP from the request, enforces a Redis-backed per-minute rate limit keyed by a non-reversible token fingerprint, verifies the JWT, and constructs a User from token claims (id, email, tenant_id, and permission flags).
+    
+    Parameters:
+        request (Request): Incoming HTTP request used to determine the client's IP address.
+        credentials (HTTPAuthorizationCredentials): Bearer token credentials containing the JWT.
+    
+    Returns:
+        User: Authenticated user populated from JWT claims: `id` (from `sub`), `email`, `tenant_id`, `has_glm_access`, `has_autoglm_access`, and `has_billing_access`.
+    
+    Raises:
+        HTTPException: 401 if the token is invalid or missing required subject claim.
+        HTTPException: 429 if the request exceeds the configured per-minute rate limit.
+        HTTPException: 503 if Redis is unavailable and rate limiting cannot be enforced.
     """
     # Rate limiting
     # Derive client_ip from request.client.host

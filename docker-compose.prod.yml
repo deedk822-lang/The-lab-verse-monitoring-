@@ -1,3 +1,7 @@
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+# docker-compose.prod.yml
+
+ main
 version: '3.8'
 
 services:
@@ -5,8 +9,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+    image: myapp:latest
+    container_name: myapp
+
     image: the-lab-verse-monitoring:latest
     container_name: the-lab-verse-monitoring
+ main
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -15,21 +24,35 @@ services:
     ports:
       - "3000:3000"
     volumes:
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+      - /var/log/app:/var/log/app  # For logging
+
       - ./logs:/opt/myapp/logs  # For logging
+ main
     networks:
       - app-network
     security_opt:
       - no-new-privileges:true
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+
     read_only: false  # Need write access for logs
     tmpfs:
       - /tmp
+ main
     cap_drop:
       - ALL
     cap_add:
       - CHOWN
       - SETUID
       - SETGID
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+
       - DAC_OVERRIDE
+ main
 
 networks:
   app-network:

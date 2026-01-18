@@ -11,8 +11,15 @@ async def lifespan(app: FastAPI):
     Application lifespan manager
     """
     print("Starting Rainmaker Orchestrator with GLM-4.7 and AutoGLM integration")
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+    # Initialize any resources here
     yield
     print("Shutting down Rainmaker Orchestrator")
+    # Cleanup resources here
+
+    yield
+    print("Shutting down Rainmaker Orchestrator")
+ dual-agent-cicd-pipeline-1349139378403618497
 
 
 # Create FastAPI app with lifespan
@@ -46,7 +53,13 @@ async def root():
             "GLM-4.7 advanced reasoning",
             "AutoGLM autonomous orchestration",
             "Alibaba Cloud security integration",
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+            "Multi-AI provider support",
+            "Multi-tenant architecture",
+            "Rate limiting and security controls"
+
             "Multi-AI provider support"
+ dual-agent-cicd-pipeline-1349139378403618497
         ]
     }
 
@@ -57,5 +70,9 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "rainmaker-orchestrator",
-        "timestamp": 1234567890
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+        "version": settings.VERSION,
+
+ dual-agent-cicd-pipeline-1349139378403618497
+        "timestamp": int(time.time())
     }

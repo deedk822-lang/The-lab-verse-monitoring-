@@ -48,7 +48,7 @@ class AutoGLM:
         await self._stack.enter_async_context(self.glm)
 
         # Initialize Alibaba Cloud Client
-        self.alibaba_cloud = AlibabaCloudIntegration(self.config.alibaba_config)
+        self.alibaba_cloud = AlibabaCloudIntegration(AlibabaCloudConfig(**self.config.alibaba_config))
         await self._stack.enter_async_context(self.alibaba_cloud)
 
         self.logger.info("AutoGLM clients initialized securely.")

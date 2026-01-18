@@ -3,6 +3,7 @@ version: '3.8'
 services:
   rainmaker-orchestrator:
     image: ghcr.io/deedk822-lang/rainmaker-orchestrator:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:

@@ -1,8 +1,11 @@
 import asyncio
 import json
 import logging
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
 import re
 from contextlib import asynccontextmanager, AsyncExitStack
+
+ dual-agent-cicd-pipeline-1349139378403618497
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 from ..integrations.zhipu_glm import GLMIntegration, GLMConfig
@@ -18,6 +21,7 @@ class AutoGLMConfig(BaseModel):
 
 class AutoGLM:
     """
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
     AutoGLM Orchestrator with Security Hardening.
 
     Fixes:
@@ -111,6 +115,33 @@ class AutoGLM:
         # 3. Send prompt to LLM
         return await self.glm.generate_text(prompt, {"max_tokens": 2048})
 
+    AutoGLM Orchestrator
+    Autonomous orchestrator combining GLM-4.7 reasoning with Alibaba Cloud security tools
+    """
+
+    def __init__(self, config: AutoGLMConfig):
+        self.glm_config = config.glm_config
+        self.alibaba_config = config.alibaba_config
+        self.glm = None
+        self.alibaba_cloud = None
+        self.logger = logging.getLogger(__name__)
+
+    async def __aenter__(self):
+        """Async context manager entry"""
+        self.glm = GLMIntegration(self.glm_config)
+        await self.glm.__aenter__()
+        self.alibaba_cloud = AlibabaCloudIntegration(self.alibaba_config)
+        await self.alibaba_cloud.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        if self.glm:
+            await self.glm.__aexit__(exc_type, exc_val, exc_tb)
+        if self.alibaba_cloud:
+            await self.alibaba_cloud.__aexit__(exc_type, exc_val, exc_tb)
+ dual-agent-cicd-pipeline-1349139378403618497
+
     async def autonomous_security_analysis(self) -> Dict[str, Any]:
         """
         Perform autonomous security analysis combining GLM-4.7 and Alibaba Cloud tools
@@ -125,7 +156,23 @@ class AutoGLM:
             alibaba_findings = await self.get_alibaba_security_findings()
 
             # Step 2: Use GLM-4.7 to analyze and provide remediation suggestions
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
             remediation_plan = await self.generate_remediation_plan(alibaba_findings)
+
+            remediation_plan = await self.glm.generate_text(
+                f"""
+                Based on these Alibaba Cloud security findings, create a detailed remediation plan:
+                {json.dumps(alibaba_findings, indent=2)}
+
+                Include:
+                1. Priority order for fixes
+                2. Specific commands or actions needed
+                3. Expected outcomes
+                4. Verification steps
+                """,
+                {"max_tokens": 2048}
+            )
+ dual-agent-cicd-pipeline-1349139378403618497
 
             # Step 3: Execute remediation steps (simulated)
             execution_results = await self.execute_remediation_steps(remediation_plan)

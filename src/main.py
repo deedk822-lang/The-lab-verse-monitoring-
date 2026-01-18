@@ -74,5 +74,5 @@ async def health_check():
         "version": settings.VERSION,
 
  dual-agent-cicd-pipeline-1349139378403618497
-        "timestamp": 1234567890
+        "timestamp": int(time.time())
     }

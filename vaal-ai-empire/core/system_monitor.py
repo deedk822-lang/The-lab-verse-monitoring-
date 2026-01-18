@@ -19,10 +19,15 @@ class SystemMonitor:
 
     def __init__(self, db=None):
         self.db = db
+        self.session = requests.Session()
         self.start_time = datetime.now()
         self.error_count = 0
         self.warning_count = 0
         self.api_calls = {"success": 0, "failure": 0}
+
+    def close(self):
+        """Close the requests session."""
+        self.session.close()
 
     def record_error(self, component: str, error: Exception,
                     context: Optional[Dict] = None):
@@ -94,6 +99,18 @@ class SystemMonitor:
             "timestamp": datetime.now().isoformat()
         }
 
+        # Add revenue metrics
+        if self.db:
+            try:
+                revenue_summary = self.db.get_revenue_summary(days=30)
+                status["revenue"] = {
+                    "total_30d": revenue_summary["total_revenue"],
+                    "client_count": revenue_summary["client_count"],
+                    "avg_per_client": revenue_summary["total_revenue"] / max(revenue_summary["client_count"], 1)
+                }
+            except:
+                status["revenue"] = "error"
+
         # Add database status
         if self.db:
             try:
@@ -148,9 +165,14 @@ class SystemMonitor:
     def _check_ollama(self) -> str:
         """Check Ollama server health"""
         try:
-            response = requests.get("http://localhost:11434", timeout=2)
-            return "healthy" if response.status_code == 200 else "unreachable"
-        except:
+            response = self.session.get("http://localhost:11434", timeout=2)
+            response.raise_for_status()
+            return "healthy"
+        except requests.exceptions.HTTPError:
+            # Server responded with an error status code (4xx or 5xx)
+            return "unreachable"
+        except requests.exceptions.RequestException:
+            # Other request exceptions (e.g., connection error, timeout)
             return "not_running"
 
     def _check_twilio(self) -> str:
@@ -171,18 +193,18 @@ class SystemMonitor:
     def _check_ayrshare(self) -> str:
         """Check Ayrshare health"""
         api_key = os.getenv("AYRSHARE_API_KEY")
-        if not api_key:
-            return "not_configured"
-
         try:
-            response = requests.get(
+            response = self.session.get(
                 "https://app.ayrshare.com/api/profiles",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5
             )
-            return "healthy" if response.status_code == 200 else "error"
-        except:
-            return "unreachable"
+            response.raise_for_status()
+            return "healthy"
+        except requests.exceptions.HTTPError:
+            return "error"  # Server responded with a non-2xx status
+        except requests.exceptions.RequestException:
+            return "unreachable"  # e.g. DNS failure, connection refused
 
     def generate_health_report(self) -> Dict:
         """Generate detailed health report"""
@@ -254,6 +276,18 @@ class SystemMonitor:
             recommendations.append(
                 "Low API success rate. Check provider availability and quotas."
             )
+
+        # Check revenue health
+        if "revenue" in status and status["revenue"] != "error":
+            rev = status["revenue"]
+            if rev["total_30d"] < 5000:
+                recommendations.append(
+                    "Revenue below target. Consider launching a new marketing campaign or discount."
+                )
+            if rev["avg_per_client"] < 500:
+                recommendations.append(
+                    "Low average revenue per client. Explore upselling premium features."
+                )
 
         return recommendations
 
@@ -396,7 +430,12 @@ class AlertSystem:
     def __init__(self, db=None, webhook_url: Optional[str] = None):
         self.db = db
         self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
+        self.session = requests.Session()
         self.alert_history = []
+
+    def close(self):
+        """Close the requests session."""
+        self.session.close()
 
     def send_alert(self, severity: str, component: str,
                    message: str, details: Optional[Dict] = None):
@@ -455,7 +494,12 @@ class AlertSystem:
                 ]
             }
 
-            requests.post(self.webhook_url, json=payload, timeout=5)
+            # TODO: Validate self.webhook_url against an allow-list of trusted domains to prevent SSRF.
+            if hasattr(self, 'webhook_url') and self.webhook_url:
+                response = self.session.post(self.webhook_url, json=payload, timeout=5)
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to send webhook alert: {e}")
         except Exception as e:
             logger.error(f"Failed to send webhook alert: {e}")
 

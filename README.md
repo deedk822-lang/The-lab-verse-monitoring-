@@ -81,7 +81,6 @@ A pull request will be blocked from merging if it modifies protected files or if
 - 20GB+ disk space
 - **Kimi API Key** (required)
 - Ollama (optional, for local models)
-- **ghcr.io Credentials**: The ECS instance must be configured with credentials to pull images from the GitHub Container Registry.
 
 ## 🚀 Quick Start
 

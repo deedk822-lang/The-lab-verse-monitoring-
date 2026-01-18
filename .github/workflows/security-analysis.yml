@@ -1,4 +1,4 @@
-name: Security Analysis with Alibaba Cloud Access Analyzer
+name: Security Analysis
 
 on:
   push:
@@ -6,48 +6,21 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  id-token: write
-  contents: read
-  actions: read
-  security-events: write
-
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@master
         with:
-          fetch-depth: 0
-
-      - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/aliyun-oidc-auth-action@v1
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          aliyun-oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ARN }}
-          aliyun-role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
-
-      - name: Install Alibaba Cloud CLI
-        run: |
-          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
-          tar xzvf aliyun-cli-linux-latest-amd64.tgz
-          sudo mv aliyun /usr/local/bin/
-          aliyun --version
-
-      - name: Run Security Analysis
-        id: analyze
-        run: |
-          chmod +x scripts/alibaba_cloud_security_analyzer.py
-          ./scripts/alibaba_cloud_security_analyzer.py
-
-      - name: Upload Security Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-analysis-report
-          path: security-report.json
-
-      - name: Publish Security Findings
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: security-report.json
+          sarif_file: 'trivy-results.sarif'

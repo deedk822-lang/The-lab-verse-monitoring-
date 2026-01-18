@@ -1,3 +1,16 @@
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the dependencies file to the working directory
+COPY requirements.txt .
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Build stage
 FROM python:3.11-slim as builder
 
@@ -37,15 +50,20 @@ RUN pip install --no-cache-dir /wheels/*
 
 # Copy application code
 COPY --chown=appuser:appuser . .
+ main
 
-# Change ownership to non-root user
-RUN chown -R appuser:appuser /app
+# Copy the content of the local src directory to the working directory
+COPY . .
 
-USER appuser
-
+# Make port 8000 available to the world outside this container
 EXPOSE 8000
+
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+# Run main.py when the container launches
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=15s --retries=3 \
    CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ main

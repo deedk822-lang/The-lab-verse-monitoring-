@@ -1,3 +1,6 @@
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+name: CI/CD Pipeline
+
  dual-agent-cicd-pipeline-1349139378403618497
  feat/integrate-alibaba-access-analyzer-12183567303830527494
  feat/integrate-alibaba-access-analyzer-12183567303830527494
@@ -7,12 +10,15 @@ name: Python CI/CD Pipeline
 # .github/workflows/ci.yml
 name: CI/CD Pipeline with Alibaba Cloud
  main
+ main
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
 
  dual-agent-cicd-pipeline-1349139378403618497
  dual-agent-cicd-pipeline-1349139378403618497
@@ -31,8 +37,9 @@ permissions:
   contents: read
   actions: read
 
+ main
 jobs:
-  test:
+  test-node:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -53,6 +60,9 @@ jobs:
 
       - name: Lint code
         run: npm run lint
+
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+  test-python:
 
   build-and-deploy:
     needs: test
@@ -304,13 +314,26 @@ jobs:
     name: "🟢 Node.js CI"
     needs: [detect-changes]
     if: needs.detect-changes.outputs.node == 'true'
+ main
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
-        workspace: [content-creator-ai, kimi-computer, lapverse-core, lapverse-alpha, deal-hunter]
+        python-version: ['3.11']
     steps:
       - uses: actions/checkout@v4
+ feat/MODULE-ID-1234-multi-service-setup-15915937522088223393
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -r rainmaker_orchestrator/requirements.txt
+
+      - name: Run tests
+        run: python3 -m pytest rainmaker_orchestrator/
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -474,5 +497,6 @@ jobs:
 
  main
 
+ main
  main
  main

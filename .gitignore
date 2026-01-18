@@ -66,6 +66,16 @@ config/*.json
 !config/*.example.json
 !config/*.schema.json
 
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+digest.txt
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+.env
+
 # Security scans
 security-reports/
 .trivyignore
+ main

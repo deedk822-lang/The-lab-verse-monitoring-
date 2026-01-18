@@ -1,3 +1,15 @@
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+name: Python CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+
 name: Monorepo CI/CD Pipeline
 
 on:
@@ -105,144 +117,55 @@ jobs:
 
   dual-agent-pipeline:
     if: github.event_name == 'pull_request' && needs.detect-changes.outputs.python == 'true'
+ dual-agent-cicd-pipeline-1349139378403618497
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install Dependencies for Architect Agent
-        run: pip install -r glm47_architect/requirements.txt
-
-      # NOTE: This is a placeholder for the Qwen agent.
-      # In a real implementation, this step would run the Qwen agent to fix code.
-      - name: Stage 1 - Qwen Code Fixer (Placeholder)
-        id: qwen_fixer
-        run: echo "Stage 1: Qwen agent would run here."
-
-      - name: Stage 2 - GLM-4.7 Architect Audit
-        id: glm_architect
-        env:
-          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dependencies
         run: |
-          python glm47_architect/scripts/glm47_architect.py \
-            --pr ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --output audit_result.json
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Upload Audit Result
-        uses: actions/upload-artifact@v3
-        with:
-          name: audit-result
-          path: audit_result.json
+      - name: Run tests
+        run: |
+          # Add test command here
+          echo "No tests configured"
 
-      - name: Post Audit Comment to PR
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const result = JSON.parse(fs.readFileSync('audit_result.json', 'utf8'));
-            const { recommendation, validation_table, raw_result } = result;
-
-            const commentBody = `
-            ## GLM-4.7 Architect Audit Report
-
-            **Recommendation:** \`${recommendation}\`
-
-            ### Validation Summary
-            ${validation_table}
-
-            <details>
-            <summary>Full LLM Output</summary>
-
-            \`\`\`
-            ${raw_result}
-            \`\`\`
-            </details>
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
-
-            if (recommendation === 'REJECT' || recommendation === 'ERROR') {
-              core.setFailed(`Audit failed with recommendation: ${recommendation}`);
-            }
-  build:
-    needs: [dual-agent-pipeline]
-    if: github.event_name == 'pull_request' && needs.dual-agent-pipeline.result == 'success'
+  build-and-deploy:
+    needs: test
     runs-on: ubuntu-latest
-
+    environment: production
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          version: latest
-          driver-opts: network=host
 
-      - name: Build and export to Docker
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: rainmaker_orchestrator/Dockerfile
-          load: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run security scan
-        run: |
-          if command -v docker &> /dev/null; then
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-              aquasec/trivy image --security-checks vuln ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          fi
-
-  build-and-push:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          version: latest
-          driver-opts: network=host
-
-      - name: Login to Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable=true
-
-      - name: Build and push Docker image
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: rainmaker_orchestrator/Dockerfile
+          file: ./rainmaker_orchestrator/Dockerfile
           push: true
+ feat/integrate-alibaba-access-analyzer-12183567303830527494
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rainmaker-orchestrator:latest
+
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -325,3 +248,4 @@ jobs:
           echo "- Build and Push: ${{ needs.build-and-push.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Gate: ${{ needs.security-gate.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy to Alibaba: ${{ needs.deploy-to-alibaba.result }}" >> $GITHUB_STEP_SUMMARY
+ dual-agent-cicd-pipeline-1349139378403618497

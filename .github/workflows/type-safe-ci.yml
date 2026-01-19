@@ -8,6 +8,8 @@ on:
 env:
   ALIYUN_REGION: cn-shanghai
   ACCESS_ANALYZER_ARN: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
+  # Pin CLI version to reduce supply-chain risk of downloading "latest".
+  ALIYUN_CLI_VERSION: 3.0.277
 
 jobs:
   type-check:
@@ -50,17 +52,21 @@ jobs:
         run: |
           if [ -z "$ALIYUN_ROLE_ARN" ] || [ -z "$ALIYUN_OIDC_PROVIDER_ARN" ]; then
             echo "can_run=false" >> $GITHUB_OUTPUT
-            echo "Alibaba Cloud OIDC secrets not configured; skipping security analysis for PR." 
+            echo "Alibaba Cloud OIDC secrets not configured; skipping security analysis for PR."
           else
             echo "can_run=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install Alibaba Cloud CLI
+      - name: Install jq
         if: steps.gate.outputs.can_run == 'true'
         run: |
-          curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz -o aliyun.tgz
-          tar -xzf aliyun.tgz
-          sudo mv aliyun /usr/local/bin/aliyun
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Install Alibaba Cloud CLI (pinned)
+        if: steps.gate.outputs.can_run == 'true'
+        run: |
+          /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)" -- -V "${ALIYUN_CLI_VERSION}"
           aliyun version
 
       - name: Configure Alibaba Cloud OIDC

@@ -1,9 +1,17 @@
 version: '3.8'
 
 services:
-  orchestrator:
+  node_app:
     build: .
     ports:
-      - "8080:8080"
+      - "3000:3000"
+    env_file:
+      - .env
+
+  rainmaker_orchestrator:
+    build:
+      context: ./rainmaker_orchestrator
+    ports:
+      - "8000:8000"
     env_file:
       - .env

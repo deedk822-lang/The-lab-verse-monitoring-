@@ -14,6 +14,8 @@ A comprehensive, production-ready monitoring infrastructure with **AI-powered pr
 - ** Self-Healing Operations**: Automatic detection and resolution of common issues
 - ** Multi-Interface Access**: Web dashboard, CLI, and API interfaces
 
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+
 ## GLM-4.7 and AutoGLM Integration
 This system features advanced integration with Zhipu AI's GLM-4.7 language model and AutoGLM autonomous orchestrator:
 
@@ -29,6 +31,7 @@ This system features advanced integration with Zhipu AI's GLM-4.7 language model
 - **Secure Content Generation**: Creates content with built-in security validation
 - **Continuous Learning**: Improves responses based on incident reports
 
+ main
 ## Additional Features
 - **Multi-Channel Distribution**: Ayrshare + MailChimp + A2A integration
 - **Advanced AI Providers**: Perplexity, Manus, Claude, Mistral via MCP
@@ -75,6 +78,11 @@ For detailed setup instructions, refer to the documentation in the `/docs` direc
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+│  Monitoring Stack                                           │
+│  ┌─────────────┐ ┌──────────────┐ ┌─────────────────────┐   │
+│  │ Prometheus  │ │ Grafana      │ │ AlertManager       │   │
+
 │  AutoGLM Orchestrator                                      │
 │  ┌─────────────┐ ┌──────────────┐ ┌─────────────────────┐   │
 │  │ GLM-4.7     │ │ Security     │ │ Content             │   │
@@ -88,11 +96,18 @@ For detailed setup instructions, refer to the documentation in the `/docs` direc
 │  ┌─────────────┐ ┌──────────────┐ ┌─────────────────────┐   │
 │  │ Alibaba     │ │ HuggingFace  │ │ Other Services      │   │
 │  │ Cloud       │ │ Models       │ │                     │   │
+main
 │  └─────────────┘ └──────────────┘ └─────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## API Endpoints
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+- `/api/test/health` - Health check for all services
+- `/api/ayrshare/ayr` - Multi-channel content distribution
+- `/api/content/generate` - Content generation
+- `/api/elevenlabs/tts` - Voice synthesis
+
 - `/api/test/health` - Health check for all services (http://localhost:3000/api/test/health)
 - `/api/glm/generate` - GLM-4.7 content generation
 - `/api/autoglm/security-analysis` - Autonomous security analysis
@@ -100,12 +115,17 @@ For detailed setup instructions, refer to the documentation in the `/docs` direc
 - `/api/ayrshare/ayr` - Multi-channel content distribution
 - `/api/elevenlabs/tts` - Voice synthesis
 - `/api/perplexity/search` - Web search with Perplexity AI
+ main
 
 ## Supported AI Models
 - OpenAI: GPT-4, DALL-E, Whisper, TTS
 - Google Gemini: Advanced reasoning, Imagen, Veo
 - LocalAI: Privacy-focused local inference
+ feat/ci-cd-alibaba-cloud-integration-10364585358297276748
+- Z.AI GLM-4.6: Efficient reasoning with 200K tokens
+
 - **Z.AI GLM-4.7**: Advanced reasoning with 200K tokens, multimodal capabilities
+ main
 - Perplexity AI: Web search and research
 - Alibaba Cloud Qwen: State-of-the-art reasoning and coding
 - Hugging Face: Access to thousands of open-source models

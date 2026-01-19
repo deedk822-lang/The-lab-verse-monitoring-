@@ -67,7 +67,11 @@ jobs:
         if: steps.gate.outputs.can_run == 'true'
         run: |
           /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)" -- -V "${ALIYUN_CLI_VERSION}"
-          aliyun version
+# Verify installation
+aliyun version
+
+# Clean up
+rm aliyun.tgz
 
       - name: Configure Alibaba Cloud OIDC
         if: steps.gate.outputs.can_run == 'true'

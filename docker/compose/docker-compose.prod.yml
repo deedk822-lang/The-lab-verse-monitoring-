@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  rainmaker-orchestrator:
+    image: ghcr.io/deedk822-lang/rainmaker-orchestrator:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

@@ -277,8 +277,29 @@ enabled: true
 text: `🎉 New discount code created: ${discountCode} for ${discountPercentage}% off!`,
 });
 }
-private async executeFeatureAction(action: any, data: any): Promise<void> {}
-private async executeReportAction(action: any, data: any): Promise<void> {}
+	private async executeFeatureAction(action: any, data: any): Promise<void> {
+		// Unlock premium features for top customers
+		const topCustomers = data.topContributors.slice(0, action.config.customerCount || 3);
+		
+		for (const customer of topCustomers) {
+			console.log(`🚀 Unlocking feature "${action.config.featureName}" for customer: ${customer.name}`);
+			// await customerService.enableFeature(customer.id, action.config.featureName);
+		}
+	}
+
+	private async executeReportAction(action: any, data: any): Promise<void> {
+		// Generate and send a detailed milestone report
+		console.log(`📊 Generating milestone report for threshold: $${data.threshold}`);
+		
+		const reportData = {
+			milestone: data.threshold,
+			metrics: data.metrics,
+			projections: action.config.includeProjections ? data.projectedNextMilestone : null,
+			timestamp: new Date()
+		};
+		
+		// await reportService.generateAndSend(reportData, action.config.recipients || ['executives@company.com']);
+	}
 
 
 

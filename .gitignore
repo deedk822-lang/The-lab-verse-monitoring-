@@ -1,30 +1,62 @@
-# Dependencies
+# Node.js
 node_modules/
-
-# Build output
-.next/
-dist/
-build/
-
-# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.log
+lerna-debug.log*
 
-# Python
+# Next.js
+.next/
+out/
+
+# Production
+dist/
+build/
+
+# Python - Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+*.pyc
+*.pyo
 *.pyd
-.pytest_cache/
-.mypy_cache/
 
-# Env / secrets
+# Python - Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Python - Distribution / packaging
+*.egg-info/
+*.egg
+eggs/
+.eggs/
+
+# Environment files
 .env
 .env.*
 !.env.example
 
-# OS / editor
+# Logs
+logs/
+*.log
+
+# OS files
 .DS_Store
-.idea/
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Misc
+.vercel

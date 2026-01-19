@@ -1,0 +1,36 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate:
+    name: Validate Agent Stack
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install openai python-dotenv requests
+
+      - name: Run validation
+        env:
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+        run: |
+          python validate_env.py
+
+      - name: Run brain test
+        env:
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+        run: |
+          python scripts/test_brain.py

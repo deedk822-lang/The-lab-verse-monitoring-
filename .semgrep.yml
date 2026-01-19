@@ -1,0 +1,8 @@
+rules:
+  - id: placeholder-rule
+    message: "This is a placeholder rule."
+    severity: "INFO"
+    languages:
+      - "python"
+    patterns:
+      - pattern: "..."

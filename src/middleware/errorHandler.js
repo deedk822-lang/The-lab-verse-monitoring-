@@ -6,7 +6,7 @@ export const notFound = (req, res, next) => {
   next(error);
 };
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, _next) => {
   let error = { ...err };
   error.message = err.message;
 
@@ -17,7 +17,7 @@ export const errorHandler = (err, req, res, next) => {
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
   });
 
   // Mongoose bad ObjectId
@@ -64,6 +64,6 @@ export const errorHandler = (err, req, res, next) => {
   res.status(error.status || 500).json({
     success: false,
     error: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

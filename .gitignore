@@ -313,3 +313,4 @@ digest.txt
 *.pem
 *.key
 secrets.json
+*.egg-info/

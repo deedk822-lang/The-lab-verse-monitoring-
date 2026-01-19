@@ -197,6 +197,20 @@ class OpenAIProvider {
   isEnabled() {
     return this.enabled;
   }
+
+  async checkHealth() {
+    if (!this.enabled) {
+      return { healthy: false, message: 'OpenAI provider is not enabled' };
+    }
+    try {
+      // A simple non-costly operation to check API key validity and connectivity
+      await this.client.models.list();
+      return { healthy: true, message: 'OpenAI provider is responding' };
+    } catch (error) {
+      logger.error('OpenAI provider health check failed:', error);
+      return { healthy: false, message: error.message };
+    }
+  }
 }
 
 module.exports = new OpenAIProvider();

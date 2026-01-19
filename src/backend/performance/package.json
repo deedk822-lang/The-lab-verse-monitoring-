@@ -1,0 +1,21 @@
+{
+  "name": "lab-verse-performance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Performance benchmarking tools for The Lab Verse Monitoring Stack",
+  "main": "monitor.js",
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "bench": "node monitor.js --config config.js --out ../../../results --base-url ${BASE_URL:-http://localhost:3000}",
+    "analyze": "node analyze.js --results ../../../results",
+    "recommend": "node recommendations.js --results ../../../results --config config.js"
+  },
+  "dependencies": {
+    "autocannon": "^7.15.0",
+    "commander": "^11.1.0",
+    "ioredis": "^5.4.1",
+    "pino": "^8.17.2"
+  }
+}

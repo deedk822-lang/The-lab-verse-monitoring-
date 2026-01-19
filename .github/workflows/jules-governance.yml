@@ -9,7 +9,9 @@ jobs:
     name: 🔎 Analyze Pull Request
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      issues: write
+      pull-requests: read
+      contents: read
 
     steps:
       - name: Checkout code
@@ -33,7 +35,7 @@ jobs:
         id: analyzer
         run: |
           if [ ! -f ".github/scripts/pr_analyzer.py" ]; then
-            echo "Analyzer script missing; skipping." 
+            echo "Analyzer script missing; skipping."
             echo "analysis=Analyzer script missing; skipping." >> $GITHUB_OUTPUT
             exit 0
           fi

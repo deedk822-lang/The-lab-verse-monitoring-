@@ -34,7 +34,15 @@ class RainmakerOrchestrator:
         workspace_path: str = "./workspace",
         config_file: str = ".env",
     ) -> None:
-        """Initialize the Authority Engine orchestrator."""
+        """
+        Create and configure a RainmakerOrchestrator instance with workspace, config, and HTTP client.
+        
+        Initializes OpenLIT unless running in CI, creates a FileSystemAgent for workspace operations, a ConfigManager for configuration access, and an asynchronous HTTP client for API calls.
+        
+        Parameters:
+            workspace_path (str): Path to the workspace directory used by the FileSystemAgent.
+            config_file (str): Path to the configuration file used by the ConfigManager.
+        """
         if os.getenv("CI") != "true":
             try:
                 openlit.init(
@@ -60,7 +68,20 @@ class RainmakerOrchestrator:
 
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
-        """Route calls to the appropriate judge model based on role."""
+        """
+        Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
+        
+        Parameters:
+            judge_role (str): Role name used to select the judge model (e.g., "visionary", "operator", "auditor", "challenger").
+            context (str): User-facing prompt or context to include in the chat completion request.
+        
+        Returns:
+            response (Dict[str, Any]): Parsed JSON response returned by the judge API.
+        
+        Raises:
+            ValueError: If neither ZAI_API_KEY nor MISTRAL_API_KEY is configured.
+            httpx.HTTPError: If the HTTP request to the judge API fails.
+        """
         zai_key: Optional[str] = self.config.get("ZAI_API_KEY")
         mistral_key: Optional[str] = self.config.get("MISTRAL_API_KEY")
 
@@ -107,11 +128,13 @@ class RainmakerOrchestrator:
     @track(name="authority_flow")
     async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute the 4-Judge Authority Flow:
-        1. Auditor: Analyzes compliance.
-        2. Visionary: Creates strategic plan.
-        3. Operator: Generates code.
-        4. Challenger: Stress-tests the plan (Optional hook).
+        Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.
+        
+        Parameters:
+            lead_data (Dict[str, Any]): Input lead information used as the basis for auditing, strategy creation, and implementation generation.
+        
+        Returns:
+            result (Dict[str, Any]): On success, a dict with "status" set to "success" and keys "audit", "strategy", and "implementation" containing each judge's content; on error, a dict with "status" set to "error" and a "message" describing the failure.
         """
         logger.info("⚖️ Initiating Authority Flow...")
 
@@ -146,7 +169,19 @@ class RainmakerOrchestrator:
             return {"status": "error", "message": str(e)}
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Public entry point for executing varying task types."""
+        """
+        Dispatches a task to the appropriate handler based on its "type" field.
+        
+        Parameters:
+            task (Dict[str, Any]): Task payload containing at minimum a "type" key.
+                - If "type" == "authority_task": the payload is forwarded to the authority flow.
+                - If "type" == "coding_task" and contains "output_filename": the payload is processed by the self-healing coding flow.
+                - Other keys are passed through to the selected handler as needed.
+        
+        Returns:
+            Dict[str, Any]: The handler's result on success, or an error payload with
+            {"status": "error", "message": <explanatory string>} when the task type is unsupported.
+        """
         task_type: str = task.get("type", "unknown")
 
         if task_type == "authority_task":
@@ -158,7 +193,24 @@ class RainmakerOrchestrator:
         return {"status": "error", "message": f"Task type '{task_type}' not supported"}
 
     async def _run_self_healing(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Recursive self-healing loop for generated code."""
+        """
+        Run a recursive self-healing loop to generate, write, and execute code until it succeeds or retries are exhausted.
+        
+        Expects `task` to contain:
+        - "output_filename" (str): path where generated code will be written.
+        - "context" (str): prompt/context provided to the operator judge for code generation.
+        
+        On each attempt the method:
+        - Requests code from the "operator" judge using the current context.
+        - Cleans and parses a JSON payload returned by the judge; the JSON must contain a "code" field with the source to write.
+        - Writes the code to `output_filename` and executes it via the FileSystemAgent.
+        - If execution returns status "success", returns a payload with that stdout.
+        - If execution fails or parsing/errors occur, appends the error information to the context and retries (up to three attempts).
+        
+        Returns:
+        - A dict with {"status": "success", "output": <stdout>} when execution succeeds.
+        - A dict with {"status": "failed", "message": "Max retries exceeded for self-healing"} if all retries fail.
+        """
         filename: str = task["output_filename"]
         max_retries: int = 3
         current_context: str = task["context"]

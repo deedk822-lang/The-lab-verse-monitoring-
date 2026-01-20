@@ -8,7 +8,12 @@ from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
 @pytest_asyncio.fixture
 async def orchestrator() -> RainmakerOrchestrator:
-    """Fixture to create an orchestrator instance."""
+    """
+    Create and yield a RainmakerOrchestrator instance for tests, and ensure it is closed after use.
+    
+    Returns:
+        RainmakerOrchestrator: The orchestrator instance yielded to the test. Teardown awaits `aclose()` to release resources.
+    """
     orch: RainmakerOrchestrator = RainmakerOrchestrator()
     yield orch
     await orch.aclose()

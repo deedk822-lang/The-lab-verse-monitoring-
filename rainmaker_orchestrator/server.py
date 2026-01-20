@@ -17,6 +17,13 @@ app: FastAPI = FastAPI(
 
 @app.get("/health")
 async def health() -> dict:
-    """Health check for legacy compatibility."""
+    """
+    Provide a legacy-compatibility health response for the server.
+    
+    Returns:
+        health (dict): A dictionary with keys:
+            - "status": the string "legacy"
+            - "message": the string "Use api/server.py for new deployments"
+    """
     logger.warning("Legacy /health endpoint called - migrate to api/server.py")
     return {"status": "legacy", "message": "Use api/server.py for new deployments"}

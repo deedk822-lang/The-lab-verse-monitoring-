@@ -19,7 +19,15 @@ class SelfHealingAgent:
 
     @staticmethod
     def validate_command(command: str) -> bool:
-        """Validate command for injection patterns."""
+        """
+        Check a shell command string for patterns commonly associated with command injection.
+        
+        Parameters:
+            command (str): The shell command string to validate.
+        
+        Returns:
+            true if the command contains none of the configured injection patterns, false otherwise.
+        """
         for pattern in SelfHealingAgent.COMMAND_INJECTION_PATTERNS:
             if re.search(pattern, command):
                 logger.warning(f"Potential injection detected: {pattern}")
@@ -28,7 +36,18 @@ class SelfHealingAgent:
 
     @staticmethod
     def safe_parse_command(command: str) -> list:
-        """Safely parse shell commands using shlex."""
+        """
+        Parse a shell command into a list of arguments after validating it against injection patterns.
+        
+        Parameters:
+            command (str): The shell command string to validate and parse.
+        
+        Returns:
+            list: The parsed list of command arguments.
+        
+        Raises:
+            ValueError: If the command fails security validation or parsing fails.
+        """
         try:
             if not SelfHealingAgent.validate_command(command):
                 raise ValueError("Command failed security validation")
@@ -41,7 +60,18 @@ class SelfHealingAgent:
 
     @staticmethod
     def extract_json(response: str) -> Dict[str, Any]:
-        """Extract and validate JSON from LLM response."""
+        """
+        Extracts a JSON object from a string that may include Markdown code fences.
+        
+        Parameters:
+            response (str): Input text potentially containing JSON wrapped in triple-backtick Markdown code blocks (e.g., ```json ... ```).
+        
+        Returns:
+            dict: Parsed JSON object.
+        
+        Raises:
+            json.JSONDecodeError: If the cleaned input cannot be parsed as JSON.
+        """
         try:
             # Remove markdown code blocks if present
             clean: str = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=re.MULTILINE)
@@ -54,5 +84,14 @@ class SelfHealingAgent:
 
     @staticmethod
     def format_error_feedback(error: str, attempt: int) -> str:
-        """Format error feedback for retry loop."""
+        """
+        Format a user-facing message for a failed retry attempt.
+        
+        Parameters:
+            error (str): Error message or output produced by the failed attempt.
+            attempt (int): Zero-based index of the attempt that failed.
+        
+        Returns:
+            str: A message indicating which attempt (1-based) failed, includes the error content, and prompts the user to fix the issue and retry.
+        """
         return f"Attempt {attempt + 1} failed:\n{error}\n\nPlease fix and try again."

@@ -1,18 +1,23 @@
 # Rainmaker Orchestrator Dependencies
 # All versions pinned for security and reproducibility
-# Last updated: 2026-01-09
+# Last updated: 2026-01-20
 
-# Core dependencies (from original requirements.txt)
+# Core dependencies
 httpx==0.28.1
-openlit
-opik
+openlit==0.1.1
+opik==0.1.0
+pydantic==2.5.2
+redis==5.0.1
+prometheus-client==0.19.0
 
 # Web server dependencies
 # Flask 3.1.2 - Fixes CVE-2025-47278 (signing-order vulnerability)
 Flask==3.1.2
-
 # Gunicorn 23.0.0 - Fixes CVE-2024-1135 and CVE-2024-6827 (HTTP request smuggling)
 gunicorn==23.0.0
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
 
 # Flask dependencies (pinned for security)
 Werkzeug==3.1.3
@@ -34,10 +39,6 @@ setproctitle==1.3.4
 
 # AI Client dependencies
 openai==1.59.6
-fastapi==0.115.6
-uvicorn==0.34.0
-python-multipart==0.0.20
 
 # Development dependencies (testing)
-# Note: Move pytest to requirements-dev.txt in production
 pytest==8.3.4

@@ -1,19 +1,28 @@
 import logging
+import re
+import json
+import shlex
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from rainmaker_orchestrator.core import RainmakerOrchestrator
 from rainmaker_orchestrator.clients.kimi import KimiClient
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger("healer")
 
 
 class SelfHealingAgent:
-    """
-    Self-healing agent that handles alerts and generates hotfixes.
-
+    """Self-healing agent for command injection prevention and code repair.
+    
     This agent receives alert payloads from monitoring systems (e.g., Prometheus)
     and uses AI to analyze errors and generate automated hotfixes.
     """
+
+    MAX_RETRIES: int = 3
+    COMMAND_INJECTION_PATTERNS: list = [
+        r"[;&|`$()]",  # Shell metacharacters
+        r"__import__",  # Python injection
+        r"eval\(",  # Dynamic code execution
+    ]
 
     def __init__(self, kimi_client=None, orchestrator=None):
         """
@@ -46,6 +55,85 @@ class SelfHealingAgent:
         from rainmaker_orchestrator.server import settings
         return RainmakerOrchestrator(workspace_path=settings.workspace_path)
 
+    @staticmethod
+    def validate_command(command: str) -> bool:
+        """
+        Check a shell command string for patterns commonly associated with command injection.
+        
+        Parameters:
+            command (str): The shell command string to validate.
+        
+        Returns:
+            true if the command contains none of the configured injection patterns, false otherwise.
+        """
+        for pattern in SelfHealingAgent.COMMAND_INJECTION_PATTERNS:
+            if re.search(pattern, command):
+                logger.warning(f"Potential injection detected: {pattern}")
+                return False
+        return True
+
+    @staticmethod
+    def safe_parse_command(command: str) -> list:
+        """
+        Parse a shell command into a list of arguments after validating it against injection patterns.
+        
+        Parameters:
+            command (str): The shell command string to validate and parse.
+        
+        Returns:
+            list: The parsed list of command arguments.
+        
+        Raises:
+            ValueError: If the command fails security validation or parsing fails.
+        """
+        try:
+            if not SelfHealingAgent.validate_command(command):
+                raise ValueError("Command failed security validation")
+            parsed: list = shlex.split(command)
+            logger.info(f"Command parsed safely: {len(parsed)} args")
+            return parsed
+        except ValueError as e:
+            logger.error(f"Command parsing failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def extract_json(response: str) -> Dict[str, Any]:
+        """
+        Extracts a JSON object from a string that may include Markdown code fences.
+        
+        Parameters:
+            response (str): Input text potentially containing JSON wrapped in triple-backtick Markdown code blocks (e.g., ```json ... ```).
+        
+        Returns:
+            dict: Parsed JSON object.
+        
+        Raises:
+            json.JSONDecodeError: If the cleaned input cannot be parsed as JSON.
+        """
+        try:
+            # Remove markdown code blocks if present
+            clean: str = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=re.MULTILINE)
+            parsed: Dict[str, Any] = json.loads(clean)
+            logger.debug("JSON extraction successful")
+            return parsed
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON extraction failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def format_error_feedback(error: str, attempt: int) -> str:
+        """
+        Format a user-facing message for a failed retry attempt.
+        
+        Parameters:
+            error (str): Error message or output produced by the failed attempt.
+            attempt (int): Zero-based index of the attempt that failed.
+        
+        Returns:
+            str: A message indicating which attempt (1-based) failed, includes the error content, and prompts the user to fix the issue and retry.
+        """
+        return f"Attempt {attempt + 1} failed:\n{error}\n\nPlease fix and try again."
+
     def handle_alert(self, alert_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle an incoming alert and generate a hotfix.
@@ -65,8 +153,6 @@ class SelfHealingAgent:
             - blueprint: Generated hotfix code (if successful)
             - error: Error message (if failed)
         """
-        logger.info(f"Processing alert: {alert_payload.get('status', 'unknown')}")
-        
         # Check for multiple alerts in payload
         alerts = alert_payload.get('alerts', [])
         if not alerts and 'description' not in alert_payload and 'service' not in alert_payload:

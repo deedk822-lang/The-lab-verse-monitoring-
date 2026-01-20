@@ -6,6 +6,7 @@
 httpx==0.28.1
 openlit
 opik
+async-lru==2.1.0
 
 # Web server dependencies
 # Flask 3.1.2 - Fixes CVE-2025-47278 (signing-order vulnerability)

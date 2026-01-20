@@ -1,64 +1,46 @@
-#!/bin/bash
-# AutoGLM South Africa Edition - Installer
+#!/usr/bin/env bash
+set -euo pipefail
+
+TARBALL="${TARBALL:-autoglm_sa.tar.gz}"
+DIR="${DIR:-autoglm_sa}"
+
 echo "🇿🇦 AutoGLM South Africa Edition Installer"
-echo "====================================="
-echo "Date: $(date)"
+echo "======================================"
+echo "Date: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-# Check if package file exists
-if [ ! -f "autoglm_sa.tar.gz" ]; then
-    echo "❌ Error: autoglm_sa.tar.gz not found!"
-    echo "Please download both install_sa.sh and autoglm_sa.tar.gz"
-    exit 1
-fi
+[[ -f "$TARBALL" ]] || { echo "❌ Error: $TARBALL not found!"; exit 1; }
 
-# Check if this script is executable
-if [ ! -x "$0" ]; then
-    echo "⚠️ Making script executable..."
-    chmod +x "$0"
-    echo "✅ Script made executable"
-    echo ""
-    echo "Please run the installer again:"
-    echo "./$0"
-    exit 0
-fi
+echo "🔍 Checking system requirements..."
+for cmd in python3 git adb; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "❌ $cmd is required but not installed."; exit 1; }
+done
+echo "✅ System requirements met"
 
-# Extract package
 echo "📦 Extracting package..."
-tar -xzf autoglm_sa.tar.gz
+rm -rf "$DIR"
+tar -xzf "$TARBALL"
 
-# Check if extraction was successful
-if [ ! -d "autoglm_sa" ]; then
-    echo "❌ Error: Package extraction failed!"
-    exit 1
-fi
+[[ -d "$DIR/Open-AutoGLM" ]] || { echo "❌ Open-AutoGLM directory not found in package!"; exit 1; }
 
-# Change to package directory
-cd autoglm_sa
+cd "$DIR/Open-AutoGLM"
 
-# Check if setup script exists
-if [ ! -f "setup_sa.sh" ]; then
-    echo "❌ Error: setup_sa.sh not found in package!"
-    exit 1
-fi
+echo "📦 Installing Open-AutoGLM dependencies..."
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install -e .
 
-# Run setup script
-echo "🚀 Running setup..."
-./setup_sa.sh
-
-# Check setup result
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ AutoGLM South Africa Edition installed successfully!"
-    echo ""
-    echo "📋 Next steps:"
-    echo "   cd autoglm_sa"
-    echo "   ./start_autoglm.sh"
-    echo ""
-    echo "📚 Documentation: README_SA.md"
-    echo "🤝 Community support: +27 XX XXX XXXX"
-else
-    echo ""
-    echo "❌ Setup failed! Please check the error messages above."
-    exit 1
-fi
+echo ""
+echo "✅ AutoGLM South Africa Edition installed successfully!"
+echo ""
+echo "📋 Next steps:"
+echo "   1. Edit configuration: cd $DIR && nano config.env"
+echo "   2. Set your API key in config.env"
+echo "   3. Start AutoGLM: ./start_autoglm.sh"
+echo ""
+echo "📚 Documentation: $DIR/README_SA.md"
+echo "🤝 Community support: +27 XX XXX XXXX"
+echo ""
+echo "🌐 For API key: https://docs.z.ai/api-reference/introduction"

@@ -33,7 +33,9 @@ app = FastAPI(
 # --- Global Components (Initialize on startup) ---
 lstm_model = LSTMAnomalyDetector()
 transformer_model = TransformerAnomalyDetector()
-cloud_detector = MultiCloudAnomalyDetector(cloud_configs={"aws": {}, "azure": {}, "gcp": {}})
+cloud_detector = MultiCloudAnomalyDetector(
+    cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
+)
 alerting_system = EnhancedAlertingSystem()
 explainer = None
 
@@ -44,7 +46,7 @@ async def startup_event():
     """Actions to take on application startup."""
     global explainer
     logger.info("Anomaly Detection Service is starting up.")
-    if not os.environ.get('PYTEST_RUNNING'):
+    if not os.environ.get("PYTEST_RUNNING"):
         background_data = np.random.rand(10, 10, 1)
         explainer = AdvancedExplainabilityEngine(
             model=lstm_model, training_data=background_data
@@ -67,7 +69,11 @@ async def health_check():
     return {"status": "ok"}
 
 
-@app.post("/detect/timeseries", summary="Detect anomalies in time series data", tags=["Detection"])
+@app.post(
+    "/detect/timeseries",
+    summary="Detect anomalies in time series data",
+    tags=["Detection"],
+)
 async def detect_timeseries_anomalies(data: dict):
     """Detect anomalies in a given time series using LSTM or Transformer models."""
     try:
@@ -81,14 +87,21 @@ async def detect_timeseries_anomalies(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/detect/multi-cloud", summary="Detect anomalies in multi-cloud environments", tags=["Detection"])
+@app.post(
+    "/detect/multi-cloud",
+    summary="Detect anomalies in multi-cloud environments",
+    tags=["Detection"],
+)
 async def detect_multi_cloud_anomalies(data: dict):
     """Detect cost, performance, and security anomalies across multiple cloud providers."""
     try:
         time_window = data.get("time_window_hours", 24)
         anomalies = await cloud_detector.detect_multi_cloud_anomalies(time_window)
         cross_cloud_patterns = cloud_detector.detect_cross_cloud_patterns(anomalies)
-        return {"multi_cloud_anomalies": anomalies, "cross_cloud_patterns": cross_cloud_patterns}
+        return {
+            "multi_cloud_anomalies": anomalies,
+            "cross_cloud_patterns": cross_cloud_patterns,
+        }
     except Exception as e:
         logger.error(f"Error in multi-cloud detection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -98,7 +111,9 @@ async def detect_multi_cloud_anomalies(data: dict):
 async def explain_anomaly(data: dict):
     """Provide a detailed explanation for an anomalous data point."""
     if explainer is None:
-        raise HTTPException(status_code=503, detail="Explainability engine is not available.")
+        raise HTTPException(
+            status_code=503, detail="Explainability engine is not available."
+        )
     try:
         sample = np.array(data["sample"])
         context = data.get("context")
@@ -109,7 +124,9 @@ async def explain_anomaly(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/alert", summary="Trigger an enhanced alert for an anomaly", tags=["Alerting"])
+@app.post(
+    "/alert", summary="Trigger an enhanced alert for an anomaly", tags=["Alerting"]
+)
 async def trigger_alert(alert_data: dict):
     """Trigger a multi-channel alert for a critical anomaly."""
     try:
@@ -118,14 +135,18 @@ async def trigger_alert(alert_data: dict):
             title=alert_data["title"],
             description=alert_data["description"],
             severity=AlertSeverity(alert_data.get("severity", "high")),
-            channels=[AlertChannel(c) for c in alert_data.get("channels", ["slack", "email"])],
+            channels=[
+                AlertChannel(c) for c in alert_data.get("channels", ["slack", "email"])
+            ],
             anomaly_data=alert_data["anomaly_data"],
             created_at=datetime.now(),
             expires_at=None,
-            actions_required=alert_data.get("actions_required", ["Investigate immediately."]),
+            actions_required=alert_data.get(
+                "actions_required", ["Investigate immediately."]
+            ),
             auto_remediation_enabled=alert_data.get("auto_remediation_enabled", False),
             escalation_path=[],
-            mobile_optimized=True
+            mobile_optimized=True,
         )
         result = await alerting_system.send_enhanced_alert(alert)
         return result

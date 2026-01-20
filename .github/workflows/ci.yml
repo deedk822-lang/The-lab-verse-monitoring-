@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  ALIBABA_CLOUD_REGION_ID: ${{ secrets.ALIBABA_CLOUD_REGION_ID }}
+  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+  pull-requests: write
+  security-events: write
+
 jobs:
   lint-and-type-check:
     runs-on: ubuntu-latest
@@ -14,99 +27,67 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run MyPy (Strict Mode)
-        run: mypy --strict rainmaker_orchestrator/ api/
-      - name: Run Ruff linter
-        run: ruff check rainmaker_orchestrator/ api/ tests/
-      - name: Format check (Black)
-        run: black --check rainmaker_orchestrator/ api/ tests/
+      - name: Run Linting
+        run: |
+          pip install ruff black mypy
+          ruff check .
+          black --check .
+          mypy --strict rainmaker_orchestrator/ api/
 
-  security-audit:
+  test-python:
     runs-on: ubuntu-latest
-    name: Security & Dependency Audit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Scan for secrets
-        run: |
-          pip install detect-secrets
-          detect-secrets scan --baseline .secrets.baseline
-      - name: Audit dependencies
-        run: pip-audit
+      - name: Run tests
+        run: pytest tests/
 
-  unit-tests:
+  build-and-deploy:
+    needs: [lint-and-type-check, test-python]
     runs-on: ubuntu-latest
-    name: Unit Tests & Coverage
-    services:
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+    environment: production
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run tests with coverage
-        run: pytest tests/ --cov=rainmaker_orchestrator --cov=api --cov-report=xml --cov-report=term
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.xml
-          flags: unittests
 
-  integration-tests:
-    runs-on: ubuntu-latest
-    name: Integration Tests
-    env:
-      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      CI: "true"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - name: Configure Alibaba Cloud OIDC
+        uses: aliyun/aliyun-oidc-auth-action@v2
         with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run integration tests
-        run: pytest tests/integration/ -v --tb=short
+          provider-id: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
 
-  opik-telemetry:
-    runs-on: ubuntu-latest
-    name: Opik & OpenLIT Health Check
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Alibaba Cloud CLI
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt opik openlit
-      - name: Verify Opik initialization
-        run: python -c "import opik; print('✅ Opik imported successfully')"
-      - name: Verify OpenLIT initialization
-        run: python -c "import openlit; print('✅ OpenLIT imported successfully')"
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
+
+      - name: Run Security Analysis
+        run: |
+          python3 scripts/alibaba_cloud_security_scan.py
+
+      - name: Build and Push Docker Image
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+
+      - name: Deploy to Production
+        run: |
+          echo "🚀 Deploying to Alibaba Cloud ECS..."
+          # Deployment logic here

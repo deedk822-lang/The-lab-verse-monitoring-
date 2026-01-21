@@ -11,15 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class HuggingFaceConfig(BaseSettings):
-    """Hugging Face Models Configuration."""
+    """Hugging Face Models Configuration (Local Inference)."""
 
-    # Models
     model_diagnostic: str = "mistralai/Mistral-7B-Instruct-v0.3"
     model_planner: str = "microsoft/phi-2"
     model_executor: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     model_validator: str = "mistralai/Mistral-7B-Instruct-v0.3"
 
-    # Runtime
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     load_in_8bit: bool = True
     load_in_4bit: bool = False
@@ -27,16 +25,39 @@ class HuggingFaceConfig(BaseSettings):
     temperature: float = 0.7
     top_p: float = 0.9
 
-    # Hub/cache
     hf_cache_dir: str = "./models"
     hf_token: Optional[str] = None
 
-    # Serving (optional)
-    use_vllm: bool = False
-    vllm_port: int = 8888
-
     class Config:
         env_prefix = "HF_"
+
+
+class ZAIConfig(BaseSettings):
+    """Z.AI API Configuration."""
+
+    api_key: str
+    model_diagnostic: str = "claude-3-5-sonnet-20241022"
+    model_planner: str = "claude-3-5-sonnet-20241022"
+    model_executor: str = "claude-3-sonnet-20240229"
+    model_validator: str = "claude-3-sonnet-20240229"
+    max_tokens: int = 3000
+
+    class Config:
+        env_prefix = "Z_AI_"
+
+
+class QwenConfig(BaseSettings):
+    """Qwen/Alibaba Dashscope API Configuration."""
+
+    api_key: str
+    model_diagnostic: str = "qwen-max"
+    model_planner: str = "qwen-max"
+    model_executor: str = "qwen-turbo"
+    model_validator: str = "qwen-max"
+    max_tokens: int = 2048
+
+    class Config:
+        env_prefix = "QWEN_"
 
 
 class BitbucketConfig(BaseSettings):
@@ -85,9 +106,14 @@ class InfrastructureConfig(BaseSettings):
 
 
 class AppConfig(BaseSettings):
+    """Main application configuration with multi-provider LLM support."""
+
     pipeline_platform: Literal["bitbucket"] = "bitbucket"
+    llm_provider: Literal["huggingface", "z_ai", "qwen"] = "z_ai"
 
     hf: HuggingFaceConfig = HuggingFaceConfig()
+    z_ai: ZAIConfig = ZAIConfig()
+    qwen: QwenConfig = QwenConfig()
     bitbucket: BitbucketConfig = BitbucketConfig()
     agent: AgentConfig = AgentConfig()
     security: SecurityConfig = SecurityConfig()
@@ -97,13 +123,32 @@ class AppConfig(BaseSettings):
         env_file = ".env.production"
         case_sensitive = False
 
+    def get_llm_config(self):
+        """Get the active LLM configuration based on provider selection."""
+        if self.llm_provider == "z_ai":
+            return self.z_ai
+        elif self.llm_provider == "qwen":
+            return self.qwen
+        elif self.llm_provider == "huggingface":
+            return self.hf
+        else:
+            raise ValueError(f"Unknown LLM provider: {self.llm_provider}")
+
 
 @lru_cache
 def get_config() -> AppConfig:
     cfg = AppConfig()
     logger.info("✅ Configuration loaded for %s", cfg.infrastructure.environment)
-    logger.info("🤖 Using device: %s", cfg.hf.device)
-    logger.info("📦 Models cache: %s", cfg.hf.hf_cache_dir)
+    logger.info("🤖 Using LLM provider: %s", cfg.llm_provider.upper())
+
+    if cfg.llm_provider == "huggingface":
+        logger.info("📦 Using device: %s", cfg.hf.device)
+        logger.info("📂 Models cache: %s", cfg.hf.hf_cache_dir)
+    elif cfg.llm_provider == "z_ai":
+        logger.info("🌐 Using Z.AI API")
+    elif cfg.llm_provider == "qwen":
+        logger.info("🌐 Using Qwen/Dashscope API")
+
     return cfg
 
 

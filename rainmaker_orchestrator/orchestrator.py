@@ -2,7 +2,7 @@ import os
 import json
 import re
 import httpx
- feat/implement-authority-engine
+from async_lru import alru_cache
 from typing import Dict, Any
 from hubspot import HubSpot
 from .fs_agent import FileSystemAgent
@@ -53,6 +53,11 @@ class RainmakerOrchestrator:
         \"\"\"Gracefully close the HTTP client.\"\"\"
         await self.client.aclose()
 
+    # ⚡ Bolt Optimization: Cache judge calls to prevent redundant API requests.
+    # The judge's response is deterministic for a given role and context,
+    # making it a perfect candidate for caching. A cache size of 128 is
+    # chosen as a balance between performance and memory usage.
+    @alru_cache(maxsize=128)
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         \"\"\"Route calls to the appropriate judge model based on role.\"\"\"

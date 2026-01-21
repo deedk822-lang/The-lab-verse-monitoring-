@@ -41,3 +41,6 @@ python-multipart==0.0.20
 # Development dependencies (testing)
 # Note: Move pytest to requirements-dev.txt in production
 pytest==8.3.4
+
+# Caching
+async-lru==2.1.0

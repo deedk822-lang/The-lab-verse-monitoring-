@@ -11,12 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 class HuggingFaceConfig(BaseSettings):
-    """Hugging Face Models Configuration (Local Inference)."""
+    """Hugging Face Models Configuration (Local Inference).
 
-    model_diagnostic: str = "mistralai/Mistral-7B-Instruct-v0.3"
-    model_planner: str = "microsoft/phi-2"
-    model_executor: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    model_validator: str = "mistralai/Mistral-7B-Instruct-v0.3"
+    Use open-source models hosted on Hugging Face.
+
+    Recommended defaults below use DeepSeek-R1 distilled models (smaller + strong reasoning).
+    """
+
+    # DeepSeek distilled models (recommended): choose a size that fits your GPU
+    # - 1.5B: very small / fast (low VRAM)
+    # - 7B: balanced (recommended for most)
+    # - 14B/32B: higher quality but needs more VRAM
+    model_diagnostic: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+    model_planner: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+    model_executor: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+    model_validator: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
 
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     load_in_8bit: bool = True
@@ -30,20 +39,6 @@ class HuggingFaceConfig(BaseSettings):
 
     class Config:
         env_prefix = "HF_"
-
-
-class ZAIConfig(BaseSettings):
-    """Z.AI API Configuration."""
-
-    api_key: str
-    model_diagnostic: str = "claude-3-5-sonnet-20241022"
-    model_planner: str = "claude-3-5-sonnet-20241022"
-    model_executor: str = "claude-3-sonnet-20240229"
-    model_validator: str = "claude-3-sonnet-20240229"
-    max_tokens: int = 3000
-
-    class Config:
-        env_prefix = "Z_AI_"
 
 
 class QwenConfig(BaseSettings):
@@ -106,13 +101,19 @@ class InfrastructureConfig(BaseSettings):
 
 
 class AppConfig(BaseSettings):
-    """Main application configuration with multi-provider LLM support."""
+    """Main application configuration with multi-provider LLM support.
+
+    Supported providers:
+    - huggingface: local inference (DeepSeek / Mistral / etc.)
+    - qwen: Alibaba Dashscope API
+
+    NOTE: Claude/Z.AI provider removed by request.
+    """
 
     pipeline_platform: Literal["bitbucket"] = "bitbucket"
-    llm_provider: Literal["huggingface", "z_ai", "qwen"] = "z_ai"
+    llm_provider: Literal["huggingface", "qwen"] = "huggingface"
 
     hf: HuggingFaceConfig = HuggingFaceConfig()
-    z_ai: ZAIConfig = ZAIConfig()
     qwen: QwenConfig = QwenConfig()
     bitbucket: BitbucketConfig = BitbucketConfig()
     agent: AgentConfig = AgentConfig()
@@ -125,9 +126,7 @@ class AppConfig(BaseSettings):
 
     def get_llm_config(self):
         """Get the active LLM configuration based on provider selection."""
-        if self.llm_provider == "z_ai":
-            return self.z_ai
-        elif self.llm_provider == "qwen":
+        if self.llm_provider == "qwen":
             return self.qwen
         elif self.llm_provider == "huggingface":
             return self.hf
@@ -144,8 +143,7 @@ def get_config() -> AppConfig:
     if cfg.llm_provider == "huggingface":
         logger.info("📦 Using device: %s", cfg.hf.device)
         logger.info("📂 Models cache: %s", cfg.hf.hf_cache_dir)
-    elif cfg.llm_provider == "z_ai":
-        logger.info("🌐 Using Z.AI API")
+        logger.info("🧠 HF model (diagnostic): %s", cfg.hf.model_diagnostic)
     elif cfg.llm_provider == "qwen":
         logger.info("🌐 Using Qwen/Dashscope API")
 

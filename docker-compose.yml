@@ -1,17 +1,28 @@
 version: '3.8'
 
 services:
-  node_app:
+  agent:
     build: .
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-
-  rainmaker_orchestrator:
-    build:
-      context: ./rainmaker_orchestrator
+    container_name: lab-verse-agent
+    environment:
+      - PIPELINE_PLATFORM=bitbucket
+      - BITBUCKET_WORKSPACE=lab-verse-monitaring
+      - BITBUCKET_USERNAME=${BITBUCKET_USERNAME}
+      - BITBUCKET_APP_PASSWORD=${BITBUCKET_APP_PASSWORD}
+      - HF_DEVICE=cuda
+      - HF_LOAD_IN_8BIT=true
+      - HF_CACHE_DIR=/app/models
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+      - "8001:8001"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

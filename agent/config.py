@@ -13,15 +13,9 @@ logger = logging.getLogger(__name__)
 class HuggingFaceConfig(BaseSettings):
     """Hugging Face Models Configuration (Local Inference).
 
-    Use open-source models hosted on Hugging Face.
-
-    Recommended defaults below use DeepSeek-R1 distilled models (smaller + strong reasoning).
+    Recommended default: DeepSeek-R1 distilled 7B (good reasoning, manageable size).
     """
 
-    # DeepSeek distilled models (recommended): choose a size that fits your GPU
-    # - 1.5B: very small / fast (low VRAM)
-    # - 7B: balanced (recommended for most)
-    # - 14B/32B: higher quality but needs more VRAM
     model_diagnostic: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     model_planner: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     model_executor: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
@@ -39,6 +33,24 @@ class HuggingFaceConfig(BaseSettings):
 
     class Config:
         env_prefix = "HF_"
+
+
+class ZAIConfig(BaseSettings):
+    """Z.AI API Configuration.
+
+    Claude models removed by request.
+    Use GLM-4.7 by setting model to 'glm-4.7'.
+    """
+
+    api_key: str
+    model_diagnostic: str = "glm-4.7"
+    model_planner: str = "glm-4.7"
+    model_executor: str = "glm-4.7"
+    model_validator: str = "glm-4.7"
+    max_tokens: int = 8192
+
+    class Config:
+        env_prefix = "Z_AI_"
 
 
 class QwenConfig(BaseSettings):
@@ -105,15 +117,17 @@ class AppConfig(BaseSettings):
 
     Supported providers:
     - huggingface: local inference (DeepSeek / Mistral / etc.)
+    - z_ai: Z.AI API (GLM-4.7)
     - qwen: Alibaba Dashscope API
 
-    NOTE: Claude/Z.AI provider removed by request.
+    NOTE: Claude is not used.
     """
 
     pipeline_platform: Literal["bitbucket"] = "bitbucket"
-    llm_provider: Literal["huggingface", "qwen"] = "huggingface"
+    llm_provider: Literal["huggingface", "z_ai", "qwen"] = "z_ai"
 
     hf: HuggingFaceConfig = HuggingFaceConfig()
+    z_ai: ZAIConfig = ZAIConfig()
     qwen: QwenConfig = QwenConfig()
     bitbucket: BitbucketConfig = BitbucketConfig()
     agent: AgentConfig = AgentConfig()
@@ -125,13 +139,13 @@ class AppConfig(BaseSettings):
         case_sensitive = False
 
     def get_llm_config(self):
-        """Get the active LLM configuration based on provider selection."""
+        if self.llm_provider == "huggingface":
+            return self.hf
+        if self.llm_provider == "z_ai":
+            return self.z_ai
         if self.llm_provider == "qwen":
             return self.qwen
-        elif self.llm_provider == "huggingface":
-            return self.hf
-        else:
-            raise ValueError(f"Unknown LLM provider: {self.llm_provider}")
+        raise ValueError(f"Unknown LLM provider: {self.llm_provider}")
 
 
 @lru_cache
@@ -144,6 +158,9 @@ def get_config() -> AppConfig:
         logger.info("📦 Using device: %s", cfg.hf.device)
         logger.info("📂 Models cache: %s", cfg.hf.hf_cache_dir)
         logger.info("🧠 HF model (diagnostic): %s", cfg.hf.model_diagnostic)
+    elif cfg.llm_provider == "z_ai":
+        logger.info("🌐 Using Z.AI API (GLM-4.7)")
+        logger.info("🧠 Z.AI model: %s", cfg.z_ai.model_diagnostic)
     elif cfg.llm_provider == "qwen":
         logger.info("🌐 Using Qwen/Dashscope API")
 

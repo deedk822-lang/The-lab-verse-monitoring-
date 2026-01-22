@@ -4,6 +4,8 @@ import logging
 import json
 from datetime import datetime
 
+from api.mistral import MistralAPI
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,8 +43,11 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Groq unavailable: {e}")
 
-    # Try Mistral (local via Ollama)
+    # Try Mistral
     try:
+        import os
+        if not os.getenv("MISTRAL_API_KEY"):
+            raise ValueError("MISTRAL_API_KEY environment variable not set.")
         from api.mistral import MistralAPI
         providers["mistral"] = MistralAPI()
         logger.info("✅ Mistral provider initialized")
@@ -149,8 +154,11 @@ class ContentFactory:
                         self.db.log_api_usage("groq", "generate", result.get("usage", {}).get("total_tokens", 0), result.get("cost_usd", 0.0))
                     return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("completion_tokens", 0)}
                 elif provider_name == "mistral":
-                    result = provider.query_local(prompt)
-                    return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+                    result = provider.generate_content(prompt, max_tokens)
+                    cost = result.get("usage", {}).get("cost_usd", 0.0)
+                    if self.db:
+                        self.db.log_api_usage("mistral", "generate_content", result.get("usage", {}).get("total_tokens", 0), cost)
+                    return {"text": result["text"], "provider": provider_name, "cost_usd": cost, "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "kimi":
                     result = provider.generate_content(prompt, max_tokens)
                     if self.db:

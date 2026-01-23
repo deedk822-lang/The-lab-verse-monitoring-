@@ -2,7 +2,6 @@ import os
 import json
 import re
 import httpx
- feat/implement-authority-engine
 from typing import Dict, Any
 from hubspot import HubSpot
 from .fs_agent import FileSystemAgent
@@ -10,8 +9,6 @@ from .config import ConfigManager
 
 import logging
 from typing import Dict, Any, Optional
-from rainmaker_orchestrator.fs_agent import FileSystemAgent
-from rainmaker_orchestrator.config import ConfigManager
 from opik import track
 import openlit
 
@@ -22,14 +19,13 @@ JUDGE_MODELS = {
     "auditor": "pixtral-12b-2409",
     "challenger": "mixtral-8x22b"
 }
- main
 
 class RainmakerOrchestrator:
-    \"\"\"
+    """
     The central intelligence for the Authority Engine.
     Implements a 4-Judge protocol (Visionary, Operator, Auditor, Challenger)
     with self-healing and telemetry via Opik/OpenLIT.
-    \"\"\"
+    """
     def __init__(self, workspace_path: str = "./workspace", config_file: str = ".env"):
         if os.getenv("CI") != "true":
             openlit.init(
@@ -50,12 +46,12 @@ class RainmakerOrchestrator:
             self.hubspot_client = None
 
     async def aclose(self):
-        \"\"\"Gracefully close the HTTP client.\"\"\"
+        """Gracefully close the HTTP client."""
         await self.client.aclose()
 
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
-        \"\"\"Route calls to the appropriate judge model based on role.\"\"\"
+        """Route calls to the appropriate judge model based on role."""
         zai_key = self.config.get('ZAI_API_KEY')
         mistral_key = self.config.get('MISTRAL_API_KEY')
         
@@ -82,16 +78,15 @@ class RainmakerOrchestrator:
         response = await self.client.post(url, headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
-
     @track(name="authority_flow")
     async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
-        \"\"\"
+        """
         Execute the 4-Judge Authority Flow:
         1. Auditor: Analyzes compliance.
         2. Visionary: Creates strategic plan.
         3. Operator: Generates code.
         4. Challenger: Stress-tests the plan (Optional hook).
-        \"\"\"
+        """
         self.logger.info("⚖\ufe0f Initiating Authority Flow...")
         
         # 1. Audit
@@ -111,7 +106,7 @@ class RainmakerOrchestrator:
         }
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        \"\"\"Public entry point for executing varying task types.\"\"\"
+        """Public entry point for executing varying task types."""
         if task.get("type") == "authority_task":
             return await self.run_authority_flow(task)
         if task.get("type") == "coding_task" and task.get("output_filename"):
@@ -119,7 +114,7 @@ class RainmakerOrchestrator:
         return {"status": "error", "message": "Task type not supported."}
 
     async def _run_self_healing(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        \"\"\"Recursive self-healing loop for generated code.\"\"\"
+        """Recursive self-healing loop for generated code."""
         filename = task["output_filename"]
         max_retries = 3
         current_context = task["context"]

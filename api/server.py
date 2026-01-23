@@ -1,14 +1,10 @@
 import os
 import logging
- feat/implement-authority-engine
 import time
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
-
 from contextlib import asynccontextmanager
- main
 from typing import Optional
-
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
 import opik
@@ -32,7 +28,7 @@ class HubSpotWebhookPayload(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    \"\"\"Manage lifecycle of the Authority Engine.\"\"\"
+    "Manage lifecycle of the Authority Engine."
     orchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
     logger.info("Authority Engine initialized and ready.")
@@ -55,7 +51,6 @@ async def health():
         "features": ["4-Judge Flow", "Self-Healing", "Opik Telemetry"]
     }
 
- feat/implement-authority-engine
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
     Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
@@ -154,7 +149,7 @@ async def handle_hubspot_webhook(request: Request, payload: HubSpotWebhookPayloa
 
 @app.post("/webhook/hubspot")
 async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: BackgroundTasks, request: Request):
-    \"\"\"Asynchronous entry point for HubSpot events.\"\"\"
+    "Asynchronous entry point for HubSpot events."
     orchestrator = request.app.state.orchestrator
     # Use model_dump() for Pydantic v2 compatibility
     background_tasks.add_task(orchestrator.run_authority_flow, payload.model_dump())
@@ -162,7 +157,7 @@ async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: Back
 
 @app.post("/execute")
 async def execute(payload: ExecuteTaskPayload, request: Request):
-    \"\"\"Synchronous execution for direct agent tasks.\"\"\"
+    "Synchronous execution for direct agent tasks."
     orchestrator = request.app.state.orchestrator
     try:
         result = await orchestrator.execute_task(payload.model_dump())
@@ -170,4 +165,3 @@ async def execute(payload: ExecuteTaskPayload, request: Request):
     except Exception as e:
         logger.error(f"Execution failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
- main

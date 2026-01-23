@@ -283,7 +283,7 @@ class HuggingFaceAPI:
         api_url = f"{self.api_base}/{model}"
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 api_url,
                 headers=self.headers,
                 json={"inputs": "test"},

@@ -35,10 +35,6 @@ async def test_hubspot_webhook_valid(mock_hubspot, mock_rainmaker_orchestrator):
     mock_orchestrator._call_ollama.return_value = mock_call_ollama()
     mock_orchestrator.config.get.return_value = "dummy-hubspot-token"
 
-    Verifies that a valid HubSpot webhook payload is accepted and returns the expected accepted status and contact ID.
-    
-    Sets up mocked RainmakerOrchestrator (including a stubbed async Ollama response) and a mocked HubSpot client, posts a payload to /webhook/hubspot, and asserts the response status code is 200 with JSON {"status": "accepted", "contact_id": 123}.
-    """
     mock_orchestrator_instance = mock_rainmaker_orchestrator.return_value
     mock_orchestrator_instance.config = {'HUBSPOT_ACCESS_TOKEN': 'fake-token'}
     
@@ -53,7 +49,6 @@ async def test_hubspot_webhook_valid(mock_hubspot, mock_rainmaker_orchestrator):
             })
         }
     })
- main
 
     # Mock the HubSpot client to prevent real API calls
     mock_hubspot.return_value = MagicMock()

@@ -1,3 +1,4 @@
+import ipaddress
 import socket
 from urllib.parse import urlparse
 
@@ -19,30 +20,58 @@ class SSRFBlocker(HTTPAdapter):
             raise ConnectionError(f"Invalid URL: {request.url}")
 
         try:
-            ip_address = socket.gethostbyname(hostname)
+            # Validate *all* resolved addresses (IPv4 + IPv6). If any resolved
+            # address is unroutable/private, block the request.
+            addrinfos = socket.getaddrinfo(hostname, None)
         except socket.gaierror:
             raise ConnectionError(f"Could not resolve hostname: {hostname}")
 
-        if self.is_private(ip_address):
-            if self.allow_localhost and ip_address.startswith("127."):
-                pass
+        resolved_ips: set[str] = set()
+        for family, _socktype, _proto, _canonname, sockaddr in addrinfos:
+            if family == socket.AF_INET:
+                ip_str = sockaddr[0]
+            elif family == socket.AF_INET6:
+                ip_str = sockaddr[0]
             else:
-                raise ConnectionError(f"SSRF attempt blocked for IP: {ip_address}")
+                continue
+
+            resolved_ips.add(ip_str)
+
+        if not resolved_ips:
+            raise ConnectionError(f"Could not resolve hostname: {hostname}")
+
+        for ip_str in resolved_ips:
+            try:
+                ipobj = ipaddress.ip_address(ip_str)
+            except ValueError:
+                raise ConnectionError(f"Could not parse resolved IP: {ip_str}")
+
+            if self.is_blocked_address(ipobj, allow_localhost=self.allow_localhost):
+                raise ConnectionError(f"SSRF attempt blocked for IP: {ipobj}")
 
         return super().send(request, **kwargs)
 
     @staticmethod
-    def is_private(ip):
-        try:
-            # Check if the IP is in private ranges or is a loopback address
-            return (
-                ip.startswith("10.") or
-                ip.startswith("172.") and 16 <= int(ip.split(".")[1]) <= 31 or
-                ip.startswith("192.168.") or
-                ip.startswith("127.")
-            )
-        except (ValueError, IndexError):
-            return False
+    def is_blocked_address(ipobj: ipaddress._BaseAddress, *, allow_localhost: bool) -> bool:
+        """Return True if the resolved IP should be blocked for SSRF safety."""
+        if ipobj.is_loopback:
+            return not allow_localhost
+
+        # ipaddress flags catch most unroutable ranges for IPv4/IPv6.
+        if (
+            ipobj.is_private
+            or ipobj.is_link_local
+            or ipobj.is_reserved
+            or ipobj.is_multicast
+            or ipobj.is_unspecified
+        ):
+            return True
+
+        # Shared address space (CGNAT) is not always marked as private.
+        if ipobj.version == 4 and ipobj in ipaddress.ip_network("100.64.0.0/10"):
+            return True
+
+        return False
 
 
 def create_ssrf_safe_session(allow_localhost=False):

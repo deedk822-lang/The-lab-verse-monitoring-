@@ -17,23 +17,20 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# Install Poetry
+RUN pip3 install poetry
+
+# Copy project files
+COPY pyproject.toml poetry.lock ./
+
+# Export dependencies from Poetry
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+# Install dependencies
+RUN pip3 install -r requirements.txt
+
 # Copy your actual repository
 COPY . /app/
-
-# Install original requirements
-RUN pip3 install --upgrade pip
-RUN pip3 install fastapi==0.104.1 uvicorn==0.24.0 python-dotenv==1.0.0 requests==2.31.0 httpx==0.25.2
-
-# Add Qwen 3 Plus enhancements
-RUN pip3 install \
-    alibabacloud-paif==1.0.0 \
-    transformers==4.36.0 \
-    torch==2.1.1 \
-    accelerate==0.24.1 \
-    langchain==0.1.0
-
-# Install any other requirements that exist
-RUN pip3 install -r requirements.txt || echo "No requirements.txt found, continuing..."
 
 # Singapore region environment
 ENV ALIBABA_CLOUD_REGION_ID=ap-southeast-1

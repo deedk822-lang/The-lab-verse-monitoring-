@@ -7,5 +7,6 @@ exclude =
     .venv,
     venv,
     env,
-    .tox
+    .tox,
+    .mypy_cache
 max-complexity = 10

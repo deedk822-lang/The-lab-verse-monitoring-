@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
+import os
 import logging
 from datetime import datetime
-import os
 import httpx
 
 # Configure logging
@@ -51,7 +51,11 @@ async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str
     if payload.build_status.lower() == "failed":
         original_response = await handle_build_failure(payload)
         qwen_analysis = await analyze_with_qwen_3_plus(payload)
-        await forward_to_jira(payload, qwen_analysis)
+
+        # Forward to Jira if Atlassian webhook is configured
+        atlassian_webhook_url = os.getenv("ATLAS_WEBHOOK_URL")
+        if atlassian_webhook_url:
+            await forward_to_jira(atlassian_webhook_url, payload, qwen_analysis)
 
         return {
             "original_response": original_response,
@@ -83,7 +87,9 @@ async def handle_atlassian_webhook(payload: AtlassianWebhookPayload) -> Dict[str
         qwen_analysis = await analyze_with_qwen_3_plus(standard_payload)
 
         # Forward to Jira through Atlassian webhook
-        await forward_to_jira(standard_payload, qwen_analysis)
+        atlassian_webhook_url = os.getenv("ATLAS_WEBHOOK_URL")
+        if atlassian_webhook_url:
+            await forward_to_jira(atlassian_webhook_url, payload, qwen_analysis)
 
         return {
             "original_response": original_response,
@@ -122,33 +128,23 @@ def convert_atlassian_to_standard(
 
 
 async def forward_to_jira(
-    payload: BitbucketWebhookPayload, qwen_analysis: Dict[str, Any]
+    webhook_url: str,
+    payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload],
+    qwen_analysis: Dict[str, Any],
 ) -> None:
     """Forward enhanced analysis to Jira through Atlassian webhook"""
-    atlas_webhook_url = os.getenv("ATLAS_WEBHOOK_URL")
-    atlas_api_key = os.getenv("ATLAS_API_KEY")
+    try:
+        enhanced_payload = {
+            "original_payload": payload.dict() if hasattr(payload, "dict") else payload,
+            "qwen_analysis": qwen_analysis,
+            "enhanced_timestamp": datetime.utcnow().isoformat(),
+        }
 
-    if not atlas_webhook_url or not atlas_api_key:
-        logger.error("ATLAS_WEBHOOK_URL or ATLAS_API_KEY environment variables not set.")
-        return
-
-    full_webhook_url = f"{atlas_webhook_url}?apiKey={atlas_api_key}"
-
-    enhanced_payload = {
-        "original_payload": payload.dict(),
-        "ai_analysis": qwen_analysis,
-        "source_system": "lab-verse-monitoring",
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(full_webhook_url, json=enhanced_payload)
-            response.raise_for_status()
-            logger.info(
-                f"Successfully forwarded analysis to Atlassian. Status: {response.status_code}"
-            )
-        except httpx.RequestError as e:
-            logger.error(f"Failed to forward analysis to Atlassian: {e}")
+        async with httpx.AsyncClient() as client:
+            response = await client.post(webhook_url, json=enhanced_payload)
+            logger.info(f"Forwarded to Jira: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Failed to forward to Jira: {str(e)}")
 
 
 async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
@@ -213,7 +209,8 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         "status": "connected",
         "repository": "lab-verse-monitoring",
         "integration": "active",
-        "webhook_configured": True,
+        "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
+        "atlassian_webhook": os.getenv("ATLAS_WEBHOOK_URL", "not configured"),
         "last_sync": "recent",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -224,9 +221,9 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
 async def jira_integration_status() -> Dict[str, Any]:
     """Jira integration status"""
     return {
-        "status": "connected",
+        "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "integration": "atlassian_jsm",
-        "webhook_active": True,
+        "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "enhanced_with_ai": True,
         "last_forwarded": "recent",
         "timestamp": datetime.utcnow().isoformat(),

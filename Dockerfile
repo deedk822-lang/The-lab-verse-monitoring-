@@ -1,24 +1,36 @@
-FROM nvidia/cuda:12.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1-devel-ubuntu22.04
+
+# Singapore region optimization
+ENV TZ=Asia/Singapore
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# System updates
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    git \
+    curl \
+    wget \
+    vim \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
+# Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements.txt
 
-COPY agent/ ./agent/
+# Copy application
+COPY . /app/
 
-RUN mkdir -p ./models
+# Install any dev dependencies for testing
+RUN pip3 install pytest pytest-asyncio black flake8 mypy
 
-EXPOSE 8000 8001
+# Singapore region environment
+ENV ALIBABA_CLOUD_REGION_ID=ap-southeast-1
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python3 -c "import requests; requests.get('http://localhost:8000/health')"
+EXPOSE 8000
 
-CMD ["python3", "-m", "agent.main"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

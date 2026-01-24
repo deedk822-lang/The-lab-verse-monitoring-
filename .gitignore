@@ -136,6 +136,7 @@ build/
 *.bak
 *.old
 *.orig
+*.egg-info/
 
 # ----------------------------------------------------------------------
 #   📊  Test & coverage artefacts – can be regenerated locally

@@ -1,0 +1,21 @@
+---
+name: Validate Workflow Syntax
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**.yml'
+      - '.github/workflows/**.yaml'
+
+jobs:
+  validate-yaml:
+    name: Validate Workflow YAML
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run YAML Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .github/workflows/

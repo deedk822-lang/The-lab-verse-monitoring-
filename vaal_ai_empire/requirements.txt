@@ -1,0 +1,41 @@
+# Vaal AI Empire - Python Dependencies
+
+# AG2 Multi-Agent Framework
+ag2[openai]>=0.10.0
+
+# Cohere for Semantic Search
+cohere>=5.0.0
+
+# HNSW Vector Index
+hnswlib>=0.8.0
+
+# Standard ML/Data Libraries
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Environment Management
+python-dotenv>=1.0.0
+
+# Async Support
+aiohttp>=3.9.0
+asyncio>=3.4.3
+
+# JSON/Data Handling
+orjson>=3.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Kimi Model Dependencies (now served via vLLM)
+openai>=1.0.0
+tenacity>=8.0.0
+
+# Aya Vision Model Dependencies
+torch>=2.6
+
+# HTTP Requests
+requests>=2.28.0
+
+# HubSpot API
+hubspot-api-client>=8.1.1

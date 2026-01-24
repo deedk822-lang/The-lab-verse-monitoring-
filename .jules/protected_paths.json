@@ -1,0 +1,12 @@
+{
+  "protected_paths": [
+    ".github/workflows/*",
+    "config/*",
+    ".env*",
+    "*/auth/*",
+    "*/payment/*",
+    "docker-compose*.yml",
+    "package.json",
+    "requirements.txt"
+  ]
+}

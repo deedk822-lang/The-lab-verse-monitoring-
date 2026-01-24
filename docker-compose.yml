@@ -1,9 +1,33 @@
 version: '3.8'
-
 services:
-  orchestrator:
+  lab-verse-monitoring-agent:
     build: .
+    restart: unless-stopped
+    environment:
+      - ALIBABA_ACCESS_KEY_ID=${ALIBABA_ACCESS_KEY_ID}
+      - ALIBABA_ACCESS_KEY_SECRET=${ALIBABA_ACCESS_KEY_SECRET}
+      - ALIBABA_CLOUD_REGION_ID=ap-southeast-1
+      - BITBUCKET_WORKSPACE=${BITBUCKET_WORKSPACE}
+      - BITBUCKET_USERNAME=${BITBUCKET_USERNAME}
+      - BITBUCKET_APP_PASSWORD=${BITBUCKET_APP_PASSWORD}
+      - ATLAS_WEBHOOK_URL=${ATLAS_WEBHOOK_URL}
+      - HF_TOKEN=${HF_TOKEN}
+      - TZ=Asia/Singapore
+    volumes:
+      - ./models:/app/models
+      - ./workspace:/app/workspace
     ports:
-      - "8080:8080"
-    env_file:
-      - .env
+      - "8000:8000"
+    networks:
+      - lab-verse-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  lab-verse-network:
+    driver: bridge

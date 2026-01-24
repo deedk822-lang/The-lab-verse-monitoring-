@@ -5,8 +5,7 @@ setup(
     version="1.0.0",
     description="Vaal AI Empire - Authority Engine with Tax & Content Agents",
     author="deedk822-lang",
-    packages=find_packages(where="src"),
-    package_dir={"":" src"},
+    packages=find_packages(),
     python_requires=">=3.10",
     install_requires=[
         "fastapi>=0.115.0",

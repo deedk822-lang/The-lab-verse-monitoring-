@@ -1,0 +1,16 @@
+README.md
+setup.py
+clients/__init__.py
+core/__init__.py
+core/config.py
+services/__init__.py
+services/african_manuscript_transcriber.py
+services/content_generator.py
+services/revenue_anomaly_detector.py
+services/semantic_search_rag.py
+services/social_poster.py
+vaal_ai_empire.egg-info/PKG-INFO
+vaal_ai_empire.egg-info/SOURCES.txt
+vaal_ai_empire.egg-info/dependency_links.txt
+vaal_ai_empire.egg-info/requires.txt
+vaal_ai_empire.egg-info/top_level.txt

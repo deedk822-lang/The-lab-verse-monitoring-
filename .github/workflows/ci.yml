@@ -1,3 +1,4 @@
+---
 name: CI/CD Pipeline
 
 on:
@@ -164,7 +165,6 @@ jobs:
       - name: Deploy to Vercel Preview
         id: deploy
         uses: amondnet/vercel-action@v25
-        if: env.VERCEL_TOKEN != ''
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -200,7 +200,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}`
+              body: >
+                ✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}
             })
 
   # ========== Deploy: Production Environment ==========
@@ -226,7 +227,6 @@ jobs:
       - name: Deploy to Vercel Production
         id: deploy
         uses: amondnet/vercel-action@v25
-        if: env.VERCEL_TOKEN != ''
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -269,18 +269,36 @@ jobs:
             })
 
   # ========== Notification Phase ==========
-  notify:
-    name: 📢 Notify Status
+  notify-preview:
+    name: 📢 Notify Preview Status
     runs-on: ubuntu-latest
-    needs: [deploy-preview, deploy-production]
-    if: always()
+    needs: [deploy-preview]
+    if: always() && github.event_name == 'pull_request'
     steps:
-      - name: Send notification
+      - name: Send notification on preview failure
+        if: needs.deploy-preview.result == 'failure'
         run: |
-          if [ "${{ needs.deploy-preview.result }}" = "failure" ] || [ "${{ needs.deploy-production.result }}" = "failure" ]; then
-            echo "❌ Pipeline failed: ${{ github.workflow }}"
-            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            exit 1
-          else
-            echo "✅ Pipeline completed successfully"
-          fi
+          echo "❌ Preview deployment pipeline failed: ${{ github.workflow }}"
+          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1
+      - name: Send notification on preview success
+        if: needs.deploy-preview.result == 'success'
+        run: >
+          echo "✅ Preview deployment pipeline completed successfully"
+
+  notify-production:
+    name: 📢 Notify Production Status
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Send notification on production failure
+        if: needs.deploy-production.result == 'failure'
+        run: |
+          echo "❌ Production deployment pipeline failed: ${{ github.workflow }}"
+          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1
+      - name: Send notification on production success
+        if: needs.deploy-production.result == 'success'
+        run: >
+          echo "✅ Production deployment pipeline completed successfully"

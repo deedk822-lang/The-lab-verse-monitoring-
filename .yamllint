@@ -1,0 +1,11 @@
+# .yamllint
+extends: default
+
+rules:
+  # Disable this rule because 'on:' is a valid keyword in GitHub Actions.
+  truthy: disable
+
+  # Increase the max line length to 120 characters.
+  line-length:
+    max: 120
+    level: warning

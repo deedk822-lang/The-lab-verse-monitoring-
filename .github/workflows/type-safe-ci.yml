@@ -8,8 +8,6 @@ on:
 env:
   ALIYUN_REGION: cn-shanghai
   ACCESS_ANALYZER_ARN: acs:accessanalyzer:cn-shanghai:5212459344287865:analyzer/prod_security_analyzer
-  # Pin CLI version to reduce supply-chain risk of downloading "latest".
-  ALIYUN_CLI_VERSION: 3.0.277
 
 jobs:
   type-check:
@@ -44,50 +42,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Determine if security analysis can run
-        id: gate
-        env:
-          ALIYUN_ROLE_ARN: ${{ secrets.ALIYUN_ROLE_ARN }}
-          ALIYUN_OIDC_PROVIDER_ARN: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
-        run: |
-          if [ -z "$ALIYUN_ROLE_ARN" ] || [ -z "$ALIYUN_OIDC_PROVIDER_ARN" ]; then
-            echo "can_run=false" >> $GITHUB_OUTPUT
-            echo "Alibaba Cloud OIDC secrets not configured; skipping security analysis for PR."
-          else
-            echo "can_run=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Install jq
-        if: steps.gate.outputs.can_run == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
 
       - name: Install Alibaba Cloud CLI
-        if: steps.gate.outputs.can_run == 'true'
         run: |
           # Pin to specific version for supply chain security
           CLI_VERSION="3.0.198"
           curl -sSL "https://aliyuncli.alicdn.com/aliyun-cli-linux-${CLI_VERSION}-amd64.tgz" -o aliyun.tgz
-
           # Verify download succeeded
           if [ ! -f aliyun.tgz ]; then
             echo "Failed to download Alibaba Cloud CLI"
             exit 1
           fi
-
           # Extract and install
           tar -xzf aliyun.tgz
           sudo mv aliyun /usr/local/bin/aliyun
-
           # Verify installation
           aliyun version
-
           # Clean up
           rm aliyun.tgz
 
       - name: Configure Alibaba Cloud OIDC
-        if: steps.gate.outputs.can_run == 'true'
         uses: aliyun/aliyun-oidc-auth-action@v1
         with:
           aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
@@ -95,9 +73,9 @@ jobs:
           aliyun-region-id: ${{ env.ALIYUN_REGION }}
 
       - name: Run Alibaba Cloud Access Analyzer
-        if: steps.gate.outputs.can_run == 'true'
         id: security_analysis
         run: |
+          # Get changed files for targeted analysis
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             BASE_REF="${{ github.event.pull_request.base.sha }}"
             HEAD_REF="${{ github.event.pull_request.head.sha }}"
@@ -108,6 +86,7 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only $BASE_REF $HEAD_REF | grep -E 'rainmaker_orchestrator|scripts|.github/workflows' || true)
 
+          # Create analysis report with structured logging
           cat > security_report.json <<EOF
           {
             "scan_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -121,29 +100,46 @@ jobs:
           }
           EOF
 
-          echo "🔍 Running Alibaba Cloud Access Analyzer..."
+          echo "🔍 Running Alibaba Cloud Access Analyzer on ${#CHANGED_FILES} files..."
 
+          # Execute security analysis using Access Analyzer
           if [ -n "$CHANGED_FILES" ]; then
             aliyun accessanalyzer start-resource-scan \
               --analyzer-arn "${{ env.ACCESS_ANALYZER_ARN }}" \
-              --resource-owner-account-id "5212459344287865" \
+              --resource-owner-account-id "${{ secrets.ALIYUN_ACCOUNT_ID }}" \
               --resource-type "ECS" \
+              --profile default \
               --output json > analyzer_results.json 2>&1 || echo "Scan completed"
           fi
 
+          # Process results securely with error handling
+          if [ -f analyzer_results.json ]; then
+            jq '.findings[] | select(.severity == "CRITICAL" or .severity == "HIGH")' analyzer_results.json 2>/dev/null | while read finding; do
+              SEVERITY=$(echo "$finding" | jq -r '.severity // "HIGH' 2>/dev/null || echo "HIGH")
+              RESOURCE=$(echo "$finding" | jq -r '.resource // "unknown-resource"' 2>/dev/null || echo "unknown-resource")
+              ISSUE=$(echo "$finding" | jq -r '.issue // "Security finding detected"' 2>/dev/null || echo "Security finding detected")
+
+              jq --arg severity "$SEVERITY" \
+                 --arg path "$RESOURCE" \
+                 --arg issue "$ISSUE" \
+                 --arg rec "Contact security team immediately" \
+                 '.security_findings += [{"severity": $severity, "path": $path, "issue": $issue, "recommendation": $rec}]' \
+                 security_report.json > temp.json && mv temp.json security_report.json
+            done
+          fi
+
+          # Upload report as artifact
           mkdir -p security-reports
           mv security_report.json security-reports/
           echo "report_path=security-reports/security_report.json" >> $GITHUB_OUTPUT
 
       - name: Upload Security Report
-        if: steps.gate.outputs.can_run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: security-analysis-report
           path: security-reports/security_report.json
 
       - name: Block Merge on Critical Findings
-        if: steps.gate.outputs.can_run == 'true'
         run: |
           CRITICAL_COUNT=$(jq '.security_findings | map(select(.severity == "CRITICAL")) | length' security-reports/security_report.json 2>/dev/null || echo 0)
           HIGH_COUNT=$(jq '.security_findings | map(select(.severity == "HIGH")) | length' security-reports/security_report.json 2>/dev/null || echo 0)
@@ -153,15 +149,11 @@ jobs:
 
           if [ "$CRITICAL_COUNT" -gt 0 ] || [ "$HIGH_COUNT" -gt 2 ]; then
             echo "❌ SECURITY VULNERABILITIES FOUND - BLOCKING MERGE"
+            echo "Found $CRITICAL_COUNT critical and $HIGH_COUNT high severity vulnerabilities"
             exit 1
           fi
 
           echo "✅ Security analysis passed - proceeding with pipeline"
-
-      - name: Skip notice
-        if: steps.gate.outputs.can_run != 'true'
-        run: |
-          echo "Security analysis skipped because required Alibaba Cloud secrets are not configured for this repo/PR context."
 
   build-and-deploy:
     if: github.event_name == 'push'
@@ -175,6 +167,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install Alibaba Cloud CLI
+        run: |
+          # Pin to specific version for supply chain security
+          CLI_VERSION="3.0.198"
+          curl -sSL "https://aliyuncli.alicdn.com/aliyun-cli-linux-${CLI_VERSION}-amd64.tgz" -o aliyun.tgz
+          # Verify download succeeded
+          if [ ! -f aliyun.tgz ]; then
+            echo "Failed to download Alibaba Cloud CLI"
+            exit 1
+          fi
+          # Extract and install
+          tar -xzf aliyun.tgz
+          sudo mv aliyun /usr/local/bin/aliyun
+          # Verify installation
+          aliyun version
+          # Clean up
+          rm aliyun.tgz
 
       - name: Configure Alibaba Cloud OIDC
         uses: aliyun/aliyun-oidc-auth-action@v1
@@ -205,6 +215,7 @@ jobs:
         run: |
           echo "🚀 Deploying to Alibaba Cloud ECS with secure authentication..."
 
+          # Deploy via Cloud Assistant
           aliyun ecs run-command \
             --instance-id "${{ secrets.ECS_INSTANCE_ID }}" \
             --region "${{ env.ALIYUN_REGION }}" \
@@ -216,6 +227,7 @@ jobs:
         run: |
           echo "✅ Verifying deployment health..."
 
+          # Health check with retry logic
           for i in {1..15}; do
             HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.ECS_HOST }}:8000/health)
 
@@ -236,6 +248,7 @@ jobs:
         run: |
           echo "🔄 Initiating secure rollback to previous version..."
 
+          # Rollback via Cloud Assistant
           aliyun ecs run-command \
             --instance-id "${{ secrets.ECS_INSTANCE_ID }}" \
             --region "${{ env.ALIYUN_REGION }}" \

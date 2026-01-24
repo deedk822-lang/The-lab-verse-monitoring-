@@ -12,13 +12,11 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Lab-Verse Monitoring Agent - Enhanced with Qwen 3 Plus")
 
-
 # Models with proper typing
 class RepositoryInfo(BaseModel):
     name: str
     full_name: Optional[str] = None
     url: Optional[str] = None
-
 
 class CommitInfo(BaseModel):
     hash: str
@@ -26,13 +24,11 @@ class CommitInfo(BaseModel):
     author: Optional[Dict[str, Any]] = None
     date: Optional[str] = None
 
-
 class BitbucketWebhookPayload(BaseModel):
     repository: RepositoryInfo
     commit: CommitInfo
     build_status: str
     event_type: Optional[str] = "build_status"
-
 
 class AtlassianWebhookPayload(BaseModel):
     event: str
@@ -41,7 +37,6 @@ class AtlassianWebhookPayload(BaseModel):
     repository: RepositoryInfo
     commit: CommitInfo
     build_status: Optional[Dict[str, Any]] = None
-
 
 @app.post("/webhook/bitbucket")
 async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
@@ -63,16 +58,15 @@ async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str
             "enhanced": True,
             "region": "ap-southeast-1",
             "source": "direct_bitbucket",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat()
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "direct_bitbucket",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat()
     }
-
 
 @app.post("/webhook/atlassian")
 async def handle_atlassian_webhook(payload: AtlassianWebhookPayload) -> Dict[str, Any]:
@@ -98,20 +92,17 @@ async def handle_atlassian_webhook(payload: AtlassianWebhookPayload) -> Dict[str
             "region": "ap-southeast-1",
             "source": "atlassian_jsm",
             "forwarded_to_jira": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat()
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "atlassian_jsm",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat()
     }
 
-
-def convert_atlassian_to_standard(
-    atlassian_payload: AtlassianWebhookPayload,
-) -> BitbucketWebhookPayload:
+def convert_atlassian_to_standard(atlassian_payload: AtlassianWebhookPayload) -> BitbucketWebhookPayload:
     """Convert Atlassian payload to standard Bitbucket format"""
     build_status = "SUCCESS"
     if atlassian_payload.build_status:
@@ -123,29 +114,26 @@ def convert_atlassian_to_standard(
         repository=atlassian_payload.repository,
         commit=atlassian_payload.commit,
         build_status=build_status,
-        event_type="converted_atlassian",
+        event_type="converted_atlassian"
     )
 
-
-async def forward_to_jira(
-    webhook_url: str,
-    payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload],
-    qwen_analysis: Dict[str, Any],
-) -> None:
+async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
     """Forward enhanced analysis to Jira through Atlassian webhook"""
     try:
         enhanced_payload = {
-            "original_payload": payload.dict() if hasattr(payload, "dict") else payload,
+            "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
             "qwen_analysis": qwen_analysis,
-            "enhanced_timestamp": datetime.utcnow().isoformat(),
+            "enhanced_timestamp": datetime.utcnow().isoformat()
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(webhook_url, json=enhanced_payload)
+            response.raise_for_status()  # ADD THIS BACK
             logger.info(f"Forwarded to Jira: {response.status_code}")
-    except Exception as e:
-        logger.error(f"Failed to forward to Jira: {str(e)}")
-
+    except httpx.RequestError as exc:  # MORE SPECIFIC
+        logger.error(f"An error occurred while requesting {exc.request.url!r}: {exc}")
+    except Exception as e:  # KEEP AS FALLBACK
+        logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
 
 async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
     """Original build failure handling logic"""
@@ -154,9 +142,8 @@ async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, An
         "build_id": payload.commit.hash,
         "repository": payload.repository.name,
         "timestamp": payload.commit.date or datetime.utcnow().isoformat(),
-        "processed_by": "lab-verse-monitoring-agent-singapore",
+        "processed_by": "lab-verse-monitoring-agent-singapore"
     }
-
 
 async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
     """Enhanced analysis using Qwen 3 Plus"""
@@ -167,7 +154,7 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
             "fix_suggestions": [
                 "Review code changes in recent commits",
                 "Check dependency versions",
-                "Verify environment variables",
+                "Verify environment variables"
             ],
             "severity": "high",
             "confidence": 0.95,
@@ -177,14 +164,13 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
                 "process"
             ),
             "jira_ready": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat()
         }
 
         return analysis
     except Exception as e:
         logger.error(f"Qwen 3 Plus analysis failed: {str(e)}")
         return {"error": str(e), "fallback": "Original analysis used"}
-
 
 # Original health check maintained
 @app.get("/health")
@@ -197,9 +183,8 @@ async def health_check() -> Dict[str, Any]:
         "version": "2.0",
         "repository": "deedk822-lang/The-lab-verse-monitoring-",
         "atlassian_integration": True,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat()
     }
-
 
 # Enhanced endpoint for Bitbucket integration
 @app.get("/bitbucket/status")
@@ -210,11 +195,10 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         "repository": "lab-verse-monitoring",
         "integration": "active",
         "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
-        "atlassian_webhook": os.getenv("ATLAS_WEBHOOK_URL", "not configured"),
+        "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "last_sync": "recent",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat()
     }
-
 
 # Jira integration status endpoint
 @app.get("/jira/status")
@@ -226,11 +210,9 @@ async def jira_integration_status() -> Dict[str, Any]:
         "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "enhanced_with_ai": True,
         "last_forwarded": "recent",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat()
     }
-
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

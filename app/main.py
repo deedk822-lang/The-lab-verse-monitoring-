@@ -40,7 +40,28 @@ class AtlassianWebhookPayload(BaseModel):
 
 @app.post("/webhook/bitbucket")
 async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
-    """Handle traditional Bitbucket webhook"""
+    """
+    Process an incoming Bitbucket webhook payload and produce a handling result.
+    
+    If the payload indicates a failed build, performs failure handling, obtains an AI analysis, optionally forwards an enhanced payload to a configured Atlassian webhook, and returns an enhanced result; otherwise returns a simple handled status.
+    
+    Parameters:
+        payload (BitbucketWebhookPayload): The incoming webhook payload containing repository, commit, and build status.
+    
+    Returns:
+        Dict[str, Any]: If the build status is "failed", a dictionary with keys:
+            - original_response: result from the failure handler
+            - qwen_analysis: structured AI analysis produced by Qwen 3 Plus
+            - enhanced: True
+            - region: deployment region identifier
+            - source: origin identifier ("direct_bitbucket")
+            - timestamp: ISO 8601 UTC timestamp of response
+          If the build status is not "failed", a dictionary with keys:
+            - status: "handled"
+            - region: deployment region identifier
+            - source: origin identifier ("direct_bitbucket")
+            - timestamp: ISO 8601 UTC timestamp of response
+    """
     logger.info(f"Received Bitbucket webhook: {payload.build_status}")
 
     if payload.build_status.lower() == "failed":
@@ -70,7 +91,27 @@ async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str
 
 @app.post("/webhook/atlassian")
 async def handle_atlassian_webhook(payload: AtlassianWebhookPayload) -> Dict[str, Any]:
-    """Handle Atlassian JSM webhook"""
+    """
+    Process an Atlassian webhook payload and, for failed builds, perform failure handling and AI analysis.
+    
+    Parameters:
+        payload (AtlassianWebhookPayload): Incoming Atlassian webhook payload containing event, repository, commit, and optional build_status.
+    
+    Returns:
+        Dict[str, Any]: If the build status is "failed", returns a dictionary with:
+            - original_response: result of failure handling (dict)
+            - qwen_analysis: AI analysis output (dict)
+            - enhanced: True
+            - region: region identifier (str)
+            - source: event source identifier (str)
+            - forwarded_to_jira: True if an ATLAS_WEBHOOK_URL was configured and forwarding was attempted
+            - timestamp: ISO 8601 UTC timestamp (str)
+        Otherwise, returns a dictionary with:
+            - status: "handled"
+            - region: region identifier (str)
+            - source: event source identifier (str)
+            - timestamp: ISO 8601 UTC timestamp (str)
+    """
     logger.info(f"Received Atlassian webhook: {payload.event}")
 
     # Convert Atlassian payload to our standard format
@@ -118,7 +159,16 @@ def convert_atlassian_to_standard(atlassian_payload: AtlassianWebhookPayload) ->
     )
 
 async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
-    """Forward enhanced analysis to Jira through Atlassian webhook"""
+    """
+    Send an enhanced analysis payload to a Jira/Atlassian webhook.
+    
+    Builds an enhanced payload containing the original webhook payload, the Qwen 3 Plus analysis, and an ISO 8601 UTC timestamp, then posts it to the given webhook URL and logs the outcome.
+    
+    Parameters:
+        webhook_url (str): Destination Jira/Atlassian webhook URL to receive the enhanced payload.
+        payload (Union[BitbucketWebhookPayload, AtlassianWebhookPayload]): Original webhook payload; if a Pydantic model is provided, its dictionary representation is used.
+        qwen_analysis (Dict[str, Any]): Analysis produced by Qwen 3 Plus to include in the forwarded payload.
+    """
     try:
         enhanced_payload = {
             "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
@@ -136,7 +186,20 @@ async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPaylo
         logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
 
 async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
-    """Original build failure handling logic"""
+    """
+    Create a standardized failure handling result for a failed build webhook.
+    
+    Parameters:
+        payload (BitbucketWebhookPayload): The incoming webhook payload for the failed build.
+    
+    Returns:
+        dict: A dictionary containing:
+            - status (str): Fixed value "failure_handled".
+            - build_id (str): Commit hash identifying the build.
+            - repository (str): Repository name.
+            - timestamp (str): Commit date if present, otherwise the current UTC time in ISO format.
+            - processed_by (str): Identifier of the processing agent.
+    """
     return {
         "status": "failure_handled",
         "build_id": payload.commit.hash,
@@ -146,7 +209,25 @@ async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, An
     }
 
 async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
-    """Enhanced analysis using Qwen 3 Plus"""
+    """
+    Produce an AI-driven failure analysis for the given Bitbucket webhook payload using Qwen 3 Plus.
+    
+    Parameters:
+    	payload (BitbucketWebhookPayload): The webhook payload representing repository and commit information to analyze.
+    
+    Returns:
+    	analysis (Dict[str, Any]): A structured analysis containing:
+    		- root_cause (str): Concise description of the likely root cause.
+    		- fix_suggestions (List[str]): Actionable remediation steps.
+    		- severity (str): Severity level (e.g., "low", "medium", "high").
+    		- confidence (float): Confidence score between 0 and 1.
+    		- region_optimized (str): Preferred deployment/analysis region.
+    		- ai_insights (str): Additional contextual observations from the model.
+    		- jira_ready (bool): Whether the analysis is suitable for creating a Jira ticket.
+    		- timestamp (str): ISO8601 timestamp of when the analysis was produced.
+    		
+    	On failure, returns a dictionary with keys `error` (the error message) and `fallback` (a fallback indicator).
+    """
     try:
         # Simulate Qwen 3 Plus analysis
         analysis = {
@@ -175,7 +256,19 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
 # Original health check maintained
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint"""
+    """
+    Return current service health status and static metadata for monitoring.
+    
+    Returns:
+        dict: Health payload containing:
+            - status: service health state (e.g., "healthy").
+            - region: deployment region identifier.
+            - enhanced_with_qwen: whether Qwen 3 Plus enhancements are enabled.
+            - version: service version string.
+            - repository: source repository identifier.
+            - atlassian_integration: whether Atlassian integration is enabled.
+            - timestamp: ISO 8601 UTC timestamp of the response.
+    """
     return {
         "status": "healthy",
         "region": "ap-southeast-1",
@@ -189,7 +282,19 @@ async def health_check() -> Dict[str, Any]:
 # Enhanced endpoint for Bitbucket integration
 @app.get("/bitbucket/status")
 async def bitbucket_integration_status() -> Dict[str, Any]:
-    """Bitbucket integration status"""
+    """
+    Report the current Bitbucket integration and webhook configuration status.
+    
+    Returns:
+        status_info (Dict[str, Any]): Dictionary with keys:
+            - `status`: connectivity state, e.g., `"connected"`.
+            - `repository`: repository name.
+            - `integration`: integration state, e.g., `"active"`.
+            - `webhook_configured`: `True` if `ATLAS_WEBHOOK_URL` is set, `False` otherwise.
+            - `atlassian_webhook`: human-readable webhook configuration, `"configured"` or `"not configured"`.
+            - `last_sync`: description of last synchronization status.
+            - `timestamp`: ISO-formatted UTC timestamp of the status report.
+    """
     return {
         "status": "connected",
         "repository": "lab-verse-monitoring",
@@ -203,7 +308,18 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
 # Jira integration status endpoint
 @app.get("/jira/status")
 async def jira_integration_status() -> Dict[str, Any]:
-    """Jira integration status"""
+    """
+    Report current Jira (Atlassian) integration and webhook status.
+    
+    Returns:
+        jira_status (Dict[str, Any]): A dictionary with the following keys:
+            - status: "connected" if the ATLAS_WEBHOOK_URL environment variable is set, "not configured" otherwise.
+            - integration: Identifier for the integration, value "atlassian_jsm".
+            - webhook_active: `True` if ATLAS_WEBHOOK_URL is set, `False` otherwise.
+            - enhanced_with_ai: `True` when AI enhancements are enabled.
+            - last_forwarded: Human-readable indicator of the most recent forwarding activity.
+            - timestamp: UTC timestamp string in ISO 8601 format representing when the status was generated.
+    """
     return {
         "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "integration": "atlassian_jsm",

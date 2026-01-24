@@ -7,6 +7,7 @@ import os
 import logging
 import requests
 import base64
+from .secure_requests import create_ssrf_safe_session
 from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +20,8 @@ class ImageGenerator:
 
     def __init__(self):
         self.providers = self._detect_available_providers()
+        self.secure_session = create_ssrf_safe_session()
+        self.local_session = create_ssrf_safe_session(allow_localhost=True)
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -58,7 +61,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.local_session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -193,7 +196,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.secure_session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"

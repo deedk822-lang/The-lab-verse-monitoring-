@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  lab-verse-monitoring-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.qwen-enhanced
+    restart: unless-stopped
+    environment:
+      - ALIBABA_ACCESS_KEY_ID=${ALIBABA_ACCESS_KEY_ID}
+      - ALIBABA_ACCESS_KEY_SECRET=${ALIBABA_ACCESS_KEY_SECRET}
+      - ALIBABA_CLOUD_REGION_ID=ap-southeast-1
+      - BITBUCKET_WORKSPACE=${BITBUCKET_WORKSPACE}
+      - BITBUCKET_USERNAME=${BITBUCKET_USERNAME}
+      - BITBUCKET_APP_PASSWORD=${BITBUCKET_APP_PASSWORD}
+      - ATLAS_API_KEY=${ATLAS_API_KEY}
+      - ATLAS_WEBHOOK_URL=${ATLAS_WEBHOOK_URL}
+      - HF_TOKEN=${HF_TOKEN}
+      - TZ=Asia/Singapore
+    volumes:
+      - ./models:/app/models
+      - ./workspace:/app/workspace
+    ports:
+      - "8000:8000"
+    networks:
+      - lab-verse-network
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+          nvidia.com/gpu: 1
+        reservations:
+          memory: 8G
+          cpus: '4.0'
+
+networks:
+  lab-verse-network:
+    driver: bridge

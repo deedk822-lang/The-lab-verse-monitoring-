@@ -1,28 +1,26 @@
 version: '3.8'
-
 services:
-  agent:
+  lab-verse-monitoring-agent:
     build: .
-    container_name: lab-verse-agent
+    restart: unless-stopped
     environment:
-      - PIPELINE_PLATFORM=bitbucket
-      - BITBUCKET_WORKSPACE=lab-verse-monitaring
+      - ALIBABA_ACCESS_KEY_ID=${ALIBABA_ACCESS_KEY_ID}
+      - ALIBABA_ACCESS_KEY_SECRET=${ALIBABA_ACCESS_KEY_SECRET}
+      - ALIBABA_CLOUD_REGION_ID=ap-southeast-1
+      - BITBUCKET_WORKSPACE=${BITBUCKET_WORKSPACE}
       - BITBUCKET_USERNAME=${BITBUCKET_USERNAME}
       - BITBUCKET_APP_PASSWORD=${BITBUCKET_APP_PASSWORD}
-      - HF_DEVICE=cuda
-      - HF_LOAD_IN_8BIT=true
-      - HF_CACHE_DIR=/app/models
-    ports:
-      - "8000:8000"
-      - "8001:8001"
+      - ATLAS_WEBHOOK_URL=${ATLAS_WEBHOOK_URL}
+      - HF_TOKEN=${HF_TOKEN}
+      - TZ=Asia/Singapore
     volumes:
       - ./models:/app/models
-      - ./logs:/app/logs
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    restart: unless-stopped
+      - ./workspace:/app/workspace
+    ports:
+      - "8000:8000"
+    networks:
+      - lab-verse-network
+
+networks:
+  lab-verse-network:
+    driver: bridge

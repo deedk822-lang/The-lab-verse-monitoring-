@@ -6,12 +6,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 @pytest.fixture
-def app():
-    """Fixture to provide the FastAPI app"""
-    try:
-        from app.main import app
-        return app
-    except ImportError:
-        from fastapi import FastAPI
-        app = FastAPI()
-        return app
+def client():
+    """Fixture to provide the test client"""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    return TestClient(app)

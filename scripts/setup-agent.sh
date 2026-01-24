@@ -5,7 +5,7 @@
 set -e
 
 echo "🪐 Lab-Verse Agent - Multi-Provider Setup"
-echo "=========================================="
+echo "============================================"
 echo ""
 echo "Choose your LLM provider:"
 echo "  1) Z.AI (requires Z.AI API key)"
@@ -105,26 +105,22 @@ HF_TOKEN=$hf_token
 HF_DEVICE=$hf_device
 HF_LOAD_IN_8BIT=true
 HF_CACHE_DIR=./models
-HF_MODEL_DIAGNOSTIC=mistralai/Mistral-7B-Instruct-v0.3
-HF_MODEL_PLANNER=microsoft/phi-2
-HF_MODEL_EXECUTOR=TinyLlama/TinyLlama-1.1B-Chat-v1.0
-HF_MODEL_VALIDATOR=mistralai/Mistral-7B-Instruct-v0.3
+HF_MODEL_DIAGNOSTIC=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+HF_MODEL_PLANNER=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+HF_MODEL_EXECUTOR=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+HF_MODEL_VALIDATOR=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 EOF
 
   echo ""
-  echo "📦 Downloading Hugging Face models (~15GB)..."
+  echo "📦 Downloading Hugging Face model (~7GB)..."
   mkdir -p ./models
 
-  echo "  🔿 Downloading Mistral-7B-Instruct-v0.3..."
-  huggingface-cli download "mistralai/Mistral-7B-Instruct-v0.3"     --cache-dir ./models     --token "$hf_token"
+  echo "  🔿 Downloading deepseek-ai/DeepSeek-R1-Distill-Qwen-7B..."
+  huggingface-cli download "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
+    --cache-dir ./models \
+    --token "$hf_token"
 
-  echo "  🔿 Downloading Phi-2..."
-  huggingface-cli download "microsoft/phi-2"     --cache-dir ./models     --token "$hf_token"
-
-  echo "  🔿 Downloading TinyLlama-1.1B-Chat-v1.0..."
-  huggingface-cli download "TinyLlama/TinyLlama-1.1B-Chat-v1.0"     --cache-dir ./models     --token "$hf_token"
-
-  echo "✅ HF models downloaded and configured"
+  echo "✅ HF model downloaded and configured"
 fi
 
 echo ""
@@ -143,7 +139,7 @@ echo "✅ Configuration complete!"
 echo ""
 echo "🚀 To start the agent, run:"
 echo "  source venv/bin/activate"
-echo "  export (cat .env.production | xargs)"
+echo "  export \$(cat .env.production | xargs)"
 echo "  python3 -m agent.main"
 echo ""
 echo "🔍 To test connectivity:"

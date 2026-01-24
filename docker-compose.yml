@@ -20,6 +20,13 @@ services:
       - "8000:8000"
     networks:
       - lab-verse-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 networks:
   lab-verse-network:

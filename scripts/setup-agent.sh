@@ -52,7 +52,7 @@ ENVIRONMENT=production
 LOG_LEVEL=INFO
 
 # Bitbucket Configuration
-BITBUCKET_WORKSPACE=lab-verse-monitaring
+BITBUCKET_WORKSPACE=lab-verse-monitoring
 EOF
 
 # Provider-specific configuration

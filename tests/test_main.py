@@ -48,7 +48,17 @@ def test_bitbucket_webhook_success():
         "build_status": "SUCCESS",
     }
     response = client.post("/webhook/bitbucket", json=test_payload)
-    assert response.status_code in [200, 422]  # 422 if validation fails
+    assert response.status_code == 200
+
+
+def test_invalid_payload_returns_422():
+    """Test that a malformed payload returns a 422 status code."""
+    test_payload = {
+        "repository": {"name": "test-repo"},
+        "commit": {"hash": "abc123", "date": "2024-01-01T00:00:00Z"},
+    }
+    response = client.post("/webhook/bitbucket", json=test_payload)
+    assert response.status_code == 422
 
 
 def _atlassian_payload():

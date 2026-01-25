@@ -52,6 +52,18 @@ def test_bitbucket_webhook_success():
 
 
 def _atlassian_payload():
+    """
+    Constructs a sample Atlassian-style build status webhook payload for tests.
+    
+    Returns:
+        payload (dict): A dictionary representing a `build_status` event containing keys:
+            - `event`: event type string ("build_status")
+            - `date`: ISO 8601 UTC timestamp of the event
+            - `actor`: object with `name` of the actor
+            - `repository`: object with `name` of the repository
+            - `commit`: object with `hash` and `date` of the commit
+            - `build_status`: object with `state` (e.g., "FAILED")
+    """
     return {
         "event": "build_status",
         "date": "2026-01-01T00:00:00Z",
@@ -71,6 +83,11 @@ def test_atlassian_webhook_requires_header(monkeypatch):
 
 
 def test_atlassian_webhook_accepts_valid_header(monkeypatch):
+    """
+    Verify the Atlassian webhook endpoint accepts a valid SELF_HEALING_KEY header and a webhook identifier.
+    
+    Posts a valid Atlassian payload with matching `SELF_HEALING_KEY` and `X-Atlassian-Webhook-Identifier` headers and asserts the endpoint responds with HTTP 200.
+    """
     app_main._seen_ids.clear()
     monkeypatch.setenv("SELF_HEALING_KEY", "a" * 64)
 

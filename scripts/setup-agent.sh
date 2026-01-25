@@ -116,9 +116,8 @@ EOF
   mkdir -p ./models
 
   echo "  🔿 Downloading deepseek-ai/DeepSeek-R1-Distill-Qwen-7B..."
-  huggingface-cli download "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-    --cache-dir ./models \
-    --token "$hf_token"
+  HF_TOKEN="$hf_token" huggingface-cli download "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
+    --cache-dir ./models
 
   echo "✅ HF model downloaded and configured"
 fi

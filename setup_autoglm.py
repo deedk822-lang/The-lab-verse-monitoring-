@@ -2,12 +2,10 @@
 import os
 import subprocess
 import json
-import shlex
 import time
 
 def run_command(cmd):
-    cmd_list = shlex.split(cmd)
-    result = subprocess.run(cmd_list, capture_output=True, text=True)
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode == 0:
         print(f"✅ {cmd}")
         return result.stdout

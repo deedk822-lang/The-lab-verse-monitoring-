@@ -40,7 +40,7 @@ Workflow: {sanitized_workflow}
 Error: {sanitized_error}
 
 Failed Jobs:
-{json.dumps(getattr(state, 'failed_jobs', []), indent=2)}
+{sanitize_prompt(json.dumps(getattr(state, 'failed_jobs', []), indent=2))}
 
 Pipeline Logs:
 {sanitized_logs}

@@ -9,8 +9,12 @@ WORKDIR /app
 # Copy only files necessary for dependency installation
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
-RUN poetry install --no-root --no-dev
+# Ensure Poetry creates the virtualenv inside the project (so /app/.venv exists)
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1
+
+# Install dependencies (Poetry 1.2+ replaces --no-dev with dependency groups)
+RUN poetry install --no-root --only main
 
 # Stage 2: Production
 FROM nvidia/cuda:12.1-devel-ubuntu22.04

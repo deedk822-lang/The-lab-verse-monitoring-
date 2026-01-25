@@ -25,7 +25,7 @@ pip install -q -r requirements.txt
 # Create .env for Colab
 echo "📜 Creating .env.colab..."
 cat > .env.colab << 'EOF'
-BITBUCKET_WORKSPACE=lab-verse-monitaring
+BITBUCKET_WORKSPACE=lab-verse-monitoring
 BITBUCKET_USERNAME=your-email@atlassian.com
 BITBUCKET_APP_PASSWORD=your-app-password
 

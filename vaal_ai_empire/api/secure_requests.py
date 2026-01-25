@@ -1,4 +1,5 @@
 import socket
+import ipaddress
 from urllib.parse import urlparse
 
 import requests
@@ -19,29 +20,33 @@ class SSRFBlocker(HTTPAdapter):
             raise ConnectionError(f"Invalid URL: {request.url}")
 
         try:
-            ip_address = socket.gethostbyname(hostname)
+            addrinfos = socket.getaddrinfo(hostname, None)
+            ip_addresses = {ai[4][0] for ai in addrinfos}
         except socket.gaierror:
             raise ConnectionError(f"Could not resolve hostname: {hostname}")
 
-        if self.is_private(ip_address):
-            if self.allow_localhost and ip_address.startswith("127."):
+        if any(self.is_private(ip) for ip in ip_addresses):
+            if self.allow_localhost and all(
+                ipaddress.ip_address(ip).is_loopback for ip in ip_addresses
+            ):
                 pass
             else:
-                raise ConnectionError(f"SSRF attempt blocked for IP: {ip_address}")
+                raise ConnectionError(f"SSRF attempt blocked for IPs: {sorted(ip_addresses)}")
 
         return super().send(request, **kwargs)
 
     @staticmethod
     def is_private(ip):
         try:
-            # Check if the IP is in private ranges or is a loopback address
+            ip_obj = ipaddress.ip_address(ip)
             return (
-                ip.startswith("10.") or
-                ip.startswith("172.") and 16 <= int(ip.split(".")[1]) <= 31 or
-                ip.startswith("192.168.") or
-                ip.startswith("127.")
+                ip_obj.is_private
+                or ip_obj.is_loopback
+                or ip_obj.is_link_local
+                or ip_obj.is_reserved
+                or ip_obj.is_multicast
             )
-        except (ValueError, IndexError):
+        except ValueError:
             return False
 
 

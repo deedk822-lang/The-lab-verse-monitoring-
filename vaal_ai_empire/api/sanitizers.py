@@ -18,7 +18,7 @@ def sanitize_prompt(prompt: str) -> str:
     prompt = re.sub(r"act as", "", prompt, flags=re.IGNORECASE)
 
     # Remove template-based injections
-    prompt = re.sub(r"\{\{.*\}\}", "", prompt)
-    prompt = re.sub(r"<\|.*\|>", "", prompt)
+    prompt = re.sub(r"\{\{.*?\}\}", "", prompt)
+    prompt = re.sub(r"<\|.*?\|>", "", prompt)
 
     return prompt.strip()

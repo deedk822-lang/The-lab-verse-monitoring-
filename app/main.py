@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, Union
 import os
 import logging
 from datetime import datetime
 import httpx
+import hmac
+import hashlib
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +42,22 @@ class AtlassianWebhookPayload(BaseModel):
     build_status: Optional[Dict[str, Any]] = None
 
 @app.post("/webhook/bitbucket")
-async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+async def handle_bitbucket_webhook(request: Request) -> Dict[str, Any]:
     """Handle traditional Bitbucket webhook"""
+    body = await request.body()
+    secret = os.getenv("WEBHOOK_SECRET")
+    if secret:
+        signature = request.headers.get("X-Hub-Signature")
+        if not signature:
+            raise HTTPException(status_code=403, detail="X-Hub-Signature header is missing")
+
+        expected_signature = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected_signature):
+            raise HTTPException(status_code=403, detail="Invalid signature")
+
+    payload = json.loads(body)
+    payload = BitbucketWebhookPayload(**payload)
+
     logger.info(f"Received Bitbucket webhook: {payload.build_status}")
 
     if payload.build_status.lower() == "failed":

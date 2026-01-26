@@ -31,6 +31,7 @@ class RainmakerOrchestrator:
         self,
         workspace_path: str = "./workspace",
         config_file: str = ".env",
+        client: Optional[httpx.AsyncClient] = None,
     ) -> None:
         if os.getenv("CI") != "true":
             try:
@@ -48,12 +49,20 @@ class RainmakerOrchestrator:
 
         self.fs: FileSystemAgent = FileSystemAgent(workspace_path=workspace_path)
         self.config: ConfigManager = ConfigManager(config_file=config_file)
-        self.client: httpx.AsyncClient = httpx.AsyncClient(timeout=120.0)
+        if client:
+            self.client: httpx.AsyncClient = client
+            self._managed_client: bool = False
+        else:
+            self.client: httpx.AsyncClient = httpx.AsyncClient(timeout=120.0)
+            self._managed_client = True
 
     async def aclose(self) -> None:
-        """Gracefully close HTTP client."""
-        await self.client.aclose()
-        logger.info("Orchestrator HTTP client closed")
+        """Gracefully close HTTP client if it's internally managed."""
+        if self._managed_client:
+            await self.client.aclose()
+            logger.info("Orchestrator's internally managed HTTP client closed")
+        else:
+            logger.info("External HTTP client not closed by orchestrator")
 
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:

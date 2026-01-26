@@ -30,15 +30,17 @@ class HubSpotWebhookPayload(BaseModel):
     objectId: int
     message_body: str
 
+import httpx
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    \"\"\"Manage lifecycle of the Authority Engine.\"\"\"
-    orchestrator = RainmakerOrchestrator()
-    app.state.orchestrator = orchestrator
-    logger.info("Authority Engine initialized and ready.")
-    yield
-    await orchestrator.aclose()
-    logger.info("Authority Engine shut down.")
+    \"\"\"Manage lifecycle of the Authority Engine and its HTTP client.\"\"\"
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        orchestrator = RainmakerOrchestrator(client=client)
+        app.state.orchestrator = orchestrator
+        logger.info("Authority Engine initialized with a shared HTTP client.")
+        yield
+    logger.info("Authority Engine shut down and HTTP client closed.")
 
 app = FastAPI(
     title="Rainmaker Authority API",

@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import logging
 import json
 from datetime import datetime
+import concurrent.futures
 
 logger = logging.getLogger(__name__)
 
@@ -126,44 +127,80 @@ class ContentFactory:
         """
         return self._generate_with_fallback(prompt, max_tokens)
 
-    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
-        """Try providers in priority order until one succeeds"""
-        priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
+    def _call_provider(self, provider_name: str, prompt: str, max_tokens: int) -> Dict:
+        """Helper to call a provider and handle its specific API."""
+        provider = self.providers.get(provider_name)
+        if not provider:
+            raise ValueError(f"{provider_name} is not available.")
 
-        for provider_name in priority:
-            provider = self.providers.get(provider_name)
-            if provider is None:
-                continue
+        logger.info(f"Trying {provider_name}...")
+        if provider_name == "cohere":
+            result = provider.generate_content(prompt, max_tokens)
+            if self.db:
+                self.db.log_api_usage("cohere", "generate_content", result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0), result.get("usage", {}).get("cost_usd", 0.0))
+            return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("usage", {}).get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("output_tokens", 0)}
+        elif provider_name == "groq":
+            result = provider.generate(prompt, max_tokens)
+            if self.db:
+                self.db.log_api_usage("groq", "generate", result.get("usage", {}).get("total_tokens", 0), result.get("cost_usd", 0.0))
+            return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("completion_tokens", 0)}
+        elif provider_name == "mistral":
+            result = provider.query_local(prompt)
+            return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+        elif provider_name == "kimi":
+            result = provider.generate_content(prompt, max_tokens)
+            if self.db:
+                self.db.log_api_usage("kimi", "generate_content", result.get("usage", {}).get("total_tokens", 0), 0.0)
+            return {"text": result["text"], "provider": "kimi", "cost_usd": 0.0, "tokens": result.get("usage", {}).get("output_tokens", 0)}
+        elif provider_name == "huggingface":
+            result = provider.generate(prompt, max_tokens)
+            return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+        else:
+            raise ValueError(f"Unknown provider: {provider_name}")
 
+    def _generate_with_concurrent_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
+        """
+        ⚡ Bolt Optimization: Try top providers concurrently and return the first success.
+
+        CRITICAL: This method improves latency by making concurrent API calls to top providers.
+        However, this means it may incur costs for multiple API calls for a single generation,
+        even though only the fastest response is used. This is a trade-off for speed.
+        """
+        priority = ["groq", "cohere"]
+        tertiary = ["mistral", "kimi", "huggingface"]
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(priority)) as executor:
+            future_to_provider = {
+                executor.submit(self._call_provider, name, prompt, max_tokens): name
+                for name in priority if self.providers.get(name)
+            }
+
+            for future in concurrent.futures.as_completed(future_to_provider):
+                provider_name = future_to_provider[future]
+                try:
+                    result = future.result()
+                    # Cancel other running futures
+                    for f in future_to_provider:
+                        f.cancel()
+                    logger.info(f"✅ Success with {provider_name}")
+                    return result
+                except Exception as e:
+                    logger.warning(f"⚠️  {provider_name} failed: {e}")
+
+        # If concurrent providers fail, try tertiary ones sequentially
+        for provider_name in tertiary:
             try:
-                logger.info(f"Trying {provider_name}...")
-
-                if provider_name == "cohere":
-                    result = provider.generate_content(prompt, max_tokens)
-                    if self.db:
-                        self.db.log_api_usage("cohere", "generate_content", result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0), result.get("usage", {}).get("cost_usd", 0.0))
-                    return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("usage", {}).get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("output_tokens", 0)}
-                elif provider_name == "groq":
-                    result = provider.generate(prompt, max_tokens)
-                    if self.db:
-                        self.db.log_api_usage("groq", "generate", result.get("usage", {}).get("total_tokens", 0), result.get("cost_usd", 0.0))
-                    return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("completion_tokens", 0)}
-                elif provider_name == "mistral":
-                    result = provider.query_local(prompt)
-                    return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
-                elif provider_name == "kimi":
-                    result = provider.generate_content(prompt, max_tokens)
-                    if self.db:
-                        self.db.log_api_usage("kimi", "generate_content", result.get("usage", {}).get("total_tokens", 0), 0.0)
-                    return {"text": result["text"], "provider": "kimi", "cost_usd": 0.0, "tokens": result.get("usage", {}).get("output_tokens", 0)}
-                elif provider_name == "huggingface":
-                    result = provider.generate(prompt, max_tokens)
-                    return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+                if self.providers.get(provider_name):
+                    return self._call_provider(provider_name, prompt, max_tokens)
             except Exception as e:
-                logger.warning(f"{provider_name} failed: {e}")
+                logger.warning(f"⚠️  {provider_name} failed: {e}")
                 continue
 
         raise Exception("All content generation providers failed")
+
+    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
+        """Default to the new concurrent fallback method."""
+        return self._generate_with_concurrent_fallback(prompt, max_tokens)
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:

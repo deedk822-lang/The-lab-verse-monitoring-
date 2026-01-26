@@ -12,6 +12,7 @@ class SocialPoster:
     def __init__(self, db=None):
         self.db = db
         self.providers = self._detect_providers()
+        self.session = requests.Session()
 
         # API endpoints
         self.ayrshare_url = "https://app.ayrshare.com/api"
@@ -112,7 +113,7 @@ class SocialPoster:
             payload["mediaUrls"] = [image_url]
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 f"{self.ayrshare_url}/post",
                 headers=headers,
                 json=payload,
@@ -170,7 +171,7 @@ class SocialPoster:
             }
 
             try:
-                response = requests.post(
+                response = self.session.post(
                     f"{self.socialpilot_url}/posts",
                     headers=headers,
                     json=payload,
@@ -313,7 +314,7 @@ class SocialPoster:
             payload["caption"] = content
 
         try:
-            response = requests.post(url, data=payload, timeout=30)
+            response = self.session.post(url, data=payload, timeout=30)
 
             if response.status_code != 200:
                 raise Exception(f"Facebook error ({response.status_code}): {response.text}")
@@ -371,7 +372,7 @@ class SocialPoster:
                 payload["mediaUrls"] = [image_url]
 
             try:
-                response = requests.post(
+                response = self.session.post(
                     f"{self.ayrshare_url}/post",
                     headers=headers,
                     json=payload,
@@ -419,7 +420,7 @@ class SocialPoster:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
-                response = requests.get(
+                response = self.session.get(
                     f"{self.ayrshare_url}/post/{post_id}",
                     headers=headers,
                     timeout=15

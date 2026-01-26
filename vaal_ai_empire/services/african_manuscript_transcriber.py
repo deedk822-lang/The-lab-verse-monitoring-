@@ -3,12 +3,14 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class AfricanManuscriptTranscriber:
     """
     A service for transcribing handwritten historical African manuscripts,
     designed to support the Thabo Mbeki Presidential Library's digital archive.
     This is a placeholder implementation.
     """
+
     def __init__(self):
         # In a real implementation, this would load a multilingual, multimodal model
         # capable of handling various African languages and scripts.
@@ -50,6 +52,7 @@ class AfricanManuscriptTranscriber:
         # - Cross-referencing with known historical terms or names.
         # - Confidence scoring.
         return text
+
 
 # Example Usage:
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import ipaddress
 import socket
 from urllib.parse import urlparse
 
@@ -19,29 +20,42 @@ class SSRFBlocker(HTTPAdapter):
             raise ConnectionError(f"Invalid URL: {request.url}")
 
         try:
-            ip_address = socket.gethostbyname(hostname)
+            # Get all possible IP addresses for the hostname (IPv4 and IPv6)
+            addr_info = socket.getaddrinfo(hostname, None)
+            ip_addresses = [info[4][0] for info in addr_info]
         except socket.gaierror:
             raise ConnectionError(f"Could not resolve hostname: {hostname}")
 
-        if self.is_private(ip_address):
-            if self.allow_localhost and ip_address.startswith("127."):
-                pass
-            else:
-                raise ConnectionError(f"SSRF attempt blocked for IP: {ip_address}")
+        for ip in ip_addresses:
+            if self.is_private(ip):
+                if self.allow_localhost and self.is_loopback(ip):
+                    continue
+                else:
+                    raise ConnectionError(f"SSRF attempt blocked for IP: {ip}")
 
         return super().send(request, **kwargs)
 
     @staticmethod
-    def is_private(ip):
+    def is_private(ip_str):
         try:
-            # Check if the IP is in private ranges or is a loopback address
+            ip = ipaddress.ip_address(ip_str)
             return (
-                ip.startswith("10.") or
-                ip.startswith("172.") and 16 <= int(ip.split(".")[1]) <= 31 or
-                ip.startswith("192.168.") or
-                ip.startswith("127.")
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+                or ip.is_unspecified
             )
-        except (ValueError, IndexError):
+        except ValueError:
+            return True  # If we can't parse it, safer to block
+
+    @staticmethod
+    def is_loopback(ip_str):
+        try:
+            ip = ipaddress.ip_address(ip_str)
+            return ip.is_loopback
+        except ValueError:
             return False
 
 

@@ -1,10 +1,11 @@
 import os
 from typing import Dict, List
-
 import logging
+from .sanitizers import sanitize_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class CohereAPI:
     def __init__(self):
@@ -23,12 +24,10 @@ class CohereAPI:
 
     def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Generate content and track usage"""
+        sanitized_prompt = sanitize_prompt(prompt)
         try:
             response = self.client.chat(
-                model=self.model,
-                message=prompt,
-                max_tokens=max_tokens,
-                temperature=0.7
+                model=self.model, message=sanitized_prompt, max_tokens=max_tokens, temperature=0.7
             )
 
             input_tokens = 0
@@ -40,32 +39,29 @@ class CohereAPI:
             usage = {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "cost_usd": 0.0  # NOTE: Actual cost calculation would require model-specific pricing
+                "cost_usd": 0.0,  # NOTE: Actual cost calculation would require model-specific pricing
             }
 
             self.usage_log.append(usage)
-            return {
-                "text": response.text,
-                "usage": usage
-            }
+            return {"text": response.text, "usage": usage}
         except Exception as e:
             logger.error(f"Cohere API error: {e}")
             raise e
 
     def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
         """Generate email sequence for MailChimp"""
+        sanitized_business_type = sanitize_prompt(business_type)
         sequence = []
         for day in range(1, days + 1):
-            prompt = f"Write day {day} of a {days}-day email sequence for a {business_type} in South Africa. Include subject line."
+            prompt = (
+                f"Write day {day} of a {days}-day email sequence for a "
+                f"{sanitized_business_type} in South Africa. Include subject line."
+            )
             result = self.generate_content(prompt, max_tokens=300)
 
             lines = result["text"].split("\n")
             subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
             body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
 
-            sequence.append({
-                "day": day,
-                "subject": subject,
-                "body": body
-            })
+            sequence.append({"day": day, "subject": subject, "body": body})
         return sequence

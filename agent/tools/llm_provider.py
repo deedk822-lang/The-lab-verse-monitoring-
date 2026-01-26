@@ -8,6 +8,7 @@ import httpx
 
 from agent.config import config
 from agent.tools.hf_model_loader import model_loader
+from vaal_ai_empire.api.sanitizers import sanitize_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +17,7 @@ class LLMProvider(ABC):
     """Abstract base class for LLM providers."""
 
     @abstractmethod
-    async def inference(
-        self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024
-    ) -> str:
+    async def inference(self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024) -> str:
         raise NotImplementedError
 
     @abstractmethod
@@ -29,9 +28,8 @@ class LLMProvider(ABC):
 class HuggingFaceProvider(LLMProvider):
     """Hugging Face local model provider (no external API calls)."""
 
-    async def inference(
-        self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024
-    ) -> str:
+    async def inference(self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024) -> str:
+        sanitized_prompt = sanitize_prompt(prompt)
         if not model_id:
             llm_cfg = config.hf
             if task == "diagnostic":
@@ -48,7 +46,7 @@ class HuggingFaceProvider(LLMProvider):
         logger.info("🤖 Running Hugging Face inference (%s) using %s", task, model_id)
 
         await model_loader.load_model(model_id, task=task)
-        result = await model_loader.inference(task, prompt, max_tokens=max_tokens)
+        result = await model_loader.inference(task, sanitized_prompt, max_tokens=max_tokens)
         model_loader.unload_model(task)
 
         return result
@@ -67,9 +65,8 @@ class ZAIProvider(LLMProvider):
             headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         )
 
-    async def inference(
-        self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024
-    ) -> str:
+    async def inference(self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024) -> str:
+        sanitized_prompt = sanitize_prompt(prompt)
         if not model_id:
             llm_cfg = config.z_ai
             if task == "diagnostic":
@@ -87,7 +84,7 @@ class ZAIProvider(LLMProvider):
 
         payload = {
             "model": model_id,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": sanitized_prompt}],
             "max_tokens": max_tokens,
             "temperature": 0.7,
         }
@@ -117,9 +114,8 @@ class QwenProvider(LLMProvider):
             headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         )
 
-    async def inference(
-        self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024
-    ) -> str:
+    async def inference(self, task: str, prompt: str, model_id: Optional[str] = None, max_tokens: int = 1024) -> str:
+        sanitized_prompt = sanitize_prompt(prompt)
         if not model_id:
             llm_cfg = config.qwen
             if task == "diagnostic":
@@ -137,13 +133,11 @@ class QwenProvider(LLMProvider):
 
         payload = {
             "model": model_id,
-            "input": {"messages": [{"role": "user", "content": prompt}]},
+            "input": {"messages": [{"role": "user", "content": sanitized_prompt}]},
             "parameters": {"max_tokens": max_tokens, "temperature": 0.7},
         }
 
-        response = await self.client.post(
-            f"{self.base_url}/services/aigc/text-generation/generation", json=payload
-        )
+        response = await self.client.post(f"{self.base_url}/services/aigc/text-generation/generation", json=payload)
         response.raise_for_status()
         result = response.json()
         return result["output"]["text"]

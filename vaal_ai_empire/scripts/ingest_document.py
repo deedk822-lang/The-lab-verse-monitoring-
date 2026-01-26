@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 
 # Adjust path to import services
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
     from services.african_manuscript_transcriber import AfricanManuscriptTranscriber
@@ -12,6 +12,7 @@ except ImportError as e:
     print("Error: Could not import necessary services.")
     print(f"Details: {e}")
     sys.exit(1)
+
 
 def ingest_document(image_path: str, language: str, metadata: dict):
     """
@@ -55,15 +56,15 @@ if __name__ == "__main__":
     sample_metadata = {
         "title": {
             "en": "Letter from Nelson Mandela to Thabo Mbeki",
-            "zu": "Incwadi evela kuNelson Mandela iya kuThabo Mbeki"
+            "zu": "Incwadi evela kuNelson Mandela iya kuThabo Mbeki",
         },
         "description": {
             "en": "A handwritten letter discussing the future of the ANC.",
-            "zu": "Incwadi ebhalwe ngesandla exoxa ngekusasa le-ANC."
+            "zu": "Incwadi ebhalwe ngesandla exoxa ngekusasa le-ANC.",
         },
         "author": "Nelson Mandela",
         "date": "1995-05-10",
-        "tags": ["anc", "correspondence", "1990s"]
+        "tags": ["anc", "correspondence", "1990s"],
     }
     sample_language = "zulu"
 

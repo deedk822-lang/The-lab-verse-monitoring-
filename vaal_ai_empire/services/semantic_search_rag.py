@@ -9,7 +9,7 @@ import logging
 from typing import List, Dict, Optional, Tuple
 import numpy as np
 import cohere
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -415,7 +415,7 @@ class RAGService:
                 "documents": formatted_docs,
                 "source_document_ids": source_documents,
                 "query": query,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
         except Exception as e:

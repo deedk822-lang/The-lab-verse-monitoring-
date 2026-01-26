@@ -1,0 +1,13 @@
+name: Kimi Code Review
+on: [push, pull_request]
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Kimi CLI Analysis
+        env:
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+        run: |
+          pip install kimi-cli
+          kimi --print -c "Review this codebase for bugs and improvements"

@@ -6,7 +6,7 @@ import os
 import requests
 import json
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import argparse
 
 class EnhancedKeywordResearchService:
@@ -187,7 +187,7 @@ Focus on actionable insights for content creation. Search volume: {search_volume
                 }
 
             # Add metadata
-            insights['search_timestamp'] = datetime.utcnow().isoformat()
+            insights['search_timestamp'] = datetime.now(timezone.utc).isoformat()
             insights['citations'] = result.get('citations', [])
 
             return insights
@@ -385,7 +385,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
                 'num_topics': num_topics,
                 'total_volume': int(df['volume'].sum()),
                 'deep_searched_topics': len(enriched_topics),
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
         }
 

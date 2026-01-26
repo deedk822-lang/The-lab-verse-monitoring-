@@ -1,0 +1,17 @@
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Kimi CLI
+RUN pip install --no-cache-dir kimi-cli
+
+# Set working directory
+WORKDIR /app
+
+# The service is intended to be used with a volume mount
+# Default command
+CMD ["kimi"]

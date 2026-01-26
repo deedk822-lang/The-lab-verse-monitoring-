@@ -24,12 +24,16 @@ async def run_diagnostic(state):
         getattr(state, "run_id", "unknown"),
     )
 
-    sanitized_repo = sanitize_prompt(getattr(state, 'repo_full_name', 'unknown'))
-    sanitized_branch = sanitize_prompt(getattr(state, 'branch', 'unknown'))
-    sanitized_workflow = sanitize_prompt(getattr(state, 'workflow_name', 'unknown'))
-    sanitized_error = sanitize_prompt(getattr(state, 'error_message', 'unknown'))
+    sanitized_repo = sanitize_prompt(getattr(state, "repo_full_name", "unknown"))
+    sanitized_branch = sanitize_prompt(getattr(state, "branch", "unknown"))
+    sanitized_workflow = sanitize_prompt(getattr(state, "workflow_name", "unknown"))
+    sanitized_error = sanitize_prompt(getattr(state, "error_message", "unknown"))
     sanitized_logs = sanitize_prompt(
-        (getattr(state, 'logs', '')[:2000] if isinstance(getattr(state, 'logs', ''), str) else str(getattr(state, 'logs', ''))[:2000])
+        (
+            getattr(state, "logs", "")[:2000]
+            if isinstance(getattr(state, "logs", ""), str)
+            else str(getattr(state, "logs", ""))[:2000]
+        )
     )
 
     diagnostic_prompt = f"""Analyze this pipeline failure and provide structured JSON analysis:

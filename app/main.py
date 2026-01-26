@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, Union
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import httpx
 import asyncio
 import hashlib
@@ -106,14 +106,14 @@ async def handle_bitbucket_webhook(payload: BitbucketWebhookPayload) -> Dict[str
             "enhanced": True,
             "region": "ap-southeast-1",
             "source": "direct_bitbucket",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "direct_bitbucket",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -152,14 +152,14 @@ async def handle_atlassian_webhook(request: Request, payload: AtlassianWebhookPa
             "region": "ap-southeast-1",
             "source": "atlassian_jsm",
             "forwarded_to_jira": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "atlassian_jsm",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -195,7 +195,7 @@ async def forward_to_jira(
         enhanced_payload = {
             "original_payload": original_payload,
             "qwen_analysis": qwen_analysis,
-            "enhanced_timestamp": datetime.utcnow().isoformat(),
+            "enhanced_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -222,7 +222,7 @@ async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, An
         "status": "failure_handled",
         "build_id": payload.commit.hash,
         "repository": payload.repository.name,
-        "timestamp": payload.commit.date or datetime.utcnow().isoformat(),
+        "timestamp": payload.commit.date or datetime.now(timezone.utc).isoformat(),
         "processed_by": "lab-verse-monitoring-agent-singapore",
     }
 
@@ -241,12 +241,9 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
             "severity": "high",
             "confidence": 0.95,
             "region_optimized": "ap-southeast-1",
-            "ai_insights": (
-                "Qwen 3 Plus detected potential configuration issues in the build "
-                "process"
-            ),
+            "ai_insights": ("Qwen 3 Plus detected potential configuration issues in the build " "process"),
             "jira_ready": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         return analysis
@@ -266,7 +263,7 @@ async def health_check() -> Dict[str, Any]:
         "version": "2.0",
         "repository": "deedk822-lang/The-lab-verse-monitoring-",
         "atlassian_integration": True,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -281,7 +278,7 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "last_sync": "recent",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -295,7 +292,7 @@ async def jira_integration_status() -> Dict[str, Any]:
         "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "enhanced_with_ai": True,
         "last_forwarded": "recent",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

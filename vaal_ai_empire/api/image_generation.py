@@ -5,33 +5,27 @@ Supports multiple providers: Stable Diffusion, DALL-E, Replicate
 
 import os
 import logging
-import requests
 import base64
 from .secure_requests import create_ssrf_safe_session
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime
 from pathlib import Path
-import io
 
 logger = logging.getLogger(__name__)
+
 
 class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
-        self.providers = self._detect_available_providers()
         self.secure_session = create_ssrf_safe_session()
         self.local_session = create_ssrf_safe_session(allow_localhost=True)
+        self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Cost tracking (per image, USD)
-        self.costs = {
-            "stability": 0.02,      # Stable Diffusion API
-            "replicate": 0.005,     # Replicate SDXL
-            "huggingface": 0.0,     # Free inference (rate limited)
-            "local": 0.0            # Local Stable Diffusion
-        }
+        self.costs = {"stability": 0.02, "replicate": 0.005, "huggingface": 0.0, "local": 0.0}  # Stable Diffusion API
 
     def _detect_available_providers(self) -> Dict[str, bool]:
         """Detect which image generation providers are available"""
@@ -39,7 +33,7 @@ class ImageGenerator:
             "stability": bool(os.getenv("STABILITY_API_KEY")),
             "replicate": bool(os.getenv("REPLICATE_API_TOKEN")),
             "huggingface": bool(os.getenv("HUGGINGFACE_TOKEN")),
-            "local": self._check_local_sd()
+            "local": self._check_local_sd(),
         }
 
         available = [p for p, status in providers.items() if status]
@@ -65,15 +59,14 @@ class ImageGenerator:
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
-                except:
+                except Exception:
                     continue
 
             return False
         except Exception:
             return False
 
-    def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto") -> Dict:
+    def generate(self, prompt: str, style: str = "professional", provider: str = "auto") -> Dict:
         """
         Generate image from text prompt
 
@@ -111,7 +104,7 @@ class ImageGenerator:
                 "image_url": self._create_placeholder(prompt),
                 "provider": "placeholder",
                 "cost_usd": 0.0,
-                "error": str(e)
+                "error": str(e),
             }
 
     def _enhance_prompt(self, prompt: str, style: str) -> str:
@@ -120,7 +113,7 @@ class ImageGenerator:
             "professional": "professional photography, high quality, business style, clean, modern",
             "creative": "creative, vibrant, eye-catching, dynamic composition, colorful",
             "realistic": "photorealistic, detailed, natural lighting, realistic, high resolution",
-            "artistic": "artistic, stylized, aesthetic, beautiful composition, creative design"
+            "artistic": "artistic, stylized, aesthetic, beautiful composition, creative design",
         }
 
         modifier = style_modifiers.get(style, style_modifiers["professional"])
@@ -140,12 +133,9 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.secure_session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={
                 "text_prompts": [{"text": prompt}],
                 "cfg_scale": 7,
@@ -154,7 +144,7 @@ class ImageGenerator:
                 "samples": 1,
                 "steps": 30,
             },
-            timeout=60
+            timeout=60,
         )
 
         if response.status_code != 200:
@@ -167,7 +157,7 @@ class ImageGenerator:
         filename = f"stability_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(image_data)
 
         return {
@@ -175,23 +165,16 @@ class ImageGenerator:
             "image_path": str(filepath),
             "provider": "stability",
             "cost_usd": self.costs["stability"],
-            "prompt": prompt
+            "prompt": prompt,
         }
 
     def _generate_replicate(self, prompt: str) -> Dict:
         """Generate using Replicate API"""
-        api_token = os.getenv("REPLICATE_API_TOKEN")
-
         import replicate
 
         output = replicate.run(
             "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-            input={
-                "prompt": prompt,
-                "num_outputs": 1,
-                "guidance_scale": 7.5,
-                "num_inference_steps": 30
-            }
+            input={"prompt": prompt, "num_outputs": 1, "guidance_scale": 7.5, "num_inference_steps": 30},
         )
 
         # Download image
@@ -202,7 +185,7 @@ class ImageGenerator:
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(image_data)
 
         return {
@@ -210,7 +193,7 @@ class ImageGenerator:
             "image_path": str(filepath),
             "provider": "replicate",
             "cost_usd": self.costs["replicate"],
-            "prompt": prompt
+            "prompt": prompt,
         }
 
     def _generate_huggingface(self, prompt: str) -> Dict:
@@ -222,12 +205,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json={"inputs": prompt},
-            timeout=60
-        )
+        response = self.secure_session.post(API_URL, headers=headers, json={"inputs": prompt}, timeout=60)
 
         if response.status_code != 200:
             raise Exception(f"HuggingFace error: {response.text}")
@@ -236,7 +214,7 @@ class ImageGenerator:
         filename = f"hf_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(response.content)
 
         return {
@@ -244,7 +222,7 @@ class ImageGenerator:
             "image_path": str(filepath),
             "provider": "huggingface",
             "cost_usd": self.costs["huggingface"],
-            "prompt": prompt
+            "prompt": prompt,
         }
 
     def _generate_local(self, prompt: str) -> Dict:
@@ -252,16 +230,10 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.local_session.post(
             f"{endpoint}/sdapi/v1/txt2img",
-            json={
-                "prompt": prompt,
-                "steps": 20,
-                "width": 512,
-                "height": 512,
-                "cfg_scale": 7
-            },
-            timeout=120
+            json={"prompt": prompt, "steps": 20, "width": 512, "height": 512, "cfg_scale": 7},
+            timeout=120,
         )
 
         if response.status_code != 200:
@@ -274,7 +246,7 @@ class ImageGenerator:
         filename = f"local_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(image_data)
 
         return {
@@ -282,7 +254,7 @@ class ImageGenerator:
             "image_path": str(filepath),
             "provider": "local",
             "cost_usd": self.costs["local"],
-            "prompt": prompt
+            "prompt": prompt,
         }
 
     def _generate_fallback(self, prompt: str) -> Dict:
@@ -297,11 +269,7 @@ class ImageGenerator:
                     continue
 
         # Last resort: placeholder
-        return {
-            "image_url": self._create_placeholder(prompt),
-            "provider": "placeholder",
-            "cost_usd": 0.0
-        }
+        return {"image_url": self._create_placeholder(prompt), "provider": "placeholder", "cost_usd": 0.0}
 
     def _create_placeholder(self, prompt: str) -> str:
         """Create placeholder image with text"""
@@ -309,7 +277,7 @@ class ImageGenerator:
             from PIL import Image, ImageDraw, ImageFont
 
             # Create image
-            img = Image.new('RGB', (800, 600), color='#2563eb')
+            img = Image.new("RGB", (800, 600), color="#2563eb")
             draw = ImageDraw.Draw(img)
 
             # Add text
@@ -318,16 +286,16 @@ class ImageGenerator:
             # Try to use a font, fallback to default
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
-            except:
+            except Exception:
                 font = ImageFont.load_default()
 
             # Center text
             bbox = draw.textbbox((0, 0), text, font=font)
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
-            position = ((800-text_width)/2, (600-text_height)/2)
+            position = ((800 - text_width) / 2, (600 - text_height) / 2)
 
-            draw.text(position, text, fill='white', font=font)
+            draw.text(position, text, fill="white", font=font)
 
             # Save
             filename = f"placeholder_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -352,12 +320,14 @@ class ImageGenerator:
                 results.append(result)
             except Exception as e:
                 logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
-                    "image_url": self._create_placeholder(prompt),
-                    "provider": "error",
-                    "cost_usd": 0.0,
-                    "error": str(e)
-                })
+                results.append(
+                    {
+                        "image_url": self._create_placeholder(prompt),
+                        "provider": "error",
+                        "cost_usd": 0.0,
+                        "error": str(e),
+                    }
+                )
 
         return results
 
@@ -367,7 +337,7 @@ class ImageGenerator:
             "available_providers": [p for p, status in self.providers.items() if status],
             "total_providers": len([p for p in self.providers.values() if p]),
             "output_dir": str(self.output_dir),
-            "costs": self.costs
+            "costs": self.costs,
         }
 
 
@@ -408,7 +378,7 @@ class BusinessImageGenerator:
                 "Modern retail store with organized product displays",
                 "Shopping interior with customers browsing products",
                 "Clean retail space with good lighting and displays",
-            ]
+            ],
         }
 
     def generate_for_business(self, business_type: str, count: int = 5) -> List[Dict]:

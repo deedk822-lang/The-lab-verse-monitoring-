@@ -4,6 +4,8 @@ import logging
 import json
 from datetime import datetime
 
+from security.prompt_sanitizer import PromptSanitizer
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,8 +109,17 @@ class ContentFactory:
         if not self.multimodal_provider:
             raise RuntimeError("Aya Vision multimodal provider is not available.")
 
+        sanitized_messages = []
+        for message in messages:
+            if message["type"] == "text":
+                sanitized_messages.append(
+                    {"type": "text", "text": PromptSanitizer.sanitize(message["text"])}
+                )
+            else:
+                sanitized_messages.append(message)
+
         try:
-            result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
+            result = self.multimodal_provider.generate_from_messages(sanitized_messages, max_new_tokens)
             # You might want to log this usage to your database if needed
             return {
                 "text": result["text"],
@@ -128,6 +139,7 @@ class ContentFactory:
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
+        sanitized_prompt = PromptSanitizer.sanitize(prompt)
         priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
 
         for provider_name in priority:
@@ -139,25 +151,25 @@ class ContentFactory:
                 logger.info(f"Trying {provider_name}...")
 
                 if provider_name == "cohere":
-                    result = provider.generate_content(prompt, max_tokens)
+                    result = provider.generate_content(sanitized_prompt, max_tokens)
                     if self.db:
                         self.db.log_api_usage("cohere", "generate_content", result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0), result.get("usage", {}).get("cost_usd", 0.0))
                     return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("usage", {}).get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "groq":
-                    result = provider.generate(prompt, max_tokens)
+                    result = provider.generate(sanitized_prompt, max_tokens)
                     if self.db:
                         self.db.log_api_usage("groq", "generate", result.get("usage", {}).get("total_tokens", 0), result.get("cost_usd", 0.0))
                     return {"text": result["text"], "provider": provider_name, "cost_usd": result.get("cost_usd", 0.0), "tokens": result.get("usage", {}).get("completion_tokens", 0)}
                 elif provider_name == "mistral":
-                    result = provider.query_local(prompt)
+                    result = provider.query_local(sanitized_prompt)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
                 elif provider_name == "kimi":
-                    result = provider.generate_content(prompt, max_tokens)
+                    result = provider.generate_content(sanitized_prompt, max_tokens)
                     if self.db:
                         self.db.log_api_usage("kimi", "generate_content", result.get("usage", {}).get("total_tokens", 0), 0.0)
                     return {"text": result["text"], "provider": "kimi", "cost_usd": 0.0, "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "huggingface":
-                    result = provider.generate(prompt, max_tokens)
+                    result = provider.generate(sanitized_prompt, max_tokens)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
             except Exception as e:
                 logger.warning(f"{provider_name} failed: {e}")

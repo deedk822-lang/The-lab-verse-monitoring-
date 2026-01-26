@@ -42,7 +42,7 @@ class KimiAPI:
             r'(?i)act as a',
             r'(?i)system message',
             r'(?i)override',
-            r'```(.*?)```', # Remove code blocks that could contain malicious instructions
+            r'```(?s)(.*?)```', # Remove code blocks that could contain malicious instructions
         ]
         for pattern in dangerous_patterns:
             text = re.sub(pattern, '', text)

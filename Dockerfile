@@ -9,14 +9,11 @@ WORKDIR /app
 # Copy only files necessary for dependency installation
 COPY pyproject.toml poetry.lock ./
 
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
-
 # Install dependencies
 RUN poetry install --no-root --no-dev
 
 # Stage 2: Production
-FROM nvidia/cuda:12.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
 
 # Singapore region optimization
 ENV TZ=Asia/Singapore

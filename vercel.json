@@ -2,6 +2,7 @@
   "buildCommand": "pip install -r requirements.txt && mypy --strict rainmaker_orchestrator/ api/",
   "outputDirectory": ".",
   "framework": "fastapi",
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
   "env": {
     "ENVIRONMENT": "production",
     "CI": "true",
@@ -14,15 +15,7 @@
   "github": {
     "silent": true,
     "autoJobCancelation": true,
-    "autoAlias": false,
-    "enabled": false
-  },
-  "git": {
-    "deploymentEnabled": {
-      "main": true,
-      "develop": false,
-      "*": false
-    }
+    "autoAlias": false
   },
   "routes": [
     {

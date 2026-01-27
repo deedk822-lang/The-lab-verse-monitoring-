@@ -1,25 +1,24 @@
+# =============================================================================
+# VAAL AI Empire - Docker Compose
+# Full stack deployment with all services
+# =============================================================================
+
 version: '3.8'
 
-# ============================================================================
-# VAAL AI Empire - Production Docker Compose Configuration
-# ============================================================================
-
 services:
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # PostgreSQL Database
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
     container_name: vaal-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: vaal_ai_empire
       POSTGRES_USER: ${DB_USER:-vaaluser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vaalpassword}
+      POSTGRES_DB: ${DB_NAME:-vaal_ai_empire}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./vaal_ai_empire/update_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
@@ -29,221 +28,164 @@ services:
       retries: 5
     networks:
       - vaal-network
+    restart: unless-stopped
 
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Redis Cache
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: vaal-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - vaal-network
+    restart: unless-stopped
 
-  # --------------------------------------------------------------------------
-  # Main Application
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # VAAL AI Empire Application
+  # ---------------------------------------------------------------------------
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: vaal-app
-    restart: unless-stopped
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-vaaluser}:${DB_PASSWORD:-changeme}@postgres:5432/vaal_ai_empire
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+      - DATABASE_URL=postgresql://${DB_USER:-vaaluser}:${DB_PASSWORD:-vaalpassword}@postgres:5432/${DB_NAME:-vaal_ai_empire}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
     volumes:
-      - ./models:/models:ro
-      - ./cache:/cache
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
+      - ./vaal_ai_empire:/app/vaal_ai_empire
+      - ./agent:/app/agent
+      - credit_data:/var/lib/vaal
+      - logs:/var/log/vaal
+      - models:/models
     ports:
       - "8000:8000"
-      - "9090:9090"  # Prometheus metrics
+      - "9090:9090"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-        limits:
-          memory: 8G
-          cpus: '4'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 40s
     networks:
       - vaal-network
-
-  # --------------------------------------------------------------------------
-  # Nginx Reverse Proxy
-  # --------------------------------------------------------------------------
-  nginx:
-    image: nginx:alpine
-    container_name: vaal-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  # ---------------------------------------------------------------------------
+  # Credit Protection Monitor Service
+  # ---------------------------------------------------------------------------
+  credit-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaal-credit-monitor
+    env_file:
+      - .env
+    command: python -m vaal_ai_empire.credit_protection.monitor_service
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
+      - credit_data:/var/lib/vaal
+      - logs:/var/log/vaal
     depends_on:
       - app
     networks:
       - vaal-network
+    restart: unless-stopped
 
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Prometheus Monitoring
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
     container_name: vaal-prometheus
-    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     ports:
       - "9091:9090"
     networks:
       - vaal-network
+    restart: unless-stopped
 
-  # --------------------------------------------------------------------------
-  # Grafana Dashboard
-  # --------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # Grafana Dashboards
+  # ---------------------------------------------------------------------------
   grafana:
     image: grafana/grafana:latest
     container_name: vaal-grafana
-    restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000:3000"
     depends_on:
       - prometheus
     networks:
       - vaal-network
-
-  # --------------------------------------------------------------------------
-  # PostgreSQL Backup Service
-  # --------------------------------------------------------------------------
-  backup:
-    image: postgres:15-alpine
-    container_name: vaal-backup
-    restart: "no"
-    environment:
-      PGHOST: postgres
-      PGUSER: ${DB_USER:-vaaluser}
-      PGPASSWORD: ${DB_PASSWORD:-changeme}
-      PGDATABASE: vaal_ai_empire
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
-    volumes:
-      - ./backups:/backups
-      - ./scripts/backup.sh:/backup.sh:ro
-    command: /bin/sh /backup.sh
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - vaal-network
-    profiles:
-      - backup
-
-  # --------------------------------------------------------------------------
-  # pgAdmin (Optional - for database management)
-  # --------------------------------------------------------------------------
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: vaal-pgadmin
     restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@vaal.ai}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (Optional)
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: vaal-nginx
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
     ports:
-      - "5050:80"
+      - "80:80"
+      - "443:443"
     depends_on:
-      - postgres
+      - app
     networks:
       - vaal-network
-    profiles:
-      - tools
-
-  # --------------------------------------------------------------------------
-  # Redis Commander (Optional - for Redis management)
-  # --------------------------------------------------------------------------
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: vaal-redis-commander
     restart: unless-stopped
-    environment:
-      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-changeme}
-    ports:
-      - "8081:8081"
-    depends_on:
-      - redis
-    networks:
-      - vaal-network
-    profiles:
-      - tools
 
-# ============================================================================
-# Networks
-# ============================================================================
 networks:
   vaal-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
 
-# ============================================================================
-# Volumes
-# ============================================================================
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
+  credit_data:
+  logs:
+  models:
   prometheus_data:
-    driver: local
   grafana_data:
-    driver: local
-  pgadmin_data:
-    driver: local
-  nginx_logs:
-    driver: local

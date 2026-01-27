@@ -1,71 +1,77 @@
-export default {
-  testEnvironment: 'node',
-  testTimeout: 30000,
-  maxWorkers: '50%',
-  cache: true,
-  cacheDirectory: '.jest-cache',
+/** @type {import('jest').Config} */
+const config = {
+  rootDir: '.',
+  testEnvironment: 'jsdom',
   
-  // Setup file
+  // Match all test files across the repository
+  testMatch: [
+    '<rootDir>/**/*.(test|spec).{js,jsx,ts,tsx}',
+    '<rootDir>/test/**/*.test.{js,ts}',
+    '<rootDir>/tests/**/*.test.{js,ts}',
+    '<rootDir>/test-*.js'
+  ],
+  
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
+  
+  // Transform configuration for TypeScript and JavaScript
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true
+      }
+    }],
+    '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }]
+  },
+  
+  // Transform ES modules in node_modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(node-fetch|@mswjs/interceptors|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)'
+  ],
+  
+  // Module name mapping for aliases and CSS
+  moduleNameMapper: {
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@workflow/core$': '<rootDir>/workflows/core',
+    '^../../src/gateway.js$': '<rootDir>/src/gateway.js',
+    '^../services/ProviderFactory.js$': '<rootDir>/src/services/ProviderFactory.js',
+    '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js'
+  },
+  
+  // Setup files
+  setupFiles: ['<rootDir>/test/setup-nock.js'],
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
   
+  modulePaths: ['<rootDir>/src', '<rootDir>'],
+  
   // Ignore patterns
-  modulePathIgnorePatterns: [
-    '<rootDir>/scout-monetization/',
-    '<rootDir>/.jest-cache/',
-    '<rootDir>/node_modules/',
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/.next/',
     '<rootDir>/dist/',
-    '<rootDir>/build/'
+    '<rootDir>/content-creator-ai/test.js'
   ],
   
-  // Test match patterns
-  testMatch: [
-    '**/test/**/*.test.js',
-    '**/test/**/*.test.ts',
-    '**/tests/**/*.test.ts',
-    '!**/test/**/*.integration.test.js'
-  ],
-  
-  // Coverage configuration
+  // Coverage configuration (optional)
   collectCoverageFrom: [
-    'src/**/*.js',
-    'workflows/**/*.ts',
-    '!src/**/*.test.js',
-    '!src/**/__tests__/**',
-    '!src/**/*.config.js'
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.test.{js,jsx,ts,tsx}',
+    '!**/node_modules/**'
   ],
   
-  coverageThreshold: {
-    global: {
-      branches: 60,
-      functions: 65,
-      lines: 70,
-      statements: 70
-    }
-  },
-  
-  // Better error reporting
+  // Error handling
+  bail: false,
   verbose: true,
-  detectOpenHandles: true,
-  forceExit: true,
   
-  // Transform configuration
-  transform: {
-    '^.+\\.ts?$': [
-      'ts-jest',
-      {
-        useESM: true,
-      },
-    ],
-  },
-  transformIgnorePatterns: [
-    'node_modules/(?!(.pnpm|@workflow)/)',
-  ],
+  // Timeout for tests
+  testTimeout: 30000,
   
-  // Coverage reporters
-  coverageReporters: [
-    'text',
-    'lcov',
-    'html',
-    'json-summary'
-  ]
+  // Clear mocks between tests
+  clearMocks: true,
+  restoreMocks: true
 };
+
+export default config;

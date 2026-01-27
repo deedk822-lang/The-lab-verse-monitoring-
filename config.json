@@ -1,0 +1,26 @@
+{
+  "app": {
+    "name": "Lab-Verse Monitoring Agent",
+    "version": "2.0",
+    "region": "ap-southeast-1",
+    "enhanced_with_qwen": true
+  },
+  "integration": {
+    "atlassian": {
+      "enabled": true,
+      "webhook_required": true
+    },
+    "bitbucket": {
+      "enabled": true,
+      "webhooks": ["/webhook/bitbucket"]
+    },
+    "jira": {
+      "enabled": true
+    }
+  },
+  "endpoints": {
+    "health": "/health",
+    "bitbucket_status": "/bitbucket/status",
+    "jira_status": "/jira/status"
+  }
+}

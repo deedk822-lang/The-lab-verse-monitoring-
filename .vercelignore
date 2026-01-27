@@ -1,1 +1,102 @@
-vercel.js
+# ============================================================================
+# Vercel Ignore - Prevent deployments for non-critical changes
+# ============================================================================
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+DOCS/
+docs/
+.github/
+
+# Tests
+tests/
+test/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+pytest.ini
+.pytest_cache/
+
+# CI/CD configs
+.github/
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+Jenkinsfile
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+k8s/
+kubernetes/
+*.yaml
+*.yml
+
+# Scripts
+scripts/
+*.sh
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Monitoring configs
+monitoring/
+prometheus/
+grafana/
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sql
+*.db
+*.sqlite
+
+# Backups
+backups/
+*.backup
+
+# Environment (already in .gitignore but reinforcing)
+.env.local
+.env.*.local
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node modules (if any)
+node_modules/

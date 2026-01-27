@@ -140,7 +140,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.secure_session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -222,7 +222,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.secure_session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -252,7 +252,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.local_session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,

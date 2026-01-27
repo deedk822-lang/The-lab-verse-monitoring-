@@ -76,7 +76,7 @@ pip install -r requirements.txt
 
 ```bash
 cat > .env.production << 'EOF'
-BITBUCKET_WORKSPACE=lab-verse-monitaring
+BITBUCKET_WORKSPACE=lab-verse-monitoring
 BITBUCKET_USERNAME=your-email@atlassian.com
 BITBUCKET_APP_PASSWORD=your-app-password
 
@@ -176,7 +176,7 @@ echo "HF_LOAD_IN_4BIT=true" >> .env.production
 4. 🚀 Agent should create a PR with fix
 
 **Webhook setup:**
-- Go to: `https://bitbucket.org/lab-verse-monitaring/YOUR_REPO/admin/webhooks`
+- Go to: `https://bitbucket.org/lab-verse-monitoring/YOUR_REPO/admin/webhooks`
 - Add webhook to: `https://your-agent-url.com/webhook/bitbucket`
 - Events: Repository push, Commit status updated
 

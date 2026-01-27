@@ -2,6 +2,7 @@
   "buildCommand": "pip install -r requirements.txt && mypy --strict rainmaker_orchestrator/ api/",
   "outputDirectory": ".",
   "framework": "fastapi",
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
   "env": {
     "ENVIRONMENT": "production",
     "CI": "true",
@@ -10,6 +11,11 @@
     "MISTRAL_API_KEY": "@MISTRAL_API_KEY",
     "REDIS_URL": "@REDIS_URL",
     "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
+  },
+  "github": {
+    "silent": true,
+    "autoJobCancelation": true,
+    "autoAlias": false
   },
   "routes": [
     {

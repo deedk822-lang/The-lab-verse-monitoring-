@@ -1,0 +1,27 @@
+# =============================================================================
+# VAAL AI Empire - ConfigMap
+# Non-sensitive configuration
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vaal-config
+  namespace: vaal-ai-empire
+data:
+  # Credit protection settings
+  credit-tier: "STANDARD"
+  max-requests-per-day: "300"
+  max-tokens-per-day: "150000"
+  
+  # LLM settings
+  default-provider: "huggingface"
+  model-cache-dir: "/models"
+  
+  # Monitoring
+  log-level: "INFO"
+  prometheus-enabled: "true"
+  
+  # Performance
+  workers: "4"
+  worker-class: "uvicorn.workers.UvicornWorker"
+  timeout: "300"

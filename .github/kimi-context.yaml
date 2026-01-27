@@ -1,0 +1,122 @@
+# ============================================================================
+# Kimi AI Context Configuration for VAAL AI Empire
+# ============================================================================
+
+project:
+  name: "VAAL AI Empire"
+  description: "Multi-provider LLM system with enterprise-grade security"
+  version: "2.0.0"
+  language: "Python 3.10+"
+  framework: "FastAPI"
+
+structure:
+  source_directories:
+    - vaal_ai_empire/    # Core API and security modules
+    - agent/             # Agent logic and LLM providers
+    - app/               # FastAPI application
+    - tests/             # Test suites
+    - scripts/           # Setup and utility scripts
+    - k8s/               # Kubernetes manifests
+  
+  key_modules:
+    - vaal_ai_empire/api/sanitizers.py           # Input sanitization
+    - vaal_ai_empire/api/secure_requests.py      # SSRF protection
+    - vaal_ai_empire/credit_protection/          # Credit management
+    - agent/tools/llm_provider.py                # LLM abstraction
+
+coding_standards:
+  formatter: "black"
+  line_length: 120
+  style_guide: "PEP 8"
+  type_hints: true
+  docstring_style: "Google"
+  
+  linters:
+    - flake8
+    - mypy
+    - bandit
+
+security_requirements:
+  critical_rules:
+    - "Always use sanitize_prompt() for user inputs"
+    - "Use create_ssrf_safe_session() for HTTP requests"
+    - "Never use shell=True in subprocess"
+    - "Store secrets in environment variables only"
+    - "Add error handling and logging"
+    - "Validate all external inputs"
+  
+  forbidden_patterns:
+    - "eval()"
+    - "exec()"
+    - "shell=True"
+    - "pickle.loads() from untrusted data"
+    - "yaml.load() without safe_load"
+
+testing:
+  framework: "pytest"
+  coverage_target: 80
+  required_tests:
+    - "Unit tests for new functions"
+    - "Integration tests for APIs"
+    - "Security tests for input handling"
+  
+  test_commands:
+    - "pytest tests/ -v"
+    - "pytest --cov=vaal_ai_empire --cov=agent"
+
+dependencies:
+  core:
+    - fastapi
+    - uvicorn
+    - pydantic
+    - httpx
+    - transformers
+    - torch
+  
+  security:
+    - python-dotenv
+    - cryptography
+    - psutil
+  
+  dev:
+    - pytest
+    - black
+    - flake8
+    - mypy
+    - safety
+    - bandit
+
+environment:
+  required_vars:
+    - HF_TOKEN
+    - CREDIT_TIER
+    - SECRET_KEY
+    - DATABASE_URL
+  
+  optional_vars:
+    - OPENAI_API_KEY
+    - KIMI_API_KEY
+    - QWEN_API_KEY
+    - ALERT_EMAIL_ENABLED
+
+workflow_guidelines:
+  implementation_steps:
+    1. "Read existing code to understand patterns"
+    2. "Implement following project conventions"
+    3. "Add comprehensive tests"
+    4. "Run: pytest tests/ -v"
+    5. "Format: black ."
+    6. "Lint: flake8 ."
+    7. "Commit with descriptive message"
+  
+  commit_message_format:
+    - "Use conventional commits (feat:, fix:, docs:)"
+    - "Include emoji for visual clarity"
+    - "Reference issues when applicable"
+
+deliverables:
+  - "Working, tested code"
+  - "Tests with >80% coverage"
+  - "Updated documentation"
+  - "No security vulnerabilities"
+  - "Passes all linting checks"

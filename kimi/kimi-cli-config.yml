@@ -1,0 +1,47 @@
+version: 1
+
+# Kimi CLI configuration for deploying VAAL AI Empire.
+# This file is intentionally self-contained and can be used from any machine.
+
+project:
+  name: vaal-ai-empire
+  description: "Deploy VAAL AI Empire backend (FastAPI + Postgres + Redis + monitoring)"
+
+repository:
+  url: "https://github.com/deedk822-lang/The-lab-verse-monitoring-.git"
+  ref: "feat/atlassian-jsm-integration-16960019842766473640"
+
+runtime:
+  shell: bash
+
+env:
+  required:
+    - KIMI_API_KEY
+  notes:
+    - "Inside the container stack, the app reads KIMIAPIKEY from .env/docker-compose. During setup you can export KIMI_API_KEY and the helper script will write KIMIAPIKEY into .env."
+
+steps:
+  - name: "Install"
+    run: |
+      chmod +x install.sh
+      sudo bash install.sh
+
+  - name: "Verify health"
+    run: |
+      chmod +x scripts/health-check.sh
+      ./scripts/health-check.sh
+
+  - name: "Verify usage"
+    run: |
+      chmod +x scripts/usage-stats.sh
+      ./scripts/usage-stats.sh
+
+  - name: "Verify LLM"
+    run: |
+      chmod +x scripts/test-llm.sh
+      ./scripts/test-llm.sh
+
+  - name: "Verify CLI"
+    run: |
+      chmod +x scripts/cli-check.sh
+      ./scripts/cli-check.sh

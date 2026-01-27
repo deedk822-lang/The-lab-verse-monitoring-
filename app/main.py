@@ -1,12 +1,13 @@
-<<<<<<< HEAD
 """
-Enhanced main application with security, monitoring, and distributed state.
+Enhanced main application with security, monitoring, distributed state, and Atlassian integration.
 """
 
 import os
 import time
 import logging
 import hashlib
+import hmac
+import json
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Union
 from collections import OrderedDict
@@ -16,25 +17,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from pydantic import BaseModel
 import httpx
 import redis.asyncio as redis
 
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
 from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
-from agent.tools.llm_provider import initialize_from_env, get_global_provider
-=======
-from fastapi import FastAPI, Request, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Optional, Union
-import os
-import logging
-from datetime import datetime
-import httpx
-import hmac
-import hashlib
-import json
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
+from agent.tools.llm_provider import initialize_from_env, get_global_provider, TaskType
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +33,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Models with proper typing
+class RepositoryInfo(BaseModel):
+    name: str
+    full_name: Optional[str] = None
+    url: Optional[str] = None
+
+class CommitInfo(BaseModel):
+    hash: str
+    message: Optional[str] = None
+    author: Optional[Dict[str, Any]] = None
+    date: Optional[str] = None
+
+class BitbucketWebhookPayload(BaseModel):
+    repository: RepositoryInfo
+    commit: CommitInfo
+    build_status: str
+    event_type: Optional[str] = "build_status"
+
+class AtlassianWebhookPayload(BaseModel):
+    event: str
+    date: str
+    actor: Dict[str, Any]
+    repository: RepositoryInfo
+    commit: CommitInfo
+    build_status: Optional[Dict[str, Any]] = None
+
 # Fallback in-memory state for non-distributed environments
 class InMemoryDedupeCache:
     def __init__(self, ttl_seconds: int = 300, max_size: int = 1000):
@@ -50,7 +66,6 @@ class InMemoryDedupeCache:
         self.max_size = max_size
         self._cache: OrderedDict[str, float] = OrderedDict()
 
-<<<<<<< HEAD
     def _cleanup(self):
         current_time = time.time()
         expired = [k for k, ts in self._cache.items() if current_time - ts > self.ttl_seconds]
@@ -135,7 +150,7 @@ async def lifespan(app: FastAPI):
 # Initialize FastAPI app
 app = FastAPI(
     title="VAAL AI Empire",
-    description="Multi-provider LLM system with security hardening",
+    description="Multi-provider LLM system with security hardening and Atlassian integration",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -200,35 +215,48 @@ async def general_exception_handler(request: Request, exc: Exception):
             "error": "Internal server error",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "path": str(request.url)
-=======
-# Models with proper typing
-class RepositoryInfo(BaseModel):
-    name: str
-    full_name: Optional[str] = None
-    url: Optional[str] = None
+        }
+    )
 
-class CommitInfo(BaseModel):
-    hash: str
-    message: Optional[str] = None
-    author: Optional[Dict[str, Any]] = None
-    date: Optional[str] = None
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "2.0.0",
+        "region": "ap-southeast-1",
+        "enhanced_with_qwen": True,
+        "atlassian_integration": True
+    }
 
-class BitbucketWebhookPayload(BaseModel):
-    repository: RepositoryInfo
-    commit: CommitInfo
-    build_status: str
-    event_type: Optional[str] = "build_status"
+@app.get("/ready")
+async def readiness_check():
+    checks = {"llm_provider": False, "redis": False}
+    try:
+        get_global_provider()
+        checks["llm_provider"] = True
+    except: pass
 
-class AtlassianWebhookPayload(BaseModel):
-    event: str
-    date: str
-    actor: Dict[str, Any]
-    repository: RepositoryInfo
-    commit: CommitInfo
-    build_status: Optional[Dict[str, Any]] = None
+    if redis_client:
+        try:
+            await redis_client.ping()
+            checks["redis"] = True
+        except: pass
+
+    all_ready = checks["llm_provider"]
+    status_code = 200 if all_ready else 503
+    return JSONResponse(status_code=status_code, content={"ready": all_ready, "checks": checks})
+
+@app.get("/metrics")
+async def metrics():
+    from app.metrics import metrics_endpoint
+    return metrics_endpoint()
 
 @app.post("/webhook/bitbucket")
-async def handle_bitbucket_webhook(request: Request) -> Dict[str, Any]:
+async def handle_bitbucket_webhook(
+    request: Request,
+    rate_limited: bool = Depends(check_rate_limit)
+) -> Dict[str, Any]:
     """Handle traditional Bitbucket webhook"""
     body = await request.body()
     secret = os.getenv("WEBHOOK_SECRET")
@@ -261,157 +289,15 @@ async def handle_bitbucket_webhook(request: Request) -> Dict[str, Any]:
             "enhanced": True,
             "region": "ap-southeast-1",
             "source": "direct_bitbucket",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "direct_bitbucket",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
-
-@app.post("/webhook/atlassian")
-async def handle_atlassian_webhook(payload: AtlassianWebhookPayload) -> Dict[str, Any]:
-    """Handle Atlassian JSM webhook"""
-    logger.info(f"Received Atlassian webhook: {payload.event}")
-
-    # Convert Atlassian payload to our standard format
-    standard_payload = convert_atlassian_to_standard(payload)
-
-    if standard_payload.build_status.lower() == "failed":
-        original_response = await handle_build_failure(standard_payload)
-        qwen_analysis = await analyze_with_qwen_3_plus(standard_payload)
-
-        # Forward to Jira through Atlassian webhook
-        atlassian_webhook_url = os.getenv("ATLAS_WEBHOOK_URL")
-        if atlassian_webhook_url:
-            await forward_to_jira(atlassian_webhook_url, payload, qwen_analysis)
-
-        return {
-            "original_response": original_response,
-            "qwen_analysis": qwen_analysis,
-            "enhanced": True,
-            "region": "ap-southeast-1",
-            "source": "atlassian_jsm",
-            "forwarded_to_jira": True,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-    return {
-        "status": "handled",
-        "region": "ap-southeast-1",
-        "source": "atlassian_jsm",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-def convert_atlassian_to_standard(atlassian_payload: AtlassianWebhookPayload) -> BitbucketWebhookPayload:
-    """Convert Atlassian payload to standard Bitbucket format"""
-    build_status = "SUCCESS"
-    if atlassian_payload.build_status:
-        state = atlassian_payload.build_status.get("state")
-        if isinstance(state, str) and state.lower() == "failed":
-            build_status = "FAILED"
-
-    return BitbucketWebhookPayload(
-        repository=atlassian_payload.repository,
-        commit=atlassian_payload.commit,
-        build_status=build_status,
-        event_type="converted_atlassian"
-    )
-
-async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
-    """Forward enhanced analysis to Jira through Atlassian webhook"""
-    try:
-        enhanced_payload = {
-            "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
-            "qwen_analysis": qwen_analysis,
-            "enhanced_timestamp": datetime.utcnow().isoformat()
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
-        }
-    )
-
-<<<<<<< HEAD
-=======
-        async with httpx.AsyncClient() as client:
-            response = await client.post(webhook_url, json=enhanced_payload)
-            response.raise_for_status()  # ADD THIS BACK
-            logger.info(f"Forwarded to Jira: {response.status_code}")
-    except httpx.RequestError as exc:  # MORE SPECIFIC
-        logger.error(f"An error occurred while requesting {exc.request.url!r}: {exc}")
-    except Exception as e:  # KEEP AS FALLBACK
-        logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
-
-async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
-    """Original build failure handling logic"""
-    return {
-        "status": "failure_handled",
-        "build_id": payload.commit.hash,
-        "repository": payload.repository.name,
-        "timestamp": payload.commit.date or datetime.utcnow().isoformat(),
-        "processed_by": "lab-verse-monitoring-agent-singapore"
-    }
-
-async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
-    """Enhanced analysis using Qwen 3 Plus"""
-    try:
-        # Simulate Qwen 3 Plus analysis
-        analysis = {
-            "root_cause": "Identified by Qwen 3 Plus AI",
-            "fix_suggestions": [
-                "Review code changes in recent commits",
-                "Check dependency versions",
-                "Verify environment variables"
-            ],
-            "severity": "high",
-            "confidence": 0.95,
-            "region_optimized": "ap-southeast-1",
-            "ai_insights": (
-                "Qwen 3 Plus detected potential configuration issues in the build "
-                "process"
-            ),
-            "jira_ready": True,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-        return analysis
-    except Exception as e:
-        logger.error(f"Qwen 3 Plus analysis failed: {str(e)}")
-        return {"error": str(e), "fallback": "Original analysis used"}
-
-# Original health check maintained
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-<<<<<<< HEAD
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "2.0.0"
-    }
-
-@app.get("/ready")
-async def readiness_check():
-    checks = {"llm_provider": False, "redis": False}
-    try:
-        get_global_provider()
-        checks["llm_provider"] = True
-    except: pass
-
-    if redis_client:
-        try:
-            await redis_client.ping()
-            checks["redis"] = True
-        except: pass
-
-    all_ready = checks["llm_provider"]
-    status_code = 200 if all_ready else 503
-    return JSONResponse(status_code=status_code, content={"ready": all_ready, "checks": checks})
-
-@app.get("/metrics")
-async def metrics():
-    from app.metrics import metrics_endpoint
-    return metrics_endpoint()
 
 @app.post("/webhooks/atlassian")
 async def atlassian_webhook(
@@ -443,28 +329,6 @@ def convert_atlassian_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         "timestamp": payload.get('timestamp', datetime.now(timezone.utc).isoformat()),
         "source": "atlassian",
         "data": {}
-=======
-        "region": "ap-southeast-1",
-        "enhanced_with_qwen": True,
-        "version": "2.0",
-        "repository": "deedk822-lang/The-lab-verse-monitoring-",
-        "atlassian_integration": True,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-# Enhanced endpoint for Bitbucket integration
-@app.get("/bitbucket/status")
-async def bitbucket_integration_status() -> Dict[str, Any]:
-    """Bitbucket integration status"""
-    return {
-        "status": "connected",
-        "repository": "lab-verse-monitoring",
-        "integration": "active",
-        "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
-        "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
-        "last_sync": "recent",
-        "timestamp": datetime.utcnow().isoformat()
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
     }
     if 'issue' in payload:
         standard['data']['issue'] = {
@@ -488,7 +352,6 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         }
     return standard
 
-<<<<<<< HEAD
 async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     event_type = payload.get('event_type', '')
     if 'jira' in event_type.lower() or 'issue' in payload.get('data', {}):
@@ -511,9 +374,88 @@ async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Error forwarding webhook: {e}")
         return {"status": "error", "error": str(e)}
 
+async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
+    """Forward enhanced analysis to Jira through Atlassian webhook"""
+    try:
+        enhanced_payload = {
+            "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
+            "qwen_analysis": qwen_analysis,
+            "enhanced_timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(webhook_url, json=enhanced_payload)
+            response.raise_for_status()
+            logger.info(f"Forwarded to Jira: {response.status_code}")
+    except httpx.RequestError as exc:
+        logger.error(f"An error occurred while requesting {exc.request.url!r}: {exc}")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
+
+async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+    """Original build failure handling logic"""
+    return {
+        "status": "failure_handled",
+        "build_id": payload.commit.hash,
+        "repository": payload.repository.name,
+        "timestamp": payload.commit.date or datetime.now(timezone.utc).isoformat(),
+        "processed_by": "lab-verse-monitoring-agent-singapore"
+    }
+
+async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+    """Enhanced analysis using Qwen 3 Plus"""
+    try:
+        # Simulate Qwen 3 Plus analysis
+        analysis = {
+            "root_cause": "Identified by Qwen 3 Plus AI",
+            "fix_suggestions": [
+                "Review code changes in recent commits",
+                "Check dependency versions",
+                "Verify environment variables"
+            ],
+            "severity": "high",
+            "confidence": 0.95,
+            "region_optimized": "ap-southeast-1",
+            "ai_insights": (
+                "Qwen 3 Plus detected potential configuration issues in the build "
+                "process"
+            ),
+            "jira_ready": True,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+        return analysis
+    except Exception as e:
+        logger.error(f"Qwen 3 Plus analysis failed: {str(e)}")
+        return {"error": str(e), "fallback": "Original analysis used"}
+
+@app.get("/bitbucket/status")
+async def bitbucket_integration_status() -> Dict[str, Any]:
+    """Bitbucket integration status"""
+    return {
+        "status": "connected",
+        "repository": "lab-verse-monitoring",
+        "integration": "active",
+        "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
+        "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
+        "last_sync": "recent",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.get("/jira/status")
+async def jira_integration_status() -> Dict[str, Any]:
+    """Jira integration status"""
+    return {
+        "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
+        "integration": "atlassian_jsm",
+        "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
+        "enhanced_with_ai": True,
+        "last_forwarded": "recent",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 @app.post("/api/generate")
 async def generate_text(request: Request, rate_limited: bool = Depends(check_rate_limit)):
-    from agent.tools.llm_provider import TaskType
     try:
         data = await request.json()
         prompt = data.get('prompt', '')
@@ -536,21 +478,3 @@ async def generate_text(request: Request, rate_limited: bool = Depends(check_rat
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv('PORT', '8000')))
-=======
-# Jira integration status endpoint
-@app.get("/jira/status")
-async def jira_integration_status() -> Dict[str, Any]:
-    """Jira integration status"""
-    return {
-        "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
-        "integration": "atlassian_jsm",
-        "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
-        "enhanced_with_ai": True,
-        "last_forwarded": "recent",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640

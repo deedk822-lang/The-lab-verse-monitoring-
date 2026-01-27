@@ -37,6 +37,7 @@ check_root() {
     fi
 }
 
+<<<<<<< HEAD
 # Check system requirements
 check_requirements() {
     log_info "Checking system requirements..."
@@ -259,6 +260,10 @@ scrape_configs:
   - job_name: 'redis'
     static_configs:
       - targets: ['redis:6379']
+=======
+# Bitbucket Configuration
+BITBUCKET_WORKSPACE=lab-verse-monitoring
+>>>>>>> origin/main
 EOF
 
         log_success "Monitoring configured"

@@ -1,3 +1,15 @@
+# VAAL AI Empire - Git Ignore
+# Protect sensitive configuration and runtime files
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+secrets/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -16,55 +28,83 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-docs/_build/
-.pyre/
-.pytype/
-.ipynb_checkpoints/
+PIPFILE.lock
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 .venv/
-.env/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# Logs
-logs/
-*.log
-
-# OS
 .DS_Store
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+logs/
+
+# Credit protection runtime
+/var/lib/vaal/
+/var/log/vaal/
+circuit_breaker.json
+usage_*.json
+usage_log_*.jsonl
+EMERGENCY_SHUTDOWN
+
+# Model cache (can be large)
+models/
+*.bin
+*.safetensors
+*.onnx
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# OS generated
 Thumbs.db
+.Spotlight-V100
+.Trashes
 
-# Secrets
-.env*
-!.env.example
-
-# Cache
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.pytest_cache/
 .mypy_cache/
-.hypothesis/
-node_modules/
 
-# Docker
-.dockerignore
-*.tar.gz
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
 
-# Local config
-config.local.json
-local_settings.py
+# Backup files
+*.bak
+*.backup
+*~
+
+# Large data files
+*.csv
+*.parquet
+*.h5
+*.hdf5
+
+# Compiled documentation
+docs/_build/

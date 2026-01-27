@@ -6,6 +6,7 @@ import re
 
 from agent.config import config
 from agent.tools.hf_model_loader import model_loader
+from vaal_ai_empire.api.sanitizers import sanitize_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -18,37 +19,45 @@ async def run_diagnostic(state):
 
     logger.info("🔍 Diagnosing pipeline run_id=%s", getattr(state, "run_id", "unknown"))
 
-    diagnostic_prompt = f"""Analyze this pipeline failure and provide structured JSON analysis:\n\n"
-    diagnostic_prompt += f"Repository: {getattr(state, 'repo_full_name', 'unknown')}\n"
-    diagnostic_prompt += f"Branch: {getattr(state, 'branch', 'unknown')}\n"
-    diagnostic_prompt += f"Workflow: {getattr(state, 'workflow_name', 'unknown')}\n"
-    diagnostic_prompt += f"Error: {getattr(state, 'error_message', 'unknown')}\n\n"
+    # Sanitize inputs to prevent prompt injection
+    repo_name = sanitize_prompt(str(getattr(state, 'repo_full_name', 'unknown')), max_length=200)
+    branch = sanitize_prompt(str(getattr(state, 'branch', 'unknown')), max_length=200)
+    workflow = sanitize_prompt(str(getattr(state, 'workflow_name', 'unknown')), max_length=200)
+    error_msg = sanitize_prompt(str(getattr(state, 'error_message', 'unknown')), max_length=1000)
+
+    diagnostic_prompt = f"""Analyze this pipeline failure and provide structured JSON analysis:
+
+Repository: {repo_name}
+Branch: {branch}
+Workflow: {workflow}
+Error: {error_msg}
+
+"""
 
     failed_jobs = getattr(state, "failed_jobs", [])
     logs = getattr(state, "logs", "")
 
-    diagnostic_prompt += "Failed Jobs:\n" + json.dumps(failed_jobs, indent=2) + "\n\n"
-    diagnostic_prompt += "Pipeline Logs:\n" + (logs[:2000] if isinstance(logs, str) else str(logs)[:2000]) + "\n\n"
+    # Sanitize failed jobs and logs
+    sanitized_failed_jobs = sanitize_prompt(json.dumps(failed_jobs, indent=2), max_length=2000)
+    sanitized_logs = sanitize_prompt(
+        logs[:2000] if isinstance(logs, str) else str(logs)[:2000],
+        max_length=2000
+    )
 
-<<<<<<< HEAD
-Failed Jobs:
-{sanitize_prompt(json.dumps(getattr(state, 'failed_jobs', []), indent=2))}
+    diagnostic_prompt += f"""Failed Jobs:
+{sanitized_failed_jobs}
 
 Pipeline Logs:
 {sanitized_logs}
 
 Provide ONLY valid JSON in this format:
 {{
-=======
-    diagnostic_prompt += """Provide ONLY valid JSON in this format:
-{
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
   "root_cause": "Clear, specific cause of failure",
   "confidence": 0.95,
   "fix_category": "dependency|test|config|security|timeout|network",
   "recommended_action": "Specific action to fix",
   "monitoring_specific": "Any monitoring stack specific notes"
-}
+}}
 Respond ONLY with valid JSON, no other text."""
 
     await model_loader.load_model(config.hf.model_diagnostic, task="diagnostic")

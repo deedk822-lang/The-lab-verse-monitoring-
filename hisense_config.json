@@ -1,0 +1,19 @@
+{
+  "device_model": "Hisense HLTE270E",
+  "device_variant": "S03_01_01_ZA06",
+  "android_version": "Android OS",
+  "adb_required": true,
+  "supported_features": [
+    "USB debugging",
+    "Wireless debugging",
+    "ADB keyboard",
+    "Screen capture",
+    "Touch simulation"
+  ],
+  "setup_steps": [
+    "Enable Developer Options",
+    "Enable USB Debugging",
+    "Install ADB Keyboard",
+    "Authorize computer"
+  ]
+}

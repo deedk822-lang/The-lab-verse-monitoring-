@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  localai:
+    image: localai/localai:v2.8.0
+    container_name: localai
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models
+      - ./cache:/tmp/localai
+    environment:
+      - MODELS_PATH=/models
+      - CONTEXT_SIZE=4096
+      - THREADS=4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: kimi-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      localai:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - LOCALAI_HOST=http://localai:8080/v1
+      - PORT=3000
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped

@@ -3,7 +3,6 @@ import logging
 from typing import Dict
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
-from .sanitizers import sanitize_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +22,12 @@ class KimiAPI:
         """
         Generates content using the Kimi model served by vLLM.
         """
-        sanitized_prompt = sanitize_prompt(prompt)
-        sanitized_system_prompt = sanitize_prompt(system_prompt)
-
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": sanitized_system_prompt},
-                    {"role": "user", "content": sanitized_prompt}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
                 max_tokens=500

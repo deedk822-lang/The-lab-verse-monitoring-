@@ -8,6 +8,9 @@ import yaml
 import aiohttp
 import redis.asyncio as redis
 from openai import AsyncOpenAI
+import openlit
+
+openlit.init()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

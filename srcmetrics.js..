@@ -1,0 +1,54 @@
+import promClient from 'prom-client';
+import axios from 'axios';
+
+// Create a Registry
+const register = new promClient.Registry();
+
+// Add default metrics
+promClient.collectDefaultMetrics({ register });
+
+// custom histogram: latency per provider
+export const httpReq = new promClient.Histogram({
+  name: 'ai_provider_request_duration_seconds',
+  help: 'Request latency bucketed per AI provider',
+  labelNames: ['provider', 'model', 'status'],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+});
+
+// counter: tokens consumed
+export const tokenCounter = new promClient.Counter({
+  name: 'ai_provider_tokens_total',
+  help: 'Tokens consumed per provider',
+  labelNames: ['provider', 'model']
+});
+
+// counter: hard errors
+export const errorCounter = new promClient.Counter({
+  name: 'ai_provider_errors_total',
+  help: 'Provider errors by code',
+  labelNames: ['provider', 'code']
+});
+
+// push to Grafana Cloud every 10 s
+if (process.env.GRAFANA_CLOUD_PROM_URL) {
+  setInterval(async () => {
+    try {
+      const metrics = await register.metrics();
+      await axios.post(
+        process.env.GRAFANA_CLOUD_PROM_URL,
+        metrics,
+        {
+          headers: { 'Content-Type': 'text/plain' },
+          auth: {
+            username: process.env.GRAFANA_CLOUD_PROM_USER,
+            password: process.env.GRAFANA_CLOUD_API_KEY
+          }
+        }
+      );
+    } catch (e) {
+      console.warn('⚠️  Metrics push failed:', e.message);
+    }
+  }, 10_000).unref();
+}
+
+export { register };

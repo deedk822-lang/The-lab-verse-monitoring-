@@ -14,29 +14,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-<<<<<<< HEAD
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.10 \
     python3.10-dev \
-=======
-# Copy only files necessary for dependency installation
-COPY pyproject.toml poetry.lock ./
-
-# Install dependencies
-RUN poetry install --no-root --no-dev
-
-# Stage 2: Production
-FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
-
-# Singapore region optimization
-ENV TZ=Asia/Singapore
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-# System updates
-RUN apt-get update && apt-get install -y \
-    python3 \
->>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
     python3-pip \
     build-essential \
     git \

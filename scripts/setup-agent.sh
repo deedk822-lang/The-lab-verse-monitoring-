@@ -6,12 +6,24 @@
 
 set -euo pipefail
 
+<<<<<<< HEAD
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+=======
+echo "🪐 Lab-Verse Agent - Multi-Provider Setup"
+echo "=========================================="
+echo ""
+echo "Choose your LLM provider:"
+echo "  1) Z.AI (requires Z.AI API key)"
+echo "  2) Qwen/Dashscope (requires Qwen API key)"
+echo "  3) Hugging Face (requires HF token + model download)"
+echo ""
+read -p "Select option (1-3): " provider_choice
+>>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640
 
 # Logging functions
 log_info() {
@@ -304,5 +316,74 @@ main() {
     completion_message
 }
 
+<<<<<<< HEAD
 # Run main function
 main "$@"
+=======
+  cat >> .env.production << EOF
+QWEN_API_KEY=$qwen_key
+QWEN_MODEL_DIAGNOSTIC=$qwen_diag
+QWEN_MODEL_PLANNER=$qwen_diag
+QWEN_MODEL_EXECUTOR=$qwen_diag
+QWEN_MODEL_VALIDATOR=$qwen_diag
+EOF
+
+  echo "✅ Qwen configuration saved (no model download needed)"
+
+elif [ "$PROVIDER" = "huggingface" ]; then
+  echo ""
+  echo "🔐 Hugging Face Configuration"
+  read -p "Enter your HF token: " -s hf_token
+  echo ""
+  read -p "Enter HF device [cuda]: " hf_device
+  hf_device=${hf_device:-cuda}
+
+  cat >> .env.production << EOF
+HF_TOKEN=$hf_token
+HF_DEVICE=$hf_device
+HF_LOAD_IN_8BIT=true
+HF_CACHE_DIR=./models
+HF_MODEL_DIAGNOSTIC=mistralai/Mistral-7B-Instruct-v0.3
+HF_MODEL_PLANNER=microsoft/phi-2
+HF_MODEL_EXECUTOR=TinyLlama/TinyLlama-1.1B-Chat-v1.0
+HF_MODEL_VALIDATOR=mistralai/Mistral-7B-Instruct-v0.3
+EOF
+
+  echo ""
+  echo "📦 Downloading Hugging Face models (~15GB)..."
+  mkdir -p ./models
+
+  echo "  🔿 Downloading Mistral-7B-Instruct-v0.3..."
+  huggingface-cli download "mistralai/Mistral-7B-Instruct-v0.3"     --cache-dir ./models     --token "$hf_token"
+
+  echo "  🔿 Downloading Phi-2..."
+  huggingface-cli download "microsoft/phi-2"     --cache-dir ./models     --token "$hf_token"
+
+  echo "  🔿 Downloading TinyLlama-1.1B-Chat-v1.0..."
+  huggingface-cli download "TinyLlama/TinyLlama-1.1B-Chat-v1.0"     --cache-dir ./models     --token "$hf_token"
+
+  echo "✅ HF models downloaded and configured"
+fi
+
+echo ""
+echo "🔐 Bitbucket Configuration"
+read -p "Enter Bitbucket email/username: " bb_user
+read -p "Enter Bitbucket app password: " -s bb_pass
+echo ""
+
+cat >> .env.production << EOF
+BITBUCKET_USERNAME=$bb_user
+BITBUCKET_APP_PASSWORD=$bb_pass
+EOF
+
+echo ""
+echo "✅ Configuration complete!"
+echo ""
+echo "🚀 To start the agent, run:"
+echo "  source venv/bin/activate"
+echo "  export (cat .env.production | xargs)"
+echo "  python3 -m agent.main"
+echo ""
+echo "🔍 To test connectivity:"
+echo "  curl http://localhost:8000/health"
+>>>>>>> origin/feat/atlassian-jsm-integration-16960019842766473640

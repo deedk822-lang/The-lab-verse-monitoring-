@@ -1,0 +1,39 @@
+# =============================================================================
+# VAAL AI Empire - RBAC Configuration
+# Service Account and Permissions
+# =============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vaal-service-account
+  namespace: vaal-ai-empire
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vaal-app-role
+  namespace: vaal-ai-empire
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vaal-app-rolebinding
+  namespace: vaal-ai-empire
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vaal-app-role
+subjects:
+- kind: ServiceAccount
+  name: vaal-service-account
+  namespace: vaal-ai-empire

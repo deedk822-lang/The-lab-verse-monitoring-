@@ -1,12 +1,16 @@
 """
 Security tests for VAAL AI Empire.
-Tests sanitizers, SSRF protection, and authentication.
+Tests sanitizers, SSRF protection, webhook security, and authentication.
 """
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
+from fastapi.testclient import TestClient
 import ipaddress
 import os
+import hmac
+import hashlib
+import json
 
 from vaal_ai_empire.api.sanitizers import (
     sanitize_prompt,
@@ -23,6 +27,10 @@ from vaal_ai_empire.api.secure_requests import (
     SSRFProtectionError,
     create_ssrf_safe_session
 )
+
+from app.main import app
+
+client = TestClient(app)
 
 
 class TestPromptSanitization:
@@ -220,6 +228,65 @@ class TestSSRFProtection:
         assert session.timeout.read == 30.0
 
 
+class TestWebhookSecurity:
+    """Tests for webhook signature validation."""
+
+    WEBHOOK_SECRET = "test-secret"
+
+    def test_webhook_valid_signature(self):
+        """Test webhook with a valid signature"""
+        os.environ["WEBHOOK_SECRET"] = self.WEBHOOK_SECRET
+        test_payload = {
+            "repository": {"name": "test-repo", "full_name": "test/test-repo"},
+            "commit": {"hash": "abc123", "date": "2024-01-01T00:00:00Z"},
+            "build_status": "SUCCESS"
+        }
+        body = json.dumps(test_payload).encode()
+        signature = "sha256=" + hmac.new(self.WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+
+        response = client.post(
+            "/webhook/bitbucket",
+            content=body,
+            headers={"X-Hub-Signature": signature, "Content-Type": "application/json"}
+        )
+
+        assert response.status_code == 200
+        del os.environ["WEBHOOK_SECRET"]
+
+    def test_webhook_invalid_signature(self):
+        """Test webhook with an invalid signature"""
+        os.environ["WEBHOOK_SECRET"] = self.WEBHOOK_SECRET
+        test_payload = {
+            "repository": {"name": "test-repo", "full_name": "test/test-repo"},
+            "commit": {"hash": "abc123", "date": "2024-01-01T00:00:00Z"},
+            "build_status": "SUCCESS"
+        }
+        body = json.dumps(test_payload).encode()
+
+        response = client.post(
+            "/webhook/bitbucket",
+            content=body,
+            headers={"X-Hub-Signature": "sha256=invalid", "Content-Type": "application/json"}
+        )
+
+        assert response.status_code == 403
+        del os.environ["WEBHOOK_SECRET"]
+
+    def test_webhook_missing_signature(self):
+        """Test webhook with a missing signature when a secret is configured"""
+        os.environ["WEBHOOK_SECRET"] = self.WEBHOOK_SECRET
+        test_payload = {
+            "repository": {"name": "test-repo", "full_name": "test/test-repo"},
+            "commit": {"hash": "abc123", "date": "2024-01-01T00:00:00Z"},
+            "build_status": "SUCCESS"
+        }
+
+        response = client.post("/webhook/bitbucket", json=test_payload)
+
+        assert response.status_code == 403
+        del os.environ["WEBHOOK_SECRET"]
+
+
 class TestRateLimiting:
     """Tests for rate limiting."""
 
@@ -311,7 +378,6 @@ class TestAuthenticationSecurity:
             assert result is True
 
 
-# Integration tests
 class TestSecurityIntegration:
     """Integration tests for security features."""
 

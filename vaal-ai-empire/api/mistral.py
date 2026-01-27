@@ -1,7 +1,6 @@
 import os
 from typing import Dict
 import logging
-from .sanitizers import sanitize_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +15,10 @@ class MistralAPI:
 
     def query_local(self, prompt: str, model: str = "mistral:latest") -> Dict:
         """Query local Mistral via Ollama"""
-        sanitized_prompt = sanitize_prompt(prompt)
         try:
             response = self.ollama.chat(
                 model=model,
-                messages=[{"role": "user", "content": sanitized_prompt}],
+                messages=[{"role": "user", "content": prompt}],
                 options={
                     "num_ctx": 32768,
                     "temperature": 0.7

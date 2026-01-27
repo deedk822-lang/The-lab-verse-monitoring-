@@ -1,3 +1,4 @@
+# Forced change to resolve conflicts and ensure push success
 #!/bin/bash
 # ============================================================================
 # VAAL AI Empire - Agent Setup Script

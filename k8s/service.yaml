@@ -1,0 +1,48 @@
+# =============================================================================
+# VAAL AI Empire - Kubernetes Service
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: vaal-app-service
+  namespace: vaal-ai-empire
+  labels:
+    app: vaal-app
+spec:
+  type: ClusterIP
+  selector:
+    app: vaal-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
+---
+# Load Balancer Service (optional, for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: vaal-app-lb
+  namespace: vaal-ai-empire
+  labels:
+    app: vaal-app
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: vaal-app
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8000
+    protocol: TCP

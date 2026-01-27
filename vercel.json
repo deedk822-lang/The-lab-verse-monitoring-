@@ -11,6 +11,19 @@
     "REDIS_URL": "@REDIS_URL",
     "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
   },
+  "github": {
+    "silent": true,
+    "autoJobCancelation": true,
+    "autoAlias": false,
+    "enabled": false
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "develop": false,
+      "*": false
+    }
+  },
   "routes": [
     {
       "src": "/health",

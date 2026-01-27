@@ -161,13 +161,11 @@ async def hubspot_webhook(payload: HubSpotWebhookPayload, background_tasks: Back
     return {"status": "accepted", "message": "Authority Flow queued."}
 
 @app.post("/execute")
-async def execute(payload: ExecuteTaskPayload, request: Request):
-    \"\"\"Synchronous execution for direct agent tasks.\"\"\"
+async def execute(payload: ExecuteTaskPayload, request: Request, background_tasks: BackgroundTasks):
+    """Asynchronous execution for direct agent tasks."""
     orchestrator = request.app.state.orchestrator
-    try:
-        result = await orchestrator.execute_task(payload.model_dump())
-        return result
-    except Exception as e:
-        logger.error(f"Execution failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # This is a long-running task. Running it in the background
+    # allows us to return a response to the client immediately.
+    background_tasks.add_task(orchestrator.execute_task, payload.model_dump())
+    return {"status": "accepted", "message": "Task queued for execution."}
  main

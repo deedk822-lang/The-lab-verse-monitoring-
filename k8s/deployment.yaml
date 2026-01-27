@@ -1,225 +1,7 @@
-# ============================================================================
-# VAAL AI Empire - Kubernetes Deployment Configuration
-# ============================================================================
-
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: vaal-ai-empire
-  labels:
-    name: vaal-ai-empire
-    environment: production
-
----
-# ConfigMap for application configuration
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: vaal-config
-  namespace: vaal-ai-empire
-data:
-  APP_ENV: "production"
-  LOG_LEVEL: "INFO"
-  LLM_PROVIDER: "openai"
-  RATE_LIMIT_ENABLED: "true"
-  RATE_LIMIT_REQUESTS_PER_MINUTE: "60"
-  WEBHOOK_DEDUPE_TTL: "300"
-  PROMETHEUS_ENABLED: "true"
-
----
-# Secret for sensitive data (create separately with actual values)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vaal-secrets
-  namespace: vaal-ai-empire
-type: Opaque
-stringData:
-  SECRET_KEY: "your-secret-key-base64-encoded"
-  JWT_SECRET_KEY: "your-jwt-secret-base64-encoded"
-  SELF_HEALING_KEY: "your-webhook-secret"
-  DATABASE_URL: "postgresql://user:pass@postgres:5432/vaal"
-  REDIS_URL: "redis://:pass@redis:6379/0"
-  OPENAI_API_KEY: "your-openai-key"
-  # Add other secrets as needed
-
----
-# PostgreSQL Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-  namespace: vaal-ai-empire
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:15-alpine
-        env:
-        - name: POSTGRES_DB
-          value: vaal_ai_empire
-        - name: POSTGRES_USER
-          value: vaaluser
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: vaal-secrets
-              key: DB_PASSWORD
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        ports:
-        - containerPort: 5432
-          name: postgres
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        livenessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - vaaluser
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - vaaluser
-          initialDelaySeconds: 5
-          periodSeconds: 5
-      volumes:
-      - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
-
----
-# PostgreSQL Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: vaal-ai-empire
-spec:
-  selector:
-    app: postgres
-  ports:
-  - port: 5432
-    targetPort: 5432
-  type: ClusterIP
-
----
-# PostgreSQL PVC
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-  namespace: vaal-ai-empire
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-  storageClassName: fast-ssd
-
----
-# Redis Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  namespace: vaal-ai-empire
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:7-alpine
-        command:
-        - redis-server
-        - --appendonly
-        - "yes"
-        - --requirepass
-        - "$(REDIS_PASSWORD)"
-        env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: vaal-secrets
-              key: REDIS_PASSWORD
-        ports:
-        - containerPort: 6379
-          name: redis
-        volumeMounts:
-        - name: redis-storage
-          mountPath: /data
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-      volumes:
-      - name: redis-storage
-        persistentVolumeClaim:
-          claimName: redis-pvc
-
----
-# Redis Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis
-  namespace: vaal-ai-empire
-spec:
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
-  type: ClusterIP
-
----
-# Redis PVC
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-pvc
-  namespace: vaal-ai-empire
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
-
----
-# Main Application Deployment
+# =============================================================================
+# VAAL AI Empire - Kubernetes Deployment
+# Supports GPU acceleration and horizontal scaling
+# =============================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -227,318 +9,180 @@ metadata:
   namespace: vaal-ai-empire
   labels:
     app: vaal-app
-    version: v2.0.0
+    version: v1
+    component: api
 spec:
   replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: vaal-app
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: vaal-app
   template:
     metadata:
       labels:
         app: vaal-app
-        version: v2.0.0
+        version: v1
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: vaal-app-sa
+      serviceAccountName: vaal-service-account
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      
+      # Init container to wait for database
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z postgres-service 5432; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+      
       containers:
       - name: vaal-app
-        image: your-registry.com/vaal-ai-empire:v2.0.0
+        image: ghcr.io/deedk822-lang/the-lab-verse-monitoring-:latest
         imagePullPolicy: Always
+        
         ports:
-        - containerPort: 8000
-          name: http
+        - name: http
+          containerPort: 8000
           protocol: TCP
-        - containerPort: 9090
-          name: metrics
+        - name: metrics
+          containerPort: 9090
           protocol: TCP
+        
         env:
+        - name: ENVIRONMENT
+          value: "production"
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: vaal-secrets
-              key: DATABASE_URL
+              key: database-url
         - name: REDIS_URL
           valueFrom:
             secretKeyRef:
               name: vaal-secrets
-              key: REDIS_URL
-        - name: SECRET_KEY
+              key: redis-url
+        - name: HF_TOKEN
           valueFrom:
             secretKeyRef:
               name: vaal-secrets
-              key: SECRET_KEY
-        - name: JWT_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: vaal-secrets
-              key: JWT_SECRET_KEY
-        - name: SELF_HEALING_KEY
-          valueFrom:
-            secretKeyRef:
-              name: vaal-secrets
-              key: SELF_HEALING_KEY
+              key: hf-token
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
               name: vaal-secrets
-              key: OPENAI_API_KEY
-        envFrom:
-        - configMapRef:
-            name: vaal-config
+              key: openai-api-key
+              optional: true
+        - name: CREDIT_TIER
+          valueFrom:
+            configMapKeyRef:
+              name: vaal-config
+              key: credit-tier
+        
+        # Resource requests and limits
         resources:
           requests:
-            memory: "4Gi"
-            cpu: "2000m"
-            nvidia.com/gpu: 1
+            cpu: "1000m"
+            memory: "2Gi"
           limits:
-            memory: "8Gi"
             cpu: "4000m"
-            nvidia.com/gpu: 1
+            memory: "8Gi"
+            # Uncomment for GPU support
+            # nvidia.com/gpu: "1"
+        
+        # Liveness probe
         livenessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: http
           initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # Readiness probe
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        readinessProbe:
+        
+        # Startup probe
+        startupProbe:
           httpGet:
-            path: /ready
-            port: 8000
-          initialDelaySeconds: 30
+            path: /health
+            port: http
+          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
-          failureThreshold: 3
+          failureThreshold: 12
+        
+        # Volume mounts
         volumeMounts:
-        - name: cache
-          mountPath: /cache
+        - name: credit-data
+          mountPath: /var/lib/vaal
         - name: logs
-          mountPath: /app/logs
-        - name: uploads
-          mountPath: /app/uploads
+          mountPath: /var/log/vaal
+        - name: model-cache
+          mountPath: /models
+        - name: tmp
+          mountPath: /tmp
+        
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
           capabilities:
             drop:
             - ALL
+      
+      # Volumes
       volumes:
-      - name: cache
-        emptyDir:
-          sizeLimit: 10Gi
-      - name: logs
-        emptyDir:
-          sizeLimit: 5Gi
-      - name: uploads
+      - name: credit-data
         persistentVolumeClaim:
-          claimName: uploads-pvc
-      nodeSelector:
-        nvidia.com/gpu.present: "true"
-      tolerations:
-      - key: nvidia.com/gpu
-        operator: Exists
-        effect: NoSchedule
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - vaal-app
-              topologyKey: kubernetes.io/hostname
-
----
-# Application Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: vaal-app
-  namespace: vaal-ai-empire
-  labels:
-    app: vaal-app
-spec:
-  type: ClusterIP
-  selector:
-    app: vaal-app
-  ports:
-  - name: http
-    port: 80
-    targetPort: 8000
-    protocol: TCP
-  - name: metrics
-    port: 9090
-    targetPort: 9090
-    protocol: TCP
-  sessionAffinity: ClientIP
-
----
-# Ingress Configuration
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: vaal-ingress
-  namespace: vaal-ai-empire
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/rate-limit: "100"
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-spec:
-  tls:
-  - hosts:
-    - vaal.yourdomain.com
-    secretName: vaal-tls
-  rules:
-  - host: vaal.yourdomain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: vaal-app
-            port:
-              number: 80
-
----
-# Horizontal Pod Autoscaler
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: vaal-app-hpa
-  namespace: vaal-ai-empire
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: vaal-app
-  minReplicas: 3
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 0
-      policies:
-      - type: Percent
-        value: 100
-        periodSeconds: 15
-      - type: Pods
-        value: 2
-        periodSeconds: 15
-      selectPolicy: Max
-
----
-# ServiceAccount
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: vaal-app-sa
-  namespace: vaal-ai-empire
-
----
-# NetworkPolicy
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: vaal-network-policy
-  namespace: vaal-ai-empire
-spec:
-  podSelector:
-    matchLabels:
-      app: vaal-app
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 8000
-  egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: postgres
-    ports:
-    - protocol: TCP
-      port: 5432
-  - to:
-    - podSelector:
-        matchLabels:
-          app: redis
-    ports:
-    - protocol: TCP
-      port: 6379
-  - to:
-    - namespaceSelector: {}
-    ports:
-    - protocol: TCP
-      port: 443  # Allow HTTPS for external APIs
-
----
-# PodDisruptionBudget
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: vaal-app-pdb
-  namespace: vaal-ai-empire
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app: vaal-app
-
----
-# Uploads PVC
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: uploads-pvc
-  namespace: vaal-ai-empire
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 100Gi
-  storageClassName: nfs-storage
+          claimName: vaal-credit-data-pvc
+      - name: logs
+        emptyDir: {}
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: vaal-model-cache-pvc
+      - name: tmp
+        emptyDir: {}
+      
+      # Node affinity for GPU nodes (optional)
+      # affinity:
+      #   nodeAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       preference:
+      #         matchExpressions:
+      #         - key: accelerator
+      #           operator: In
+      #           values:
+      #           - nvidia-tesla-t4
+      #           - nvidia-tesla-v100
+      
+      # Tolerations for GPU nodes
+      # tolerations:
+      # - key: nvidia.com/gpu
+      #   operator: Exists
+      #   effect: NoSchedule

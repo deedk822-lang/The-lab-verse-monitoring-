@@ -42,7 +42,7 @@ class HuggingFaceConfig(BaseSettings):
 class BitbucketConfig(BaseSettings):
     """Bitbucket-specific configuration."""
 
-    workspace: str = "lab-verse-monitaring"
+    workspace: str = "lab-verse-monitoring"
     username: str
     app_password: str
     webhook_secret: Optional[str] = None

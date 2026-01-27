@@ -48,7 +48,7 @@ export async function createGrafanaDashboard() {
     const dashboard = await response.json();
 
     // Set public access
-    await fetch(`${process.env.GRAFANA_URL}/api/dashboards/uid/${dashboard.uid}/public-dashboards`, {
+    const setPublicResponse = await fetch(`${process.env.GRAFANA_URL}/api/dashboards/uid/${dashboard.uid}/public-dashboards`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.GRAFANA_API_KEY}`,
@@ -60,6 +60,10 @@ export async function createGrafanaDashboard() {
         timeSelectionEnabled: true
       })
     });
+
+    if (!setPublicResponse.ok) {
+      throw new Error(`Grafana API error (setting public access): ${setPublicResponse.statusText}`);
+    }
 
     const dashboardUrl = `${process.env.GRAFANA_URL}/public-dashboards/${dashboard.uid}`;
     console.log('✅ Grafana dashboard public:', dashboardUrl);

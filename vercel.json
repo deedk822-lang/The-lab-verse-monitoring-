@@ -1,20 +1,39 @@
 {
+  "buildCommand": "pip install -r requirements.txt && mypy --strict rainmaker_orchestrator/ api/",
+  "outputDirectory": ".",
+  "framework": "fastapi",
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
   "env": {
+    "ENVIRONMENT": "production",
+    "CI": "true",
+    "OPENLIT_OTLP_ENDPOINT": "@OPENLIT_OTLP_ENDPOINT",
+    "ZAI_API_KEY": "@ZAI_API_KEY",
+    "MISTRAL_API_KEY": "@MISTRAL_API_KEY",
+    "REDIS_URL": "@REDIS_URL",
     "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
   },
-  "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/health": {
-      "runtime": "edge"
-    }
+  "github": {
+    "silent": true,
+    "autoJobCancelation": true,
+    "autoAlias": false
   },
-  "headers": [
+  "routes": [
     {
-      "source": "/(.*)",
+      "src": "/health",
+      "dest": "api/server.py"
+    },
+    {
+      "src": "/execute",
+      "methods": ["POST"],
+      "dest": "api/server.py"
+    },
+    {
+      "src": "/webhook/hubspot",
+      "methods": ["POST"],
+      "dest": "api/server.py"
+    },
+    {
+      "src": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
@@ -31,5 +50,11 @@
       "destination": "https://rainmaker-orchestrator.onrender.com/:path*"
     }
   ],
+  "functions": {
+    "api/server.py": {
+      "memory": 3008,
+      "maxDuration": 60
+    }
+  },
   "regions": ["iad1"]
 }

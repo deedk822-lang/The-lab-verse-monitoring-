@@ -1,81 +1,110 @@
-# Environment variables
+# VAAL AI Empire - Git Ignore
+# Protect sensitive configuration and runtime files
+
+# Environment and secrets
 .env
 .env.local
-.env.development
-.env.production
-.env.staging
+.env.*.local
+*.key
+*.pem
+*.p12
+secrets/
 
-# Node modules
-node_modules/
-
-# Build artifacts
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-*.log
-*.tmp
-*.temp
-coverage/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
 
-# IDE and editor files
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 .DS_Store
 
-# Docker
-docker-compose.override.yml
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+logs/
 
-# Security and secrets
-*.pem
-*.key
-*.crt
-*.cert
-*.der
-*.p12
-*.pfx
-id_rsa
-id_ed25519
+# Credit protection runtime
+/var/lib/vaal/
+/var/log/vaal/
+circuit_breaker.json
+usage_*.json
+usage_log_*.jsonl
+EMERGENCY_SHUTDOWN
 
-# OS generated files
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Model cache (can be large)
+models/
+*.bin
+*.safetensors
+*.onnx
 
-# Backup files
-*~
-*.bak
+# Temporary files
 *.tmp
 *.temp
+*.cache
+.cache/
 
-# Logs
-logs/
-*.log
+# OS generated
+Thumbs.db
+.Spotlight-V100
+.Trashes
 
-# Dependencies
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
 
-# Runtime data
-tmp/
-temp/
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
 
-# Environment specific
-config/*.json
-!config/*.example.json
-!config/*.schema.json
+# Backup files
+*.bak
+*.backup
+*~
 
- feat/ci-cd-alibaba-cloud-integration-10364585358297276748
-digest.txt
-.env
-.env.*
-*.pem
-*.key
-secrets.json
-.env
+# Large data files
+*.csv
+*.parquet
+*.h5
+*.hdf5
 
-# Security scans
-security-reports/
-.trivyignore
- main
+# Compiled documentation
+docs/_build/

@@ -116,4 +116,4 @@ CMD ["gunicorn", "app.main:app", \
 LABEL maintainer="VAAL AI Empire Team" \
       version="2.0.0" \
       description="Multi-provider LLM system with security hardening" \
-      org.opencontainers.image.source="https://github.com/yourusername/vaal-ai-empire"
+      org.opencontainers.image.source="https://github.com/deedk822-lang/The-lab-verse-monitoring-"

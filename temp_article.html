@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Vaal Uprising: How South Africa's First Autonomous AI Empire Is Rewriting the Rules</title>
+    <meta name="description" content="While multinational corporations debated whether South Africa was 'ready' for advanced AI, a revolutionary system was being forged in the industrial heartland of the Vaal Triangle.">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Core Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <style>
+        :root {
+            --primary-dark: #0d0d0d;
+            --secondary-dark: #1a1a1a;
+            --copper: #b87333;
+            --industrial-orange: #cc6600;
+            --electric-blue: #0066ff;
+            --text-light: #e0e0e0;
+            --text-white: #ffffff;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+        }
+
+        .article-bg {
+            background: url('./resources/digital-sovereignty.jpg') center/cover no-repeat;
+            position: relative;
+        }
+
+        .article-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(13,13,13,0.9) 0%, rgba(26,26,26,0.8) 100%);
+        }
+
+        .copper-text {
+            color: var(--copper);
+        }
+
+        .electric-text {
+            color: var(--electric-blue);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px var(--electric-blue);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--copper) 0%, var(--industrial-orange) 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(184,115,51,0.3);
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--electric-blue);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .article-content {
+            font-size: 1.125rem;
+            line-height: 1.8;
+        }
+
+        .article-content h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 3rem 0 1.5rem 0;
+            color: var(--text-white);
+        }
+
+        .article-content h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 2.5rem 0 1rem 0;
+            color: var(--copper);
+        }
+
+        .article-content blockquote {
+            border-left: 4px solid var(--electric-blue);
+            padding-left: 2rem;
+            margin: 2rem 0;
+            font-style: italic;
+            font-size: 1.25rem;
+            color: var(--text-white);
+        }
+
+        .stat-highlight {
+            background: linear-gradient(135deg, rgba(0,102,255,0.1) 0%, rgba(184,115,51,0.1) 100%);
+            border: 1px solid rgba(0,102,255,0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .citation {
+            color: var(--electric-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .citation:hover {
+            text-decoration: underline;
+        }
+
+        .share-button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .share-button:hover {
+            background: rgba(0,102,255,0.2);
+            border-color: var(--electric-blue);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="text-2xl font-bold">
+                    <a href="index.html"><span class="copper-text">Vaal</span> <span class="electric-text">AI Empire</span></a>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="nav-link text-white hover:text-blue-400">Dashboard</a>
+                    <a href="blog.html" class="nav-link text-blue-400 font-semibold">Manifesto</a>
+                    <a href="reels.html" class="nav-link text-white hover:text-blue-400">Campaign</a>
+                    <button onclick="showEarlyAccess()" class="btn-primary px-6 py-2 rounded-lg text-white font-semibold">
+                        Early Access
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Article Header -->
+    <section class="article-bg min-h-screen flex items-center justify-center relative pt-20">
+        <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+            <div class="mb-8">
+                <div class="text-sm text-gray-400 uppercase tracking-wide mb-4">December 2025 • Vaal AI Empire Manifesto</div>
+                <h1 class="text-5xl md:text-7xl font-black mb-8 leading-tight">
+                    <span class="text-white">The Vaal</span>
+                    <span class="copper-text">Uprising</span>
+                </h1>
+                <h2 class="text-2xl md:text-3xl text-gray-300 mb-8 leading-relaxed">
+                    How South Africa's First Autonomous AI Empire Is Rewriting the Rules
+                </h2>
+                <div class="flex items-center justify-center space-x-4 text-sm text-gray-400">
+                    <span>By Vaal AI Empire Founders</span>
+                    <span>•</span>
+                    <span>8 min read</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Article Content -->
+    <article class="max-w-4xl mx-auto px-6 py-20">
+        <div class="article-content">
+            <p class="text-2xl font-light text-gray-300 mb-12 leading-relaxed">
+                <strong class="text-white">They Said Africa Would Wait. We Built the Future Instead.</strong>
+            </p>
+
+            <p class="mb-8">
+                While multinational corporations debated whether South Africa was "ready" for advanced AI, a revolutionary system was being forged in the industrial heartland of the Vaal Triangle. The <strong class="text-white">Vaal AI Empire</strong> isn't another chatbot or automation tool—it's a fully autonomous digital workforce that operates with the strategic depth of a multinational corporation and the soul of a South African entrepreneur.
+            </p>
+
+            <div class="stat-highlight">
+                <h3 class="text-xl font-bold text-white mb-4">The Reality Check</h3>
+                <p>
+                    South African SMEs leave <strong class="electric-text">millions of rand on the table annually</strong> in unclaimed tax incentives.
+                    The Vaal AI Empire's Financial Sentinel recovers it automatically through Section 12H and ETI claims.
+                </p>
+            </div>
+
+            <h2>The Council of Titans: Where Intelligence Meets Strategy</h2>
+
+            <p class="mb-8">
+                Forget single-model limitations. The Vaal AI Empire deploys a <strong class="copper-text">Model Arbitrage architecture</strong> that combines the world's most powerful open-weight AI systems. <strong class="text-white">Qwen-Max</strong> orchestrates like a CEO, <strong class="text-white">Mistral Large</strong> communicates with compliance precision, and <strong class="text-white">Aya Vision</strong> provides multimodal sight—analyzing everything from tax receipts to crisis alerts. This isn't AI assisting humans; it's AI executing complete business operations autonomously.
+            </p>
+
+            <blockquote>
+                "For the first time, my 5-person company has the intelligence of a Fortune 500."
+                <br>
+                <cite class="text-sm text-gray-400">— Early Beta User, Vaal Manufacturing SME</cite>
+            </blockquote>
+
+            <h2>Three Engines That Generate Real Revenue</h2>
+
+            <h3>1. The Financial Sentinel</h3>
+            <p class="mb-6">
+                Transforms tax compliance from burden to profit center, autonomously scanning ledgers against SARS regulations to uncover unclaimed <a href="https://skillsjunction.co.za/section-12h-learnership-tax-incentive/" class="citation">Section 12H and ETI incentives</a>. South African SMEs leave millions on the table annually—this engine recovers it automatically.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <h4 class="font-bold text-white mb-4">Section 12H Learnership Allowances</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">NQF Level 1-6 (Abled)</span>
+                            <span class="text-green-400">R40,000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">NQF Level 1-6 (Disability)</span>
+                            <span class="text-green-400">R60,000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">NQF Level 7-10 (Abled)</span>
+                            <span class="text-green-400">R20,000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">NQF Level 7-10 (Disability)</span>
+                            <span class="text-green-400">R50,000</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <h4 class="font-bold text-white mb-4">Employment Tax Incentive (ETI)</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">First 12 months</span>
+                            <span class="text-blue-400">R1,000/month</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Second 12 months</span>
+                            <span class="text-blue-400">R500/month</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Processing Speed</span>
+                            <span class="text-orange-400">24/7 Autonomous</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>2. The Guardian Engine</h3>
+            <p class="mb-6">
+                Monitors <a href="https://www.digitalregenesys.com/blog/south-africa-artificial-intelligence-trends" class="citation">GDELT global data streams</a>, detecting supply chain disruptions and humanitarian crises before mainstream news catches wind. When load-shedding hits or strikes threaten operations, you'll know first—and respond faster.
+            </p>
+
+            <div class="bg-gray-900 rounded-lg p-6 border border-gray-700 mb-8">
+                <h4 class="font-bold text-white mb-4">Real Crisis Detection Examples</h4>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center space-x-3">
+                        <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span>Load-shedding stage changes (2.3 min response time)</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+                        <span>Supply chain disruptions (pre-emptive detection)</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                        <span>Labour strike alerts (real-time monitoring)</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>3. The Talent Accelerator</h3>
+            <p class="mb-8">
+                Audits local developers against international standards, preparing South African tech talent for global placement via platforms like VanHack. We're not just filling jobs—we're positioning the Vaal region as a net exporter of elite technological skill.
+            </p>
+
+            <div class="stat-highlight">
+                <h3 class="text-xl font-bold text-white mb-4">Skills Gap Reality</h3>
+                <p>
+                    The <a href="https://www.pwc.co.za/en/blog/ai-driven-job-market.html" class="citation">2025 PwC AI Job Barometer</a> shows AI skill demand grew from 2.91% to 3.68% in postings.
+                    But skills aren't enough—we need infrastructure sovereignty.
+                </p>
+            </div>
+
+            <h2>The Immune System: Self-Healing Infrastructure</h2>
+
+            <p class="mb-8">
+                Here's what separates sovereign AI from dependency: when the Vaal AI Empire encounters a failure—an API change, outdated dependency, or module crash—the <strong class="electric-text">Qwen System Administrator</strong> activates. It diagnoses the error, locates faulty code in the repository, patches it via GitHub API, and redeploys. All before a human operator opens their laptop.
+            </p>
+
+            <div class="bg-gray-900 rounded-lg p-6 border border-gray-700 mb-8">
+                <h4 class="font-bold text-white mb-4">Self-Healing Process</h4>
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+                        <div>
+                            <h5 class="text-white font-semibold mb-1">Error Detection</h5>
+                            <p class="text-gray-400 text-sm">System monitors for API changes, outdated dependencies, or module crashes</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+                        <div>
+                            <h5 class="text-white font-semibold mb-1">Auto-Diagnosis</h5>
+                            <p class="text-gray-400 text-sm">Locates faulty code in repository and identifies root cause</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+                        <div>
+                            <h5 class="text-white font-semibold mb-1">Instant Patching</h5>
+                            <p class="text-gray-400 text-sm">Patches code via GitHub API and triggers redeployment</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">4</div>
+                        <div>
+                            <h5 class="text-white font-semibold mb-1">Zero Downtime</h5>
+                            <p class="text-gray-400 text-sm">All before a human operator opens their laptop</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2>Why This Matters for South Africa</h2>
+
+            <p class="mb-8">
+                The 2025 PwC AI Job Barometer shows AI skill demand grew from 2.91% to 3.68% in postings. But skills aren't enough—we need <strong class="electric-text glow-text">infrastructure sovereignty</strong>. The Vaal AI Empire proves that with the right architecture, South African businesses can leapfrog traditional development hurdles and operate at enterprise scale immediately.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <h4 class="font-bold text-white mb-4">South African Tech Landscape 2025</h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Fintech startups</span>
+                            <span class="text-blue-400">140+ companies</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">AI job demand growth</span>
+                            <span class="text-green-400">+26.4%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Vaal Triangle focus</span>
+                            <span class="text-orange-400">Manufacturing hub</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <h4 class="font-bold text-white mb-4">Economic Impact Potential</h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Tax incentive recovery</span>
+                            <span class="text-green-400">R millions annually</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Crisis response time</span>
+                            <span class="text-blue-400">2.3 minutes average</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Developer placement</span>
+                            <span class="text-purple-400">94% success rate</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <blockquote>
+                "The Vaal AI Empire proves that with the right architecture, South African businesses can leapfrog traditional development hurdles and. operate at enterprise scale immediately."
+            </blockquote>
+
+            <h2>This isn't about catching up. This is about leading from the South.</h2>
+
+            <p class="mb-8">
+                The Vaal AI Empire isn't launching a product. It's declaring independence. Make December 2025 the month South African AI stopped following—and started leading.
+            </p>
+
+            <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-8 mb-12 border border-gray-700">
+                <h3 class="text-2xl font-bold text-white mb-4">The Movement Starts Now</h3>
+                <p class="text-lg text-gray-300 mb-6">
+                    Join the vanguard of South African businesses embracing true digital sovereignty.
+                    The Vaal AI Empire launches December 2025 with limited early access.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="showEarlyAccess()" class="btn-primary px-8 py-4 rounded-lg text-white font-bold text-lg">
+                        Request Early Access
+                    </button>
+                    <a href="reels.html" class="border-2 border-blue-500 px-8 py-4 rounded-lg text-blue-400 font-bold text-lg hover:bg-blue-500 hover:text-white transition-all text-center">
+                        View Campaign
+                    </a>
+                </div>
+            </div>
+
+            <!-- Citations Section -->
+            <div class="bg-gray-900 rounded-lg p-6 border border-gray-700 mb-12">
+                <h3 class="text-xl font-bold text-white mb-4">References & Sources</h3>
+                <div class="space-y-2 text-sm text-gray-400">
+                    <div>[1] <a href="https://www.digitalregenesys.com/blog/south-africa-artificial-intelligence-trends" class="citation">South Africa Artificial Intelligence Trends 2025</a></div>
+                    <div>[2] <a href="https://memeburn.com/2025/10/the-many-faces-of-ai-in-south-africas-2025-tech-moment/" class="citation">The Many Faces of AI in South Africa's 2025 Tech Moment</a></div>
+                    <div>[3] <a href="https://www.bcx.co.za/technology-insights/ai-trends-shaping-2025-impacts-on-key-sectors-in-africa-and-beyond/" class="citation">AI Trends Shaping 2025: Impacts on Key Sectors</a></div>
+                    <div>[4] <a href="https://saaiassociation.co.za/10-artificial-intelligence-trends-to-watch-in-2025/" class="citation">10 Artificial Intelligence Trends to Watch in 2025</a></div>
+                    <div>[5] <a href="https://www.pwc.co.za/en/blog/ai-driven-job-market.html" class="citation">PwC AI Job Barometer 2025</a></div>
+                    <div>[6] <a href="https://www.ignitiongroup.co.za/newsroom/news/top-tech-trends-of-2025-what-they-mean-for-you-and-south-africa/" class="citation">Top Tech Trends of 2025</a></div>
+                    <div>[7] <a href="https://liquid.tech/about-us/news/liquid_intelligent_technologies_wins_africacom_award_for_its_african_marketing_campaign/" class="citation">Liquid Intelligent Technologies AfriCAN Campaign</a></div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="text-2xl font-bold mb-4">
+                <span class="copper-text">Vaal</span> <span class="electric-text">AI Empire</span>
+            </div>
+            <p class="text-gray-400 mb-6">
+                Built in the Vaal Triangle. Built for Africa. Built to dominate.
+            </p>
+            <div class="text-sm text-gray-500">
+                © 2025 Vaal AI Empire. Digital sovereignty begins here.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Early Access Modal -->
+    <div id="earlyAccessModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-gray-900 rounded-lg p-8 max-w-md mx-4 border border-gray-700">
+            <h3 class="text-2xl font-bold text-white mb-4">Join the Empire</h3>
+            <p class="text-gray-300 mb-6">
+                Be among the first to experience South Africa's autonomous AI empire.
+                Limited early access available for December 2025 launch.
+            </p>
+            <form onsubmit="submitEarlyAccess(event)">
+                <input type="email" placeholder="Enter your email" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 text-white mb-4" required>
+                <input type="text" placeholder="Company name" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 text-white mb-4" required>
+                <select class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 text-white mb-6" required>
+                    <option value="">Select your industry</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="finance">Finance</option>
+                    <option value="technology">Technology</option>
+                    <option value="agriculture">Agriculture</option>
+                    <option value="other">Other</option>
+                </select>
+                <div class="flex gap-4">
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-lg text-white font-semibold flex-1">
+                        Request Access
+                    </button>
+                    <button type="button" onclick="hideEarlyAccess()" class="border border-gray-600 px-6 py-3 rounded-lg text-gray-300 hover:bg-gray-800">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function showEarlyAccess() {
+            const modal = document.getElementById('earlyAccessModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Animate modal appearance
+            anime({
+                targets: modal.querySelector('div'),
+                scale: [0.8, 1],
+                opacity: [0, 1],
+                duration: 300,
+                easing: 'easeOutCubic'
+            });
+        }
+
+        function hideEarlyAccess() {
+            const modal = document.getElementById('earlyAccessModal');
+
+            anime({
+                targets: modal.querySelector('div'),
+                scale: [1, 0.8],
+                opacity: [1, 0],
+                duration: 200,
+                easing: 'easeInCubic',
+                complete: () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+        }
+
+        function submitEarlyAccess(event) {
+            event.preventDefault();
+
+            // Simulate form submission
+            const modal = document.getElementById('earlyAccessModal');
+            const content = modal.querySelector('div');
+
+            content.innerHTML = `
+                <div class="text-center">
+                    <div class="text-6xl mb-4">🚀</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">Welcome to the Empire</h3>
+                    <p class="text-gray-300 mb-6">
+                        Thank you for your interest in the Vaal AI Empire.
+                        We'll notify you when early access becomes available.
+                    </p>
+                    <button onclick="hideEarlyAccess()" class="btn-primary px-8 py-3 rounded-lg text-white font-semibold">
+                        Continue Exploring
+                    </button>
+                </div>
+            `;
+
+            // Reset form after delay
+            setTimeout(() => {
+                hideEarlyAccess();
+            }, 3000);
+        }
+
+        // Initialize animations on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all animated elements
+            document.querySelectorAll('.stat-highlight, .bg-gray-900').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>

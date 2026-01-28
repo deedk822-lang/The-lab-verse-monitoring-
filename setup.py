@@ -1,22 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-
-from setuptools import setup, find_packages
-
-setup(
     name="rainmaker-orchestrator",
     version="0.1.0",
     description="AI-powered task orchestration and self-healing system",
     author="Your Name",
     author_email="your.email@example.com",
-
-    # SRC-LAYOUT CONFIGURATION
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-
     python_requires=">=3.10",
-
     install_requires=[
         "fastapi>=0.109.2",
         "uvicorn[standard]>=0.27.1",
@@ -29,7 +21,6 @@ setup(
         "PyYAML>=6.0.1",
         "python-dotenv>=1.0.1",
     ],
-
     extras_require={
         "dev": [
             "pytest>=8.0.0",
@@ -39,13 +30,11 @@ setup(
             "mypy>=1.8.0",
         ]
     },
-
     entry_points={
         "console_scripts": [
             "rainmaker=rainmaker_orchestrator.cli:main",
         ],
     },
-
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

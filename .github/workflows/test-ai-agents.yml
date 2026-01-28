@@ -1,9 +1,10 @@
+---
 name: Test AI Agents
 
 on:
   schedule:
     - cron: '0 */6 * * *'  # Run every 6 hours
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch: {}  # Manual trigger
 
 jobs:
   test:

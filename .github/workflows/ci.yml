@@ -1,3 +1,4 @@
+---
 name: CI/CD Pipeline
 
 on:
@@ -9,7 +10,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 env:
   NODE_VERSION: '20'
@@ -200,7 +201,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}`
+              body: '✅ Preview deployed: ${{ steps.deploy.outputs.preview-url }}'
             })
 
   # ========== Deploy: Production Environment ==========
@@ -212,7 +213,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://the-lab-verse-monitoring.vercel.app
+      url: >-
+        https://the-lab-verse-monitoring.vercel.app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -277,9 +279,11 @@ jobs:
     steps:
       - name: Send notification
         run: |
-          if [ "${{ needs.deploy-preview.result }}" = "failure" ] || [ "${{ needs.deploy-production.result }}" = "failure" ]; then
+          if [ "${{ needs.deploy-preview.result }}" = "failure" ] || \\
+             [ "${{ needs.deploy-production.result }}" = "failure" ]; then
             echo "❌ Pipeline failed: ${{ github.workflow }}"
-            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Run: $RUN_URL"
             exit 1
           else
             echo "✅ Pipeline completed successfully"

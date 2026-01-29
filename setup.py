@@ -1,56 +1,29 @@
 from setuptools import setup, find_packages
 
 setup(
-
-from setuptools import setup, find_packages
-
-setup(
-    name="rainmaker-orchestrator",
-    version="0.1.0",
-    description="AI-powered task orchestration and self-healing system",
-    author="Your Name",
-    author_email="your.email@example.com",
-
-    # SRC-LAYOUT CONFIGURATION
+    name="pr-fix-agent",
+    version="1.0.0",
+    author="PR Fix Agent Team",
+    description="AI-powered PR error fixing with Ollama",
+    python_requires=">=3.8",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-
-    python_requires=">=3.10",
-
     install_requires=[
-        "fastapi>=0.109.2",
-        "uvicorn[standard]>=0.27.1",
-        "pydantic>=2.6.1",
-        "pydantic-settings>=2.1.0",
-        "openai>=1.12.0",
-        "redis[hiredis]>=5.2.1",
-        "httpx>=0.26.0",
-        "prometheus-client>=0.19.0",
-        "PyYAML>=6.0.1",
-        "python-dotenv>=1.0.1",
+        "requests>=2.28.0",
+        "pytest>=7.0.0",
+        "psutil>=5.9.0",
     ],
-
     extras_require={
         "dev": [
-            "pytest>=8.0.0",
-            "pytest-asyncio>=0.23.5",
-            "pytest-cov>=4.1.0",
-            "black>=24.3.0",
-            "mypy>=1.8.0",
-        ]
-    },
-
-    entry_points={
-        "console_scripts": [
-            "rainmaker=rainmaker_orchestrator.cli:main",
+            "pytest-cov>=3.0.0",
+            "black>=22.0.0",
+            "ruff>=0.0.250",
+            "mypy>=0.990",
         ],
     },
-
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-    ],
+    entry_points={
+        "console_scripts": [
+            "pr-fix-agent=pr_fix_agent.production:main",
+        ],
+    },
 )

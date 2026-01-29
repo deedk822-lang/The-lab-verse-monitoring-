@@ -8,56 +8,16 @@ import re
 from pathlib import Path
 import tempfile
 import shutil
+import sys
 
-
-class SecurityValidator:
-    """Real security validator implementation"""
-
-    def __init__(self, repo_path: Path):
-        self.repo_path = Path(repo_path).resolve()
-
-    def validate_path(self, user_path: str) -> Path:
-        """Validate and sanitize file paths"""
-        # Resolve the path
-        try:
-            target_path = (self.repo_path / user_path).resolve()
-        except Exception:
-            raise SecurityError(f"Invalid path: {user_path}")
-
-        # Check if it's within repo
-        try:
-            target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
-
-        return target_path
-
-    def validate_module_name(self, module_name: str) -> str:
-        """Validate Python module names"""
-        # Check for shell metacharacters
-        dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r']
-        if any(char in module_name for char in dangerous_chars):
-            raise SecurityError(f"Dangerous characters in module name: {module_name}")
-
-        # Check length
-        if len(module_name) > 100:
-            raise SecurityError(f"Module name too long: {len(module_name)} chars")
-
-        # Validate format (alphanumeric, dash, underscore, dot)
-        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', module_name):
-            raise SecurityError(f"Invalid module name format: {module_name}")
-
-        return module_name
-
-    def validate_file_extension(self, filename: str) -> bool:
-        """Check if file extension is allowed"""
-        allowed = ['.py', '.txt', '.md', '.yml', '.yaml', '.json', '.toml', '.cfg']
-        return any(filename.endswith(ext) for ext in allowed)
-
-
-class SecurityError(Exception):
-    """Security validation error"""
-    pass
+# Import from proper src/ directory
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+try:
+    from security import SecurityValidator, SecurityError
+except ImportError:
+    # Fallback for direct execution if src not in path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.security import SecurityValidator, SecurityError
 
 
 # ============================================================================
@@ -87,7 +47,7 @@ class TestSecurityValidator:
         """Test: Safe relative path should be allowed"""
         # Create a safe file
         safe_file = temp_repo / "config" / "test.yml"
-        safe_file.parent.mkdir(parents=True)
+        safe_file.parent.mkdir(parents=True, exist_ok=True)
         safe_file.touch()
 
         # Validate
@@ -137,7 +97,7 @@ class TestSecurityValidator:
         """Test: Path normalization prevents bypasses"""
         # Create test structure
         test_dir = temp_repo / "test"
-        test_dir.mkdir()
+        test_dir.mkdir(exist_ok=True)
         (test_dir / "file.txt").touch()
 
         # These should all resolve to same safe path
@@ -165,10 +125,9 @@ class TestSecurityValidator:
             link_path.symlink_to(external.name)
 
             # Should resolve but still be validated
-            result = validator.validate_path("innocent.txt")
-
             # If symlink points outside, should fail
-            # (implementation depends on follow_symlinks setting)
+            with pytest.raises(SecurityError):
+                validator.validate_path("innocent.txt")
 
         except OSError:
             pytest.skip("Symlink creation not supported")

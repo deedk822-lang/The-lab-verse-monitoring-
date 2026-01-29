@@ -6,123 +6,17 @@ Tests actual log parsing and error analysis
 import pytest
 from unittest.mock import Mock
 import re
+import sys
+from pathlib import Path
 
-
-# Inline implementation for testing
-class PRErrorAnalyzer:
-    """Real analyzer implementation"""
-
-    def __init__(self, agent):
-        self.agent = agent
-
-    def parse_github_actions_log(self, log_content):
-        """Parse GitHub Actions log to extract errors and warnings"""
-        errors = []
-        warnings = []
-
-        error_patterns = [
-            r"Error: (.+)",
-            r"ERROR: (.+)",
-            r"fatal: (.+)",
-            r"Failed (.+)",
-            r"Exception: (.+)",
-            r"\[ERROR\] (.+)",
-            r"ImportError: (.+)",
-            r"SyntaxError: (.+)",
-        ]
-
-        warning_patterns = [
-            r"Warning: (.+)",
-            r"WARN: (.+)",
-            r"\[WARN\] (.+)",
-            r"DeprecationWarning: (.+)",
-        ]
-
-        for line in log_content.split('\n'):
-            # Check errors
-            for pattern in error_patterns:
-                match = re.search(pattern, line, re.IGNORECASE)
-                if match:
-                    errors.append(line.strip())
-                    break
-
-            # Check warnings
-            for pattern in warning_patterns:
-                match = re.search(pattern, line, re.IGNORECASE)
-                if match:
-                    warnings.append(line.strip())
-                    break
-
-        return {
-            "errors": errors,
-            "warnings": warnings
-        }
-
-    def analyze_error(self, error):
-        """Analyze specific error using agent"""
-        prompt = f"""Analyze this error and provide:
-1. Root cause
-2. Suggested fix
-3. Code changes needed
-
-Error: {error}"""
-
-        response = self.agent.query(prompt)
-
-        return {
-            "error": error,
-            "analysis": response,
-            "root_cause": self._extract_root_cause(response),
-            "suggested_fix": self._extract_fix(response)
-        }
-
-    def _extract_root_cause(self, analysis):
-        """Extract root cause from analysis"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'root cause' in line or 'cause:' in line:
-                return line.strip()
-        return "Unknown"
-
-    def _extract_fix(self, analysis):
-        """Extract suggested fix from analysis"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'fix' in line or 'solution' in line:
-                return line.strip()
-        return "No fix suggested"
-
-    def categorize_error(self, error):
-        """Categorize error type"""
-        error_lower = error.lower()
-
-        if 'not found' in error_lower or 'no such file' in error_lower:
-            return 'missing_file'
-        elif 'no module named' in error_lower or 'importerror' in error_lower:
-            return 'missing_module'
-        elif 'syntaxerror' in error_lower or 'invalid syntax' in error_lower:
-            return 'syntax_error'
-        elif 'submodule' in error_lower:
-            return 'submodule_error'
-        elif 'permission denied' in error_lower:
-            return 'permission_error'
-        elif 'timeout' in error_lower or 'timed out' in error_lower:
-            return 'timeout_error'
-        else:
-            return 'unknown'
-
-    def get_error_severity(self, error):
-        """Determine error severity"""
-        error_lower = error.lower()
-
-        if 'fatal' in error_lower or 'critical' in error_lower:
-            return 'critical'
-        elif 'error' in error_lower:
-            return 'high'
-        elif 'warning' in error_lower:
-            return 'low'
-        else:
-            return 'medium'
+# Import from proper src/ directory
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+try:
+    from analyzer import PRErrorAnalyzer
+except ImportError:
+    # Fallback for direct execution
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.analyzer import PRErrorAnalyzer
 
 
 # ============================================================================

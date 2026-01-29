@@ -8,9 +8,21 @@ import re
 from pathlib import Path
 import tempfile
 import shutil
+import sys
 
+ fix-conventional-packaging-3798037865076663820
 # Conventional import from src
 from pr_fix_agent.security import SecurityValidator, SecurityError
+
+# Import from proper src/ directory
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+try:
+    from security import SecurityValidator, SecurityError
+except ImportError:
+    # Fallback for direct execution if src not in path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.security import SecurityValidator, SecurityError
+ main
 
 
 # ============================================================================
@@ -40,7 +52,7 @@ class TestSecurityValidator:
         """Test: Safe relative path should be allowed"""
         # Create a safe file
         safe_file = temp_repo / "config" / "test.yml"
-        safe_file.parent.mkdir(parents=True)
+        safe_file.parent.mkdir(parents=True, exist_ok=True)
         safe_file.touch()
 
         # Validate
@@ -91,7 +103,7 @@ class TestSecurityValidator:
         """Test: Path normalization prevents bypasses"""
         # Create test structure
         test_dir = temp_repo / "test"
-        test_dir.mkdir()
+        test_dir.mkdir(exist_ok=True)
         (test_dir / "file.txt").touch()
 
         # These should all resolve to same safe path
@@ -118,8 +130,14 @@ class TestSecurityValidator:
         try:
             link_path.symlink_to(external.name)
 
+ fix-conventional-packaging-3798037865076663820
             # Should resolve and be detected as traversal since it points outside
             with pytest.raises(SecurityError, match="Path traversal detected"):
+
+            # Should resolve but still be validated
+            # If symlink points outside, should fail
+            with pytest.raises(SecurityError):
+ main
                 validator.validate_path("innocent.txt")
 
         except OSError:

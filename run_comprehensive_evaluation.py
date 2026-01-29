@@ -2,25 +2,33 @@
 """
 MASTER EXECUTION SCRIPT
 Runs complete evaluation, benchmarking, and improvement pipeline
+PRODUCTION-READY: No shell=True, proper argument lists
 """
 
 import subprocess
 import sys
 import json
+import shlex
 from pathlib import Path
 from datetime import datetime
 
 
 def run_command(cmd, description):
-    """Run command and report results"""
+    """Run command and report results (Security: No shell=True)"""
     print(f"\n{'='*70}")
     print(f"▶ {description}")
     print(f"{'='*70}")
 
     try:
+        # Security: Convert string to argument list, never use shell=True
+        if isinstance(cmd, str):
+            cmd_list = shlex.split(cmd)
+        else:
+            cmd_list = cmd
+
         result = subprocess.run(
-            cmd,
-            shell=True,
+            cmd_list,
+            shell=False,  # Security: Always False
             capture_output=True,
             text=True,
             timeout=300

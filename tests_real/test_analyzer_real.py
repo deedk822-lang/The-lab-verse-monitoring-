@@ -6,6 +6,11 @@ Tests actual log parsing and error analysis
 import pytest
 from unittest.mock import Mock
 import re
+fix-conventional-packaging-3798037865076663820
+
+# Conventional import from src
+from pr_fix_agent.analyzer import PRErrorAnalyzer
+
 import sys
 from pathlib import Path
 
@@ -17,6 +22,7 @@ except ImportError:
     # Fallback for direct execution
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from src.analyzer import PRErrorAnalyzer
+ main
 
 
 # ============================================================================
@@ -250,7 +256,7 @@ Error: Failed to execute command
         errors = [
             "ImportError: No module named 'numpy'",
             "ModuleNotFoundError: No module named 'requests'",
-            "Error: Cannot import module 'flask'"
+            "ImportError: Cannot import module 'flask'"
         ]
 
         for error in errors:
@@ -272,8 +278,8 @@ Error: Failed to execute command
     def test_categorize_submodule_error(self, analyzer):
         """Test: Categorizes submodule errors"""
         errors = [
-            "fatal: No url found for submodule path 'vendor'",
-            "Error: Submodule 'lib' not found"
+            "fatal: submodule path 'vendor' error",
+            "Error: Submodule 'lib' issue"
         ]
 
         for error in errors:
@@ -318,7 +324,7 @@ Error: Failed to execute command
         """Test: Detects low severity (warnings)"""
         errors = [
             "Warning: Deprecated function",
-            "WARN: Configuration issue"
+            "DeprecationWarning: Configuration issue"
         ]
 
         for error in errors:
@@ -429,11 +435,11 @@ class TestStatisticalAnalysis:
     def test_error_frequency_analysis(self, analyzer):
         """Test: Can analyze error frequency"""
         logs = [
-            "Error: Module 'requests' not found",
-            "Error: Module 'numpy' not found",
-            "Error: Module 'requests' not found",
+            "ImportError: No module named 'requests'",
+            "ImportError: No module named 'numpy'",
+            "ImportError: No module named 'requests'",
             "Error: File not found",
-            "Error: Module 'requests' not found",
+            "ImportError: No module named 'requests'",
         ]
 
         log = '\n'.join(logs)

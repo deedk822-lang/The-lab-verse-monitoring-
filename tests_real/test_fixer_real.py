@@ -12,31 +12,12 @@ import re
 
 
 # Import the actual code we're testing
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "outputs"))
+# sys.path manipulation removed for conventional imports
 
 try:
-    from pr_fix_agent import PRErrorFixer, OllamaAgent
+    from pr_fix_agent.analyzer import PRErrorFixer, OllamaAgent
 except ImportError:
     # Fallback implementation for testing
-    class OllamaAgent:
-        def __init__(self, model="test"):
-            self.model = model
-
-        def query(self, prompt, temperature=0.2):
-            # Return realistic mock responses based on prompt
-            if "missing file" in prompt or "test" in prompt:
-                return '''```python
-#!/usr/bin/env python3
-def main():
-    print("Test implementation")
-    return 0
-
-if __name__ == "__main__":
-    main()
-```'''
-            return "# Generated code"
-
     class PRErrorFixer:
         def __init__(self, agent, repo_path="."):
             self.agent = agent
@@ -125,6 +106,26 @@ if __name__ == "__main__":
 # REAL TESTS
 # ============================================================================
 
+class MockOllamaAgent:
+    """Mock agent for testing"""
+    def __init__(self, model="test"):
+        self.model = model
+
+    def query(self, prompt, temperature=0.2):
+        # Return realistic mock responses based on prompt
+        if "Generate code" in prompt or "test" in prompt:
+            return '''```python
+#!/usr/bin/env python3
+def main():
+    print("Test implementation")
+    return 0
+
+if __name__ == "__main__":
+    main()
+```'''
+        return "# Generated code"
+
+
 class TestPRErrorFixerReal:
     """Real tests that validate actual fixing behavior"""
 
@@ -138,7 +139,7 @@ class TestPRErrorFixerReal:
     @pytest.fixture
     def agent(self):
         """Create mock Ollama agent"""
-        return OllamaAgent(model="test")
+        return MockOllamaAgent(model="test")
 
     @pytest.fixture
     def fixer(self, agent, temp_repo):

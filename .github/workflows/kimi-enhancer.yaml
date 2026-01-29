@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       task:
-        description: 'Task for Kimi (e.g., "Implement comprehensive security package")'
+        description: 'Task for the agent (e.g., "Improve CI integrity")'
         required: true
         default: 'Analyze and improve codebase'
       mode:
@@ -18,6 +18,14 @@ on:
         description: 'Branch name for PR (auto-generated if empty)'
         required: false
         default: 'kimi-enhancement'
+      install_ollama:
+        description: 'Install and start Ollama (no placeholder config committed)'
+        type: boolean
+        default: true
+      ollama_model:
+        description: 'Model to pull (optional); leave empty to skip pull'
+        required: false
+        default: ''
       run_security_scan:
         description: 'Run security scan before PR'
         type: boolean
@@ -35,15 +43,19 @@ env:
   PYTHON_VERSION: '3.10'
   KIMI_CONTEXT_FILE: '.github/kimi-context.yaml'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   enhance:
-    name: Kimi AI Enhancement
+    name: Enhancement
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.changes.outputs.has_changes }}
       branch_name: ${{ steps.branch.outputs.name }}
       pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -51,72 +63,90 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
-      
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-      
-      - name: 📦 Install dependencies
+
+      - name: 📦 Install Python tooling
         run: |
+          python -m pip install --upgrade pip
           pip install black isort flake8 pytest
-      
+
+      - name: 🦙 Install & start Ollama
+        if: github.event.inputs.install_ollama == 'true'
+        run: |
+          set -euo pipefail
+          curl -fsSL https://ollama.com/install.sh | sudo -E sh
+          ollama --version
+
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+              echo "✅ Ollama is running"
+              break
+            fi
+            sleep 1
+          done
+
+          if [ -n "${{ github.event.inputs.ollama_model }}" ]; then
+            echo "Pulling model: ${{ github.event.inputs.ollama_model }}"
+            ollama pull "${{ github.event.inputs.ollama_model }}"
+          else
+            echo "No ollama_model provided; skipping pull"
+          fi
+
       - name: 🔐 Configure Git
         run: |
           git config --global user.name "Kimi AI Bot"
           git config --global user.email "kimi-ai@vaal-empire.bot"
-      
+
       - name: 🌿 Create working branch
         id: branch
         run: |
+          set -euo pipefail
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           BRANCH_NAME="${{ github.event.inputs.branch_name }}-${TIMESTAMP}"
-          git checkout -b $BRANCH_NAME
+          git checkout -b "$BRANCH_NAME"
           echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "✅ Created branch: $BRANCH_NAME"
-      
-      - name: 🤖 Simulate Kimi Task (placeholder)
-        id: kimi
+
+      - name: 🧾 Record requested task
         run: |
-          echo "📋 Task: ${{ github.event.inputs.task }}"
-          echo "ℹ️  Kimi CLI execution would happen here"
-          echo "✅ Task simulation complete"
-      
+          printf "%s\n" "Task: ${{ github.event.inputs.task }}" > .github/last-agent-task.txt
+
       - name: 🔍 Check for changes
         id: changes
         run: |
           git add -A
           if git diff --cached --quiet; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No changes detected"
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "✅ Changes detected"
             git diff --cached --stat
           fi
-      
+
       - name: 🎨 Auto-fix formatting
         if: steps.changes.outputs.has_changes == 'true' && github.event.inputs.auto_fix_issues == 'true'
+        continue-on-error: true
         run: |
-          black . || true
-          isort . || true
+          black .
+          isort .
           git add -A
-      
+
       - name: 💾 Commit changes
         if: steps.changes.outputs.has_changes == 'true'
         run: |
-          git commit -m "🤖 Kimi AI: ${{ github.event.inputs.task }}
-          
-          Automated enhancement
-          Workflow: ${{ github.run_id }}
-          By: @${{ github.actor }}"
-      
+          git commit -m "chore: ${{ github.event.inputs.task }}" \
+            -m "Workflow: ${{ github.run_id }}" \
+            -m "By: @${{ github.actor }}"
+
       - name: 🚀 Push changes
         if: steps.changes.outputs.has_changes == 'true'
         run: |
           git push origin ${{ steps.branch.outputs.name }}
-      
+
       - name: 📤 Create Pull Request
         if: steps.changes.outputs.has_changes == 'true' && github.event.inputs.mode == 'create-pr'
         id: create_pr
@@ -124,26 +154,17 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.branch.outputs.name }}
-          title: "🤖 Kimi AI: ${{ github.event.inputs.task }}"
+          title: "🤖 Agent: ${{ github.event.inputs.task }}"
           body: |
             ## 🤖 Automated Enhancement
-            
+
             **Task:** ${{ github.event.inputs.task }}
             **Triggered by:** @${{ github.actor }}
             **Workflow:** [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
-            ### ✅ Quality Checks
-            - [x] Code formatted
-            - [ ] Security scan (running...)
-            - [ ] Tests (running...)
-            
-            ### 🔐 Security Review
-            - [ ] No hardcoded secrets
-            - [ ] Input sanitization
-            - [ ] SSRF protection
-            
-            ---
-            *🤖 Auto-generated by Kimi CLI*
+
+            Notes:
+            - No placeholder config committed
+            - Failures are not masked
           labels: |
             automated
             kimi-ai
@@ -154,52 +175,54 @@ jobs:
     needs: enhance
     if: needs.enhance.outputs.has_changes == 'true' && github.event.inputs.run_security_scan == 'true'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.enhance.outputs.branch_name }}
-      
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: 🔒 Install security tools
         run: |
+          python -m pip install --upgrade pip
           pip install safety bandit
-      
+
       - name: 🛡️ Run Safety check
         run: |
-          safety check || true
-      
+          safety check
+
       - name: 🔍 Run Bandit
         run: |
-          bandit -r vaal_ai_empire agent -ll || true
+          bandit -r src/pr_fix_agent -ll
 
   test-suite:
     name: Run Tests
     needs: enhance
     if: needs.enhance.outputs.has_changes == 'true' && github.event.inputs.run_tests == 'true'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.enhance.outputs.branch_name }}
-      
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: 📦 Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pip install -e .
-      
+
       - name: 🧪 Run tests
         run: |
-          pytest -v --cov || true
+          pytest -v --cov=src --cov-report=term-missing

@@ -10,11 +10,11 @@ setup(
     packages=find_packages(where="src"),
     install_requires=[
         "requests>=2.28.0",
-        "pytest>=7.0.0",
         "psutil>=5.9.0",
     ],
     extras_require={
         "dev": [
+            "pytest>=7.0.0",
             "pytest-cov>=3.0.0",
             "black>=22.0.0",
             "ruff>=0.0.250",

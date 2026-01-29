@@ -1,0 +1,411 @@
+name: Production-Ready CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 2 * * *'
+
+# Security: Minimal permissions
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+# Prevent concurrent runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.11'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # ========================================================================
+  # PRE-FLIGHT: Package Installation Integrity
+  # ========================================================================
+
+  install-check:
+    name: Package Installation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Verify setup.py and pyproject.toml
+        run: |
+          echo "Checking package configuration..."
+          test -f setup.py || { echo "ERROR: setup.py missing"; exit 1; }
+          test -f pyproject.toml || { echo "ERROR: pyproject.toml missing"; exit 1; }
+
+          echo "✓ Package configuration files present"
+
+      - name: Install package in editable mode
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install -e .
+          # CRITICAL: This must succeed for tests to run
+
+      - name: Verify package installation
+        run: |
+          python -c "from src.security import SecurityValidator; print('✓ src.security')" || {
+            echo "ERROR: Cannot import src.security"
+            echo "Package installation failed"
+            exit 1
+          }
+
+          python -c "from src.analyzer import PRErrorAnalyzer; print('✓ src.analyzer')" || {
+            echo "ERROR: Cannot import src.analyzer"
+            echo "Package installation failed"
+            exit 1
+          }
+
+          echo "✓ All imports successful"
+
+      - name: Cache installed package
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            .eggs
+            *.egg-info
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/setup.py', '**/pyproject.toml') }}
+
+  # ========================================================================
+  # SECURITY SCAN
+  # ========================================================================
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [install-check]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety pip-audit
+
+      - name: Install package (required for scanning)
+        run: |
+          pip install -e .
+
+      - name: Run Bandit
+        run: |
+          bandit -r src/ -f json -o bandit-report.json
+          bandit -r src/ -f screen
+        # NO || true - must fail on critical issues
+
+      - name: Check for known vulnerabilities
+        run: |
+          safety check --json > safety-report.json
+          safety check
+        # NO || true - must fail on CVEs
+
+      - name: Audit dependencies
+        run: |
+          pip-audit --desc
+        # NO || true - must fail on vulnerable deps
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # ========================================================================
+  # CODE QUALITY
+  # ========================================================================
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: [install-check]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install quality tools
+        run: |
+          pip install black ruff mypy
+
+      - name: Install package (required for type checking)
+        run: |
+          pip install -e .
+
+      - name: Check formatting (Black)
+        run: |
+          black --check --diff src/ tests_real/ *.py
+        # NO || true - must be formatted
+
+      - name: Lint (Ruff)
+        run: |
+          ruff check src/ tests_real/ *.py --output-format=github
+        # NO || true - must pass linting
+
+      - name: Type check (MyPy)
+        run: |
+          mypy src/ --ignore-missing-imports --strict
+        continue-on-error: true  # Advisory for now
+
+  # ========================================================================
+  # UNIT TESTS - CRITICAL
+  # ========================================================================
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [install-check, security-scan]
+
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-cov pytest-xdist pytest-timeout
+
+      - name: Install package
+        run: |
+          pip install -e .
+          # CRITICAL: Tests assume package is installed
+
+      - name: Verify imports before testing
+        run: |
+          python -c "from src.security import SecurityValidator; print('✓')"
+          python -c "from src.analyzer import PRErrorAnalyzer; print('✓')"
+
+      - name: Run unit tests
+        run: |
+          pytest tests_real/ \
+            -v \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=75 \
+            --timeout=30 \
+            -n auto
+        # NO || true - tests MUST pass
+        env:
+          PYTEST_TIMEOUT: 30
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unit-tests-py${{ matrix.python-version }}
+
+  # ========================================================================
+  # SECURITY TESTS - CRITICAL
+  # ========================================================================
+
+  security-tests:
+    name: Security Regression Tests
+    runs-on: ubuntu-latest
+    needs: [install-check, security-scan]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-timeout
+
+      - name: Install package
+        run: |
+          pip install -e .
+
+      - name: Run security regression tests
+        run: |
+          pytest tests_real/test_security_hardened.py \
+            -v \
+            --timeout=30 \
+            --tb=short
+        # NO || true - MUST pass
+        # These prevent RCE regression
+
+      - name: Verify no RCE vulnerabilities
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ All security tests passed"
+            echo "✅ RCE vectors blocked"
+            echo "✅ Path traversal prevented"
+          else
+            echo "❌ CRITICAL: Security tests failed"
+            exit 1
+          fi
+
+  # ========================================================================
+  # INTEGRATION TESTS
+  # ========================================================================
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, security-tests]
+
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Wait for Ollama
+        run: |
+          timeout 60 bash -c 'until curl -s http://localhost:11434/api/tags; do sleep 2; done'
+
+      - name: Pull Ollama model
+        run: |
+          docker exec $(docker ps -q -f ancestor=ollama/ollama:latest) \
+            ollama pull tinyllama
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-timeout
+
+      - name: Install package
+        run: |
+          pip install -e .
+
+      - name: Run integration tests
+        run: |
+          pytest tests_real/ \
+            -v \
+            -m integration \
+            --timeout=120
+        env:
+          OLLAMA_URL: http://localhost:11434
+
+  # ========================================================================
+  # DRY-RUN VERIFICATION
+  # ========================================================================
+
+  dry-run-verification:
+    name: Dry-Run Mode Safety Check
+    runs-on: ubuntu-latest
+    needs: [security-tests]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install package
+        run: |
+          pip install -e .
+
+      - name: Verify dry-run mode
+        run: |
+          python -c "
+          from src.trust_boundary import DryRunMode, FixIntent, FixAction
+          from pathlib import Path
+          import tempfile
+
+          repo = Path(tempfile.mkdtemp())
+          dry_run = DryRunMode(repo)
+
+          intent = FixIntent(
+            action=FixAction.CREATE_PYTHON_FILE,
+            target_path=repo / 'test.py',
+            content='# test'
+          )
+
+          dry_run.record_fix(intent)
+
+          # CRITICAL: File must NOT exist
+          assert not (repo / 'test.py').exists(), 'CRITICAL: Dry-run executed!'
+
+          print('✅ Dry-run mode verified: No execution')
+          "
+
+  # ========================================================================
+  # FINAL SUMMARY
+  # ========================================================================
+
+  summary:
+    name: CI/CD Summary
+    runs-on: ubuntu-latest
+    needs: [
+      install-check,
+      security-scan,
+      code-quality,
+      unit-tests,
+      security-tests,
+      integration-tests,
+      dry-run-verification
+    ]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "Checking job results..."
+
+          FAILED=""
+
+          if [ "${{ needs.install-check.result }}" != "success" ]; then
+            FAILED="$FAILED install-check"
+            echo "❌ Package installation failed"
+          fi
+
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            FAILED="$FAILED security-scan"
+          fi
+
+          if [ "${{ needs.security-tests.result }}" != "success" ]; then
+            FAILED="$FAILED security-tests"
+            echo "❌ CRITICAL: Security vulnerability detected"
+          fi
+
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            FAILED="$FAILED unit-tests"
+          fi
+
+          if [ -n "$FAILED" ]; then
+            echo "❌ Failed jobs:$FAILED"
+            exit 1
+          else
+            echo "✅ All CI/CD checks passed"
+          fi

@@ -6,8 +6,7 @@ setup(
     author="PR Fix Agent Team",
     description="AI-powered PR error fixing with Ollama",
     python_requires=">=3.8",
-    package_dir={"": "src"},
-    packages=find_packages(where="src"),
+    packages=["src"],
     install_requires=[
         "requests>=2.28.0",
         "pytest>=7.0.0",
@@ -23,7 +22,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "pr-fix-agent=pr_fix_agent.production:main",
+            "pr-fix-agent=src.production:main",
         ],
     },
 )

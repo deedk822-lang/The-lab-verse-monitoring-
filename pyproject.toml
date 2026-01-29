@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-pr-fix-agent = "pr_fix_agent.production:main"
+pr-fix-agent = "src.production:main"
 pr-benchmark = "benchmarking_real:main"
 pr-improve = "continuous_improvement_real:main"
 
@@ -50,11 +50,10 @@ Repository = "https://github.com/your-org/pr-fix-agent"
 "Bug Tracker" = "https://github.com/your-org/pr-fix-agent/issues"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}}
+packages = ["src"]
 
 [tool.setuptools.package-data]
-pr_fix_agent = ["*.py"]
+src = ["*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests_real"]

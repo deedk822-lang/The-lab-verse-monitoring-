@@ -1,6 +1,8 @@
 """
 REAL Tests for PRErrorFixer
 These tests actually validate fixing functionality
+
+CI/CD Ready: No sys.path hacks, proper package imports
 """
 
 import pytest
@@ -9,104 +11,9 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 import re
-import sys
 
-# Import the actual code we're testing
- fix-conventional-packaging-3798037865076663820
-# sys.path manipulation removed for conventional imports
-
-try:
-    from pr_fix_agent.analyzer import PRErrorFixer, OllamaAgent
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-try:
-    from pr_fix_agent_production import PRErrorFixer, OllamaAgent
- main
-except ImportError:
-    # Fallback implementation for testing
-    class PRErrorFixer:
-        def __init__(self, agent, repo_path="."):
-            self.agent = agent
-            self.repo_path = Path(repo_path)
-            # Minimal security for fallback
-            from src.security import SecurityValidator
-            self.security = SecurityValidator(self.repo_path)
-
-        def fix_missing_file_error(self, error):
-            file_match = re.search(r"['\"](.*?)['\"].*not found", error, re.IGNORECASE)
-            if not file_match:
-                return None
-
-            filename = file_match.group(1)
-
-            # Security: Validate path
-            try:
-                file_path = self.security.validate_path(filename)
-            except:
-                return None
-
-            prompt = f"Generate code for {filename}"
-            code = self.agent.query(prompt, temperature=0.1)
-
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-
-            code_clean = self._extract_code_block(code)
-
-            with open(file_path, 'w') as f:
-                f.write(code_clean)
-
-            return str(file_path)
-
-        def fix_submodule_error(self, error):
-            if "No url found for submodule" in error:
-                submodule_match = re.search(r"submodule path '(.+?)'", error)
-                if submodule_match:
-                    submodule_name = submodule_match.group(1)
-
-                    gitmodules_path = self.repo_path / ".gitmodules"
-                    if gitmodules_path.exists():
-                        with open(gitmodules_path, 'r') as f:
-                            content = f.read()
-
-                        pattern = rf'\[submodule "{re.escape(submodule_name)}"\].*?(?=\[|$)'
-                        new_content = re.sub(pattern, '', content, flags=re.DOTALL)
-
-                        with open(gitmodules_path, 'w') as f:
-                            f.write(new_content)
-
-                        return f"Removed broken submodule reference: {submodule_name}"
-
-            return None
-
-        def fix_missing_dependency(self, error):
-            module_match = re.search(r"No module named ['\"](.*?)['\"]", error)
-            if not module_match:
-                return None
-
-            module_name = module_match.group(1)
-
-            # Security: Validate module name
-            if not re.match(r'^[a-zA-Z0-9_\-\.]+$', module_name):
-                return None
-
-            req_file = self.repo_path / "requirements.txt"
-            if req_file.exists():
-                with open(req_file, 'r') as f:
-                    current_deps = f.read()
-
-                if module_name not in current_deps:
-                    with open(req_file, 'a') as f:
-                        f.write(f"\n{module_name}\n")
-                    return f"Added {module_name} to requirements.txt"
-
-            return None
-
-        def _extract_code_block(self, text):
-            code_block_match = re.search(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
-            if code_block_match:
-                return code_block_match.group(1).strip()
-            return text.strip()
+# Production import: Package must be installed with 'pip install -e .'
+from src.analyzer import PRErrorFixer, OllamaAgent
 
 
 # ============================================================================
@@ -472,11 +379,15 @@ class TestPerformance:
     """Test performance characteristics"""
 
     @pytest.fixture
-    def fixer(self):
-        temp_dir = tempfile.mkdtemp()
+    def fixer(self, temp_repo):
         agent = OllamaAgent(model="test")
-        f = PRErrorFixer(agent, str(temp_dir))
+        f = PRErrorFixer(agent, str(temp_repo))
         yield f
+
+    @pytest.fixture
+    def temp_repo(self):
+        temp_dir = tempfile.mkdtemp()
+        yield Path(temp_dir)
         shutil.rmtree(temp_dir)
 
     def test_fix_file_performance(self, fixer):
@@ -492,12 +403,12 @@ class TestPerformance:
         # Should complete in under 2 seconds (generous for LLM call)
         assert elapsed < 2.0
 
-    def test_submodule_fix_performance(self, fixer):
+    def test_submodule_fix_performance(self, fixer, temp_repo):
         """Test: Submodule fix completes quickly"""
         import time
 
         # Create large .gitmodules
-        gitmodules = Path(fixer.repo_path) / ".gitmodules"
+        gitmodules = Path(temp_repo) / ".gitmodules"
         with open(gitmodules, 'w') as f:
             for i in range(100):
                 f.write(f'[submodule "mod{i}"]\n    path = mod{i}\n\n')

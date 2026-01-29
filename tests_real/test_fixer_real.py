@@ -9,19 +9,29 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 import re
-
+import sys
 
 # Import the actual code we're testing
+ fix-conventional-packaging-3798037865076663820
 # sys.path manipulation removed for conventional imports
 
 try:
     from pr_fix_agent.analyzer import PRErrorFixer, OllamaAgent
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    from pr_fix_agent_production import PRErrorFixer, OllamaAgent
+ main
 except ImportError:
     # Fallback implementation for testing
     class PRErrorFixer:
         def __init__(self, agent, repo_path="."):
             self.agent = agent
             self.repo_path = Path(repo_path)
+            # Minimal security for fallback
+            from src.security import SecurityValidator
+            self.security = SecurityValidator(self.repo_path)
 
         def fix_missing_file_error(self, error):
             file_match = re.search(r"['\"](.*?)['\"].*not found", error, re.IGNORECASE)
@@ -30,14 +40,15 @@ except ImportError:
 
             filename = file_match.group(1)
 
-            # Security: Block path traversal
-            if ".." in filename or filename.startswith("/"):
+            # Security: Validate path
+            try:
+                file_path = self.security.validate_path(filename)
+            except:
                 return None
 
             prompt = f"Generate code for {filename}"
             code = self.agent.query(prompt, temperature=0.1)
 
-            file_path = self.repo_path / filename
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
             code_clean = self._extract_code_block(code)
@@ -53,16 +64,12 @@ except ImportError:
                 if submodule_match:
                     submodule_name = submodule_match.group(1)
 
-                    # Security: Block path traversal
-                    if ".." in submodule_name or "/" in submodule_name:
-                        return None
-
                     gitmodules_path = self.repo_path / ".gitmodules"
                     if gitmodules_path.exists():
                         with open(gitmodules_path, 'r') as f:
                             content = f.read()
 
-                        pattern = rf'\[submodule "{submodule_name}"\].*?(?=\[|$)'
+                        pattern = rf'\[submodule "{re.escape(submodule_name)}"\].*?(?=\[|$)'
                         new_content = re.sub(pattern, '', content, flags=re.DOTALL)
 
                         with open(gitmodules_path, 'w') as f:

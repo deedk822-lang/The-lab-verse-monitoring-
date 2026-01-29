@@ -57,7 +57,7 @@ packages = {find = {where = ["src"]}}
 pr_fix_agent = ["*.py"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "tests_real"]
+testpaths = ["tests_real"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"

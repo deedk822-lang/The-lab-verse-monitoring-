@@ -11,7 +11,14 @@ from .security import (
 )
 from .analyzer import (
     PRErrorAnalyzer,
-    ErrorStatistics
+    ErrorStatistics,
+    OllamaAgent,
+    PRErrorFixer
+)
+from .trust_boundary import (
+    DryRunMode,
+    FixIntent,
+    FixAction
 )
 
 __all__ = [
@@ -23,6 +30,12 @@ __all__ = [
     # Analysis
     'PRErrorAnalyzer',
     'ErrorStatistics',
+    'OllamaAgent',
+    'PRErrorFixer',
+    # Trust Boundary
+    'DryRunMode',
+    'FixIntent',
+    'FixAction',
 ]
 
 __version__ = '1.0.0'

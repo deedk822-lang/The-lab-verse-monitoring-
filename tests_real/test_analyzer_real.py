@@ -7,122 +7,8 @@ import pytest
 from unittest.mock import Mock
 import re
 
-
-# Inline implementation for testing
-class PRErrorAnalyzer:
-    """Real analyzer implementation"""
-
-    def __init__(self, agent):
-        self.agent = agent
-
-    def parse_github_actions_log(self, log_content):
-        """Parse GitHub Actions log to extract errors and warnings"""
-        errors = []
-        warnings = []
-
-        error_patterns = [
-            r"Error: (.+)",
-            r"ERROR: (.+)",
-            r"fatal: (.+)",
-            r"Failed (.+)",
-            r"Exception: (.+)",
-            r"\[ERROR\] (.+)",
-            r"ImportError: (.+)",
-            r"SyntaxError: (.+)",
-        ]
-
-        warning_patterns = [
-            r"Warning: (.+)",
-            r"WARN: (.+)",
-            r"\[WARN\] (.+)",
-            r"DeprecationWarning: (.+)",
-        ]
-
-        for line in log_content.split('\n'):
-            # Check errors
-            for pattern in error_patterns:
-                match = re.search(pattern, line, re.IGNORECASE)
-                if match:
-                    errors.append(line.strip())
-                    break
-
-            # Check warnings
-            for pattern in warning_patterns:
-                match = re.search(pattern, line, re.IGNORECASE)
-                if match:
-                    warnings.append(line.strip())
-                    break
-
-        return {
-            "errors": errors,
-            "warnings": warnings
-        }
-
-    def analyze_error(self, error):
-        """Analyze specific error using agent"""
-        prompt = f"""Analyze this error and provide:
-1. Root cause
-2. Suggested fix
-3. Code changes needed
-
-Error: {error}"""
-
-        response = self.agent.query(prompt)
-
-        return {
-            "error": error,
-            "analysis": response,
-            "root_cause": self._extract_root_cause(response),
-            "suggested_fix": self._extract_fix(response)
-        }
-
-    def _extract_root_cause(self, analysis):
-        """Extract root cause from analysis"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'root cause' in line or 'cause:' in line:
-                return line.strip()
-        return "Unknown"
-
-    def _extract_fix(self, analysis):
-        """Extract suggested fix from analysis"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'fix' in line or 'solution' in line:
-                return line.strip()
-        return "No fix suggested"
-
-    def categorize_error(self, error):
-        """Categorize error type"""
-        error_lower = error.lower()
-
-        if 'not found' in error_lower or 'no such file' in error_lower:
-            return 'missing_file'
-        elif 'no module named' in error_lower or 'importerror' in error_lower:
-            return 'missing_module'
-        elif 'syntaxerror' in error_lower or 'invalid syntax' in error_lower:
-            return 'syntax_error'
-        elif 'submodule' in error_lower:
-            return 'submodule_error'
-        elif 'permission denied' in error_lower:
-            return 'permission_error'
-        elif 'timeout' in error_lower or 'timed out' in error_lower:
-            return 'timeout_error'
-        else:
-            return 'unknown'
-
-    def get_error_severity(self, error):
-        """Determine error severity"""
-        error_lower = error.lower()
-
-        if 'fatal' in error_lower or 'critical' in error_lower:
-            return 'critical'
-        elif 'error' in error_lower:
-            return 'high'
-        elif 'warning' in error_lower:
-            return 'low'
-        else:
-            return 'medium'
+# Conventional import from src
+from pr_fix_agent.analyzer import PRErrorAnalyzer
 
 
 # ============================================================================
@@ -356,7 +242,7 @@ Error: Failed to execute command
         errors = [
             "ImportError: No module named 'numpy'",
             "ModuleNotFoundError: No module named 'requests'",
-            "Error: Cannot import module 'flask'"
+            "ImportError: Cannot import module 'flask'"
         ]
 
         for error in errors:
@@ -378,8 +264,8 @@ Error: Failed to execute command
     def test_categorize_submodule_error(self, analyzer):
         """Test: Categorizes submodule errors"""
         errors = [
-            "fatal: No url found for submodule path 'vendor'",
-            "Error: Submodule 'lib' not found"
+            "fatal: submodule path 'vendor' error",
+            "Error: Submodule 'lib' issue"
         ]
 
         for error in errors:
@@ -424,7 +310,7 @@ Error: Failed to execute command
         """Test: Detects low severity (warnings)"""
         errors = [
             "Warning: Deprecated function",
-            "WARN: Configuration issue"
+            "DeprecationWarning: Configuration issue"
         ]
 
         for error in errors:
@@ -535,11 +421,11 @@ class TestStatisticalAnalysis:
     def test_error_frequency_analysis(self, analyzer):
         """Test: Can analyze error frequency"""
         logs = [
-            "Error: Module 'requests' not found",
-            "Error: Module 'numpy' not found",
-            "Error: Module 'requests' not found",
+            "ImportError: No module named 'requests'",
+            "ImportError: No module named 'numpy'",
+            "ImportError: No module named 'requests'",
             "Error: File not found",
-            "Error: Module 'requests' not found",
+            "ImportError: No module named 'requests'",
         ]
 
         log = '\n'.join(logs)

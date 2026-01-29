@@ -48,3 +48,5 @@ cryptography>=41.0.0
 # black>=23.10.0
 # flake8>=6.1.0
 # mypy>=1.6.0
+
+numpy

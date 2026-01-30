@@ -49,9 +49,11 @@ class CostTracker:
     MODEL_COSTS = {
         "deepseek-r1:14b": 0.0,  # Free (local)
         "deepseek-r1:7b": 0.0,   # Free (local)
+        "deepseek-r1:1.5b": 0.0, # Free (local)
         "qwen2.5-coder:32b": 0.0,  # Free (local)
         "qwen2.5-coder:14b": 0.0,  # Free (local)
         "qwen2.5-coder:7b": 0.0,   # Free (local)
+        "qwen2.5-coder:1.5b": 0.0, # Free (local)
         "qwen2.5:32b": 0.0,  # Free (local)
         "codellama:34b": 0.0,  # Free (local)
         "gpt-4": 30.0,  # $30 per 1M tokens (if using OpenAI)

@@ -44,8 +44,8 @@ jobs:
           name: findings
           path: artifacts/findings.json
 
-  reasoning-analysis:
-    name: Reasoning Model Analysis
+  reasoning-and-coding:
+    name: Reasoning and Coding Analysis
     runs-on: ubuntu-latest
     needs: [collect-findings]
     outputs:
@@ -60,6 +60,10 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /etc/mysql
+          sudo rm -rf /usr/local/lib/node_modules
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           docker image prune -af
 
@@ -68,7 +72,8 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
           sleep 10
-          ollama pull deepseek-r1:7b
+          ollama pull deepseek-r1:1.5b
+          ollama pull qwen2.5-coder:1.5b
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -94,58 +99,18 @@ jobs:
             --output artifacts/proposals.json
           echo "proposals_file=artifacts/proposals.json" >> $GITHUB_OUTPUT
 
-      - name: Upload proposals
-        uses: actions/upload-artifact@v4
-        with:
-          name: proposals
-          path: artifacts/proposals.json
-
-  coding-implementation:
-    name: Code Implementation
-    runs-on: ubuntu-latest
-    needs: [reasoning-analysis]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune -af
-
-      - name: Install Ollama
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          sleep 10
-          ollama pull qwen2.5-coder:7b
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-
-      - name: Download proposals
-        uses: actions/download-artifact@v4
-        with:
-          name: proposals
-          path: artifacts
-
       - name: Generate code fixes
         run: |
           pr-fix-agent --mode coding \
             --proposals artifacts/proposals.json \
             --output artifacts/fixes \
             --apply
+
+      - name: Upload proposals
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposals
+          path: artifacts/proposals.json
 
       - name: Upload fixes
         uses: actions/upload-artifact@v4
@@ -156,7 +121,7 @@ jobs:
   test-verification:
     name: Test Verification
     runs-on: ubuntu-latest
-    needs: [coding-implementation]
+    needs: [reasoning-and-coding]
     outputs:
       tests_passed: ${{ steps.test.outputs.tests_passed }}
 
@@ -246,7 +211,7 @@ jobs:
   report-summary:
     name: Report Summary
     runs-on: ubuntu-latest
-    needs: [collect-findings, reasoning-analysis, coding-implementation, test-verification, create-pr]
+    needs: [collect-findings, reasoning-and-coding, test-verification, create-pr]
     if: always()
 
     steps:
@@ -255,7 +220,6 @@ jobs:
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Findings Collected**: ${{ needs.collect-findings.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reasoning Analysis**: ${{ needs.reasoning-analysis.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Code Implementation**: ${{ needs.coding-implementation.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reasoning & Coding**: ${{ needs.reasoning-and-coding.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tests**: ${{ needs.test-verification.outputs.tests_passed == 'true' && '✅ PASSED' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY

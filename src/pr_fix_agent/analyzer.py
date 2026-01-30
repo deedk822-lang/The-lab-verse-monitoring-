@@ -169,19 +169,27 @@ Be concise and specific."""
             return 'medium'
 
     def _extract_root_cause(self, analysis: str) -> str:
-        """Extract root cause from analysis text"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'root cause' in line or 'cause:' in line:
-                return line.strip()
+        """
+        Extract root cause PRESERVING original casing
+
+        FIXED: Don't lowercase the entire analysis
+        """
+        for line in analysis.split('\n'):
+            # ✅ FIX: Check lowercase but return original
+            if 'root cause' in line.lower() or 'cause:' in line.lower():
+                return line.strip()  # Original casing preserved
         return "Unknown"
 
     def _extract_fix(self, analysis: str) -> str:
-        """Extract suggested fix from analysis text"""
-        lines = analysis.lower().split('\n')
-        for line in lines:
-            if 'fix' in line or 'solution' in line:
-                return line.strip()
+        """
+        Extract fix PRESERVING original casing
+
+        FIXED: Don't lowercase the entire analysis
+        """
+        for line in analysis.split('\n'):
+            # ✅ FIX: Check lowercase but return original
+            if 'fix' in line.lower() or 'solution' in line.lower():
+                return line.strip()  # Original casing preserved
         return "No fix suggested"
 
     def get_error_context(self, log_content: str, error_line: str, context_lines: int = 3) -> List[str]:

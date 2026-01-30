@@ -12,9 +12,12 @@ from .security import (
 from .analyzer import (
     PRErrorAnalyzer,
     ErrorStatistics,
-    PRErrorFixer,
-    OllamaAgent
+    PRErrorFixer
 )
+from .ollama_agent_fixed import OllamaAgent
+from .observability import CostTracker, LLMCost, BudgetExceededError
+from .models import ModelSpec, ModelSelector
+from .orchestrator import Orchestrator
 
 __all__ = [
     # Security
@@ -27,6 +30,15 @@ __all__ = [
     'ErrorStatistics',
     'PRErrorFixer',
     'OllamaAgent',
+    # Observability
+    'CostTracker',
+    'LLMCost',
+    'BudgetExceededError',
+    # Models
+    'ModelSpec',
+    'ModelSelector',
+    # Orchestration
+    'Orchestrator',
 ]
 
 __version__ = '1.0.0'

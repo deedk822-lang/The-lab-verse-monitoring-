@@ -1,8 +1,11 @@
 """
-Core Security and Validation Components
-Proper library structure for reusable components
+Security Module with Module-Level Imports
+FIXED: All imports at top of file
 """
 
+import time  # ✅ FIX: Module-level, not local
+import json  # ✅ FIX: Module-level, not local
+import threading
 import re
 from pathlib import Path
 from typing import Optional
@@ -112,16 +115,15 @@ class SecurityValidator:
 
 
 class InputValidator:
-    """Additional input validation utilities"""
+    """Input validation utilities"""
 
     @staticmethod
     def validate_json(data: str) -> bool:
-        """Validate JSON structure"""
-        import json
+        """Validate JSON (uses module-level json)"""
         try:
-            json.loads(data)
+            json.loads(data)  # ✅ FIX: No local import needed
             return True
-        except:
+        except (json.JSONDecodeError, TypeError):
             return False
 
     @staticmethod
@@ -149,31 +151,55 @@ class InputValidator:
 
 
 class RateLimiter:
-    """Simple rate limiter for API calls"""
+    """
+    Thread-safe rate limiter for API calls
+
+    FIXED: Uses threading.Lock for synchronization
+    """
 
     def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self.requests = []
+        # ✅ FIX: Add lock for thread safety
+        self._lock = threading.Lock()
 
     def check_rate_limit(self) -> bool:
         """
-        Check if rate limit is exceeded
+        Check if rate limit is exceeded (THREAD-SAFE)
 
         Returns:
             True if request is allowed
         """
-        import time
+        now = time.time()  # ✅ FIX: No local import needed
 
-        now = time.time()
+        # ✅ FIX: Atomic operations under lock
+        with self._lock:
+            # Remove old requests outside window
+            self.requests = [
+                req for req in self.requests
+                if now - req < self.window_seconds
+            ]
 
-        # Remove old requests outside window
-        self.requests = [req for req in self.requests if now - req < self.window_seconds]
+            # Check limit
+            if len(self.requests) >= self.max_requests:
+                return False
 
-        # Check limit
-        if len(self.requests) >= self.max_requests:
-            return False
+            # Record this request
+            self.requests.append(now)
+            return True
 
-        # Record this request
-        self.requests.append(now)
-        return True
+    def get_stats(self) -> dict:
+        """Get rate limiter statistics (thread-safe)"""
+        with self._lock:
+            return {
+                "requests_in_window": len(self.requests),
+                "max_requests": self.max_requests,
+                "remaining": self.max_requests - len(self.requests),
+                "window_seconds": self.window_seconds
+            }
+
+    def reset(self):
+        """Reset the rate limiter (thread-safe)"""
+        with self._lock:
+            self.requests.clear()

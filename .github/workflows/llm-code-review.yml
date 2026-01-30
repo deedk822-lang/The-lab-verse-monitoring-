@@ -244,6 +244,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package
+        run: |
+          pip install -e .
+
       - name: Download fixed code
         uses: actions/download-artifact@v4
         with:

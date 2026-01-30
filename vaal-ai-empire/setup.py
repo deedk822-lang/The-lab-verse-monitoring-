@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="vaal-ai-empire",
@@ -6,7 +6,7 @@ setup(
     description="Vaal AI Empire - Authority Engine with Tax & Content Agents",
     author="deedk822-lang",
     packages=find_packages(where="src"),
-    package_dir={"":" src"},
+    package_dir={"": " src"},
     python_requires=">=3.10",
     install_requires=[
         "fastapi>=0.115.0",

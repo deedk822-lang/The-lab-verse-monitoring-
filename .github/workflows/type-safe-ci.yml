@@ -26,7 +26,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # Fix openlit and install mypy
+          sed -i 's/openlit==0.1.1/openlit>=1.0.0/' rainmaker_orchestrator/requirements.txt
           pip install -r rainmaker_orchestrator/requirements.txt
+          pip install mypy types-requests
 
       - name: Run MyPy type checking
         run: |
@@ -88,11 +91,11 @@ jobs:
 
       - name: Configure Alibaba Cloud OIDC
         if: steps.gate.outputs.can_run == 'true'
-        uses: aliyun/aliyun-oidc-auth-action@v1
+        uses: aliyun/alibabacloud-oidc-auth@v2
         with:
-          aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
-          aliyun-oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
-          aliyun-region-id: ${{ env.ALIYUN_REGION }}
+          role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
+          oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
+          region-id: ${{ env.ALIYUN_REGION }}
 
       - name: Run Alibaba Cloud Access Analyzer
         if: steps.gate.outputs.can_run == 'true'
@@ -177,11 +180,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/aliyun-oidc-auth-action@v1
+        uses: aliyun/alibabacloud-oidc-auth@v2
         with:
-          aliyun-role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
-          aliyun-oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
-          aliyun-region-id: ${{ env.ALIYUN_REGION }}
+          role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
+          oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
+          region-id: ${{ env.ALIYUN_REGION }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3

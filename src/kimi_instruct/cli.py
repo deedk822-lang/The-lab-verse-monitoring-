@@ -3,18 +3,17 @@ Kimi Instruct CLI Interface
 Command-line interface for managing Kimi tasks and project status
 """
 
-import asyncio
 import argparse
+import asyncio
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any
+from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
+from kimi_instruct.core import KimiInstruct, TaskPriority
 
 
 class KimiCLI:
@@ -74,9 +73,7 @@ class KimiCLI:
         try:
             priority = TaskPriority(args.priority)
         except ValueError:
-            print(
-                f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical"
-            )
+            print(f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical")
             return
 
         # Create task
@@ -162,7 +159,7 @@ class KimiCLI:
             metadata={"cli_optimization": True},
         )
 
-        print(f"🔄 Running optimization...")
+        print("🔄 Running optimization...")
 
         # Execute optimization
         success = await self.kimi.execute_task(task.id)
@@ -188,9 +185,7 @@ class KimiCLI:
         # Get current status
         status = await self.kimi.get_status_report()
 
-        print(
-            f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%"
-        )
+        print(f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%")
         print(f"Risk Level: {status['risk_level'].upper()}")
         print(f"Budget Remaining: ${status['project_context']['budget_remaining']:.2f}")
 
@@ -250,9 +245,7 @@ class KimiCLI:
         print("-" * 25)
         print(f"Current Risk Level: {status['risk_level'].upper()}")
         print(f"Risk Score: {context['metrics'].get('risk_score', 0):.2f}")
-        print(
-            f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}"
-        )
+        print(f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}")
 
         # Critical Issues
         if status["critical_issues"]:

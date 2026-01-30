@@ -1,10 +1,12 @@
-import os
 import asyncio
-from openai import AsyncOpenAI, APIStatusError, APITimeoutError
 import logging
+import os
+
+from openai import APIStatusError, APITimeoutError, AsyncOpenAI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class KimiApiClient:
     def __init__(self, api_key: str = None, base_url: str = "https://api.moonshot.cn/v1"):
@@ -17,7 +19,13 @@ class KimiApiClient:
             base_url=base_url,
         )
 
-    async def generate_hotfix(self, prompt: str, model: str = "moonshot-v1-8k", max_retries: int = 3, initial_delay: int = 1):
+    async def generate_hotfix(
+        self,
+        prompt: str,
+        model: str = "moonshot-v1-8k",
+        max_retries: int = 3,
+        initial_delay: int = 1,
+    ):
         """
         Generates a hotfix using the Kimi API with retry logic.
         """
@@ -27,18 +35,25 @@ class KimiApiClient:
                 response = await self.client.chat.completions.create(
                     model=model,
                     messages=[
-                        {"role": "system", "content": "You are a senior software engineer specialized in creating production-ready hotfixes."},
+                        {
+                            "role": "system",
+                            "content": "You are a senior software engineer specialized in creating production-ready hotfixes.",
+                        },
                         {"role": "user", "content": prompt},
                     ],
                     max_tokens=2048,
                     temperature=0.1,
                 )
                 return response.choices[0].message.content
-            except APITimeoutError as e:
-                logger.warning(f"Request timed out. Attempt {attempt + 1} of {max_retries}. Retrying in {delay}s...")
+            except APITimeoutError:
+                logger.warning(
+                    f"Request timed out. Attempt {attempt + 1} of {max_retries}. Retrying in {delay}s..."
+                )
             except APIStatusError as e:
-                if e.status_code == 429: # Rate limit error
-                    logger.warning(f"Rate limit exceeded. Attempt {attempt + 1} of {max_retries}. Retrying in {delay}s...")
+                if e.status_code == 429:  # Rate limit error
+                    logger.warning(
+                        f"Rate limit exceeded. Attempt {attempt + 1} of {max_retries}. Retrying in {delay}s..."
+                    )
                 else:
                     logger.error(f"API error with status code {e.status_code}: {e.message}")
                     raise  # Re-raise for non-retriable errors

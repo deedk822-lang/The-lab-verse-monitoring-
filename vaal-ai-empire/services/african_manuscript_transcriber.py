@@ -1,7 +1,8 @@
 import logging
-from typing import List, Dict
+from typing import List
 
 logger = logging.getLogger(__name__)
+
 
 class AfricanManuscriptTranscriber:
     """
@@ -9,6 +10,7 @@ class AfricanManuscriptTranscriber:
     designed to support the Thabo Mbeki Presidential Library's digital archive.
     This is a placeholder implementation.
     """
+
     def __init__(self):
         # In a real implementation, this would load a multilingual, multimodal model
         # capable of handling various African languages and scripts.
@@ -22,7 +24,9 @@ class AfricanManuscriptTranscriber:
         This is CRITICAL - most archives are handwritten, not typed.
         """
         if not self.model:
-            logger.warning(f"No transcription model loaded. Returning placeholder text for '{image_path}'.")
+            logger.warning(
+                f"No transcription model loaded. Returning placeholder text for '{image_path}'."
+            )
             # Placeholder logic to simulate a transcription
             return f"Placeholder: Transcribed text from '{os.path.basename(image_path)}' in '{language}'."
 
@@ -36,7 +40,9 @@ class AfricanManuscriptTranscriber:
         """
         Transcribes a batch of documents for efficiency.
         """
-        logger.info(f"Starting batch transcription for {len(image_paths)} documents in '{language}'.")
+        logger.info(
+            f"Starting batch transcription for {len(image_paths)} documents in '{language}'."
+        )
         return [self.transcribe(path, language) for path in image_paths]
 
     def validate_transcription(self, text: str, language: str) -> str:
@@ -50,6 +56,7 @@ class AfricanManuscriptTranscriber:
         # - Cross-referencing with known historical terms or names.
         # - Confidence scoring.
         return text
+
 
 # Example Usage:
 if __name__ == "__main__":
@@ -66,4 +73,4 @@ if __name__ == "__main__":
     manuscript_files = ["doc1.jpg", "doc2.png", "doc3.jpeg"]
     transcribed_batch = transcriber.batch_transcribe(manuscript_files, language="swahili")
     for i, text in enumerate(transcribed_batch):
-        print(f"Batch item {i+1}: {text}")
+        print(f"Batch item {i + 1}: {text}")

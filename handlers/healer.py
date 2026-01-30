@@ -1,5 +1,7 @@
 from orchestrator import RainmakerOrchestrator
+
 from clients.kimi import KimiClient
+
 
 class SelfHealingAgent:
     def __init__(self, kimi_client=None, orchestrator=None):
@@ -17,8 +19,8 @@ class SelfHealingAgent:
         """
         Receives Prometheus Alert Manager Webhook
         """
-        error_log = alert_payload.get('description')
-        service_name = alert_payload.get('service')
+        error_log = alert_payload.get("description")
+        service_name = alert_payload.get("service")
 
         prompt = f"""
         CRITICAL ALERT in service: {service_name}

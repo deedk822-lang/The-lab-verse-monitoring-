@@ -1,9 +1,9 @@
 import json
-import os
+
 from crewai.tools import BaseTool
 
-class EducationTools:
 
+class EducationTools:
     class CurriculumGapAnalyzer(BaseTool):
         name: str = "Gap Analyzer"
         description: str = "Compares SA CAPS against Global Standards to find missing skills."
@@ -11,9 +11,9 @@ class EducationTools:
         def _run(self, grade_level: str) -> str:
             # Load Local Libraries
             try:
-                with open('data/education/sa_caps_baseline.json', 'r') as f:
+                with open("data/education/sa_caps_baseline.json") as f:
                     sa_data = json.load(f)
-                with open('data/education/global_future_skills.json', 'r') as f:
+                with open("data/education/global_future_skills.json") as f:
                     global_data = json.load(f)
             except FileNotFoundError:
                 return "Error: Curriculum databases not found."
@@ -31,17 +31,21 @@ class EducationTools:
                 "grade": grade_level,
                 "current_sa_focus": list(sa_curr.keys()),
                 "missing_critical_skills": [],
-                "sellable_opportunity": ""
+                "sellable_opportunity": "",
             }
 
             # Perform a proper gap analysis by finding skills in global standards not in SA curriculum.
             sa_all_skills = {skill for skills_list in sa_curr.values() for skill in skills_list}
-            global_all_skills = {skill for skills_list in global_curr.values() for skill in skills_list}
-            
+            global_all_skills = {
+                skill for skills_list in global_curr.values() for skill in skills_list
+            }
+
             missing_skills = list(global_all_skills - sa_all_skills)
             gap_report["missing_critical_skills"] = sorted(missing_skills)
 
-            gap_report["sellable_opportunity"] = f"Create a 'Term 1 Future Pack' covering: {', '.join(gap_report['missing_critical_skills'][:3])}"
+            gap_report["sellable_opportunity"] = (
+                f"Create a 'Term 1 Future Pack' covering: {', '.join(gap_report['missing_critical_skills'][:3])}"
+            )
 
             return json.dumps(gap_report, indent=2)
 
@@ -51,12 +55,12 @@ class EducationTools:
 
         def _run(self, gap_analysis_json: str) -> str:
             data = json.loads(gap_analysis_json)
-            skills = data['missing_critical_skills']
+            skills = data["missing_critical_skills"]
 
             # Create the product outline
             syllabus = f"""
             # VAAL AI EMPIRE: TERM 1 FUTURE PACK
-            ## Target: {data['grade']} | Price: Low Cost (Digital Delivery)
+            ## Target: {data["grade"]} | Price: Low Cost (Digital Delivery)
 
             ### Module 1: {skills[0]}
             - Week 1: Introduction & Concepts

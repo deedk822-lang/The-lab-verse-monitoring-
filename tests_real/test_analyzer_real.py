@@ -3,19 +3,17 @@ REAL Tests for PRErrorAnalyzer
 Tests actual log parsing and error analysis
 """
 
-import pytest
 from unittest.mock import Mock
-import re
+
+import pytest
 
 # Conventional import from src
 from pr_fix_agent.analyzer import PRErrorAnalyzer
 
-import sys
-from pathlib import Path
-
 # ============================================================================
 # REAL TESTS
 # ============================================================================
+
 
 class TestPRErrorAnalyzerReal:
     """Real tests that validate actual parsing and analysis"""
@@ -24,9 +22,11 @@ class TestPRErrorAnalyzerReal:
     def mock_agent(self):
         """Create mock agent"""
         agent = Mock()
-        agent.query = Mock(return_value="""Root cause: Missing dependency
+        agent.query = Mock(
+            return_value="""Root cause: Missing dependency
 Suggested fix: Install the required package
-Code changes: Add to requirements.txt""")
+Code changes: Add to requirements.txt"""
+        )
         return agent
 
     @pytest.fixture
@@ -231,48 +231,45 @@ Error: Failed to execute command
         """Test: Categorizes missing file errors"""
         errors = [
             'Error: "config.py" not found',
-            'Error: No such file or directory: test.txt',
-            'FileNotFoundError: [Errno 2] No such file'
+            "Error: No such file or directory: test.txt",
+            "FileNotFoundError: [Errno 2] No such file",
         ]
 
         for error in errors:
             category = analyzer.categorize_error(error)
-            assert category == 'missing_file'
+            assert category == "missing_file"
 
     def test_categorize_missing_module(self, analyzer):
         """Test: Categorizes import errors"""
         errors = [
             "ImportError: No module named 'numpy'",
             "ModuleNotFoundError: No module named 'requests'",
-            "ImportError: Cannot import module 'flask'"
+            "ImportError: Cannot import module 'flask'",
         ]
 
         for error in errors:
             category = analyzer.categorize_error(error)
-            assert category == 'missing_module'
+            assert category == "missing_module"
 
     def test_categorize_syntax_error(self, analyzer):
         """Test: Categorizes syntax errors"""
         errors = [
             "SyntaxError: invalid syntax",
             "Error: Invalid syntax at line 10",
-            "SyntaxError: unexpected EOF"
+            "SyntaxError: unexpected EOF",
         ]
 
         for error in errors:
             category = analyzer.categorize_error(error)
-            assert category == 'syntax_error'
+            assert category == "syntax_error"
 
     def test_categorize_submodule_error(self, analyzer):
         """Test: Categorizes submodule errors"""
-        errors = [
-            "fatal: submodule path 'vendor' error",
-            "Error: Submodule 'lib' issue"
-        ]
+        errors = ["fatal: submodule path 'vendor' error", "Error: Submodule 'lib' issue"]
 
         for error in errors:
             category = analyzer.categorize_error(error)
-            assert category == 'submodule_error'
+            assert category == "submodule_error"
 
     def test_categorize_unknown(self, analyzer):
         """Test: Returns unknown for unrecognized errors"""
@@ -280,7 +277,7 @@ Error: Failed to execute command
 
         category = analyzer.categorize_error(error)
 
-        assert category == 'unknown'
+        assert category == "unknown"
 
     # ========================================================================
     # Severity Detection Tests
@@ -288,36 +285,27 @@ Error: Failed to execute command
 
     def test_severity_critical(self, analyzer):
         """Test: Detects critical severity"""
-        errors = [
-            "Fatal: System failure",
-            "CRITICAL: Database corrupted"
-        ]
+        errors = ["Fatal: System failure", "CRITICAL: Database corrupted"]
 
         for error in errors:
             severity = analyzer.get_error_severity(error)
-            assert severity == 'critical'
+            assert severity == "critical"
 
     def test_severity_high(self, analyzer):
         """Test: Detects high severity (regular errors)"""
-        errors = [
-            "Error: Build failed",
-            "ERROR: Test failed"
-        ]
+        errors = ["Error: Build failed", "ERROR: Test failed"]
 
         for error in errors:
             severity = analyzer.get_error_severity(error)
-            assert severity == 'high'
+            assert severity == "high"
 
     def test_severity_low(self, analyzer):
         """Test: Detects low severity (warnings)"""
-        errors = [
-            "Warning: Deprecated function",
-            "DeprecationWarning: Configuration issue"
-        ]
+        errors = ["Warning: Deprecated function", "DeprecationWarning: Configuration issue"]
 
         for error in errors:
             severity = analyzer.get_error_severity(error)
-            assert severity == 'low'
+            assert severity == "low"
 
     # ========================================================================
     # Integration Tests
@@ -361,7 +349,7 @@ FAILED tests/test_main.py::test_function - AssertionError
             else:
                 log_lines.append(f"Info: Normal log line {i}")
 
-        log = '\n'.join(log_lines)
+        log = "\n".join(log_lines)
 
         start = time.time()
         result = analyzer.parse_github_actions_log(log)
@@ -411,6 +399,7 @@ Error: Regex pattern failed: [a-zA-Z]+
 # Statistical Analysis Tests
 # ============================================================================
 
+
 class TestStatisticalAnalysis:
     """Test statistical analysis capabilities"""
 
@@ -430,7 +419,7 @@ class TestStatisticalAnalysis:
             "ImportError: No module named 'requests'",
         ]
 
-        log = '\n'.join(logs)
+        log = "\n".join(logs)
         result = analyzer.parse_github_actions_log(log)
 
         # Count occurrences
@@ -440,7 +429,7 @@ class TestStatisticalAnalysis:
             error_types[category] = error_types.get(category, 0) + 1
 
         # Should identify requests as most common
-        assert error_types.get('missing_module', 0) >= 3
+        assert error_types.get("missing_module", 0) >= 3
 
     def test_error_pattern_detection(self, analyzer):
         """Test: Detects patterns in errors"""

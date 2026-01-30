@@ -1,15 +1,16 @@
 # scripts/rainmaker_cli.py
 
 import asyncio
-import sys
 import os
-import json
+import sys
 
 # Adjust path to import orchestrator
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from rainmaker_orchestrator.auto_switch import AdaptiveModelRouter
+
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
 
 async def main():
     """CLI for the Rainmaker Agent"""
@@ -24,7 +25,7 @@ async def main():
 
     # Load context
     if os.path.exists(input_data):
-        with open(input_data, 'r') as f:
+        with open(input_data) as f:
             context = f.read()
         print(f"📄 Loaded {len(context)} characters from {input_data}")
     else:
@@ -32,17 +33,13 @@ async def main():
         print(f"📝 Using direct input: {context[:100]}...")
 
     # Build task
-    task = {
-        "type": task_type,
-        "context": context,
-        "priority": "high"
-    }
+    task = {"type": task_type, "context": context, "priority": "high"}
 
     # Route and execute
     orchestrator = RainmakerOrchestrator()
     router = AdaptiveModelRouter(orchestrator)
 
-    print(f"\n🧠 Routing task...")
+    print("\n🧠 Routing task...")
     routing = orchestrator.route_task(task)
     print(f"   Model: {routing['model']}")
     print(f"   Reason: {routing['reason']}")
@@ -56,11 +53,12 @@ async def main():
     if "fallback_from" in result:
         print(f"⚠️  Fallback from {result['fallback_from']}")
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("RESPONSE:")
-    print("="*50)
+    print("=" * 50)
     print(result["response"]["choices"][0]["message"]["content"])
-    print("="*50)
+    print("=" * 50)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -5,19 +5,21 @@ CONSOLIDATES: ollama_agent.py and observability.py versions
 """
 
 import os
-import requests
-import time
 import threading
-import structlog
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, asdict
+import time
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import requests
+import structlog
 
 logger = structlog.get_logger()
 
 # Try to import OpenLIT for observability
 try:
     import openlit
+
     OPENLIT_AVAILABLE = True
 except ImportError:
     OPENLIT_AVAILABLE = False
@@ -28,9 +30,11 @@ except ImportError:
 # Cost Tracking & Budget Enforcement
 # ============================================================================
 
+
 @dataclass
 class LLMCost:
     """Track single LLM invocation cost"""
+
     model: str
     prompt_tokens: int
     completion_tokens: int
@@ -64,12 +68,7 @@ class CostTracker:
         self.costs: List[LLMCost] = []
         self._lock = threading.Lock()
 
-    def record_usage(
-        self,
-        model: str,
-        prompt: str,
-        response: str
-    ) -> LLMCost:
+    def record_usage(self, model: str, prompt: str, response: str) -> LLMCost:
         """Record usage with cost calculation"""
 
         # Estimate tokens (rough approximation: 1 token ≈ 4 chars)
@@ -87,7 +86,7 @@ class CostTracker:
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             estimated_cost=estimated_cost,
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.utcnow().isoformat(),
         )
 
         with self._lock:
@@ -96,20 +95,13 @@ class CostTracker:
 
             if self.total_cost > self.budget_usd:
                 logger.warning(
-                    "budget_exceeded",
-                    total_cost=self.total_cost,
-                    budget=self.budget_usd
+                    "budget_exceeded", total_cost=self.total_cost, budget=self.budget_usd
                 )
                 raise BudgetExceededError(
                     f"Budget exceeded: ${self.total_cost:.2f} > ${self.budget_usd:.2f}"
                 )
 
-        logger.info(
-            "llm_cost_recorded",
-            model=model,
-            tokens=total_tokens,
-            cost=estimated_cost
-        )
+        logger.info("llm_cost_recorded", model=model, tokens=total_tokens, cost=estimated_cost)
 
         return cost
 
@@ -121,7 +113,7 @@ class CostTracker:
                     "total_calls": 0,
                     "total_tokens": 0,
                     "total_cost": 0.0,
-                    "budget_remaining": self.budget_usd
+                    "budget_remaining": self.budget_usd,
                 }
 
             total_tokens = sum(c.total_tokens for c in self.costs)
@@ -129,11 +121,7 @@ class CostTracker:
             by_model: Dict[str, Dict[str, Any]] = {}
             for cost in self.costs:
                 if cost.model not in by_model:
-                    by_model[cost.model] = {
-                        "calls": 0,
-                        "tokens": 0,
-                        "cost": 0.0
-                    }
+                    by_model[cost.model] = {"calls": 0, "tokens": 0, "cost": 0.0}
                 by_model[cost.model]["calls"] += 1
                 by_model[cost.model]["tokens"] += cost.total_tokens
                 by_model[cost.model]["cost"] += cost.estimated_cost
@@ -144,22 +132,26 @@ class CostTracker:
                 "total_cost": self.total_cost,
                 "budget_limit": self.budget_usd,
                 "budget_remaining": self.budget_usd - self.total_cost,
-                "usage_by_model": by_model
+                "usage_by_model": by_model,
             }
 
 
 class BudgetExceededError(Exception):
     """Raised when budget limit is exceeded"""
+
     pass
+
 
 class OllamaQueryError(Exception):
     """Raised when Ollama query fails"""
+
     pass
 
 
 # ============================================================================
 # Canonical OllamaAgent
 # ============================================================================
+
 
 class OllamaAgent:
     """
@@ -177,7 +169,7 @@ class OllamaAgent:
         self,
         model: str = "codellama",
         base_url: str = "http://localhost:11434",
-        cost_tracker: Optional[CostTracker] = None
+        cost_tracker: Optional[CostTracker] = None,
     ):
         self.model = model
         self.base_url = base_url
@@ -189,7 +181,7 @@ class OllamaAgent:
             try:
                 openlit.init(
                     otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318"),
-                    application_name="pr-fix-agent"
+                    application_name="pr-fix-agent",
                 )
                 logger.info("openlit_initialized")
             except Exception as e:
@@ -200,17 +192,14 @@ class OllamaAgent:
         prompt: str,
         temperature: float = 0.2,
         timeout: int = 120,
-        trace_id: Optional[str] = None
+        trace_id: Optional[str] = None,
     ) -> str:
         """Query with full observability and tracing"""
         start_time = time.time()
         trace_id = trace_id or str(time.time())
 
         logger.info(
-            "ollama_query_start",
-            model=self.model,
-            prompt_length=len(prompt),
-            trace_id=trace_id
+            "ollama_query_start", model=self.model, prompt_length=len(prompt), trace_id=trace_id
         )
 
         try:
@@ -221,8 +210,8 @@ class OllamaAgent:
                     attributes={
                         "llm.model": self.model,
                         "llm.temperature": temperature,
-                        "trace_id": trace_id
-                    }
+                        "trace_id": trace_id,
+                    },
                 ):
                     response_text = self._make_request(prompt, temperature, timeout)
             else:
@@ -231,17 +220,13 @@ class OllamaAgent:
             duration = time.time() - start_time
 
             # Record usage
-            self.cost_tracker.record_usage(
-                model=self.model,
-                prompt=prompt,
-                response=response_text
-            )
+            self.cost_tracker.record_usage(model=self.model, prompt=prompt, response=response_text)
 
             logger.info(
                 "ollama_query_success",
                 model=self.model,
                 duration=duration,
-                response_length=len(response_text)
+                response_length=len(response_text),
             )
 
             return response_text
@@ -251,7 +236,7 @@ class OllamaAgent:
                 "ollama_query_failed",
                 model=self.model,
                 error=str(e),
-                duration=time.time() - start_time
+                duration=time.time() - start_time,
             )
             if isinstance(e, (BudgetExceededError, OllamaQueryError)):
                 raise
@@ -265,9 +250,9 @@ class OllamaAgent:
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False,
-                "temperature": temperature
+                "temperature": temperature,
             },
-            timeout=timeout
+            timeout=timeout,
         )
         response.raise_for_status()
         data = response.json()

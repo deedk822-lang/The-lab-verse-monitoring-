@@ -3,14 +3,15 @@ import sys
 from argparse import ArgumentParser
 
 # Adjust path to import KimiAPI
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
     from api.kimi import KimiAPI
 except (ImportError, ValueError) as e:
-    print(f"Error: Could not import KimiAPI. Make sure your environment is set up correctly.")
+    print("Error: Could not import KimiAPI. Make sure your environment is set up correctly.")
     print(f"Details: {e}")
     sys.exit(1)
+
 
 def generate_playwright_script(kimi_api, username, password, ad_description):
     """
@@ -46,12 +47,23 @@ def generate_playwright_script(kimi_api, username, password, ad_description):
         print(f"❌ An error occurred during script generation: {e}")
         return None
 
+
 def main():
-    parser = ArgumentParser(description="Generate a Playwright script for SABC+ ad detection using the Sovereign AI Engine.")
+    parser = ArgumentParser(
+        description="Generate a Playwright script for SABC+ ad detection using the Sovereign AI Engine."
+    )
     parser.add_argument("--username", required=True, help="SABC+ login username.")
     parser.add_argument("--password", required=True, help="SABC+ login password.")
-    parser.add_argument("--ad-description", required=True, help="A clear description of the ad to detect (e.g., 'The red Atlas TV ad with our logo').")
-    parser.add_argument("--output-file", default="sabc_ad_detector.py", help="The name of the output Python script file.")
+    parser.add_argument(
+        "--ad-description",
+        required=True,
+        help="A clear description of the ad to detect (e.g., 'The red Atlas TV ad with our logo').",
+    )
+    parser.add_argument(
+        "--output-file",
+        default="sabc_ad_detector.py",
+        help="The name of the output Python script file.",
+    )
 
     args = parser.parse_args()
 
@@ -62,7 +74,9 @@ def main():
         print("Please ensure your KIMI_VLLM_ENDPOINT is configured in your .env file.")
         sys.exit(1)
 
-    generated_code = generate_playwright_script(kimi_api, args.username, args.password, args.ad_description)
+    generated_code = generate_playwright_script(
+        kimi_api, args.username, args.password, args.ad_description
+    )
 
     if generated_code:
         # Clean up the code block if the model wraps it in markdown
@@ -76,8 +90,9 @@ def main():
 
         print(f"\n✅ Successfully generated Playwright script and saved it to '{args.output_file}'")
         print("To run the script:")
-        print(f"1. Install dependencies: pip install playwright && playwright install")
+        print("1. Install dependencies: pip install playwright && playwright install")
         print(f"2. Execute: python {args.output_file}")
+
 
 if __name__ == "__main__":
     main()

@@ -3,16 +3,16 @@ Security Module with Module-Level Imports
 FIXED: All imports at top of file
 """
 
-import time  # ✅ FIX: Module-level, not local
 import json  # ✅ FIX: Module-level, not local
-import threading
 import re
+import threading
+import time  # ✅ FIX: Module-level, not local
 from pathlib import Path
-from typing import Optional
 
 
 class SecurityError(Exception):
     """Security validation error"""
+
     pass
 
 
@@ -63,7 +63,7 @@ class SecurityValidator:
             SecurityError: If module name is invalid or dangerous
         """
         # Check for shell metacharacters
-        dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\x00']
+        dangerous_chars = [";", "&", "|", "$", "`", "(", ")", "<", ">", "\n", "\r", "\x00"]
         if any(char in module_name for char in dangerous_chars):
             raise SecurityError(f"Dangerous characters in module name: {module_name}")
 
@@ -72,7 +72,7 @@ class SecurityValidator:
             raise SecurityError(f"Module name too long: {len(module_name)} chars")
 
         # Validate format (alphanumeric, dash, underscore, dot)
-        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', module_name):
+        if not re.match(r"^[a-zA-Z0-9_\-\.]+$", module_name):
             raise SecurityError(f"Invalid module name format: {module_name}")
 
         return module_name
@@ -87,7 +87,7 @@ class SecurityValidator:
         Returns:
             True if extension is allowed
         """
-        allowed = ['.py', '.txt', '.md', '.yml', '.yaml', '.json', '.toml', '.cfg', '.ini']
+        allowed = [".py", ".txt", ".md", ".yml", ".yaml", ".json", ".toml", ".cfg", ".ini"]
         return any(filename.endswith(ext) for ext in allowed)
 
     def sanitize_input(self, user_input: str, max_length: int = 1000) -> str:
@@ -108,7 +108,7 @@ class SecurityValidator:
             raise SecurityError(f"Input too long: {len(user_input)} > {max_length}")
 
         # Remove null bytes
-        if '\x00' in user_input:
+        if "\x00" in user_input:
             raise SecurityError("Null byte in input")
 
         return user_input.strip()
@@ -131,10 +131,10 @@ class InputValidator:
         """Validate YAML is safe to parse"""
         # Check for dangerous YAML constructs
         dangerous_patterns = [
-            r'!!python/',
-            r'__import__',
-            r'eval\s*\(',
-            r'exec\s*\(',
+            r"!!python/",
+            r"__import__",
+            r"eval\s*\(",
+            r"exec\s*\(",
         ]
 
         for pattern in dangerous_patterns:
@@ -146,7 +146,7 @@ class InputValidator:
     @staticmethod
     def validate_url(url: str) -> bool:
         """Validate URL format"""
-        url_pattern = r'^https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(/.*)?$'
+        url_pattern = r"^https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(/.*)?$"
         return bool(re.match(url_pattern, url))
 
 
@@ -176,10 +176,7 @@ class RateLimiter:
         # ✅ FIX: Atomic operations under lock
         with self._lock:
             # Remove old requests outside window
-            self.requests = [
-                req for req in self.requests
-                if now - req < self.window_seconds
-            ]
+            self.requests = [req for req in self.requests if now - req < self.window_seconds]
 
             # Check limit
             if len(self.requests) >= self.max_requests:
@@ -196,7 +193,7 @@ class RateLimiter:
                 "requests_in_window": len(self.requests),
                 "max_requests": self.max_requests,
                 "remaining": self.max_requests - len(self.requests),
-                "window_seconds": self.window_seconds
+                "window_seconds": self.window_seconds,
             }
 
     def reset(self):

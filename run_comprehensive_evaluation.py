@@ -5,19 +5,19 @@ Runs complete evaluation, benchmarking, and improvement pipeline
 PRODUCTION-READY: No shell=True, proper argument lists
 """
 
-import subprocess
-import sys
 import json
 import shlex
-from pathlib import Path
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 
 
 def run_command(cmd, description):
     """Run command and report results (Security: No shell=True)"""
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"▶ {description}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     try:
         # Security: Convert string to argument list, never use shell=True
@@ -31,7 +31,7 @@ def run_command(cmd, description):
             shell=False,  # Security: Always False
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         if result.stdout:
@@ -56,9 +56,9 @@ def run_command(cmd, description):
 
 def check_prerequisites():
     """Check if prerequisites are met"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🔍 CHECKING PREREQUISITES")
-    print("="*70)
+    print("=" * 70)
 
     checks_passed = True
 
@@ -79,6 +79,7 @@ def check_prerequisites():
 
     # Check Ollama
     import requests
+
     try:
         response = requests.get("http://localhost:11434/api/tags", timeout=5)
         if response.status_code == 200:
@@ -97,9 +98,9 @@ def check_prerequisites():
 
 def run_tests():
     """Run all test suites"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🧪 RUNNING TEST SUITES")
-    print("="*70)
+    print("=" * 70)
 
     test_files = [
         ("tests_real/test_security_real.py", "Security Tests"),
@@ -120,16 +121,16 @@ def run_tests():
 
 def run_benchmarks():
     """Run performance benchmarks"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("⚡ RUNNING PERFORMANCE BENCHMARKS")
-    print("="*70)
+    print("=" * 70)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = f"benchmark_results_{timestamp}.json"
 
     passed = run_command(
         f"python3 benchmarking_real.py --models codellama --output {output_file} --track progress.json",
-        "Benchmarking codellama"
+        "Benchmarking codellama",
     )
 
     return passed, output_file
@@ -137,9 +138,9 @@ def run_benchmarks():
 
 def run_continuous_improvement():
     """Run continuous improvement analysis"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🔄 RUNNING CONTINUOUS IMPROVEMENT")
-    print("="*70)
+    print("=" * 70)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     report_file = f"improvement_report_{timestamp}.md"
@@ -147,7 +148,7 @@ def run_continuous_improvement():
 
     passed = run_command(
         f"python3 continuous_improvement_real.py --repo-path . --report {report_file} --json {json_file}",
-        "Code Improvement Analysis"
+        "Code Improvement Analysis",
     )
 
     return passed, report_file, json_file
@@ -155,9 +156,9 @@ def run_continuous_improvement():
 
 def generate_summary_report(test_results, benchmark_results, improvement_results):
     """Generate comprehensive summary report"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("📊 GENERATING SUMMARY REPORT")
-    print("="*70)
+    print("=" * 70)
 
     report = f"""# Comprehensive Evaluation Report
 Generated: {datetime.now().isoformat()}
@@ -173,7 +174,7 @@ Generated: {datetime.now().isoformat()}
     report += f"- Total Test Suites: {total_tests}\n"
     report += f"- Passed: {passed_tests}\n"
     report += f"- Failed: {total_tests - passed_tests}\n"
-    report += f"- Pass Rate: {passed_tests/total_tests*100:.1f}%\n\n"
+    report += f"- Pass Rate: {passed_tests / total_tests * 100:.1f}%\n\n"
 
     for test_name, passed in test_results:
         status = "✅ PASSED" if passed else "❌ FAILED"
@@ -184,10 +185,10 @@ Generated: {datetime.now().isoformat()}
     benchmark_passed, benchmark_file = benchmark_results
     if benchmark_passed and Path(benchmark_file).exists():
         try:
-            with open(benchmark_file, 'r') as f:
+            with open(benchmark_file) as f:
                 data = json.load(f)
                 perf = data.get("performance", {})
-                report += f"- Pass Rate: {perf.get('passed_tests', 0)/perf.get('total_tests', 1)*100:.1f}%\n"
+                report += f"- Pass Rate: {perf.get('passed_tests', 0) / perf.get('total_tests', 1) * 100:.1f}%\n"
                 report += f"- Avg Response Time: {perf.get('avg_response_time', 0):.2f}s\n"
                 report += f"- Quality Score: {perf.get('avg_quality_score', 0):.2f}/1.00\n"
         except:
@@ -200,7 +201,7 @@ Generated: {datetime.now().isoformat()}
     improvement_passed, improvement_report, improvement_json = improvement_results
     if improvement_passed and Path(improvement_json).exists():
         try:
-            with open(improvement_json, 'r') as f:
+            with open(improvement_json) as f:
                 data = json.load(f)
                 report += f"- Issues Found: {len(data.get('issues', []))}\n"
                 report += f"- Improvements Suggested: {len(data.get('improvements', []))}\n"
@@ -251,7 +252,7 @@ Generated: {datetime.now().isoformat()}
 
     # Save report
     report_file = f"comprehensive_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write(report)
 
     print(report)
@@ -291,9 +292,9 @@ def main():
     # Generate summary
     report_file = generate_summary_report(test_results, benchmark_results, improvement_results)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🎉 EVALUATION COMPLETE")
-    print("="*70)
+    print("=" * 70)
     print(f"\n📄 Comprehensive report: {report_file}")
     print("\nKey Files:")
     print(f"  - Benchmark: {benchmark_results[1]}")
@@ -313,5 +314,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\n💥 Fatal error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

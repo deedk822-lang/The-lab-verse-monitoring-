@@ -4,19 +4,18 @@ PR Error-Fixing Agent using Ollama
 Production-ready version with proper library structure
 """
 
-import os
-import json
-import subprocess
 import re
+import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
+
 import requests
 
 # Import from proper src/ directory
 sys.path.insert(0, str(Path(__file__).parent / "src"))
-from security import SecurityValidator, SecurityError
 from analyzer import PRErrorAnalyzer
+from security import SecurityError, SecurityValidator
 
 
 class OllamaAgent:
@@ -36,9 +35,9 @@ class OllamaAgent:
                     "model": self.model,
                     "prompt": prompt,
                     "stream": False,
-                    "temperature": temperature
+                    "temperature": temperature,
                 },
-                timeout=120
+                timeout=120,
             )
             response.raise_for_status()
             return response.json()["response"]
@@ -89,7 +88,7 @@ Include only the essential code structure. Format your response as pure code wit
         # Clean up the response to extract just code
         code_clean = self._extract_code_block(code)
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             f.write(code_clean)
 
         return str(file_path)
@@ -102,7 +101,7 @@ Include only the essential code structure. Format your response as pure code wit
                 submodule_name = submodule_match.group(1)
 
                 # Security: Validate submodule name
-                if '..' in submodule_name or submodule_name.startswith('/'):
+                if ".." in submodule_name or submodule_name.startswith("/"):
                     print(f"Security: Blocked dangerous submodule path: {submodule_name}")
                     return None
 
@@ -115,14 +114,14 @@ Include only the essential code structure. Format your response as pure code wit
                 # Remove the submodule reference
                 gitmodules_path = self.repo_path / ".gitmodules"
                 if gitmodules_path.exists():
-                    with open(gitmodules_path, 'r') as f:
+                    with open(gitmodules_path) as f:
                         content = f.read()
 
                     # Remove the submodule section
                     pattern = rf'\[submodule "{re.escape(submodule_name)}"\].*?(?=\[|$)'
-                    new_content = re.sub(pattern, '', content, flags=re.DOTALL)
+                    new_content = re.sub(pattern, "", content, flags=re.DOTALL)
 
-                    with open(gitmodules_path, 'w') as f:
+                    with open(gitmodules_path, "w") as f:
                         f.write(new_content)
 
                     return f"Removed broken submodule reference: {submodule_name}"
@@ -147,11 +146,11 @@ Include only the essential code structure. Format your response as pure code wit
         # Check for requirements.txt
         req_file = self.repo_path / "requirements.txt"
         if req_file.exists():
-            with open(req_file, 'r') as f:
+            with open(req_file) as f:
                 current_deps = f.read()
 
             if validated_module not in current_deps:
-                with open(req_file, 'a') as f:
+                with open(req_file, "a") as f:
                     f.write(f"\n{validated_module}\n")
                 return f"Added {validated_module} to requirements.txt"
 
@@ -160,14 +159,18 @@ Include only the essential code structure. Format your response as pure code wit
     def _extract_code_block(self, text: str) -> str:
         """Extract code from markdown code blocks"""
         # Try to find code blocks
-        code_block_match = re.search(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        code_block_match = re.search(r"```(?:\w+)?\n(.*?)```", text, re.DOTALL)
         if code_block_match:
             return code_block_match.group(1).strip()
 
         # If no code block, return cleaned text
-        lines = text.split('\n')
-        code_lines = [line for line in lines if not line.strip().startswith('#') or line.strip().startswith('#!/')]
-        return '\n'.join(code_lines).strip()
+        lines = text.split("\n")
+        code_lines = [
+            line
+            for line in lines
+            if not line.strip().startswith("#") or line.strip().startswith("#!/")
+        ]
+        return "\n".join(code_lines).strip()
 
 
 class PRFixAgent:
@@ -181,7 +184,7 @@ class PRFixAgent:
 
     def process_github_actions_log(self, log_file: str) -> Dict:
         """Process a GitHub Actions log file and fix errors"""
-        with open(log_file, 'r') as f:
+        with open(log_file) as f:
             log_content = f.read()
 
         # Parse errors
@@ -191,10 +194,12 @@ class PRFixAgent:
             "errors_found": len(issues["errors"]),
             "warnings_found": len(issues["warnings"]),
             "fixes_applied": [],
-            "analyses": []
+            "analyses": [],
         }
 
-        print(f"\nFound {results['errors_found']} errors and {results['warnings_found']} warnings\n")
+        print(
+            f"\nFound {results['errors_found']} errors and {results['warnings_found']} warnings\n"
+        )
 
         # Analyze and fix each error
         for error in issues["errors"]:
@@ -209,18 +214,18 @@ class PRFixAgent:
 
             error_category = self.analyzer.categorize_error(error)
 
-            if error_category == 'missing_file':
+            if error_category == "missing_file":
                 fix_result = self.fixer.fix_missing_file_error(error)
-            elif error_category == 'submodule_error':
+            elif error_category == "submodule_error":
                 fix_result = self.fixer.fix_submodule_error(error)
-            elif error_category == 'missing_module':
+            elif error_category == "missing_module":
                 fix_result = self.fixer.fix_missing_dependency(error)
 
             if fix_result:
                 results["fixes_applied"].append(fix_result)
                 print(f"  ✓ Applied fix: {fix_result}")
             else:
-                print(f"  ℹ Manual intervention may be required")
+                print("  ℹ Manual intervention may be required")
 
         return results
 
@@ -229,17 +234,17 @@ class PRFixAgent:
         report = f"""# PR Error Fix Report
 
 ## Summary
-- **Errors Found:** {results['errors_found']}
-- **Warnings Found:** {results['warnings_found']}
-- **Automatic Fixes Applied:** {len(results['fixes_applied'])}
+- **Errors Found:** {results["errors_found"]}
+- **Warnings Found:** {results["warnings_found"]}
+- **Automatic Fixes Applied:** {len(results["fixes_applied"])}
 
 ## Fixes Applied
 """
-        for fix in results['fixes_applied']:
+        for fix in results["fixes_applied"]:
             report += f"\n- {fix}"
 
         report += "\n\n## Error Analyses\n"
-        for i, analysis in enumerate(results['analyses'], 1):
+        for i, analysis in enumerate(results["analyses"], 1):
             report += f"\n### Error {i}\n"
             report += f"**Error:** {analysis['error'][:200]}...\n\n"
             report += f"**Analysis:**\n{analysis['analysis']}\n\n"
@@ -250,17 +255,9 @@ class PRFixAgent:
         """Create a git commit with the fixes"""
         try:
             # Security: Use argument list instead of shell=True
+            subprocess.run(["git", "add", "."], cwd=self.repo_path, check=True, shell=False)
             subprocess.run(
-                ["git", "add", "."],
-                cwd=self.repo_path,
-                check=True,
-                shell=False
-            )
-            subprocess.run(
-                ["git", "commit", "-m", message],
-                cwd=self.repo_path,
-                check=True,
-                shell=False
+                ["git", "commit", "-m", message], cwd=self.repo_path, check=True, shell=False
             )
             print(f"\n✓ Created commit: {message}")
             return True
@@ -274,7 +271,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="PR Error-Fixing Agent using Ollama")
-    parser.add_argument("log_file", nargs='?', help="Path to GitHub Actions log file")
+    parser.add_argument("log_file", nargs="?", help="Path to GitHub Actions log file")
     parser.add_argument("--model", default="codellama", help="Ollama model to use")
     parser.add_argument("--repo-path", default=".", help="Path to repository")
     parser.add_argument("--commit", action="store_true", help="Create a git commit with fixes")
@@ -303,7 +300,7 @@ def main():
     # Initialize agent
     agent = PRFixAgent(model=args.model, repo_path=args.repo_path)
 
-    print(f"🤖 PR Fix Agent starting...")
+    print("🤖 PR Fix Agent starting...")
     print(f"   Model: {args.model}")
     print(f"   Log file: {args.log_file}")
     print(f"   Repository: {args.repo_path}\n")
@@ -313,21 +310,21 @@ def main():
 
     # Generate report
     report = agent.generate_fix_report(results)
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(report)
-    print("="*60)
+    print("=" * 60)
 
     # Save report if requested
     if args.report:
-        with open(args.report, 'w') as f:
+        with open(args.report, "w") as f:
             f.write(report)
         print(f"\n✓ Report saved to {args.report}")
 
     # Create commit if requested
-    if args.commit and results['fixes_applied']:
+    if args.commit and results["fixes_applied"]:
         agent.create_fix_commit()
 
-    print(f"\n✅ Processing complete!")
+    print("\n✅ Processing complete!")
     return 0
 
 

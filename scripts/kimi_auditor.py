@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import os
+import re
 import subprocess
+import tempfile
 import time
 from datetime import datetime
+
 import openai
-import tempfile
-import re
 
 # ========================
 # CONFIG
@@ -26,19 +27,21 @@ TEST_CMD = os.getenv("TEST_CMD", "pytest")  # e.g., "pytest" or "make test"
 
 client = openai.OpenAI(api_key=MOONSHOT_API_KEY, base_url=BASE_URL)
 
+
 def log(msg: str):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] KIMI: {msg}")
+
 
 def get_diff() -> str:
     os.chdir(WORKSPACE)
     subprocess.run(["git", "pull", "--quiet"], check=False)
     result = subprocess.run(
-        ["git", "diff", f"origin/{BASE_BRANCH}...HEAD"],
-        capture_output=True, text=True
+        ["git", "diff", f"origin/{BASE_BRANCH}...HEAD"], capture_output=True, text=True
     )
     diff = result.stdout
-    log(f"Diff size: {len(diff)//1000}k chars")
+    log(f"Diff size: {len(diff) // 1000}k chars")
     return diff if diff else ""
+
 
 def run_tests() -> bool:
     log("Running tests...")
@@ -48,6 +51,7 @@ def run_tests() -> bool:
         return True
     log(f"Tests failed:\n{result.stdout[-1000:]}{result.stderr[-1000:]}")
     return False
+
 
 def run_kimi_analysis(diff: str, error_feedback: str = "") -> str | None:
     feedback = f"\nPrevious attempt failed: {error_feedback}" if error_feedback else ""
@@ -76,20 +80,23 @@ Unified diff fixing ALL issues, or "NO SAFE FIX POSSIBLE"
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
-        max_tokens=8000
+        max_tokens=8000,
     )
     return response.choices[0].message.content.strip()
+
 
 def extract_section(raw: str, header: str) -> str:
     match = re.search(rf"### {header}\n(.*?)(###|$)", raw, re.DOTALL)
     return match.group(1).strip() if match else ""
 
+
 def extract_patch(raw: str) -> str | None:
     match = re.search(r"```diff\n(.*?)\n```", raw, re.DOTALL)
     return match.group(1).strip() if match else None
 
+
 def apply_patch(patch: str) -> str:  # Returns error or ""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.patch') as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".patch") as f:
         f.write(patch)
         f.flush()
         check = subprocess.run(["git", "apply", "--check", f.name], capture_output=True)
@@ -97,6 +104,7 @@ def apply_patch(patch: str) -> str:  # Returns error or ""
             return f"Patch rejected: {check.stderr.decode()}"
         subprocess.run(["git", "apply", f.name], check=True)
     return ""
+
 
 def create_pr(findings: str, confidence: str, applied: bool, iteration: int):
     timestamp = int(time.time())
@@ -106,23 +114,42 @@ def create_pr(findings: str, confidence: str, applied: bool, iteration: int):
     subprocess.run(["git", "checkout", "-b", branch], check=True)
     if applied:
         subprocess.run(["git", "add", "-A"])
-        subprocess.run(["git", "commit", "-m", f"🤖 Kimi auto-fix (iteration {iteration})"], check=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"🤖 Kimi auto-fix (iteration {iteration})"], check=True
+        )
 
     subprocess.run(["git", "push", "origin", branch, "--force"], check=True)
 
     body = f"### Kimi Security Audit (Confidence: {confidence})\n\n{findings}\n\n"
-    body += f"Fixes {status.lower()} in iteration {iteration}. Tests: {'Passed' if applied else 'N/A'}"
+    body += (
+        f"Fixes {status.lower()} in iteration {iteration}. Tests: {'Passed' if applied else 'N/A'}"
+    )
 
     title = f"🤖 Kimi Security Fix ({confidence} confidence)"
     labels = "kimi,security,auto-fix"
     if not applied:
         labels += ",needs-review"
 
-    subprocess.run([
-        "gh", "pr", "create", "--title", title, "--body", body,
-        "--base", TARGET_BRANCH, "--head", branch, "--label", labels
-    ], check=True)
+    subprocess.run(
+        [
+            "gh",
+            "pr",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--base",
+            TARGET_BRANCH,
+            "--head",
+            branch,
+            "--label",
+            labels,
+        ],
+        check=True,
+    )
     log("PR created")
+
 
 def main():
     log("Kimi Self-Healing Security Agent v4 Activated")
@@ -172,6 +199,7 @@ def main():
         except Exception as e:
             log(f"Error: {e}")
             time.sleep(300)
+
 
 if __name__ == "__main__":
     main()

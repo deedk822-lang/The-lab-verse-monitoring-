@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
@@ -13,6 +13,7 @@ class ConfigManager:
         if os.path.exists(config_file):
             try:
                 from dotenv import load_dotenv
+
                 load_dotenv(config_file)
                 logger.info("Configuration loaded from %s", config_file)
             except ImportError:

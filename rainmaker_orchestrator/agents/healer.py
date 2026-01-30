@@ -1,18 +1,18 @@
+import json
 import logging
 import re
-import json
 import shlex
-import os
-from typing import Dict, Any, Optional
-from rainmaker_orchestrator.core import RainmakerOrchestrator
+from typing import Any, Dict
+
 from rainmaker_orchestrator.clients.kimi import KimiClient
+from rainmaker_orchestrator.core import RainmakerOrchestrator
 
 logger: logging.Logger = logging.getLogger("healer")
 
 
 class SelfHealingAgent:
     """Self-healing agent for command injection prevention and code repair.
-    
+
     This agent receives alert payloads from monitoring systems (e.g., Prometheus)
     and uses AI to analyze errors and generate automated hotfixes.
     """
@@ -53,16 +53,17 @@ class SelfHealingAgent:
             RainmakerOrchestrator: A new orchestrator instance
         """
         from rainmaker_orchestrator.server import settings
+
         return RainmakerOrchestrator(workspace_path=settings.workspace_path)
 
     @staticmethod
     def validate_command(command: str) -> bool:
         """
         Check a shell command string for patterns commonly associated with command injection.
-        
+
         Parameters:
             command (str): The shell command string to validate.
-        
+
         Returns:
             true if the command contains none of the configured injection patterns, false otherwise.
         """
@@ -76,13 +77,13 @@ class SelfHealingAgent:
     def safe_parse_command(command: str) -> list:
         """
         Parse a shell command into a list of arguments after validating it against injection patterns.
-        
+
         Parameters:
             command (str): The shell command string to validate and parse.
-        
+
         Returns:
             list: The parsed list of command arguments.
-        
+
         Raises:
             ValueError: If the command fails security validation or parsing fails.
         """
@@ -100,19 +101,21 @@ class SelfHealingAgent:
     def extract_json(response: str) -> Dict[str, Any]:
         """
         Extracts a JSON object from a string that may include Markdown code fences.
-        
+
         Parameters:
             response (str): Input text potentially containing JSON wrapped in triple-backtick Markdown code blocks (e.g., ```json ... ```).
-        
+
         Returns:
             dict: Parsed JSON object.
-        
+
         Raises:
             json.JSONDecodeError: If the cleaned input cannot be parsed as JSON.
         """
         try:
             # Remove markdown code blocks if present
-            clean: str = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=re.MULTILINE)
+            clean: str = re.sub(
+                r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=re.MULTILINE
+            )
             parsed: Dict[str, Any] = json.loads(clean)
             logger.debug("JSON extraction successful")
             return parsed
@@ -124,11 +127,11 @@ class SelfHealingAgent:
     def format_error_feedback(error: str, attempt: int) -> str:
         """
         Format a user-facing message for a failed retry attempt.
-        
+
         Parameters:
             error (str): Error message or output produced by the failed attempt.
             attempt (int): Zero-based index of the attempt that failed.
-        
+
         Returns:
             str: A message indicating which attempt (1-based) failed, includes the error content, and prompts the user to fix the issue and retry.
         """
@@ -154,14 +157,14 @@ class SelfHealingAgent:
             - error: Error message (if failed)
         """
         # Check for multiple alerts in payload
-        alerts = alert_payload.get('alerts', [])
-        if not alerts and 'description' not in alert_payload and 'service' not in alert_payload:
+        alerts = alert_payload.get("alerts", [])
+        if not alerts and "description" not in alert_payload and "service" not in alert_payload:
             return {"status": "ignored", "reason": "No alerts, description or service in payload"}
 
-        error_log = alert_payload.get('description')
+        error_log = alert_payload.get("description")
         if not error_log:
-            error_log = 'No description provided'
-        service_name = alert_payload.get('service', 'Unknown service')
+            error_log = "No description provided"
+        service_name = alert_payload.get("service", "Unknown service")
 
         if not alerts:
             # Handle single alert from direct description
@@ -180,7 +183,9 @@ class SelfHealingAgent:
                 blueprint = self.kimi_client.generate(prompt, mode="hotfix")
 
                 if blueprint is None:
-                    logger.error(f"Failed to generate hotfix for {service_name} due to Kimi client error.")
+                    logger.error(
+                        f"Failed to generate hotfix for {service_name} due to Kimi client error."
+                    )
                     return {"status": "hotfix_failed", "error": "Blueprint generation failed"}
 
                 # In a real implementation, this would involve deploying the hotfix
@@ -194,5 +199,5 @@ class SelfHealingAgent:
             return {
                 "status": "acknowledged",
                 "alert_count": len(alerts),
-                "message": "Self-healing protocol initiated for multiple alerts"
+                "message": "Self-healing protocol initiated for multiple alerts",
             }

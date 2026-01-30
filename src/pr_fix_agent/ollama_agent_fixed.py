@@ -1,146 +1,131 @@
-"""
-Observable Ollama Agent
-Issue Fixed: #10: OpenLIT tracing for LLM calls
-"""
-
 import os
-import time
+import json
 import requests
-import uuid
+import structlog
 from typing import Optional, Dict, Any
 
-from .observability import logger, CostTracker
+logger = structlog.get_logger(__name__)
 
-# OpenLIT for LLM observability
+# Try to import OpenLIT for observability
 try:
     import openlit
     OPENLIT_AVAILABLE = True
 except ImportError:
     OPENLIT_AVAILABLE = False
+    logger.warning("openlit_not_available", message="Install openlit for LLM tracing")
+
+# Module-level OpenLIT initialization guard
+_openlit_initialized = False
+
+if OPENLIT_AVAILABLE and not _openlit_initialized:
+    try:
+        openlit.init(
+            otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318"),
+            application_name="pr-fix-agent"
+        )
+        logger.info("openlit_initialized")
+        _openlit_initialized = True
+    except Exception as e:
+        logger.warning("openlit_init_failed", error=str(e))
 
 
 class OllamaAgent:
-    """
-    Ollama agent with complete observability
-
-    Features:
-    - OpenLIT tracing
-    - Structured logging
-    - Cost tracking
-    - Performance metrics
-    """
+    """LLM agent using Ollama with observability"""
 
     def __init__(
         self,
         model: str = "codellama",
         base_url: str = "http://localhost:11434",
-        cost_tracker: Optional[CostTracker] = None
+        cost_tracker: Optional[Any] = None
     ):
         self.model = model
         self.base_url = base_url
         self.api_url = f"{base_url}/api/generate"
-        self.cost_tracker = cost_tracker or CostTracker()
+        self.cost_tracker = cost_tracker
 
-        # Initialize OpenLIT if available
-        if OPENLIT_AVAILABLE:
-            openlit.init(
-                otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318"),
-                application_name="pr-fix-agent"
-            )
-            logger.info("openlit_initialized")
+        logger.info(
+            "ollama_agent_created",
+            model=model,
+            base_url=base_url,
+            cost_tracking=cost_tracker is not None
+        )
 
     def query(
         self,
         prompt: str,
-        temperature: float = 0.2,
-        timeout: int = 120,
-        trace_id: Optional[str] = None
+        system: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2000
     ) -> str:
-        """
-        Query with full observability
-        """
-        trace_id = trace_id or str(uuid.uuid4())
-        start_time = time.time()
-
-        # Structured logging - START
-        logger.info(
-            "llm_query_start",
+        """Query the Ollama model"""
+        logger.debug(
+            "ollama_query_start",
             model=self.model,
             prompt_length=len(prompt),
             temperature=temperature,
-            trace_id=trace_id
+            max_tokens=max_tokens
         )
+
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens
+            }
+        }
+
+        if system:
+            payload["system"] = system
 
         try:
-            # OpenLIT tracing wrapper
-            if OPENLIT_AVAILABLE:
-                response = self._traced_query(prompt, temperature, timeout, trace_id)
-            else:
-                response = self._raw_query(prompt, temperature, timeout)
-
-            # Calculate duration
-            duration = time.time() - start_time
-
-            # Cost tracking
-            cost = self.cost_tracker.record_usage(
-                model=self.model,
-                prompt=prompt,
-                response=response,
-                metadata={"trace_id": trace_id, "duration": duration}
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                timeout=120
             )
+            response.raise_for_status()
 
-            # Structured logging - SUCCESS
+            data = response.json()
+
+            # Safe extraction with validation
+            if "response" not in data:
+                logger.error(
+                    "ollama_unexpected_response",
+                    available_keys=list(data.keys()),
+                    model=self.model
+                )
+                raise ValueError(f"Unexpected API response format: {list(data.keys())}")
+
+            result = data["response"]
+
+            # Track costs if tracker is available
+            if self.cost_tracker and "eval_count" in data:
+                prompt_tokens = data.get("prompt_eval_count", 0)
+                completion_tokens = data.get("eval_count", 0)
+
+                self.cost_tracker.track(
+                    model=self.model,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens
+                )
+
             logger.info(
-                "llm_query_success",
+                "ollama_query_success",
                 model=self.model,
-                duration=duration,
-                response_length=len(response),
-                tokens=cost.total_tokens,
-                cost=cost.estimated_cost,
-                trace_id=trace_id
+                response_length=len(result),
+                prompt_tokens=data.get("prompt_eval_count", 0),
+                completion_tokens=data.get("eval_count", 0)
             )
 
-            return response
+            return result
 
-        except Exception as e:
-            # Structured logging - ERROR
+        except requests.exceptions.RequestException as e:
             logger.error(
-                "llm_query_failed",
+                "ollama_query_failed",
                 model=self.model,
                 error=str(e),
-                error_type=type(e).__name__,
-                duration=time.time() - start_time,
-                trace_id=trace_id,
-                exc_info=True
+                error_type=type(e).__name__
             )
             raise
-
-    def _traced_query(self, prompt: str, temperature: float, timeout: int, trace_id: str) -> str:
-        """Query with OpenLIT tracing"""
-        with openlit.trace(
-            name="ollama_query",
-            kind="llm",
-            attributes={
-                "llm.model": self.model,
-                "llm.temperature": temperature,
-                "llm.prompt_length": len(prompt),
-                "trace_id": trace_id
-            }
-        ):
-            return self._raw_query(prompt, temperature, timeout)
-
-    def _raw_query(self, prompt: str, temperature: float, timeout: int) -> str:
-        """Raw query without tracing"""
-        response = requests.post(
-            self.api_url,
-            json={
-                "model": self.model,
-                "prompt": prompt,
-                "stream": False,
-                "temperature": temperature
-            },
-            timeout=timeout
-        )
-
-        response.raise_for_status()
-        return response.json()["response"]

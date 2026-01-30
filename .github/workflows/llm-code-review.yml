@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'  # ✅ FIX: Fetch submodules
+          submodules: 'recursive'
           fetch-depth: 0
 
       - name: Setup Python
@@ -37,7 +37,7 @@ jobs:
 
       - name: Run static analysis
         id: collect
-        continue-on-error: true  # ✅ FIX: Don't fail job, just report
+        continue-on-error: true
         run: |
           mkdir -p analysis-results
 
@@ -70,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'  # ✅ FIX: Fetch submodules
+          submodules: 'recursive'
           fetch-depth: 0
 
       - name: Setup Python
@@ -93,31 +93,34 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
           sleep 10
-          ollama pull deepseek-r1:14b
-          ollama pull qwen2.5-coder:32b
+          # Use smaller models for standard runners
+          ollama pull deepseek-r1:1.5b
+          ollama pull qwen2.5-coder:1.5b
 
       - name: Run orchestrator (reasoning + coding)
         run: |
+          # Create directory for proposals
+          mkdir -p artifacts/proposals
+
           python -m pr_fix_agent.orchestrator \
             --mode reasoning \
             --findings analysis-results/ \
-            --output proposals.json
+            --output artifacts/proposals/proposals.json
 
           python -m pr_fix_agent.orchestrator \
             --mode coding \
-            --proposals proposals.json \
+            --proposals artifacts/proposals/proposals.json \
             --apply
 
       - name: Run tests (FIXED LOGIC)
         id: test
         run: |
-          # ✅ FIX: Capture exit code properly
-          set +e  # Allow pytest to fail without stopping script
+          set +e
 
-          mkdir -p artifacts
+          mkdir -p artifacts/test-results
           pytest tests/ -v \
             --json-report \
-            --json-report-file=artifacts/test-results.json \
+            --json-report-file=artifacts/test-results/test-results.json \
             --tb=short
 
           TEST_EXIT_CODE=$?
@@ -125,8 +128,7 @@ jobs:
 
           echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
 
-          # ✅ FIX: Check BOTH exit code AND file existence
-          if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results.json ]; then
+          if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results/test-results.json ]; then
             echo "tests_passed=true" >> $GITHUB_OUTPUT
             echo "✅ All tests passed (exit code: 0)"
           else
@@ -134,20 +136,20 @@ jobs:
             echo "❌ Tests failed (exit code: $TEST_EXIT_CODE)"
           fi
 
-          # Output results for debugging
-          if [ -f artifacts/test-results.json ]; then
-            echo "Test results file exists"
-            jq -r '.summary' artifacts/test-results.json || echo "Could not parse summary"
-          else
-            echo "⚠️ Test results file not generated"
-          fi
+      - name: Upload proposals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-proposals
+          path: artifacts/proposals/proposals.json
+          retention-days: 7
 
       - name: Upload test results
-        if: always()  # Upload even on failure
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: artifacts/test-results.json
+          path: artifacts/test-results/test-results.json
           retention-days: 30
 
       - name: Upload fixed code
@@ -188,10 +190,9 @@ jobs:
 
       - name: Generate PR body (FIXED)
         run: |
-          # ✅ FIX: Uses fixed orchestrator with proper error handling
           python -m pr_fix_agent.orchestrator \
             --mode generate-pr \
-            --proposals artifacts/analysis-results/proposals.json \
+            --proposals artifacts/fix-proposals/proposals.json \
             --test-results artifacts/test-results/test-results.json \
             --output pr-body.md
 
@@ -245,7 +246,7 @@ jobs:
         run: |
           python -m pr_fix_agent.orchestrator \
             --mode generate-pr \
-            --proposals artifacts/analysis-results/proposals.json \
+            --proposals artifacts/fix-proposals/proposals.json \
             --test-results artifacts/test-results/test-results.json \
             --output pr-body.md
 
@@ -265,8 +266,8 @@ jobs:
             automated-fix
             code-review
             tests-failed
-          draft: true  # ✅ Create as draft since tests failed
-          delete-branch: false  # Keep branch for investigation
+          draft: true
+          delete-branch: false
 
   # ========================================================================
   # STEP 5: Summary
@@ -284,7 +285,6 @@ jobs:
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Test status
           if [ "${{ needs.process-and-test.outputs.tests_passed }}" == "true" ]; then
             echo "- **Tests**: ✅ PASSED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
             echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅ Regular PR' || '⚠️ Failed' }}" >> $GITHUB_STEP_SUMMARY

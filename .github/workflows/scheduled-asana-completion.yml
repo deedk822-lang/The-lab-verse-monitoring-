@@ -1,3 +1,4 @@
+---
 # File: .github/workflows/scheduled-asana-cleanup.yml
 name: Scheduled Asana Completion
 
@@ -101,11 +102,11 @@ jobs:
                 { "type": "header", "text": { "type": "plain_text", "text": "📊 Asana Completion Report" } },
                 { "type": "section", "fields": [
                     { "type": "mrkdwn", "text": "*Criteria:*\n`${{ needs.run-completion.outputs.criteria }}`" },
-                    { "type": "mrkdwn", "text": "*Mode:*\n${{ needs.run-completion.outputs.dry-run == 'true' ? 'Dry Run' : 'Live Run' }}" }
+                    { "type": "mrkdwn", "text": "*Mode:*\n${{ needs.run-completion.outputs.dry-run == 'true' && 'Dry Run' || 'Live Run' }}" }
                   ]
                 },
                 { "type": "section", "fields": [
-                    { "type": "mrkdwn", "text": "*✅ ${{ needs.run-completion.outputs.dry-run == 'true' ? 'Would Complete' : 'Completed' }}:*\n${{ needs.run-completion.outputs.completed-count }} tasks" },
+                    { "type": "mrkdwn", "text": "*✅ ${{ needs.run-completion.outputs.dry-run == 'true' && 'Would Complete' || 'Completed' }}:*\n${{ needs.run-completion.outputs.completed-count }} tasks" },
                     { "type": "mrkdwn", "text": "*⏭️ Skipped:*\n${{ needs.run-completion.outputs.skipped-count }} tasks" }
                   ]
                 }

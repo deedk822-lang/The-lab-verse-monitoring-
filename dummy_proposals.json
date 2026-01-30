@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fix_001",
+    "issue": "Simulated security issue",
+    "proposed_fix": "Add input validation",
+    "files": [
+      "src/main.py"
+    ]
+  }
+]

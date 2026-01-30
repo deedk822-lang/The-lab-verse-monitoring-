@@ -14,7 +14,7 @@ from pathlib import Path
 # Conventional imports from the package
 from .security import SecurityValidator, SecurityError
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
-from .ollama_agent_fixed import OllamaAgent
+from .ollama_agent import OllamaAgent
 
 
 def main():

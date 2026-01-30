@@ -46,8 +46,7 @@ dev = [
 ]
 
 [project.scripts]
-pr-fix-agent = "pr_fix_agent.orchestrator:main"
-pr-fix-agent-prod = "pr_fix_agent.production:main"
+pr-fix-agent = "pr_fix_agent.cli:main"
 pr-benchmark = "benchmarking_real:main"
 pr-improve = "continuous_improvement_real:main"
 
@@ -65,7 +64,7 @@ packages = {find = {where = ["src"]}}
 pr_fix_agent = ["*.py"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests_real"]
+testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"

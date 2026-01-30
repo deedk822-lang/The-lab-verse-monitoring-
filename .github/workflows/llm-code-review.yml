@@ -1,197 +1,209 @@
-name: LLM Code Review
+name: LLM-Powered Code Review (FIXED)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize]
   workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
+  # ========================================================================
+  # STEP 1: Collect Findings
+  # ========================================================================
+
   collect-findings:
-    name: Collect Findings
+    name: Collect Code Review Findings
     runs-on: ubuntu-latest
     outputs:
       findings_file: ${{ steps.collect.outputs.findings_file }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install analysis tools
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
+          pip install bandit ruff mypy safety
 
-      - name: Collect findings
+      - name: Run static analysis
         id: collect
+        continue-on-error: true
         run: |
-          mkdir -p artifacts
-          # Run static analysis tools and collect findings
-          echo '{"findings": []}' > artifacts/findings.json
-          echo "findings_file=artifacts/findings.json" >> $GITHUB_OUTPUT
+          mkdir -p analysis-results
+
+          bandit -r src/ -f json -o analysis-results/bandit.json || echo "bandit failed"
+          ruff check src/ --output-format=json > analysis-results/ruff.json || echo "ruff failed"
+          mypy src/ --json-report analysis-results/ || echo "mypy failed"
+          safety check --json > analysis-results/safety.json || echo "safety failed"
+
+          echo "findings_file=analysis-results" >> $GITHUB_OUTPUT
 
       - name: Upload findings
         uses: actions/upload-artifact@v4
         with:
-          name: findings
-          path: artifacts/findings.json
+          name: analysis-results
+          path: analysis-results/
+          retention-days: 7
 
-  reasoning-and-coding:
-    name: Reasoning and Coding Analysis
+  # ========================================================================
+  # STEP 2: Reasoning + Coding + Testing (Combined)
+  # ========================================================================
+
+  process-and-test:
+    name: Process Findings and Test
     runs-on: ubuntu-latest
     needs: [collect-findings]
     outputs:
-      proposals_file: ${{ steps.reason.outputs.proposals_file }}
+      tests_passed: ${{ steps.test.outputs.tests_passed }}
+      test_exit_code: ${{ steps.test.outputs.test_exit_code }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/swift
-          sudo rm -rf /usr/local/share/powershell
-          sudo rm -rf /etc/mysql
-          sudo rm -rf /usr/local/lib/node_modules
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune -af
-
-      - name: Install Ollama
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          sleep 10
-          ollama pull deepseek-r1:1.5b
-          ollama pull qwen2.5-coder:1.5b
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install package
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[dev]"
 
       - name: Download findings
         uses: actions/download-artifact@v4
         with:
-          name: findings
-          path: artifacts
+          name: analysis-results
+          path: analysis-results/
 
-      - name: Run reasoning analysis
-        id: reason
+      - name: Install and start Ollama
         run: |
-          pr-fix-agent --mode reasoning \
-            --findings artifacts/findings.json \
-            --output artifacts/proposals.json
-          echo "proposals_file=artifacts/proposals.json" >> $GITHUB_OUTPUT
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 10
+          # Use smaller models for standard runners
+          ollama pull deepseek-r1:1.5b
+          ollama pull qwen2.5-coder:1.5b
 
-      - name: Generate code fixes
+      - name: Run orchestrator (reasoning + coding)
         run: |
-          pr-fix-agent --mode coding \
-            --proposals artifacts/proposals.json \
-            --output artifacts/fixes \
-            --apply
+          # Create directory for proposals
+          mkdir -p artifacts/proposals
 
-      - name: Upload proposals
-        uses: actions/upload-artifact@v4
-        with:
-          name: proposals
-          path: artifacts/proposals.json
+          python -m pr_fix_agent.orchestrator \
+            --mode reasoning \
+            --findings analysis-results/ \
+            --output artifacts/proposals/proposals.json \
+            --reasoning-model deepseek-r1:1.5b \
+            --coding-model qwen2.5-coder:1.5b
 
-      - name: Upload fixes
-        uses: actions/upload-artifact@v4
-        with:
-          name: fixes
-          path: artifacts/fixes
+          python -m pr_fix_agent.orchestrator \
+            --mode coding \
+            --proposals artifacts/proposals/proposals.json \
+            --apply \
+            --reasoning-model deepseek-r1:1.5b \
+            --coding-model qwen2.5-coder:1.5b
 
-  test-verification:
-    name: Test Verification
-    runs-on: ubuntu-latest
-    needs: [reasoning-and-coding]
-    outputs:
-      tests_passed: ${{ steps.test.outputs.tests_passed }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
-
-      - name: Download fixes
-        uses: actions/download-artifact@v4
-        with:
-          name: fixes
-          path: artifacts/fixes
-
-      - name: Run tests
+      - name: Run tests (FIXED LOGIC)
         id: test
         run: |
-          pytest tests/ --json-report --json-report-file=artifacts/test-results.json || true
-          if [ -f artifacts/test-results.json ]; then
+          set +e
+
+          mkdir -p artifacts/test-results
+          pytest tests/ -v \
+            --json-report \
+            --json-report-file=artifacts/test-results/test-results.json \
+            --tb=short
+
+          TEST_EXIT_CODE=$?
+          set -e
+
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+
+          if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results/test-results.json ]; then
             echo "tests_passed=true" >> $GITHUB_OUTPUT
+            echo "✅ All tests passed (exit code: 0)"
           else
             echo "tests_passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Tests failed (exit code: $TEST_EXIT_CODE)"
           fi
 
+      - name: Upload proposals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-proposals
+          path: artifacts/proposals/proposals.json
+          retention-days: 7
+
       - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: artifacts/test-results.json
+          path: artifacts/test-results/test-results.json
+          retention-days: 30
+
+      - name: Upload fixed code
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixed-code
+          path: src/
+          retention-days: 7
+
+  # ========================================================================
+  # STEP 3: Create PR (Only if tests pass)
+  # ========================================================================
 
   create-pr:
     name: Create Pull Request
     runs-on: ubuntu-latest
-    needs: [test-verification]
-    if: needs.test-verification.outputs.tests_passed == 'true'
+    needs: [process-and-test]
+    if: needs.process-and-test.outputs.tests_passed == 'true'
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
+      - name: Install package
+        run: pip install -e .
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: '{proposals,test-results}'
-          path: artifacts
-          merge-multiple: true
+          path: artifacts/
 
-      - name: Generate PR body
+      - name: Generate PR body (FIXED)
         run: |
-          pr-fix-agent --mode generate-pr \
-            --proposals artifacts/proposals.json \
-            --test-results artifacts/test-results.json \
+          python -m pr_fix_agent.orchestrator \
+            --mode generate-pr \
+            --proposals artifacts/fix-proposals/proposals.json \
+            --test-results artifacts/test-results/test-results.json \
             --output pr-body.md
+
+      - name: Apply fixed code
+        run: |
+          cp -r artifacts/fixed-code/* src/
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
@@ -201,17 +213,78 @@ jobs:
           title: "🤖 Auto-fix: Code review findings"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
           labels: |
             automated-fix
             code-review
-            llm-generated
           draft: false
           delete-branch: true
+
+  # ========================================================================
+  # STEP 4: Create Draft PR (If tests fail)
+  # ========================================================================
+
+  create-draft-pr:
+    name: Create Draft PR (Tests Failed)
+    runs-on: ubuntu-latest
+    needs: [process-and-test]
+    if: needs.process-and-test.outputs.tests_passed == 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate PR body with test failures
+        run: |
+          python -m pr_fix_agent.orchestrator \
+            --mode generate-pr \
+            --proposals artifacts/fix-proposals/proposals.json \
+            --test-results artifacts/test-results/test-results.json \
+            --output pr-body.md
+
+      - name: Apply fixed code
+        run: |
+          cp -r artifacts/fixed-code/* src/ || echo "No fixed code to apply"
+
+      - name: Create Draft Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "🤖 Auto-fix: Code review findings (TESTS FAILED)"
+          title: "🤖 [DRAFT] Auto-fix: Code review findings ❌ Tests Failed"
+          body-path: pr-body.md
+          branch: auto-fix/code-review-failed-${{ github.run_number }}
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
+          labels: |
+            automated-fix
+            code-review
+            tests-failed
+          draft: true
+          delete-branch: false
+
+  # ========================================================================
+  # STEP 5: Summary
+  # ========================================================================
 
   report-summary:
     name: Report Summary
     runs-on: ubuntu-latest
-    needs: [collect-findings, reasoning-and-coding, test-verification, create-pr]
+    needs: [process-and-test, create-pr, create-draft-pr]
     if: always()
 
     steps:
@@ -219,7 +292,17 @@ jobs:
         run: |
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Findings Collected**: ${{ needs.collect-findings.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reasoning & Coding**: ${{ needs.reasoning-and-coding.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests**: ${{ needs.test-verification.outputs.tests_passed == 'true' && '✅ PASSED' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.process-and-test.outputs.tests_passed }}" == "true" ]; then
+            echo "- **Tests**: ✅ PASSED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅ Regular PR' || '⚠️ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Tests**: ❌ FAILED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **PR Created**: ${{ needs.create-draft-pr.result == 'success' && '⚠️ Draft PR (needs review)' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Details" >> $GITHUB_STEP_SUMMARY
+          echo "- Exit code indicates actual test outcome" >> $GITHUB_STEP_SUMMARY
+          echo "- Draft PR created if tests fail" >> $GITHUB_STEP_SUMMARY
+          echo "- Regular PR created if tests pass" >> $GITHUB_STEP_SUMMARY

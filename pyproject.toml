@@ -46,7 +46,8 @@ dev = [
 ]
 
 [project.scripts]
-pr-fix-agent = "pr_fix_agent.production:main"
+pr-fix-agent = "pr_fix_agent.orchestrator:main"
+pr-fix-agent-prod = "pr_fix_agent.production:main"
 pr-benchmark = "benchmarking_real:main"
 pr-improve = "continuous_improvement_real:main"
 

@@ -1,88 +1,269 @@
-[build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "pr-fix-agent"
-version = "1.0.0"
-description = "Automated PR error fixing using Ollama LLMs"
-readme = "REAL_SYSTEM_README.md"
-requires-python = ">=3.8"
-license = {text = "MIT"}
+version = "0.1.0"
+description = "Enterprise-grade AI-powered PR error fixing with multi-agent orchestration"
 authors = [
-    {name = "PR Fix Agent Team"}
+    {name = "PR Fix Agent Team", email = "team@example.com"}
 ]
-keywords = ["ci-cd", "automation", "ollama", "llm", "error-fixing"]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+keywords = ["ai", "llm", "pr", "ci-cd", "automation", "fastapi"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Topic :: Software Development :: Quality Assurance",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 
 dependencies = [
-    "requests>=2.28.0",
-    "psutil>=5.9.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "structlog",
+    # Web Framework
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.25",
+    "alembic>=1.13.1",
+    "psycopg2-binary>=2.9.9",
+    "asyncpg>=0.29.0",
+
+    # Redis & Rate Limiting
+    "redis>=5.0.1",
+    "slowapi>=0.1.9",
+
+    # Security
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[argon2]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "hvac>=2.1.0",  # Vault client
+
+    # HTTP Client
+    "httpx>=0.26.0",
+    "requests>=2.31.0",
+
+    # CLI
+    "typer[all]>=0.9.0",
+    "rich>=13.7.0",
+
+    # Logging & Monitoring
+    "structlog>=24.1.0",
+    "prometheus-client>=0.19.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0",
+    "opentelemetry-exporter-otlp>=1.22.0",
+
+    # Feature Flags
+    "UnleashClient>=5.11.1",
+
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "tenacity>=8.2.3",
+    "orjson>=3.9.12",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=3.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-timeout>=2.1.0",
-    "black>=22.0.0",
-    "ruff>=0.0.250",
-    "mypy>=0.990",
+    # Testing
+    "pytest>=7.4.4",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.3",
+    "pytest-timeout>=2.2.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-mock>=3.12.0",
     "pytest-json-report",
+    "hypothesis>=6.96.4",
+    "schemathesis>=3.27.1",
+    "testcontainers>=3.7.1",
+    "atheris>=2.3.0",  # Fuzz testing
+    "faker>=22.5.1",
+
+    # Code Quality
+    "ruff>=0.1.14",
+    "black>=24.1.1",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+
+    # Security Scanning
+    "bandit[toml]>=1.7.6",
+    "safety>=3.0.1",
+    "semgrep>=1.55.2",
+
+    # Type Stubs
+    "types-redis>=4.6.0.20240106",
+    "types-requests>=2.31.0.20240106",
+    "types-python-jose>=3.3.4.20240106",
+    "types-passlib>=1.7.7.20240106",
+    "sqlalchemy[mypy]>=2.0.25",
+
+    # Documentation
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.5.5",
+    "mkdocstrings[python]>=0.24.0",
+
+    # SBOM Generation
+    "cyclonedx-bom>=4.4.0",
+
+    # Development Tools
+    "ipython>=8.20.0",
+    "ipdb>=0.13.13",
+    "pre-commit>=3.6.0",
 ]
 
 [project.scripts]
-pr-fix-agent = "pr_fix_agent.orchestrator:main"
-pr-fix-agent-prod = "pr_fix_agent.production:main"
-pr-benchmark = "benchmarking_real:main"
-pr-improve = "continuous_improvement_real:main"
+pr-fix-agent = "pr_fix_agent.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/your-org/pr-fix-agent"
-Documentation = "https://github.com/your-org/pr-fix-agent#readme"
-Repository = "https://github.com/your-org/pr-fix-agent"
-"Bug Tracker" = "https://github.com/your-org/pr-fix-agent/issues"
+Homepage = "https://github.com/org/pr-fix-agent"
+Documentation = "https://org.github.io/pr-fix-agent"
+Repository = "https://github.com/org/pr-fix-agent"
+"Bug Tracker" = "https://github.com/org/pr-fix-agent/issues"
+Changelog = "https://github.com/org/pr-fix-agent/blob/main/CHANGELOG.md"
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}}
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.package-data]
-pr_fix_agent = ["*.py"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/pr_fix_agent"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests_real"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = "-v --strict-markers"
+minversion = "7.0"
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/pr_fix_agent",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests requiring external services",
+    "property: Property-based tests",
+    "contract: Contract tests against OpenAPI spec",
+    "fuzz: Fuzz tests",
+    "slow: Slow-running tests",
+]
+timeout = 300
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+source = ["src/pr_fix_agent"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+
+[[tool.mypy.overrides]]
+module = [
+    "atheris.*",
+    "testcontainers.*",
+    "schemathesis.*",
+    "UnleashClient.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+    "ERA", # flake8-eradicate
+    "PL",  # pylint
+    "RUF", # ruff-specific rules
+    "S",   # bandit security checks
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "PLR0913",  # too many arguments
+    "PLR2004",  # magic value comparison
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**/*.py" = ["S101", "ARG", "PLR2004"]
+"migrations/**/*.py" = ["INP001"]
+
+[tool.ruff.isort]
+known-first-party = ["pr_fix_agent"]
+force-sort-within-sections = true
 
 [tool.black]
 line-length = 100
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+target-version = ["py311"]
 include = '\.pyi?$'
 
-[tool.ruff]
-line-length = 100
-target-version = "py38"
-select = ["E", "F", "W", "I", "N", "UP"]
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["pr_fix_agent"]
+skip_gitignore = true
 
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
+[tool.bandit]
+exclude_dirs = ["tests", "migrations", ".venv", "venv"]
+skips = ["B101", "B601"]
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py", "*/*_test.py"]

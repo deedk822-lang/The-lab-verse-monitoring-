@@ -236,7 +236,8 @@ jobs:
         run: |
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Findings Collected**: ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reasoning Analysis**: ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Code Implementation**: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Findings Collected**: ${{ needs.collect-findings.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reasoning Analysis**: ${{ needs.reasoning-analysis.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Code Implementation**: ${{ needs.coding-implementation.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tests**: ${{ needs.test-verification.outputs.tests_passed == 'true' && '✅ PASSED' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY

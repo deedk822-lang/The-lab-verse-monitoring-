@@ -105,12 +105,16 @@ jobs:
           python -m pr_fix_agent.orchestrator \
             --mode reasoning \
             --findings analysis-results/ \
-            --output artifacts/proposals/proposals.json
+            --output artifacts/proposals/proposals.json \
+            --reasoning-model deepseek-r1:1.5b \
+            --coding-model qwen2.5-coder:1.5b
 
           python -m pr_fix_agent.orchestrator \
             --mode coding \
             --proposals artifacts/proposals/proposals.json \
-            --apply
+            --apply \
+            --reasoning-model deepseek-r1:1.5b \
+            --coding-model qwen2.5-coder:1.5b
 
       - name: Run tests (FIXED LOGIC)
         id: test
@@ -174,6 +178,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -201,13 +206,14 @@ jobs:
           cp -r artifacts/fixed-code/* src/
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings"
           title: "🤖 Auto-fix: Code review findings"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
           labels: |
             automated-fix
             code-review
@@ -228,6 +234,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -255,13 +262,14 @@ jobs:
           cp -r artifacts/fixed-code/* src/ || echo "No fixed code to apply"
 
       - name: Create Draft Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings (TESTS FAILED)"
           title: "🤖 [DRAFT] Auto-fix: Code review findings ❌ Tests Failed"
           body-path: pr-body.md
           branch: auto-fix/code-review-failed-${{ github.run_number }}
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
           labels: |
             automated-fix
             code-review

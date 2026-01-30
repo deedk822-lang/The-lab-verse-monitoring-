@@ -1,249 +1,179 @@
-version: '3.8'
-
-# ============================================================================
-# VAAL AI Empire - Production Docker Compose Configuration
-# ============================================================================
+version: '3.9'
 
 services:
-  # --------------------------------------------------------------------------
-  # PostgreSQL Database
-  # --------------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
-    container_name: vaal-postgres
-    restart: unless-stopped
+    container_name: pr-fix-agent-postgres
     environment:
-      POSTGRES_DB: vaal_ai_empire
-      POSTGRES_USER: ${DB_USER:-vaaluser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: pr_fix_agent
+      POSTGRES_USER: ${POSTGRES_USER:-prfixagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+      POSTGRES_HOST_SSL: "on"
+      POSTGRES_SSL_CERT_FILE: /var/lib/postgresql/server.crt
+      POSTGRES_SSL_KEY_FILE: /var/lib/postgresql/server.key
+      POSTGRES_SSL_CA_FILE: /var/lib/postgresql/ca.crt
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./vaal_ai_empire/update_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./certs/postgres/server.crt:/var/lib/postgresql/server.crt:ro
+      - ./certs/postgres/server.key:/var/lib/postgresql/server.key:ro
+      - ./certs/postgres/ca.crt:/var/lib/postgresql/ca.crt:ro
     ports:
       - "5432:5432"
+    networks:
+      - pr-fix-agent-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vaaluser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prfixagent}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - vaal-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
 
-  # --------------------------------------------------------------------------
-  # Redis Cache
-  # --------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: vaal-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
-    volumes:
-      - redis_data:/data
+    container_name: pr-fix-agent-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set} --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pr-fix-agent-network
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - vaal-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-  # --------------------------------------------------------------------------
-  # Main Application
-  # --------------------------------------------------------------------------
-  app:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vaal-app
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-vaaluser}:${DB_PASSWORD:-changeme}@postgres:5432/vaal_ai_empire
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-    volumes:
-      - ./models:/models:ro
-      - ./cache:/cache
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
-    ports:
-      - "8000:8000"
-      - "9090:9090"  # Prometheus metrics
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: pr-fix-agent:latest
+    container_name: pr-fix-agent-api
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-        limits:
-          memory: 8G
-          cpus: '4'
+    environment:
+      APP_NAME: pr-fix-agent
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-prfixagent}:${POSTGRES_PASSWORD}@postgres:5432/pr_fix_agent?sslmode=require
+      DB_SSL_CA: /app/certs/postgres/ca.crt
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      RATE_LIMIT_PER_MINUTE: 10
+      JWT_PRIVATE_KEY_PATH: /secrets/jwt-private-key.pem
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt-public-key.pem
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      UNLEASH_ENABLED: ${UNLEASH_ENABLED:-false}
+      UNLEASH_URL: ${UNLEASH_URL}
+      UNLEASH_API_TOKEN: ${UNLEASH_API_TOKEN}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: json
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus
+      AUDIT_LOG_PATH: /app/logs/audit.log
+    volumes:
+      - ./certs/postgres/ca.crt:/app/certs/postgres/ca.crt:ro
+      - ./secrets/jwt-private-key.pem:/secrets/jwt-private-key.pem:ro
+      - ./secrets/jwt-public-key.pem:/secrets/jwt-public-key.pem:ro
+      - audit_logs:/app/logs
+      - type: tmpfs
+        target: /tmp/prometheus
+        tmpfs:
+          size: 100m
+    ports:
+      - "8000:8000"
+    networks:
+      - pr-fix-agent-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-    networks:
-      - vaal-network
-
-  # --------------------------------------------------------------------------
-  # Nginx Reverse Proxy
-  # --------------------------------------------------------------------------
-  nginx:
-    image: nginx:alpine
-    container_name: vaal-nginx
+      start_period: 40s
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      - app
-    networks:
-      - vaal-network
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
-  # --------------------------------------------------------------------------
-  # Prometheus Monitoring
-  # --------------------------------------------------------------------------
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: vaal-prometheus
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "9091:9090"
-    networks:
-      - vaal-network
-
-  # --------------------------------------------------------------------------
-  # Grafana Dashboard
-  # --------------------------------------------------------------------------
-  grafana:
-    image: grafana/grafana:latest
-    container_name: vaal-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - vaal-network
-
-  # --------------------------------------------------------------------------
-  # PostgreSQL Backup Service
-  # --------------------------------------------------------------------------
-  backup:
+  pg-backup:
     image: postgres:15-alpine
-    container_name: vaal-backup
-    restart: "no"
-    environment:
-      PGHOST: postgres
-      PGUSER: ${DB_USER:-vaaluser}
-      PGPASSWORD: ${DB_PASSWORD:-changeme}
-      PGDATABASE: vaal_ai_empire
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
-    volumes:
-      - ./backups:/backups
-      - ./scripts/backup.sh:/backup.sh:ro
-    command: /bin/sh /backup.sh
+    container_name: pr-fix-agent-backup
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - vaal-network
-    profiles:
-      - backup
-
-  # --------------------------------------------------------------------------
-  # pgAdmin (Optional - for database management)
-  # --------------------------------------------------------------------------
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: vaal-pgadmin
-    restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@vaal.ai}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: pr_fix_agent
+      PGUSER: ${POSTGRES_USER:-prfixagent}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGSSLMODE: require
+      PGSSLROOTCERT: /certs/ca.crt
+      BACKUP_RETENTION_DAYS: 7
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
+      - backups:/backups
+      - ./certs/postgres/ca.crt:/certs/ca.crt:ro
+      - ./scripts/backup-database.sh:/backup.sh:ro
+    command: >
+      sh -c "
+        echo 'Backup service started. Running nightly at 2 AM...';
+        while true; do
+          CURRENT_HOUR=$$(date +%H);
+          CURRENT_MINUTE=$$(date +%M);
+          if [ \"$$CURRENT_HOUR\" = \"02\" ] && [ \"$$CURRENT_MINUTE\" = \"00\" ]; then
+            echo 'Starting backup...';
+            sh /backup.sh;
+            echo 'Backup completed';
+            sleep 60;
+          fi;
+          sleep 60;
+        done
+      "
     networks:
-      - vaal-network
-    profiles:
-      - tools
-
-  # --------------------------------------------------------------------------
-  # Redis Commander (Optional - for Redis management)
-  # --------------------------------------------------------------------------
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: vaal-redis-commander
+      - pr-fix-agent-network
     restart: unless-stopped
-    environment:
-      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-changeme}
-    ports:
-      - "8081:8081"
-    depends_on:
-      - redis
-    networks:
-      - vaal-network
-    profiles:
-      - tools
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-# ============================================================================
-# Networks
-# ============================================================================
 networks:
-  vaal-network:
+  pr-fix-agent-network:
+    name: pr-fix-agent-network
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
 
-# ============================================================================
-# Volumes
-# ============================================================================
 volumes:
   postgres_data:
-    driver: local
+    name: pr-fix-agent-postgres-data
   redis_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-  pgadmin_data:
-    driver: local
-  nginx_logs:
-    driver: local
+    name: pr-fix-agent-redis-data
+  audit_logs:
+    name: pr-fix-agent-audit-logs
+  backups:
+    name: pr-fix-agent-backups

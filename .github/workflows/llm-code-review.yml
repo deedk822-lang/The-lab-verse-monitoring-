@@ -59,14 +59,16 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune -af
 
       - name: Install Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
           sleep 10
-          ollama pull deepseek-r1:14b
+          ollama pull deepseek-r1:7b
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -111,14 +113,16 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune -af
 
       - name: Install Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
           sleep 10
-          ollama pull qwen2.5-coder:14b
+          ollama pull qwen2.5-coder:7b
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -225,7 +229,7 @@ jobs:
             --output pr-body.md
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings"

@@ -6,24 +6,12 @@ Tests actual log parsing and error analysis
 import pytest
 from unittest.mock import Mock
 import re
-fix-conventional-packaging-3798037865076663820
 
 # Conventional import from src
 from pr_fix_agent.analyzer import PRErrorAnalyzer
 
 import sys
 from pathlib import Path
-
-# Import from proper src/ directory
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-try:
-    from analyzer import PRErrorAnalyzer
-except ImportError:
-    # Fallback for direct execution
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from src.analyzer import PRErrorAnalyzer
- main
-
 
 # ============================================================================
 # REAL TESTS

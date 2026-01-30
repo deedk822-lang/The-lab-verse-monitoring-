@@ -2,6 +2,9 @@
 """
 PR Fix Agent Production Script
 Main entry point for automated PR error fixing
+
+FIXED: Early validation of --repo-path
+FIXED: Uses observable OllamaAgent
 """
 
 import sys
@@ -10,11 +13,16 @@ from pathlib import Path
 
 # Conventional imports from the package
 from .security import SecurityValidator, SecurityError
-from .analyzer import PRErrorAnalyzer, PRErrorFixer, OllamaAgent
+from .analyzer import PRErrorAnalyzer, PRErrorFixer
+from .ollama_agent_fixed import OllamaAgent
 
 
 def main():
-    """Main execution function"""
+    """
+    Production entry point with early validation
+
+    FIXED: Fail fast if repo path invalid
+    """
     parser = argparse.ArgumentParser(description="PR Fix Agent Production")
     parser.add_argument("--repo-path", default=".", help="Path to repository")
     parser.add_argument("--health-check", action="store_true", help="Run health check")
@@ -22,20 +30,31 @@ def main():
 
     args = parser.parse_args()
 
+    # Health check doesn't need validation
     if args.health_check:
         print("✓ PR Fix Agent Health Check Passed")
         return 0
 
-    print("PR Fix Agent Production")
-    print(f"Repository path: {args.repo_path}")
+    # ✅ FIX: Early validation - fail fast
+    repo_path = Path(args.repo_path).resolve()
 
-    # Initialize components
+    if not repo_path.exists():
+        print(f"❌ Error: Repository path does not exist: {repo_path}")
+        return 2
+
+    if not repo_path.is_dir():
+        print(f"❌ Error: Repository path is not a directory: {repo_path}")
+        return 2
+
+    print(f"✅ Using repository: {repo_path}")
+
+    # Initialize components (validation already done)
     agent = OllamaAgent(model=args.model)
-    validator = SecurityValidator(Path(args.repo_path))
+    validator = SecurityValidator(repo_path)
     analyzer = PRErrorAnalyzer(agent=agent)
-    fixer = PRErrorFixer(agent=agent, repo_path=args.repo_path)
+    fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path))
 
-    print("Ready to analyze and fix errors.")
+    print("✅ PR Fix Agent initialized and ready to analyze and fix errors.")
     return 0
 
 

@@ -38,6 +38,14 @@ class OllamaAgent:
         base_url: str = "http://localhost:11434",
         cost_tracker: Optional[Any] = None
     ):
+        """
+        Initialize an OllamaAgent with model, server URL, and optional cost-tracking.
+        
+        Parameters:
+            model (str): Name of the Ollama model to use.
+            base_url (str): Base URL of the Ollama server.
+            cost_tracker (Optional[Any]): Optional object used to record prompt/completion token costs; omitted if cost tracking is not required.
+        """
         self.model = model
         self.base_url = base_url
         self.api_url = f"{base_url}/api/generate"
@@ -57,7 +65,22 @@ class OllamaAgent:
         temperature: float = 0.7,
         max_tokens: int = 2000
     ) -> str:
-        """Query the Ollama model"""
+        """
+        Send the given prompt to the configured Ollama model and return the model's text response.
+        
+        Parameters:
+            prompt (str): The user prompt to send to the model.
+            system (Optional[str]): Optional system message to include in the request.
+            temperature (float): Sampling temperature to use for generation.
+            max_tokens (int): Maximum number of tokens to predict for the completion.
+        
+        Returns:
+            str: The generated response text from the Ollama API.
+        
+        Raises:
+            ValueError: If the API response does not contain the expected 'response' field.
+            requests.exceptions.RequestException: If the HTTP request fails or returns an error status.
+        """
         logger.debug(
             "ollama_query_start",
             model=self.model,

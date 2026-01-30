@@ -149,13 +149,12 @@ Be concise and specific."""
 
     def get_error_severity(self, error: str) -> str:
         """
-        Determine error severity
-
-        Args:
-            error: Error message
-
+        Map an error message to a severity level based on keyword presence.
+        
+        Checks the error text for specific keywords to assign a severity.
+        
         Returns:
-            Severity level: critical, high, medium, low
+            `critical` if the message contains "fatal" or "critical", `high` if it contains "error", `low` if it contains "warning", `medium` otherwise.
         """
         error_lower = error.lower()
 
@@ -170,9 +169,13 @@ Be concise and specific."""
 
     def _extract_root_cause(self, analysis: str) -> str:
         """
-        Extract root cause PRESERVING original casing
-
-        FIXED: Don't lowercase the entire analysis
+        Finds the first line in the analysis that states the root cause, preserving the line's original casing.
+        
+        Parameters:
+            analysis (str): Multiline analysis text to scan for a root cause indicator.
+        
+        Returns:
+            str: The first matching line containing "root cause" or "cause:" (original casing), or "Unknown" if none found.
         """
         for line in analysis.split('\n'):
             # ✅ FIX: Check lowercase but return original
@@ -182,9 +185,13 @@ Be concise and specific."""
 
     def _extract_fix(self, analysis: str) -> str:
         """
-        Extract fix PRESERVING original casing
-
-        FIXED: Don't lowercase the entire analysis
+        Extract the first line that suggests a fix or solution from the analysis, preserving its original casing.
+        
+        Parameters:
+            analysis (str): Multi-line analysis text to search for a suggested fix or solution.
+        
+        Returns:
+            str: The first matching line with original casing and surrounding whitespace removed, or "No fix suggested" if no suggestion is found.
         """
         for line in analysis.split('\n'):
             # ✅ FIX: Check lowercase but return original
@@ -194,15 +201,17 @@ Be concise and specific."""
 
     def get_error_context(self, log_content: str, error_line: str, context_lines: int = 3) -> List[str]:
         """
-        Get context lines around an error
-
-        Args:
-            log_content: Full log content
-            error_line: The error line to find context for
-            context_lines: Number of lines before/after to include
-
+        Get context lines around a specified error line in a log.
+        
+        Parameters:
+            log_content (str): Full log content as a single string with newline separators.
+            error_line (str): Exact log line to locate; matching is done by exact string equality.
+            context_lines (int): Number of lines to include before and after the error line (default 3).
+        
         Returns:
-            List of context lines
+            List[str]: Slice of log lines containing up to `context_lines` lines before the error line,
+                       the error line itself, and up to `context_lines` lines after it. Returns an empty
+                       list if `error_line` is not found.
         """
         lines = log_content.split('\n')
 

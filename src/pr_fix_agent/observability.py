@@ -62,6 +62,18 @@ class CostTracker:
     }
 
     def __init__(self, budget_usd: float = 10.0):
+        """
+        Initialize the CostTracker with a spending budget and empty tracking state.
+        
+        Parameters:
+            budget_usd (float): Maximum allowed spend in US dollars; defaults to 10.0.
+        
+        Description:
+            Sets up internal tracking attributes:
+              - `budget_usd`: configured budget.
+              - `costs`: empty list that will hold LLMCost entries.
+              - `total_spent`: running total of incurred costs, initialized to 0.0.
+        """
         self.budget_usd = budget_usd
         self.costs: list[LLMCost] = []
         self.total_spent = 0.0
@@ -72,7 +84,20 @@ class CostTracker:
         prompt_tokens: int,
         completion_tokens: int
     ) -> LLMCost:
-        """Track cost of an LLM call"""
+        """
+        Record an LLM usage entry, compute its USD cost, append it to the tracker's history, and enforce the configured budget.
+        
+        Parameters:
+            model (str): Model identifier used to determine per-million-token rate from the tracker's MODEL_COSTS mapping.
+            prompt_tokens (int): Number of tokens sent in the prompt.
+            completion_tokens (int): Number of tokens received in the completion.
+        
+        Returns:
+            LLMCost: The created cost entry containing model, token counts, total tokens, cost in USD, and an ISO timestamp.
+        
+        Raises:
+            BudgetExceededError: If the accumulated total spent exceeds the configured budget.
+        """
         total_tokens = prompt_tokens + completion_tokens
         cost_per_million = self.MODEL_COSTS.get(model, 0.0)
         cost_usd = (total_tokens / 1_000_000) * cost_per_million
@@ -106,7 +131,18 @@ class CostTracker:
         return cost
 
     def get_summary(self) -> Dict[str, Any]:
-        """Get cost summary"""
+        """
+        Return an aggregate summary of tracked LLM costs and usage.
+        
+        Returns:
+            summary (Dict[str, Any]): A dictionary with:
+                - total_spent_usd: accumulated dollars spent.
+                - budget_usd: configured budget in dollars.
+                - remaining_usd: budget_usd minus total_spent_usd.
+                - calls: number of tracked LLM calls.
+                - total_tokens: sum of total tokens across all calls.
+                - costs: list of per-call cost entries as dicts (each contains model, prompt_tokens, completion_tokens, total_tokens, cost_usd, timestamp).
+        """
         return {
             "total_spent_usd": self.total_spent,
             "budget_usd": self.budget_usd,

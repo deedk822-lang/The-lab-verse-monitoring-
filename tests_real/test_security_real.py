@@ -276,18 +276,36 @@ class TestSecurityPerformance:
 
     @pytest.fixture
     def validator(self, temp_repo):
+        """
+        Provide a SecurityValidator instance configured to operate within the given temporary repository.
+        
+        Parameters:
+        	temp_repo (Path): Path to a temporary repository root used to initialize the validator.
+        
+        Returns:
+        	SecurityValidator: Validator instance bound to `temp_repo`.
+        """
         v = SecurityValidator(temp_repo)
         return v
 
     @pytest.fixture
     def temp_repo(self):
-        """Create temporary repo for testing"""
+        """
+        Provide a temporary directory to act as a repository for tests and remove it when the fixture completes.
+        
+        Yields:
+            Path: Path to the created temporary repository directory. The directory is deleted after the generator finishes.
+        """
         temp_dir = tempfile.mkdtemp()
         yield Path(temp_dir)
         shutil.rmtree(temp_dir)
 
     def test_deeply_nested_path_performance(self, validator):
-        """Test: Deeply nested paths don't cause timeout"""
+        """
+        Ensure validating a deeply nested relative path completes quickly.
+        
+        The test verifies that calling validate_path on a path with 100 nested segments finishes (possibly raising SecurityError) within 1 second to guard against DoS via pathological input.
+        """
         import time
 
         # Create very deeply nested path

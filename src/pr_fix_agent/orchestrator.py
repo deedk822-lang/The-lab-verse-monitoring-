@@ -10,11 +10,25 @@ class Orchestrator:
     """Orchestrates the PR fix workflow"""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """
+        Initialize the Orchestrator with an optional configuration.
+        
+        Parameters:
+            config (Optional[Dict[str, Any]]): Configuration values for the orchestrator; if `None`, an empty dictionary is used and stored on the instance as `self.config`.
+        """
         self.config = config or {}
         logger.info("orchestrator_initialized", config=self.config)
 
     def run_reasoning(self, findings_file: str, output_file: str):
-        """Run reasoning analysis on findings"""
+        """
+        Produce proposed fixes from a findings file and save them as a proposals JSON file.
+        
+        This implementation writes a simulated single proposal to `output_file` (it does not currently parse `findings_file`). The output is a JSON array of proposal objects.
+        
+        Parameters:
+            findings_file (str): Path to the findings JSON input (currently not read by this implementation).
+            output_file (str): Path where the proposals JSON will be written.
+        """
         logger.info("reasoning_start", findings=findings_file, output=output_file)
 
         # Simulated implementation (as in the original)
@@ -31,7 +45,14 @@ class Orchestrator:
         logger.info("reasoning_complete", proposals_saved=output_file)
 
     def run_coding(self, proposals_file: str, output_dir: str, apply: bool = False):
-        """Run code generation from proposals"""
+        """
+        Process proposals, log per-proposal actions, and ensure the output directory exists.
+        
+        Parameters:
+        	proposals_file (str): Path to a JSON file containing a list of proposals. If the file cannot be read or contains invalid JSON, the method logs an error and returns without processing.
+        	output_dir (str): Directory path where outputs or generated artifacts should be placed; the directory will be created (including parents) if it does not exist.
+        	apply (bool): When True, indicates that fixes should be applied rather than only logged; in this implementation the flag is recorded but no actual file changes are performed.
+        """
         logger.info("coding_start", proposals=proposals_file, output=output_dir, apply=apply)
 
         try:
@@ -51,7 +72,16 @@ class Orchestrator:
         logger.info("coding_complete")
 
     def generate_pr_body(self, proposals_file: str, test_results_file: str, output_file: str):
-        """Generate PR description from proposals and test results"""
+        """
+        Generate a Markdown PR description summarizing proposed fixes and test outcomes.
+        
+        Loads proposals from `proposals_file` (expected JSON list) and test results from `test_results_file` (expected JSON with an `exit_code` key), then writes a human-readable PR body to `output_file`. If `proposals_file` is missing or invalid, no fixes are listed. If `test_results_file` is missing or invalid, tests are assumed to have passed (`exit_code` = 0).
+        
+        Parameters:
+            proposals_file (str): Path to a JSON file containing a list of proposals, where each proposal may include `issue` and `proposed_fix` fields.
+            test_results_file (str): Path to a JSON file containing test results; expected to include an `exit_code` integer.
+            output_file (str): Path where the generated PR body (Markdown) will be written.
+        """
         logger.info(
             "generate_pr_start",
             proposals=proposals_file,
@@ -107,7 +137,15 @@ class Orchestrator:
 
 
 def main():
-    """CLI entrypoint"""
+    """
+    CLI entry point for the PR Fix Agent orchestrator.
+    
+    Parses command-line arguments, validates mode-specific requirements, instantiates an Orchestrator,
+    and dispatches to one of three modes:
+    - reasoning: requires --findings and writes proposals to --output via Orchestrator.run_reasoning
+    - coding: requires --proposals and optionally --apply; writes results to --output via Orchestrator.run_coding
+    - generate-pr: requires --proposals and --test-results and writes the PR body to --output via Orchestrator.generate_pr_body
+    """
     import argparse
 
     parser = argparse.ArgumentParser(description="PR Fix Agent Orchestrator")

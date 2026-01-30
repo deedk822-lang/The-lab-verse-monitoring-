@@ -16,19 +16,38 @@ from pr_fix_agent.analyzer import PRErrorFixer, OllamaAgent
 
 @pytest.fixture
 def temp_repo():
-    """Create temporary repository"""
+    """
+    Create a temporary directory to act as a repository and remove it after use.
+    
+    Yields:
+        Path: Path object pointing to the temporary repository directory. The directory is deleted when the fixture teardown runs.
+    """
     temp_dir = tempfile.mkdtemp()
     yield Path(temp_dir)
     shutil.rmtree(temp_dir)
 
 @pytest.fixture
 def agent():
-    """Create mock Ollama agent"""
+    """
+    Pytest fixture that provides a MockOllamaAgent configured with model "test".
+    
+    Returns:
+        MockOllamaAgent: An agent instance configured with model "test" for use in tests.
+    """
     return MockOllamaAgent(model="test")
 
 @pytest.fixture
 def fixer(agent, temp_repo):
-    """Create fixer instance"""
+    """
+    Create a PRErrorFixer configured to use the provided agent and repository path.
+    
+    Parameters:
+        agent: An Ollama-like agent used by the fixer for code generation.
+        temp_repo: A pathlib.Path or path-like temporary repository; converted to a string and used as the fixer's repository path.
+    
+    Returns:
+        PRErrorFixer: An instance of PRErrorFixer configured with the given agent and repository path.
+    """
     return PRErrorFixer(agent, str(temp_repo))
 
 # ============================================================================

@@ -7,13 +7,13 @@ import json
 import subprocess
 import argparse
 import sys
+import os
 from pathlib import Path
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
 from pr_fix_agent.ollama_agent import OllamaAgent, OllamaQueryError, CostTracker
-# Note: ObservableOllamaAgent is an alias for OllamaAgent in our new structure
 from pr_fix_agent.observability import ObservableOllamaAgent
 import structlog
 
@@ -121,17 +121,19 @@ class CodeReviewOrchestrator:
         return f"""Analyze this code review finding and provide root cause and fix approach.
 File: {finding.file}
 Issue: {finding.issue}
+Suggestion: {finding.suggestion}
 Snippet: {finding.code_snippet}
 """
 
     def _parse_reasoning_response(self, finding: CodeReviewFinding, analysis: str) -> FixProposal:
+        # Simple extraction logic for demonstration
         return FixProposal(
             finding=finding,
-            root_cause="Analyzed root cause",
-            fix_approach="Suggested approach",
-            expected_changes=["Change code"],
+            root_cause="Analyzed root cause from: " + (analysis[:50] + "..."),
+            fix_approach="Suggested approach based on analysis",
+            expected_changes=["Update affected lines"],
             risk_level="low",
-            test_requirements=["Verify with tests"]
+            test_requirements=["Verify functionality"]
         )
 
     def _implement_fixes(self, proposals: List[FixProposal], repo_path: Path) -> List[CodeFix]:
@@ -140,11 +142,26 @@ Snippet: {finding.code_snippet}
         for proposal in proposals:
             file_path = repo_path / proposal.finding.file
             if not file_path.exists():
+                logger.warning("file_not_found", file=str(file_path))
                 continue
             original_code = file_path.read_text()
             prompt = self._create_coding_prompt(proposal, original_code)
             try:
                 fixed_code = self.coding_agent.query(prompt, temperature=0.2)
+                # Cleanup markdown blocks
+                if "```" in fixed_code:
+                    lines = fixed_code.split('\n')
+                    code_lines = []
+                    in_block = False
+                    for line in lines:
+                        if line.startswith("```"):
+                            in_block = not in_block
+                            continue
+                        if in_block:
+                            code_lines.append(line)
+                    if code_lines:
+                        fixed_code = '\n'.join(code_lines)
+
                 fixes.append(CodeFix(
                     proposal=proposal,
                     file_path=str(file_path),
@@ -157,7 +174,7 @@ Snippet: {finding.code_snippet}
         return fixes
 
     def _create_coding_prompt(self, proposal: FixProposal, code: str) -> str:
-        return f"Fix this code: {code}\nReason: {proposal.fix_approach}"
+        return f"Fix this code:\n```python\n{code}\n```\nReason: {proposal.fix_approach}\nFinding: {proposal.finding.issue}"
 
     def _apply_and_test(self, fixes: List[CodeFix], repo_path: Path) -> TestResult:
         """Apply fixes and run tests"""
@@ -169,23 +186,49 @@ Snippet: {finding.code_snippet}
                 ["pytest", "tests/", "--json-report", "--json-report-file=test-results.json"],
                 cwd=repo_path, capture_output=True, text=True
             )
+
+            # Load json report if it exists
+            report_path = repo_path / "test-results.json"
+            total = 0
+            passed_count = 0
+            failed_count = 0
+            if report_path.exists():
+                with open(report_path) as f:
+                    data = json.load(f)
+                    summary = data.get('summary', {})
+                    passed_count = summary.get('passed', 0)
+                    failed_count = summary.get('failed', 0)
+                    total = summary.get('total', passed_count + failed_count)
+
             return TestResult(
                 passed=(result.returncode == 0),
-                total_tests=1, passed_tests=1 if result.returncode == 0 else 0,
-                failed_tests=0 if result.returncode == 0 else 1,
+                total_tests=total,
+                passed_tests=passed_count,
+                failed_tests=failed_count,
                 exit_code=result.returncode,
-                output=result.stdout,
+                output=result.stdout + "\n" + result.stderr,
                 failures=[]
             )
         except Exception as e:
+            logger.error("test_execution_failed", error=str(e))
             return TestResult(False, 0, 0, 0, 1, str(e), [str(e)])
 
-    def generate_pr_body(self, proposals: List[FixProposal], fixes: List[CodeFix], test_result: TestResult) -> str:
+    def generate_pr_body(self, proposals: List[FixProposal], fixes: List[CodeFix], test_result: Optional[TestResult]) -> str:
         body = "# 🤖 Automated Code Review Fixes\n\n"
-        body += f"Tests: {'✅ PASSED' if test_result.passed else '❌ FAILED'}\n\n"
+
+        if test_result:
+            body += f"Tests: {'✅ PASSED' if test_result.passed else '❌ FAILED'}\n"
+            body += f"- Total: {test_result.total_tests}\n"
+            body += f"- Passed: {test_result.passed_tests}\n"
+            body += f"- Failed: {test_result.failed_tests}\n\n"
+
         body += "## Fixes Applied\n"
         for fix in fixes:
-            body += f"- {fix.proposal.finding.file}: {fix.explanation}\n"
+            body += f"### {fix.proposal.finding.file}\n"
+            body += f"**Issue**: {fix.proposal.finding.issue}\n"
+            body += f"**Fix**: {fix.explanation}\n\n"
+
+        body += "\n---\n*Generated by PR Fix Agent*"
         return body
 
 
@@ -210,23 +253,56 @@ def main():
                 try:
                     with open(f_path) as f:
                         data = json.load(f)
-                        # Minimal parser for demonstration
-                        findings.append(CodeReviewFinding(
-                            file="src/main.py", line_start=1, line_end=1,
-                            severity="high", category="security",
-                            issue=str(data), suggestion="Fix it"
-                        ))
-                except: pass
+                        # Basic parsing of tool output (e.g., bandit, ruff)
+                        # This is a placeholder for actual parsing logic
+                        if isinstance(data, list): # maybe bandit
+                            for issue in data:
+                                findings.append(CodeReviewFinding(
+                                    file=issue.get('filename', 'unknown'),
+                                    line_start=issue.get('line_number', 1),
+                                    line_end=issue.get('line_number', 1),
+                                    severity=issue.get('issue_severity', 'medium').lower(),
+                                    category='security',
+                                    issue=issue.get('issue_text', 'Potential security issue'),
+                                    suggestion='Follow best practices'
+                                ))
+                        elif isinstance(data, dict) and 'results' in data: # ruff or bandit
+                             for issue in data['results']:
+                                findings.append(CodeReviewFinding(
+                                    file=issue.get('filename', issue.get('path', 'unknown')),
+                                    line_start=issue.get('line_number', issue.get('location', {}).get('row', 1)),
+                                    line_end=issue.get('line_number', issue.get('end_location', {}).get('row', 1)),
+                                    severity='high',
+                                    category='lint',
+                                    issue=issue.get('issue_text', issue.get('message', 'Issue found')),
+                                    suggestion='Fix as recommended'
+                                ))
+                except Exception as e:
+                    logger.warning("parsing_finding_failed", path=str(f_path), error=str(e))
+
+        if not findings:
+            # Add a mock finding if nothing found just to demonstrate the flow
+            logger.info("no_findings_found_using_placeholder")
+            findings.append(CodeReviewFinding(
+                file="src/pr_fix_agent/analyzer.py",
+                line_start=1, line_end=1, severity="low", category="style",
+                issue="Placeholder finding", suggestion="None"
+            ))
 
         proposals = orch._generate_fix_proposals(findings)
         with open(args.output or "proposals.json", 'w') as f:
             json.dump([asdict(p) for p in proposals], f, indent=2)
+        logger.info("proposals_written", path=args.output or "proposals.json")
 
     elif args.mode == 'coding':
-        with open(args.proposals or "proposals.json") as f:
+        proposals_path = Path(args.proposals or "proposals.json")
+        if not proposals_path.exists():
+            logger.error("proposals_file_not_found", path=str(proposals_path))
+            sys.exit(1)
+
+        with open(proposals_path) as f:
             p_data = json.load(f)
 
-        # Simple reconstruction
         proposals = []
         for d in p_data:
             f = d['finding']
@@ -238,10 +314,50 @@ def main():
             orch._apply_and_test(fixes, repo_path)
 
     elif args.mode == 'generate-pr':
-        with open(args.proposals or "proposals.json") as f:
+        proposals_path = Path(args.proposals or "proposals.json")
+        if not proposals_path.exists():
+            logger.error("proposals_file_not_found", path=str(proposals_path))
+            sys.exit(1)
+
+        with open(proposals_path) as f:
             p_data = json.load(f)
-        # Simplified reconstruction omitted for brevity, but main path is functional
-        print("Generating PR body...")
+
+        proposals = []
+        for d in p_data:
+            f = d['finding']
+            finding = CodeReviewFinding(f['file'], f['line_start'], f['line_end'], f['severity'], f['category'], f['issue'], f['suggestion'], f.get('code_snippet'))
+            proposals.append(FixProposal(finding, d['root_cause'], d['fix_approach'], d['expected_changes'], d['risk_level'], d['test_requirements']))
+
+        # Load test results if provided
+        test_result = None
+        if args.test_results:
+            tr_path = Path(args.test_results)
+            if tr_path.exists():
+                try:
+                    with open(tr_path) as f:
+                        tr_data = json.load(f)
+                        summary = tr_data.get('summary', {})
+                        test_result = TestResult(
+                            passed=(tr_data.get('exit_code', 0) == 0 or summary.get('failed', 0) == 0),
+                            total_tests=summary.get('total', 0),
+                            passed_tests=summary.get('passed', 0),
+                            failed_tests=summary.get('failed', 0),
+                            exit_code=tr_data.get('exit_code', 0),
+                            output="",
+                            failures=[]
+                        )
+                except Exception as e:
+                    logger.warning("loading_test_results_failed", error=str(e))
+
+        # We need fixes to generate PR body, but we don't want to re-run coding model if we can avoid it.
+        # For now, let's just use proposals for the summary.
+        body = orch.generate_pr_body(proposals, [], test_result)
+
+        if args.output:
+            with open(args.output, 'w') as f:
+                f.write(body)
+        else:
+            print(body)
 
 if __name__ == "__main__":
     sys.exit(main())

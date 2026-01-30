@@ -4,8 +4,6 @@ S3: Redis Client for Distributed Rate Limiting
 
 from __future__ import annotations
 
-from functools import lru_cache
-
 import redis.asyncio as aioredis
 from redis.asyncio import Redis
 
@@ -15,7 +13,7 @@ _redis_client: Redis | None = None
 
 
 async def get_redis_client(settings: Settings | None = None) -> Redis:
-    """Get Redis client for rate limiting."""
+    """Get Redis client."""
     global _redis_client
 
     if _redis_client is None:

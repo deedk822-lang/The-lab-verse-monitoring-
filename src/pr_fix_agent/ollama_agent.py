@@ -42,6 +42,7 @@ class OllamaAgent:
         self.base_url = base_url
         self.api_url = f"{base_url}/api/generate"
         self.cost_tracker = cost_tracker
+        self._mock_responses: Dict[str, str] = {}
 
         logger.info(
             "ollama_agent_created",
@@ -49,6 +50,10 @@ class OllamaAgent:
             base_url=base_url,
             cost_tracking=cost_tracker is not None
         )
+
+    def set_response(self, prompt_prefix: str, response: str):
+        """Set a mock response for testing"""
+        self._mock_responses[prompt_prefix] = response
 
     def query(
         self,
@@ -58,6 +63,11 @@ class OllamaAgent:
         max_tokens: int = 2000
     ) -> str:
         """Query the Ollama model"""
+        # Check for mock responses
+        for prefix, mock_resp in self._mock_responses.items():
+            if prompt.startswith(prefix):
+                return mock_resp
+
         logger.debug(
             "ollama_query_start",
             model=self.model,
@@ -89,7 +99,6 @@ class OllamaAgent:
 
             data = response.json()
 
-            # Safe extraction with validation
             if "response" not in data:
                 logger.error(
                     "ollama_unexpected_response",
@@ -100,7 +109,6 @@ class OllamaAgent:
 
             result = data["response"]
 
-            # Track costs if tracker is available
             if self.cost_tracker and "eval_count" in data:
                 prompt_tokens = data.get("prompt_eval_count", 0)
                 completion_tokens = data.get("eval_count", 0)

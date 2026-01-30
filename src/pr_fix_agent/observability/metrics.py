@@ -46,4 +46,4 @@ db_pool_checked_out = Gauge(
 
 def initialize_metrics() -> None:
     """Initialize Prometheus metrics."""
-    pass  # Metrics auto-register on import
+    pass

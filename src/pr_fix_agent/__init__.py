@@ -11,10 +11,9 @@ from .security import (
 )
 from .analyzer import (
     PRErrorAnalyzer,
-    ErrorStatistics,
     PRErrorFixer
 )
-from .ollama_agent_fixed import OllamaAgent
+from .ollama_agent import OllamaAgent
 from .observability import CostTracker, LLMCost, BudgetExceededError
 from .models import ModelSpec, ModelSelector
 from .orchestrator import Orchestrator
@@ -27,7 +26,6 @@ __all__ = [
     'RateLimiter',
     # Analysis & Fixing
     'PRErrorAnalyzer',
-    'ErrorStatistics',
     'PRErrorFixer',
     'OllamaAgent',
     # Observability
@@ -41,5 +39,5 @@ __all__ = [
     'Orchestrator',
 ]
 
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 __author__ = 'PR Fix Agent Team'

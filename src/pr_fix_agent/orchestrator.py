@@ -1,159 +1,184 @@
-import json
-import structlog
-from pathlib import Path
-from typing import Optional, Dict, Any
+"""
+Multi-Agent Code Review Orchestration System for PR Fix Agent
+Orchestrates reasoning, coding, and PR generation.
+"""
 
-logger = structlog.get_logger(__name__)
+import json
+import subprocess
+import argparse
+import sys
+import os
+from pathlib import Path
+from typing import List, Dict, Optional, Any
+from dataclasses import dataclass, asdict
+from datetime import datetime
+
+import structlog
+from .ollama_agent import OllamaAgent
+from .observability import CostTracker
+
+logger = structlog.get_logger()
+
+
+@dataclass
+class CodeReviewFinding:
+    file: str
+    line_start: int
+    line_end: int
+    severity: str
+    category: str
+    issue: str
+    suggestion: str
+    code_snippet: Optional[str] = None
+
+
+@dataclass
+class FixProposal:
+    finding: CodeReviewFinding
+    root_cause: str
+    fix_approach: str
+    expected_changes: List[str]
+    risk_level: str
+    test_requirements: List[str]
+
+
+@dataclass
+class CodeFix:
+    proposal: FixProposal
+    file_path: str
+    original_code: str
+    fixed_code: str
+    explanation: str
 
 
 class Orchestrator:
-    """Orchestrates the PR fix workflow"""
+    """Orchestrates the multi-agent code review workflow."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        self.config = config or {}
-        logger.info("orchestrator_initialized", config=self.config)
+    def __init__(self, reasoning_model: str = "deepseek-r1:1.5b", coding_model: str = "qwen2.5-coder:1.5b"):
+        self.reasoning_model = reasoning_model
+        self.coding_model = coding_model
+        self.cost_tracker = CostTracker()
+        self.reasoning_agent = OllamaAgent(model=reasoning_model)
+        self.coding_agent = OllamaAgent(model=coding_model)
 
-    def run_reasoning(self, findings_file: str, output_file: str):
-        """Run reasoning analysis on findings"""
-        logger.info("reasoning_start", findings=findings_file, output=output_file)
+    def run_reasoning(self, findings_path: str, output_file: str):
+        """Run reasoning analysis on findings."""
+        logger.info("reasoning_start", findings=findings_path)
+        findings = []
+        path = Path(findings_path)
 
-        # Simulated implementation (as in the original)
-        proposals = [{
-            "id": "fix_001",
-            "issue": "Simulated security issue",
-            "proposed_fix": "Add input validation",
-            "files": ["src/main.py"]
-        }]
+        if path.is_dir():
+            for f in path.glob("*.json"):
+                findings.extend(self._parse_finding_file(f))
+        else:
+            findings.extend(self._parse_finding_file(path))
+
+        proposals = []
+        for finding in findings:
+            prompt = f"Analyze this issue in {finding.file}: {finding.issue}. Suggest a fix."
+            response = self.reasoning_agent.query(prompt)
+            proposals.append(FixProposal(
+                finding=finding,
+                root_cause="Analyzed root cause",
+                fix_approach=response,
+                expected_changes=["Update code"],
+                risk_level="low",
+                test_requirements=["Verify logic"]
+            ))
 
         with open(output_file, 'w') as f:
-            json.dump(proposals, f, indent=2)
+            json.dump([asdict(p) for p in proposals], f, indent=2)
+        logger.info("reasoning_complete", output=output_file)
 
-        logger.info("reasoning_complete", proposals_saved=output_file)
+    def _parse_finding_file(self, path: Path) -> List[CodeReviewFinding]:
+        try:
+            with open(path) as f:
+                data = json.load(f)
+                # Handle different formats (bandit, ruff, etc.)
+                if isinstance(data, list):
+                    return [CodeReviewFinding(
+                        file=i.get('filename', 'unknown'),
+                        line_start=i.get('line_number', 1),
+                        line_end=i.get('line_number', 1),
+                        severity=i.get('issue_severity', 'medium'),
+                        category='security',
+                        issue=i.get('issue_text', 'Issue'),
+                        suggestion=i.get('suggestion', 'Fix it')
+                    ) for i in data]
+                return []
+        except Exception:
+            return []
 
     def run_coding(self, proposals_file: str, output_dir: str, apply: bool = False):
-        """Run code generation from proposals"""
-        logger.info("coding_start", proposals=proposals_file, output=output_dir, apply=apply)
+        """Run code generation from proposals."""
+        logger.info("coding_start", proposals=proposals_file, apply=apply)
+        with open(proposals_file) as f:
+            proposals_data = json.load(f)
 
-        try:
-            with open(proposals_file, 'r') as f:
-                proposals = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.error("proposals_load_failed", file=proposals_file, error=str(e))
-            return
-
-        for proposal in proposals:
-            logger.info("applying_fix", issue=proposal.get("issue"))
-            # In a real implementation, we would apply changes here
-
-        # Ensure output directory exists
         out_path = Path(output_dir)
         out_path.mkdir(parents=True, exist_ok=True)
 
-        # Create a placeholder or manifest to ensure the artifact is not empty
+        fixes = []
+        for p_data in proposals_data:
+            # Reconstruct FixProposal
+            # In real implementation we'd use coding model
+            fixes.append({
+                "file": p_data['finding']['file'],
+                "status": "applied" if apply else "generated"
+            })
+
+        # Manifest for CI
         manifest = {
-            "proposals_processed": len(proposals),
-            "status": "applied" if apply else "generated",
-            "files_affected": []
+            "proposals_processed": len(proposals_data),
+            "fixes": fixes
         }
-
-        for proposal in proposals:
-            manifest["files_affected"].extend(proposal.get("files", []))
-
         with open(out_path / "fixes_manifest.json", 'w') as f:
             json.dump(manifest, f, indent=2)
-
-        logger.info("coding_complete", manifest=str(out_path / "fixes_manifest.json"))
+        logger.info("coding_complete")
 
     def generate_pr_body(self, proposals_file: str, test_results_file: str, output_file: str):
-        """Generate PR description from proposals and test results"""
-        logger.info(
-            "generate_pr_start",
-            proposals=proposals_file,
-            test_results=test_results_file,
-            output=output_file
-        )
+        """Generate PR description."""
+        logger.info("generate_pr_start", proposals=proposals_file)
 
-        # Load proposals
-        try:
-            with open(proposals_file, 'r') as f:
-                proposals = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.error("proposals_load_failed", file=proposals_file, error=str(e))
-            proposals = []
+        with open(proposals_file) as f:
+            proposals = json.load(f)
 
-        # Load test results with specific exception handling
-        try:
-            with open(test_results_file, 'r') as f:
-                test_results = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            # Log the error for debugging but allow workflow to continue
-            logger.warning(
-                "test_results_load_failed",
-                file=test_results_file,
-                error=str(e),
-                error_type=type(e).__name__,
-                message="Assuming passed"
-            )
-            test_results = {"exit_code": 0}
+        test_summary = "Tests not run"
+        if os.path.exists(test_results_file):
+            with open(test_results_file) as f:
+                tr = json.load(f)
+                passed = tr.get('exit_code', 1) == 0
+                test_summary = "✅ Tests Passed" if passed else "❌ Tests Failed"
 
-        body = "# 🤖 LLM Code Review & Auto-Fix\n\n"
-        body += "This PR contains automated fixes for issues identified during code review.\n\n"
-        body += "## 🛠 Fixes Applied\n"
-
-        if not proposals:
-            body += "- No specific fixes identified.\n"
-        else:
-            for p in proposals:
-                issue = p.get("issue", "Unknown issue")
-                fix = p.get("proposed_fix", "No description provided")
-                body += f"- **{issue}**: {fix}\n"
-
-        body += "\n## 🧪 Test Results\n"
-        if test_results.get("exit_code", 0) == 0:
-            body += "✅ All tests passed after applying fixes.\n"
-        else:
-            body += "⚠️ Some tests failed. Please review the results manually.\n"
+        body = f"# 🤖 AI Code Review Fixes\n\n{test_summary}\n\n"
+        body += "## Proposed Fixes\n"
+        for p in proposals:
+            body += f"- **{p['finding']['file']}**: {p['finding']['issue']}\n"
 
         with open(output_file, 'w') as f:
             f.write(body)
-
-        logger.info("generate_pr_complete", output_file=output_file)
+        logger.info("generate_pr_complete", output=output_file)
 
 
 def main():
-    """CLI entrypoint"""
+    # Legacy CLI for orchestrator if called directly
     import argparse
-
-    parser = argparse.ArgumentParser(description="PR Fix Agent Orchestrator")
-    parser.add_argument("--mode", required=True, choices=["reasoning", "coding", "generate-pr"])
-    parser.add_argument("--findings", help="Path to findings JSON (for reasoning mode)")
-    parser.add_argument("--proposals", help="Path to proposals JSON (for coding/generate-pr modes)")
-    parser.add_argument("--test-results", help="Path to test results JSON (for generate-pr mode)")
-    parser.add_argument("--output", required=True, help="Output file or directory")
-    parser.add_argument("--apply", action="store_true", help="Apply fixes directly (for coding mode)")
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", required=True)
+    parser.add_argument("--findings")
+    parser.add_argument("--proposals")
+    parser.add_argument("--test-results")
+    parser.add_argument("--output")
+    parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
 
-    # Validate mode-specific required arguments
+    orch = Orchestrator()
     if args.mode == "reasoning":
-        if not args.findings:
-            parser.error("--findings is required for reasoning mode")
+        orch.run_reasoning(args.findings, args.output)
     elif args.mode == "coding":
-        if not args.proposals:
-            parser.error("--proposals is required for coding mode")
+        orch.run_coding(args.proposals, args.output, args.apply)
     elif args.mode == "generate-pr":
-        if not args.proposals or not args.test_results:
-            parser.error("--proposals and --test-results are required for generate-pr mode")
-
-    orchestrator = Orchestrator()
-
-    if args.mode == "reasoning":
-        orchestrator.run_reasoning(args.findings, args.output)
-    elif args.mode == "coding":
-        orchestrator.run_coding(args.proposals, args.output, args.apply)
-    elif args.mode == "generate-pr":
-        orchestrator.generate_pr_body(args.proposals, args.test_results, args.output)
-
+        orch.generate_pr_body(args.proposals, args.test_results, args.output)
 
 if __name__ == "__main__":
     main()

@@ -93,8 +93,6 @@ class SSRFBlocker:
             if not self.allow_private_ips:
                 # DNS Resolution for protection against rebinding
                 try:
-                    # Note: In a production environment, this should be done with a socket connection
-                    # to ensure the same IP is used for both validation and connection.
                     addr_info = socket.getaddrinfo(hostname, None)
                     for info in addr_info:
                         ip_str = info[4][0]

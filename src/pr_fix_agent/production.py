@@ -19,9 +19,12 @@ from .ollama_agent_fixed import OllamaAgent
 
 def main():
     """
-    Production entry point with early validation
-
-    FIXED: Fail fast if repo path invalid
+    Entry point for the production PR Fix Agent that validates the repository path, handles health checks, and initializes runtime components.
+    
+    Parses CLI flags (--repo-path, --health-check, --model), performs early validation of the resolved repository path (exists and is a directory), prints status messages, and initializes the Ollama agent, security validator, error analyzer, and error fixer when validation succeeds.
+    
+    Returns:
+        int: Process exit code — `0` on successful initialization or when health check passes; `2` if the repository path does not exist or is not a directory.
     """
     parser = argparse.ArgumentParser(description="PR Fix Agent Production")
     parser.add_argument("--repo-path", default=".", help="Path to repository")

@@ -119,7 +119,15 @@ class InputValidator:
 
     @staticmethod
     def validate_json(data: str) -> bool:
-        """Validate JSON (uses module-level json)"""
+        """
+        Checks whether a string is valid JSON.
+        
+        Parameters:
+            data (str): JSON-formatted string to validate.
+        
+        Returns:
+            bool: `True` if `data` parses as JSON, `False` otherwise.
+        """
         try:
             json.loads(data)  # ✅ FIX: No local import needed
             return True
@@ -158,6 +166,15 @@ class RateLimiter:
     """
 
     def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
+        """
+        Initialize a RateLimiter with a maximum number of requests allowed per time window.
+        
+        Sets the rate limit parameters and prepares internal state, including a timestamp log and a lock for thread-safe checks and updates.
+        
+        Parameters:
+            max_requests (int): Maximum number of requests allowed within the sliding window.
+            window_seconds (int): Duration of the sliding window in seconds.
+        """
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self.requests = []
@@ -166,10 +183,14 @@ class RateLimiter:
 
     def check_rate_limit(self) -> bool:
         """
-        Check if rate limit is exceeded (THREAD-SAFE)
-
+        Determine whether a new request is permitted under the current rate limit.
+        
+        This method is thread-safe: it prunes expired request timestamps, checks the current window
+        against the configured maximum, and, if allowed, records the current request timestamp
+        so future checks account for it.
+        
         Returns:
-            True if request is allowed
+            True if a new request is allowed, False otherwise.
         """
         now = time.time()  # ✅ FIX: No local import needed
 
@@ -190,7 +211,16 @@ class RateLimiter:
             return True
 
     def get_stats(self) -> dict:
-        """Get rate limiter statistics (thread-safe)"""
+        """
+        Return a snapshot of the rate limiter's current statistics in a thread-safe manner.
+        
+        Returns:
+            dict: A dictionary containing:
+                - requests_in_window (int): Number of requests recorded inside the current time window.
+                - max_requests (int): Configured maximum allowed requests for the window.
+                - remaining (int): Number of additional requests allowed before the limit is reached (zero or negative if at/over the limit).
+                - window_seconds (int): Duration of the rate-limiting window in seconds.
+        """
         with self._lock:
             return {
                 "requests_in_window": len(self.requests),
@@ -200,6 +230,10 @@ class RateLimiter:
             }
 
     def reset(self):
-        """Reset the rate limiter (thread-safe)"""
+        """
+        Clear all recorded request timestamps, resetting the rate limiter to its initial empty state.
+        
+        This operation is performed atomically and is safe to call from multiple threads.
+        """
         with self._lock:
             self.requests.clear()

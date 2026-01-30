@@ -99,16 +99,18 @@ class ModelSelector:
         min_quality: int = 7
     ) -> Optional[ModelSpec]:
         """
-        Select best model for task
-
-        Args:
-            task: "reasoning" or "coding"
-            budget_remaining: Available budget in dollars
-            prefer_free: Prefer free (Ollama) models
-            min_quality: Minimum quality score required
-
+        Selects the most appropriate ModelSpec for a given task and budget.
+        
+        Filters available models for the task to those that are affordable (cost less than or equal to budget or are free), applies a minimum quality requirement which is relaxed to the affordable set if no models meet it, and then prioritizes candidates either by preferring free models first (then higher quality) or by highest quality depending on `prefer_free`.
+        
+        Parameters:
+            task (str): Task category, e.g., "reasoning" or "coding".
+            budget_remaining (float): Available budget in dollars.
+            prefer_free (bool): If True, place free models before paid ones when ranking.
+            min_quality (int): Minimum acceptable quality score; if no affordable models meet this, the quality constraint is relaxed.
+        
         Returns:
-            Best model matching criteria, or None
+            Optional[ModelSpec]: The best matching ModelSpec, or `None` if no models are affordable.
         """
         candidates = self.MODELS.get(task, [])
 
@@ -145,9 +147,13 @@ class ModelSelector:
 
     def get_fallback_chain(self, task: str) -> List[ModelSpec]:
         """
-        Get fallback chain for task
-
-        Returns models in order of preference (free first)
+        Provide an ordered fallback chain of models for the given task.
+        
+        Parameters:
+            task (str): Task specialization to retrieve models for (e.g., "reasoning" or "coding").
+        
+        Returns:
+            List[ModelSpec]: Models ordered with free models (cost_per_million_tokens == 0.0) first, then by descending quality_score.
         """
         candidates = self.MODELS.get(task, [])
 

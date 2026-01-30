@@ -56,7 +56,7 @@ python -c "from pr_fix_agent.security import SecurityValidator; print('✓ Insta
 pytest tests_real/ -v
 
 # 3. Use the tools
-python pr_fix_agent_production.py --health-check
+pr-fix-agent --health-check
 python benchmarking_real.py --models codellama
 python continuous_improvement_real.py --repo-path .
 ```
@@ -177,7 +177,7 @@ pytest tests_real/ -v
 1. **PEP 517/518**: Modern Python packaging
 2. **Editable installs**: Standard for development (`pip install -e .`)
 3. **Package discovery**: setuptools finds packages automatically
-4. **Import resolution**: Python naturally resolves `from src.X import Y`
+4. **Import resolution**: Python resolves `from pr_fix_agent.X import Y` (the package name, not the src/ directory)
 
 ---
 

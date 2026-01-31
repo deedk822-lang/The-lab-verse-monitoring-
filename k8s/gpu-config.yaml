@@ -1,0 +1,76 @@
+# =============================================================================
+# VAAL AI Empire - GPU Configuration
+# For NVIDIA GPU-accelerated inference
+# =============================================================================
+
+# RuntimeClass for GPU nodes
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: nvidia
+handler: nvidia
+
+---
+# GPU-enabled Deployment (alternative to main deployment)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaal-app-gpu
+  namespace: vaal-ai-empire
+  labels:
+    app: vaal-app
+    variant: gpu
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vaal-app
+      variant: gpu
+  template:
+    metadata:
+      labels:
+        app: vaal-app
+        variant: gpu
+    spec:
+      runtimeClassName: nvidia
+      
+      containers:
+      - name: vaal-app
+        image: ghcr.io/deedk822-lang/the-lab-verse-monitoring-:latest
+        
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+            cpu: "4000m"
+            memory: "16Gi"
+          requests:
+            nvidia.com/gpu: "1"
+            cpu: "2000m"
+            memory: "8Gi"
+        
+        env:
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: USE_GPU
+          value: "true"
+        - name: TORCH_DEVICE
+          value: "cuda"
+        
+        volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+      
+      volumes:
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 8Gi
+      
+      # Node selector for GPU nodes
+      nodeSelector:
+        accelerator: nvidia-tesla-t4
+      
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

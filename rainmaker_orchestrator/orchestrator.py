@@ -1,130 +1,257 @@
-import os
 import json
+import logging
+import os
 import re
+from typing import Any, Dict, Optional, cast
+
 import httpx
-from typing import Dict, Any
-from .fs_agent import FileSystemAgent
-from .config import ConfigManager
+import openlit  # type: ignore
+from opik import track  # type: ignore
+from rainmaker_orchestrator.fs_agent import FileSystemAgent
+
+from rainmaker_orchestrator.config import ConfigManager
+
+logger: logging.Logger = logging.getLogger("orchestrator")
+
+# 4-Judge Model Mapping (Role-Specific Models)
+JUDGE_MODELS: Dict[str, str] = {
+    "visionary": "command-r-plus",
+    "operator": "codestral-2501",
+    "auditor": "pixtral-12b-2409",
+    "challenger": "mixtral-8x22b",
+}
+
 
 class RainmakerOrchestrator:
-    def __init__(self, workspace_path="/workspace", config_file=".env"):
-        self.fs = FileSystemAgent(workspace_path=workspace_path)
-        self.config = ConfigManager(config_file=config_file)
-        self.client = httpx.AsyncClient(timeout=120.0)
+    """
+    Central intelligence for the Authority Engine.
+    Implements a 4-Judge protocol with self-healing and enterprise telemetry.
+    """
 
-    async def aclose(self):
+    def __init__(
+        self,
+        workspace_path: str = "./workspace",
+        config_file: str = ".env",
+    ) -> None:
+        """
+        Create and configure a RainmakerOrchestrator instance with workspace, config, and HTTP client.
+        
+        Initializes OpenLIT unless running in CI, creates a FileSystemAgent for workspace operations, a ConfigManager for configuration access, and an asynchronous HTTP client for API calls.
+        
+        Parameters:
+            workspace_path (str): Path to the workspace directory used by the FileSystemAgent.
+            config_file (str): Path to the configuration file used by the ConfigManager.
+        """
+        if os.getenv("CI") != "true":
+            try:
+                openlit.init(
+                    otlp_endpoint=os.getenv(
+                        "OPENLIT_OTLP_ENDPOINT",
+                        "https://otlp.datadoghq.com:4318",
+                    ),
+                    application_name="rainmaker-orchestrator",
+                    environment=os.getenv("ENVIRONMENT", "production"),
+                )
+                logger.info("OpenLIT initialized in orchestrator")
+            except Exception as e:
+                logger.warning(f"OpenLIT init warning: {e}")
+
+        self.fs: FileSystemAgent = FileSystemAgent(workspace_path=workspace_path)
+        self.config: ConfigManager = ConfigManager(config_file=config_file)
+        self.client: httpx.AsyncClient = httpx.AsyncClient(timeout=120.0)
+
+    async def aclose(self) -> None:
         """Gracefully close the HTTP client."""
         await self.client.aclose()
+        logger.info("Orchestrator HTTP client closed")
 
-    async def _call_kimi(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        api_key = self.config.get('KIMI_API_KEY')
-        if not api_key:
-            raise ValueError("KIMI_API_KEY is not set.")
+    @track(name="judge_call")  # type: ignore
+    async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
+        """
+        Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
+        
+        Parameters:
+            judge_role (str): Role name used to select the judge model (e.g., "visionary", "operator", "auditor", "challenger").
+            context (str): User-facing prompt or context to include in the chat completion request.
+        
+        Returns:
+            response (Dict[str, Any]): Parsed JSON response returned by the judge API.
+        
+        Raises:
+            ValueError: If neither ZAI_API_KEY nor MISTRAL_API_KEY is configured.
+            httpx.HTTPError: If the HTTP request to the judge API fails.
+        """
+        zai_key: Optional[str] = self.config.get("ZAI_API_KEY")
+        mistral_key: Optional[str] = self.config.get("MISTRAL_API_KEY")
 
-        api_base = self.config.get('KIMI_API_BASE')
+        if not zai_key and not mistral_key:
+            logger.error("No API keys configured (ZAI_API_KEY or MISTRAL_API_KEY)")
+            raise ValueError("Missing required API credentials")
 
-        headers = {
+        # Priority: Z.ai (GLM) -> Mistral (Role-specific)
+        if zai_key:
+            api_key: str = zai_key
+            api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
+            model: str = "glm-4.7"
+        elif mistral_key:
+            api_key = mistral_key
+            api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
+            model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
+        else:
+            raise ValueError("No API keys configured")
+
+        headers: Dict[str, str] = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-
-        payload = {
-            "model": task.get("model", "moonshot-v1-8k"),
-            "messages": [{"role": "user", "content": task["context"]}],
-            "temperature": 0.3
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": f"You are the {judge_role.capitalize()} Judge. Provide output in valid JSON.",
+                },
+                {"role": "user", "content": context},
+            ],
+            "response_format": {"type": "json_object"},
         }
+        url: str = f"{api_base.rstrip('/')}/chat/completions"
 
-        response = await self.client.post(
-            f"{api_base}/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
-        return response.json()
+        try:
+            response: httpx.Response = await self.client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            logger.info(f"Judge call successful: {judge_role}")
+            return response.json()  # type: ignore[no-any-return]
+        except httpx.HTTPError as e:
+            logger.error(f"Judge API error ({judge_role}): {str(e)}")
+            raise
 
-    async def _call_ollama(self, task: Dict[str, Any], routing: Dict[str, Any]) -> Dict[str, Any]:
-        api_base = self.config.get('OLLAMA_API_BASE')
+    @track(name="authority_flow")  # type: ignore
+    async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.
+        
+        Parameters:
+            lead_data (Dict[str, Any]): Input lead information used as the basis for auditing, strategy creation, and implementation generation.
+        
+        Returns:
+            result (Dict[str, Any]): On success, a dict with "status" set to "success" and keys "audit", "strategy", and "implementation" containing each judge's content; on error, a dict with "status" set to "error" and a "message" describing the failure.
+        """
+        logger.info("⚖️ Initiating Authority Flow...")
 
-        payload = {
-            "model": task.get("model", "llama3"),
-            "prompt": task["context"],
-            "stream": False
-        }
+        try:
+            # 1. Audit
+            audit_res: Dict[str, Any] = await self._call_judge(
+                "auditor",
+                f"Analyze this request for compliance and risk: {json.dumps(lead_data)}",
+            )
 
-        response = await self.client.post(
-            f"{api_base}/generate",
-            json=payload
-        )
-        response.raise_for_status()
+            # 2. Vision
+            vision_res: Dict[str, Any] = await self._call_judge(
+                "visionary",
+                f"Create a strategic execution plan: {json.dumps(lead_data)}",
+            )
 
-        # Ollama's response for a non-streaming request is a single JSON object.
-        # We need to parse its 'response' field which is a stringified JSON.
-        ollama_response = response.json()
-        return {"message": {"content": ollama_response.get("response", "{}")}}
+            # 3. Operation
+            op_res: Dict[str, Any] = await self._call_judge(
+                "operator",
+                f"Generate implementation based on strategy: {json.dumps(vision_res)}",
+            )
 
-
-    def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        if "ollama" in task.get("model", "").lower():
-            return {"model": "ollama"}
-        return {"model": "kimi"}
+            logger.info("Authority Flow completed successfully")
+            return {
+                "status": "success",
+                "audit": str(audit_res["choices"][0]["message"]["content"]),
+                "strategy": str(vision_res["choices"][0]["message"]["content"]),
+                "implementation": str(op_res["choices"][0]["message"]["content"]),
+            }
+        except Exception as e:
+            logger.error(f"Authority Flow error: {str(e)}")
+            return {"status": "error", "message": str(e)}
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        routing = self.route_task(task)
+        """
+        Dispatches a task to the appropriate handler based on its "type" field.
+        
+        Parameters:
+            task (Dict[str, Any]): Task payload containing at minimum a "type" key.
+                - If "type" == "authority_task": the payload is forwarded to the authority flow.
+                - If "type" == "coding_task" and contains "output_filename": the payload is processed by the self-healing coding flow.
+                - Other keys are passed through to the selected handler as needed.
+        
+        Returns:
+            Dict[str, Any]: The handler's result on success, or an error payload with
+            {"status": "error", "message": <explanatory string>} when the task type is unsupported.
+        """
+        task_type: str = task.get("type", "unknown")
 
-        if task.get("type") == "coding_task" and task.get("output_filename"):
-            print(f"🔨 Initiating Self-Healing Coding Protocol for {task['output_filename']}...")
+        if task_type == "authority_task":
+            return cast(Dict[str, Any], await self.run_authority_flow(task))
+        if task_type == "coding_task" and task.get("output_filename"):
+            return await self._run_self_healing(task)
 
-            filename = task["output_filename"]
-            max_retries = 3
-            current_try = 0
-            current_context = task["context"]
-            execution_log = []
+        logger.warning(f"Unsupported task type: {task_type}")
+        return {"status": "error", "message": f"Task type '{task_type}' not supported"}
 
-            while current_try < max_retries:
-                print(f"   Attempt {current_try + 1}/{max_retries}...")
+    async def _run_self_healing(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Run a recursive self-healing loop to generate, write, and execute code until it succeeds or retries are exhausted.
+        
+        Expects `task` to contain:
+        - "output_filename" (str): path where generated code will be written.
+        - "context" (str): prompt/context provided to the operator judge for code generation.
+        
+        On each attempt the method:
+        - Requests code from the "operator" judge using the current context.
+        - Cleans and parses a JSON payload returned by the judge; the JSON must contain a "code" field with the source to write.
+        - Writes the code to `output_filename` and executes it via the FileSystemAgent.
+        - If execution returns status "success", returns a payload with that stdout.
+        - If execution fails or parsing/errors occur, appends the error information to the context and retries (up to three attempts).
+        
+        Returns:
+        - A dict with {"status": "success", "output": <stdout>} when execution succeeds.
+        - A dict with {"status": "failed", "message": "Max retries exceeded for self-healing"} if all retries fail.
+        """
+        filename: str = task["output_filename"]
+        max_retries: int = 3
+        current_context: str = task["context"]
 
-                if current_try > 0:
-                    last_error = execution_log[-1]
-                    error_snippet = last_error.get('stderr', '')[:500]
-                    timeout_message = last_error.get('message', '')
-                    current_context += f"\n\nCRITICAL UPDATE: The previous code FAILED.\nError: {error_snippet}\nMessage: {timeout_message}\nDirectives: Analyze the error and rewrite the code to fix it."
+        for attempt in range(max_retries):
+            try:
+                model_res: Dict[str, Any] = await self._call_judge(
+                    "operator",
+                    current_context,
+                )
+                content: str = model_res["choices"][0]["message"]["content"]
 
-                json_prompt = current_context + '\n\nSYSTEM: Respond strictly in JSON: {"explanation": "...", "code": "..."}'
-                task_for_model = task.copy()
-                task_for_model["context"] = json_prompt
+                # Clean JSON markdown if present
+                clean_json: str = re.sub(
+                    r"^```json\s*|\s*```$",
+                    "",
+                    content.strip(),
+                    flags=re.MULTILINE,
+                )
+                parsed: Dict[str, Any] = json.loads(clean_json)
 
-                try:
-                    if "ollama" in routing["model"]:
-                        model_res = await self._call_ollama(task_for_model, routing)
-                        content = model_res["message"]["content"]
-                    else:
-                        model_res = await self._call_kimi(task_for_model, routing)
-                        content = model_res["choices"][0]["message"]["content"]
-                except (httpx.HTTPStatusError, ValueError) as e:
-                    print(f"   API Call Error: {e}")
-                    return {"status": "failed", "message": f"API call failed: {e}"}
-
-                try:
-                    json_str = re.sub(r'^```json\s*|\s*```$', '', content.strip(), flags=re.MULTILINE)
-                    parsed = json.loads(json_str)
-                    self.fs.write_file(filename, parsed["code"])
-                except Exception as e:
-                    print(f"   JSON Parse Error: {e}")
-                    current_try += 1
-                    execution_log.append({"status": "error", "message": f"Failed to parse model output: {e}"})
-                    continue
-
-                print(f"   Testing {filename}...")
-                exec_result = self.fs.execute_script(filename)
+                # Write and test
+                self.fs.write_file(filename, parsed["code"])
+                exec_result: Dict[str, Any] = self.fs.execute_script(filename)
 
                 if exec_result["status"] == "success":
-                    print(f"   ✅ SUCCESS! Code executed with exit code 0.")
-                    return {"status": "success", "final_code_path": filename, "output": exec_result["stdout"], "retries": current_try, "explanation": parsed.get("explanation", "N/A")}
+                    logger.info(f"Self-healing succeeded on attempt {attempt + 1}")
+                    return {"status": "success", "output": exec_result["stdout"]}
 
-                print(f"   ❌ FAILURE. Error caught: {exec_result.get('stderr', '')[:100]}...")
-                execution_log.append(exec_result)
-                current_try += 1
+                # Feedback loop
+                stderr: str = exec_result.get("stderr", "Unknown error")
+                current_context += f"\n\nAttempt {attempt + 1} - Execution Error: {stderr}"
+                logger.warning(f"Self-healing attempt {attempt + 1} failed: {stderr}")
 
-            return {"status": "failed", "message": "Max retries exceeded.", "last_error": execution_log[-1] if execution_log else "Unknown"}
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parse error on attempt {attempt + 1}: {str(e)}")
+                current_context += f"\n\nAttempt {attempt + 1} - JSON Parse Error: {str(e)}"
+            except Exception as e:
+                logger.error(f"Self-healing error on attempt {attempt + 1}: {str(e)}")
+                current_context += f"\n\nAttempt {attempt + 1} - Error: {str(e)}"
 
-        return {"status": "error", "message": "Task type not supported."}
+        logger.error("Max retries exceeded for self-healing")
+        return {"status": "failed", "message": "Max retries exceeded for self-healing"}

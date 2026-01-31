@@ -60,7 +60,8 @@ class CostTracker:
     }
 
     def __init__(self, budget_usd: float = 10.0):
-        self.budget_usd = budget_usd
+        # Allow environment variable override for daily budget
+        self.budget_usd = float(os.getenv("MAX_DAILY_BUDGET", budget_usd))
         self.total_cost = 0.0
         self.costs: List[LLMCost] = []
         self._lock = threading.Lock()

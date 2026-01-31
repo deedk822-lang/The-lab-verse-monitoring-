@@ -1,0 +1,14 @@
+[
+  {
+    "finding": {
+      "file": "src/main.py",
+      "line": 42,
+      "severity": "high",
+      "issue": "Hardcoded password",
+      "suggestion": "Use environment variables"
+    },
+    "root_cause": "Mock analysis",
+    "fix_approach": "Mock fix",
+    "risk_level": "low"
+  }
+]

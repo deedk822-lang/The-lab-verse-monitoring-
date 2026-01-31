@@ -5,9 +5,15 @@ import argparse
 import json
 import logging
 import sys
+import os
+import shutil
+import subprocess
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import re
+import time
+from pr_fix_agent.schemas.findings import FindingSchema, AnalysisSchema, ProposalSchema
+from pydantic import ValidationError
 
 # Configure logging first
 logging.basicConfig(
@@ -26,6 +32,36 @@ except ImportError:
     logger.warning("Ollama not installed - using mock mode")
 
 
+class CircuitBreaker:
+    """Simple circuit breaker for LLM calls"""
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failures = 0
+        self.last_failure_time = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failures += 1
+        self.last_failure_time = time.time()
+        if self.failures >= self.failure_threshold:
+            self.state = "OPEN"
+            logger.error("Circuit breaker OPEN")
+
+    def record_success(self):
+        self.failures = 0
+        self.state = "CLOSED"
+
+    def can_execute(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF-OPEN"
+                logger.info("Circuit breaker HALF-OPEN")
+                return True
+            return False
+        return True
+
+
 class ChunkedOllamaClient:
     """
     Ollama client with chunking to prevent timeouts
@@ -38,9 +74,27 @@ class ChunkedOllamaClient:
         self.coding_model = coding_model
         self.max_prompt_size = 4000  # ✅ FIX: Prevent 14KB prompts
         self.timeout = 90
+        self.circuit_breaker = CircuitBreaker()
 
         if not HAS_OLLAMA:
             logger.warning("Running in mock mode - no actual LLM calls")
+
+    def query_with_fallback(self, prompt: str, models: List[str]) -> Dict:
+        """Query with fallback chain"""
+        for model in models:
+            if not self.circuit_breaker.can_execute():
+                logger.warning(f"Circuit open, skipping query to {model}")
+                continue
+
+            result = self.query(model, prompt)
+            if result['success']:
+                self.circuit_breaker.record_success()
+                return result
+            else:
+                self.circuit_breaker.record_failure()
+                logger.warning(f"Query to {model} failed, trying next in chain...")
+
+        return {'success': False, 'error': "All models in fallback chain failed"}
 
     def query(self, model: str, prompt: str) -> Dict:
         """Query with timeout protection and truncation"""
@@ -124,13 +178,17 @@ class FixOrchestrator:
             for line in content.split('\n')[:50]:
                 match = re.match(pattern, line)
                 if match:
-                    findings.append({
-                        'file': match.group(1),
-                        'line': int(match.group(2)),
-                        'severity': 'medium',
-                        'issue': match.group(5),
-                        'suggestion': 'See documentation'
-                    })
+                    try:
+                        finding = FindingSchema(
+                            file=match.group(1),
+                            line=int(match.group(2)),
+                            severity='medium',
+                            issue=match.group(5),
+                            suggestion='See documentation'
+                        )
+                        findings.append(finding.model_dump())
+                    except ValidationError as e:
+                        logger.warning(f"Validation failed for line '{line}': {e}")
 
         except Exception as e:
             logger.error(f"Parse error: {e}")
@@ -140,16 +198,13 @@ class FixOrchestrator:
     def extract_json(self, text: str) -> Optional[Dict]:
         """Safely extract JSON from LLM response"""
         try:
-            # Look for triple backticks
             if '```json' in text:
                 text = text.split('```json')[1].split('```')[0]
             elif '```' in text:
                 text = text.split('```')[1].split('```')[0]
 
-            # Clean text
             text = text.strip()
 
-            # Attempt to find the first '{' and last '}'
             start = text.find('{')
             end = text.rfind('}')
             if start != -1 and end != -1:
@@ -161,23 +216,34 @@ class FixOrchestrator:
 
     def analyze_finding(self, finding: Dict) -> Dict:
         """Analyze with reasoning model"""
+        # Validate input finding
+        try:
+            valid_finding = FindingSchema(**finding)
+        except ValidationError as e:
+            logger.error(f"Invalid finding input: {e}")
+            return {'root_cause': 'Invalid input', 'fix_approach': 'N/A', 'risk_level': 'high'}
+
         prompt = f"""Analyze this issue:
-File: {finding.get('file', 'unknown')}
-Line: {finding.get('line', 0)}
-Issue: {finding.get('issue', 'unknown')}
+File: {valid_finding.file}
+Line: {valid_finding.line}
+Issue: {valid_finding.issue}
 
 Provide JSON:
 {{"root_cause": "brief", "fix_approach": "how to fix", "risk_level": "low"}}"""
 
-        result = self.client.query(self.client.reasoning_model, prompt)
+        result = self.client.query_with_fallback(prompt, [self.client.reasoning_model, "llama3.2", "mistral:7b"])
 
         if result['success']:
-            analysis = self.extract_json(result['content'])
-            if analysis:
-                return analysis
+            analysis_data = self.extract_json(result['content'])
+            if analysis_data:
+                try:
+                    analysis = AnalysisSchema(**analysis_data)
+                    return analysis.model_dump()
+                except ValidationError as e:
+                    logger.warning(f"LLM produced invalid analysis JSON: {e}")
 
         return {
-            'root_cause': 'Analysis failed',
+            'root_cause': 'Analysis failed or invalid',
             'fix_approach': 'Manual review required',
             'risk_level': 'high'
         }
@@ -204,7 +270,7 @@ Code:
 
 Provide ONLY the full fixed code for this file."""
 
-            result = self.client.query(self.client.coding_model, prompt)
+            result = self.client.query_with_fallback(prompt, [self.client.coding_model, "codellama:7b"])
 
             if result['success']:
                 fixed_code = result['content']
@@ -222,6 +288,43 @@ Provide ONLY the full fixed code for this file."""
             logger.error(f"Fix implementation failed: {e}")
 
         return {'success': False, 'error': "LLM failed to generate fix"}
+
+    def apply_fix_with_rollback(self, proposal: Dict) -> bool:
+        """Apply fix and rollback if tests fail"""
+        finding = proposal.get('finding', {})
+        file_path = finding.get('file')
+        if not file_path:
+            return False
+
+        backup_path = f"{file_path}.bak"
+        shutil.copy2(file_path, backup_path)
+
+        try:
+            fix_result = self.implement_fix(proposal)
+            if fix_result['success'] and len(fix_result['fixed']) > 10:
+                with open(file_path, 'w') as f:
+                    f.write(fix_result['fixed'])
+
+                logger.info(f"Running tests for {file_path}...")
+                test_proc = subprocess.run(["pytest", "tests/", "-v"], capture_output=True)
+
+                if test_proc.returncode == 0:
+                    logger.info(f"Tests passed for {file_path}")
+                    os.remove(backup_path)
+                    return True
+                else:
+                    logger.warning(f"Tests failed for {file_path}, rolling back...")
+                    shutil.move(backup_path, file_path)
+                    return False
+            else:
+                logger.warning(f"Fix failed or empty for {file_path}, keeping backup")
+                shutil.move(backup_path, file_path)
+                return False
+        except Exception as e:
+            logger.error(f"Error applying fix to {file_path}: {e}")
+            if os.path.exists(backup_path):
+                shutil.move(backup_path, file_path)
+            return False
 
 
 def main():
@@ -243,7 +346,6 @@ def main():
     if args.mode == 'reasoning':
         args.mode = 'review'
         if args.findings and Path(args.findings).is_dir():
-             # If a directory is passed, check for various finding files
              findings_dir = Path(args.findings)
              findings = []
              for f in findings_dir.glob("*.json"):
@@ -288,15 +390,12 @@ def main():
 
         for i, proposal in enumerate(proposals[:args.limit]):
             logger.info(f"Implementing fix {i+1}/{len(proposals[:args.limit])}")
-            fix = orch.implement_fix(proposal)
-            if fix['success'] and args.apply:
-                file_path = proposal['finding']['file']
-                if fix['fixed'] and len(fix['fixed']) > 10:
-                    with open(file_path, 'w') as f:
-                        f.write(fix['fixed'])
-                    logger.info(f"Applied fix to {file_path}")
-                else:
-                    logger.warning(f"Refusing to apply empty or too short fix to {file_path}")
+            if args.apply:
+                orch.apply_fix_with_rollback(proposal)
+            else:
+                fix = orch.implement_fix(proposal)
+                if fix['success']:
+                    logger.info(f"Fix generated for {proposal['finding']['file']}")
 
     elif args.mode == 'generate-pr':
         output_file = args.output or 'pr-body.md'

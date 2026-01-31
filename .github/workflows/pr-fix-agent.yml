@@ -19,8 +19,16 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: 🔒 Setup network restrictions
+        run: |
+          # Block metadata service (defense in depth)
+          sudo iptables -A OUTPUT -d 169.254.169.254 -j DROP
+          # Block internal GitHub network ranges
+          sudo iptables -A OUTPUT -d 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 -j DROP
+
       # ✅ FIX: Install Ollama with proper setup
       - name: 🦙 Setup Ollama
+        timeout-minutes: 10
         run: |
           # Install Ollama
           curl -fsSL https://ollama.com/install.sh | sh

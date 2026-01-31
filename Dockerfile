@@ -1,84 +1,119 @@
 # ============================================================================
-# Stage 1: Builder
+# VAAL AI Empire - Multi-stage Production Dockerfile
 # ============================================================================
-FROM python:3.11-slim AS builder
 
-WORKDIR /build
+# ----------------------------------------------------------------------------
+# Builder Stage - Compile dependencies and prepare environment
+# ----------------------------------------------------------------------------
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04 AS builder
 
-# Install build dependencies
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
     build-essential \
-    libpq-dev \
+    git \
+    curl \
+    wget \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast package installation
-RUN pip install --no-cache-dir uv
+# Upgrade pip and install build tools
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
 
-# Copy dependency files
-COPY pyproject.toml uv.lock* ./
+# Create working directory
+WORKDIR /build
+
+# Copy requirements first for better caching
+COPY requirements.txt requirements-dev.txt ./
 
 # Install Python dependencies
-RUN uv pip install --system --no-cache \
-    --requirement pyproject.toml \
-    --extra dev
+RUN pip install --user --no-warn-script-location \
+    -r requirements.txt && \
+    pip install --user --no-warn-script-location \
+    gunicorn uvicorn[standard]
 
-# ============================================================================
-# Stage 2: Runtime
-# ============================================================================
-FROM python:3.11-slim AS runtime
+# ----------------------------------------------------------------------------
+# Runtime Stage - Minimal production image
+# ----------------------------------------------------------------------------
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/root/.local/bin:$PATH \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
+    python3.10 \
+    python3.10-distutils \
+    ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# S7: Create non-root user (UID 10001)
-RUN groupadd -r -g 10001 appgroup && \
-    useradd -r -u 10001 -g appgroup -m -d /home/appuser -s /sbin/nologin appuser
-
-# Create application directory
-WORKDIR /app
+# Create non-root user for security
+RUN useradd -m -u 1000 -s /bin/bash vaaluser && \
+    mkdir -p /app /models /cache /logs && \
+    chown -R vaaluser:vaaluser /app /models /cache /logs
 
 # Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder --chown=vaaluser:vaaluser /root/.local /root/.local
+
+# Set working directory
+WORKDIR /app
 
 # Copy application code
-COPY --chown=appuser:appgroup src/ ./src/
-COPY --chown=appuser:appgroup alembic.ini ./
-COPY --chown=appuser:appgroup migrations/ ./migrations/
+COPY --chown=vaaluser:vaaluser . .
 
-# S7: Set secure permissions (750 = rwxr-x---)
-RUN chmod -R 750 /app && \
-    chown -R appuser:appgroup /app
+# Create necessary directories
+RUN mkdir -p \
+    /app/vaal_ai_empire/api \
+    /app/agent/tools \
+    /app/agent/nodes \
+    /app/logs \
+    /app/uploads
 
-# Create directories for logs and temporary files
-RUN mkdir -p /app/logs /tmp/prometheus && \
-    chown -R appuser:appgroup /app/logs /tmp/prometheus && \
-    chmod 750 /app/logs /tmp/prometheus
+# Set permissions
+RUN chmod +x scripts/*.sh 2>/dev/null || true
 
-# S7: Switch to non-root user
-USER appuser
+# Switch to non-root user
+USER vaaluser
 
-# Set Python path
-ENV PYTHONPATH=/app/src
-ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+# Expose ports
+EXPOSE 8000 9090
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Expose port
-EXPOSE 8000
+# Default command
+CMD ["gunicorn", "app.main:app", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--timeout", "300", \
+     "--graceful-timeout", "120", \
+     "--keep-alive", "5", \
+     "--log-level", "info", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]
 
-# S7: Label for read-only filesystem requirement
-LABEL security.readonly="true" \
-      security.user="appuser:10001" \
-      security.seccomp="enabled" \
-      version="0.1.0" \
-      maintainer="team@example.com"
+# Alternative CMD for development
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-# Run application
-# Use exec form to ensure proper signal handling
-CMD ["uvicorn", "pr_fix_agent.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Labels
+LABEL maintainer="VAAL AI Empire Team" \
+      version="2.0.0" \
+      description="Multi-provider LLM system with security hardening" \
+      org.opencontainers.image.source="https://github.com/deedk822-lang/The-lab-verse-monitoring-"

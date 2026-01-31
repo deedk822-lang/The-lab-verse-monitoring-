@@ -5,12 +5,12 @@ Runs complete evaluation, benchmarking, and improvement pipeline
 PRODUCTION-READY: No shell=True, proper argument lists
 """
 
-import subprocess
-import sys
 import json
 import shlex
-from pathlib import Path
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 
 
 def run_command(cmd, description):
@@ -184,7 +184,7 @@ Generated: {datetime.now().isoformat()}
     benchmark_passed, benchmark_file = benchmark_results
     if benchmark_passed and Path(benchmark_file).exists():
         try:
-            with open(benchmark_file, 'r') as f:
+            with open(benchmark_file) as f:
                 data = json.load(f)
                 perf = data.get("performance", {})
                 report += f"- Pass Rate: {perf.get('passed_tests', 0)/perf.get('total_tests', 1)*100:.1f}%\n"
@@ -200,7 +200,7 @@ Generated: {datetime.now().isoformat()}
     improvement_passed, improvement_report, improvement_json = improvement_results
     if improvement_passed and Path(improvement_json).exists():
         try:
-            with open(improvement_json, 'r') as f:
+            with open(improvement_json) as f:
                 data = json.load(f)
                 report += f"- Issues Found: {len(data.get('issues', []))}\n"
                 report += f"- Improvements Suggested: {len(data.get('improvements', []))}\n"

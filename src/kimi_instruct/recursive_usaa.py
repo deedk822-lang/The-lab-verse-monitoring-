@@ -1,7 +1,7 @@
-from .mcp.mcp_core import MCPCore
 from .embodied.sandbox_runner import SandboxRunner
-from .ethics.policy_gate import PolicyGate
 from .ethics.multiobj_reward import MultiObjReward
+from .ethics.policy_gate import PolicyGate
+from .mcp.mcp_core import MCPCore
 
 
 class RecursiveUSAA:

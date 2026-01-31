@@ -3,14 +3,10 @@ Observability Module
 Re-exports consolidated components from ollama_agent.py
 """
 
-import structlog
 import logging
-from .ollama_agent import (
-    LLMCost,
-    CostTracker,
-    BudgetExceededError,
-    OllamaAgent as ObservableOllamaAgent
-)
+
+import structlog
+
 
 # Re-configure structured logging for consistent output
 def configure_structured_logging():

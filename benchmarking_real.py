@@ -5,12 +5,13 @@ Tests different models and tracks metrics over time
 """
 
 import json
-import time
 import statistics
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
-from dataclasses import dataclass, asdict
-from datetime import datetime
+
 import requests
 
 
@@ -91,8 +92,9 @@ class OllamaBenchmarker:
     def get_memory_usage(self) -> float:
         """Get current memory usage in MB"""
         try:
-            import psutil
             import os
+
+            import psutil
             process = psutil.Process(os.getpid())
             return process.memory_info().rss / 1024 / 1024
         except:
@@ -392,7 +394,7 @@ class ProgressTracker:
     def _load_db(self) -> Dict:
         """Load history database"""
         if self.db_path.exists():
-            with open(self.db_path, 'r') as f:
+            with open(self.db_path) as f:
                 return json.load(f)
         return {"benchmarks": []}
 
@@ -437,7 +439,7 @@ class ProgressTracker:
 
             print(f"\nFirst Benchmark: {first.timestamp[:10]}")
             print(f"Latest Benchmark: {latest.timestamp[:10]}")
-            print(f"\nChanges:")
+            print("\nChanges:")
             print(f"  Pass Rate: {first.pass_rate()*100:.1f}% → {latest.pass_rate()*100:.1f}% ({pass_rate_change:+.1f}%)")
             print(f"  Avg Time: {first.avg_response_time:.2f}s → {latest.avg_response_time:.2f}s ({time_change:+.2f}s)")
             print(f"  Quality: {first.avg_quality_score:.2f} → {latest.avg_quality_score:.2f} ({quality_change:+.2f})")

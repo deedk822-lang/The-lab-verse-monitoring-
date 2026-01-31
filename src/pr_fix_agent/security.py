@@ -3,12 +3,11 @@ Security Module with Module-Level Imports
 FIXED: All imports at top of file
 """
 
-import time  # ✅ FIX: Module-level, not local
 import json  # ✅ FIX: Module-level, not local
-import threading
 import re
+import threading
+import time  # ✅ FIX: Module-level, not local
 from pathlib import Path
-from typing import Optional
 
 
 class SecurityError(Exception):

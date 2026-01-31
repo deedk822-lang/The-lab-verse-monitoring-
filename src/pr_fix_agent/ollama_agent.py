@@ -5,13 +5,14 @@ CONSOLIDATES: ollama_agent.py and observability.py versions
 """
 
 import os
-import requests
-import time
 import threading
-import structlog
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, asdict
+import time
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import requests
+import structlog
 
 logger = structlog.get_logger()
 

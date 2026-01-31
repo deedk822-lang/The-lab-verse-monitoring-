@@ -3,16 +3,16 @@ REAL Tests for PRErrorFixer
 These tests actually validate fixing functionality
 """
 
-import pytest
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
-import re
-import sys
+from unittest.mock import Mock
+
+import pytest
 
 # Import the actual code we're testing
-from pr_fix_agent.analyzer import PRErrorFixer, OllamaAgent
+from pr_fix_agent.analyzer import PRErrorFixer
+
 
 @pytest.fixture
 def temp_repo():
@@ -84,7 +84,7 @@ class TestPRErrorFixerReal:
         created_file = Path(result)
 
         # Check it's valid Python
-        with open(created_file, 'r') as f:
+        with open(created_file) as f:
             content = f.read()
 
         # Should compile without syntax errors
@@ -151,7 +151,7 @@ class TestPRErrorFixerReal:
         assert "broken" in result
 
         # Verify broken submodule removed
-        with open(gitmodules, 'r') as f:
+        with open(gitmodules) as f:
             content = f.read()
 
         assert '[submodule "good"]' in content
@@ -177,7 +177,7 @@ class TestPRErrorFixerReal:
 
         fixer.fix_submodule_error(error)
 
-        with open(gitmodules, 'r') as f:
+        with open(gitmodules) as f:
             content = f.read()
 
         # Count submodule entries
@@ -225,7 +225,7 @@ class TestPRErrorFixerReal:
         assert "numpy" in result
 
         # Verify added
-        with open(req_file, 'r') as f:
+        with open(req_file) as f:
             content = f.read()
 
         assert "numpy" in content
@@ -242,7 +242,7 @@ class TestPRErrorFixerReal:
         result = fixer.fix_missing_dependency(error)
 
         # Should return None or message about already present
-        with open(req_file, 'r') as f:
+        with open(req_file) as f:
             content = f.read()
 
         # Should only appear once
@@ -264,7 +264,7 @@ class TestPRErrorFixerReal:
             assert result is None, f"Should reject: {error}"
 
         # Requirements should be unchanged
-        with open(req_file, 'r') as f:
+        with open(req_file) as f:
             content = f.read()
 
         assert content == "requests==2.28.0\n"
@@ -329,7 +329,7 @@ def another():
         assert created.suffix == ".py"
 
         # File should be importable (valid Python)
-        with open(created, 'r') as f:
+        with open(created) as f:
             code = f.read()
         compile(code, "config.py", 'exec')
 

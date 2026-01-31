@@ -4,9 +4,10 @@ FIXES: Entry point documentation mismatch
 PROVIDES: Single pr-fix-agent command with subcommands
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
+
 import structlog
 
 logger = structlog.get_logger()
@@ -38,7 +39,7 @@ def health_check() -> int:
     # Check 2: Package imports
     print("\n2. Checking package imports...")
     try:
-        from pr_fix_agent import analyzer, security, orchestrator
+        from pr_fix_agent import analyzer, orchestrator, security
         print("   ✅ All package modules import successfully")
     except ImportError as e:
         print(f"   ❌ Import failed: {e}")

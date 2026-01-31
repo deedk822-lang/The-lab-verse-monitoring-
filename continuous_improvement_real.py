@@ -4,13 +4,14 @@ REAL Continuous Improvement System
 Actually analyzes code and generates actionable improvements
 """
 
+import ast
 import json
 import re
-import ast
-from pathlib import Path
-from typing import Dict, List, Optional, Set
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List
+
 import requests
 
 
@@ -48,7 +49,7 @@ class StaticAnalyzer:
         issues = []
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
                 lines = content.split('\n')
 

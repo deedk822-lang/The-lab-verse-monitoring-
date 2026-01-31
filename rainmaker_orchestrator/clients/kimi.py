@@ -1,7 +1,8 @@
-import os
 import logging
+import os
 from typing import Optional
-from openai import OpenAI, APIError
+
+from openai import APIError, OpenAI
 
 logger = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ This file maintains backward compatibility with existing deployments.
 For new implementations, use api/server.py instead.
 """
 import logging
+
 from fastapi import FastAPI
 
 logger: logging.Logger = logging.getLogger("server")

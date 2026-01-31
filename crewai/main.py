@@ -1,10 +1,12 @@
 
+import json
 import os
 import sys
-import json
-from crewai import Agent, Task, Crew, Process
-from dotenv import load_dotenv
+
 from crewai_tools import SerperDevTool
+from dotenv import load_dotenv
+
+from crewai import Agent, Crew, Task
 
 load_dotenv()
 
@@ -29,7 +31,7 @@ search_tool = SerperDevTool()
 researcher = Agent(
   role='Researcher',
   goal=f'Find and summarize the latest news on {topic}',
-  backstory=f"""You're a researcher at a large company.
+  backstory="""You're a researcher at a large company.
   You're responsible for analyzing data and providing insights
   to the business.""",
   verbose=False,

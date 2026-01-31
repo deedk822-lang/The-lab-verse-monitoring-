@@ -85,11 +85,13 @@ Thumbs.db
 
 # Coverage reports
 htmlcov/
+coverage.xml
 .tox/
 .coverage
 .coverage.*
 .pytest_cache/
 .mypy_cache/
+.hypothesis/
 
 # Jupyter
 .ipynb_checkpoints/

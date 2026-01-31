@@ -1,29 +1,19 @@
-import os
-import json
-import structlog
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+"""
+<<<<<<< HEAD:src/pr_fix_agent/observability/__init__.py
+Observability module for PR Fix Agent.
+"""
+
+from __future__ import annotations
+
 from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from typing import Any, Dict
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+import structlog
 
-logger = structlog.get_logger()
+from .logging import configure_logging
+from .metrics import initialize_metrics
+from .tracing import initialize_tracing
 
 
 @dataclass
@@ -45,26 +35,26 @@ class BudgetExceededError(Exception):
 class CostTracker:
     """Track and enforce LLM API costs"""
 
-    # Cost per 1M tokens (approximate for Ollama - adjust for your setup)
     MODEL_COSTS = {
-        "deepseek-r1:14b": 0.0,  # Free (local)
-        "deepseek-r1:7b": 0.0,   # Free (local)
-        "deepseek-r1:1.5b": 0.0, # Free (local)
-        "qwen2.5-coder:32b": 0.0,  # Free (local)
-        "qwen2.5-coder:14b": 0.0,  # Free (local)
-        "qwen2.5-coder:7b": 0.0,   # Free (local)
-        "qwen2.5-coder:1.5b": 0.0, # Free (local)
-        "qwen2.5:32b": 0.0,  # Free (local)
-        "codellama:34b": 0.0,  # Free (local)
-        "gpt-4": 30.0,  # $30 per 1M tokens (if using OpenAI)
-        "o1-preview": 15.0,  # OpenAI reasoning model
-        "claude-3-5-sonnet": 3.0,  # Anthropic coding model
+        "deepseek-r1:14b": 0.0,
+        "deepseek-r1:7b": 0.0,
+        "deepseek-r1:1.5b": 0.0,
+        "qwen2.5-coder:32b": 0.0,
+        "qwen2.5-coder:14b": 0.0,
+        "qwen2.5-coder:7b": 0.0,
+        "qwen2.5-coder:1.5b": 0.0,
+        "qwen2.5:32b": 0.0,
+        "codellama:34b": 0.0,
+        "gpt-4": 30.0,
+        "o1-preview": 15.0,
+        "claude-3-5-sonnet": 3.0,
     }
 
     def __init__(self, budget_usd: float = 10.0):
         self.budget_usd = budget_usd
         self.costs: list[LLMCost] = []
         self.total_spent = 0.0
+        self.logger = structlog.get_logger()
 
     def track(
         self,
@@ -89,7 +79,7 @@ class CostTracker:
         self.costs.append(cost)
         self.total_spent += cost_usd
 
-        logger.info(
+        self.logger.info(
             "llm_cost_tracked",
             model=model,
             tokens=total_tokens,
@@ -115,3 +105,44 @@ class CostTracker:
             "total_tokens": sum(c.total_tokens for c in self.costs),
             "costs": [asdict(c) for c in self.costs]
         }
+
+
+__all__ = [
+    'configure_logging',
+    'initialize_metrics',
+    'initialize_tracing',
+    'LLMCost',
+    'BudgetExceededError',
+    'CostTracker',
+]
+=======
+Observability Module
+Re-exports consolidated components from ollama_agent.py
+"""
+
+import logging
+
+import structlog
+
+
+# Re-configure structured logging for consistent output
+def configure_structured_logging():
+    """Configure structured logging (Datadog-compatible)"""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer()
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+configure_structured_logging()
+logger = structlog.get_logger()
+>>>>>>> main:src/pr_fix_agent/observability.py

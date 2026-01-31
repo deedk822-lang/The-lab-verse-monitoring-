@@ -1,13 +1,18 @@
 import os
-import requests
 from datetime import datetime, timezone
-from typing import List, Dict, Optional
+from typing import Dict, List
 
+import requests
 from hubspot import HubSpot
-from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
-from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
-from hubspot.crm.contacts import SimplePublicObjectInput
+from hubspot.crm.contacts import (
+    Filter,
+    FilterGroup,
+    PublicObjectSearchRequest,
+    SimplePublicObjectInput,
+)
 from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
+from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
+
 
 # ========================
 # CONFIG (Using the specific name provided)

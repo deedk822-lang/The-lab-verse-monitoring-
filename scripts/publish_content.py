@@ -3,11 +3,12 @@
 Publish content from HTML to multiple channels.
 """
 
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
-from typing import Dict, Optional
+from typing import Optional
+
 from bs4 import BeautifulSoup
 
 # Setup logging
@@ -84,7 +85,7 @@ class AyrshareTool:
             r.raise_for_status()
             result = r.json()
             if result.get('status') == 'success':
-                 return f"SUCCESS: Posted via Ayrshare."
+                 return "SUCCESS: Posted via Ayrshare."
             else:
                  return f"ERROR: Ayrshare responded with status '{result.get('status')}' - {result.get('message', 'No message')}"
         except requests.exceptions.RequestException as e:
@@ -200,7 +201,7 @@ class WordPressTool:
 # === Content Parsing ===
 def parse_html_content(filepath: str) -> (Optional[str], Optional[str], Optional[str]):
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding='utf-8') as f:
             html = f.read()
 
         soup = BeautifulSoup(html, 'html.parser')
@@ -242,7 +243,7 @@ def run_pipeline(html_filepath: str):
         logger.error("Failed to get content from HTML. Aborting.")
         return
 
-    logger.info(f"   Successfully parsed content.")
+    logger.info("   Successfully parsed content.")
     logger.info(f"   Title: {title}")
 
     # === STEP 2: BRAIN - CONTENT GENERATION ===
@@ -262,7 +263,7 @@ def run_pipeline(html_filepath: str):
     try:
         email_result = content_factory.generate_content(email_prompt, max_tokens=300)
         email_text = email_result['text']
-        logger.info(f"   Generated Email Body.")
+        logger.info("   Generated Email Body.")
     except Exception as e:
         logger.error(f"   Failed to generate email body: {e}")
         email_text = f"Hello,\n\nWe've just published a groundbreaking new article: '{title}'.\n\n{raw_text[:300]}...\n\nRead more on our blog!"

@@ -4,6 +4,8 @@ import requests
 import structlog
 from typing import Optional, Dict, Any
 
+from pr_fix_agent.security.secure_requests import create_ssrf_safe_requests_session
+
 logger = structlog.get_logger(__name__)
 
 # Try to import OpenLIT for observability
@@ -43,6 +45,9 @@ class OllamaAgent:
         self.api_url = f"{base_url}/api/generate"
         self.cost_tracker = cost_tracker
         self._mock_responses: Dict[str, str] = {}
+
+        # ✅ FIX: Use SSRF-safe session (allowing localhost for Ollama by default)
+        self.session = create_ssrf_safe_requests_session(allowed_domains={"localhost", "127.0.0.1"})
 
         logger.info(
             "ollama_agent_created",
@@ -90,7 +95,7 @@ class OllamaAgent:
             payload["system"] = system
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 self.api_url,
                 json=payload,
                 timeout=120

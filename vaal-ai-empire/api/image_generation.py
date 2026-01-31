@@ -3,15 +3,15 @@ Real Image Generation Service
 Supports multiple providers: Stable Diffusion, DALL-E, Replicate
 """
 
-import os
-import logging
-import requests
-import concurrent.futures
 import base64
-from typing import Dict, List, Optional
+import concurrent.futures
+import logging
+import os
 from datetime import datetime
 from pathlib import Path
-import io
+from typing import Dict, List
+
+import requests
 
 logger = logging.getLogger(__name__)
 

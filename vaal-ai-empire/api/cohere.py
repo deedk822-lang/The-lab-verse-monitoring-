@@ -1,7 +1,6 @@
+import logging
 import os
 from typing import Dict, List
-
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

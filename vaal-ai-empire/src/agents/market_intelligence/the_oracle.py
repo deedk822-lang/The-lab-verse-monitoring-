@@ -1,6 +1,8 @@
 # agents/market_intelligence/the_oracle.py
-import requests
 import os
+
+import requests
+
 
 def get_perplexity_insight(query):
     url = "https://api.perplexity.ai/chat/completions"

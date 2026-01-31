@@ -18,6 +18,6 @@ __version__ = "1.0.0"
 __author__ = "LabVerse Team"
 __description__ = "Hybrid AI Project Manager for monitoring infrastructure"
 
-from .core import KimiInstruct, Task, TaskPriority, TaskStatus, ProjectContext
+from .core import KimiInstruct, ProjectContext, Task, TaskPriority, TaskStatus
 
 __all__ = ["KimiInstruct", "Task", "TaskPriority", "TaskStatus", "ProjectContext"]

@@ -1,6 +1,6 @@
+import logging
 import os
 from typing import Dict
-import logging
 
 logger = logging.getLogger(__name__)
 

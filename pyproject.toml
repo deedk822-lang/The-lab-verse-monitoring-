@@ -116,7 +116,13 @@ dev = [
 ]
 
 [project.scripts]
+<<<<<<< HEAD
 pr-fix-agent = "pr_fix_agent.cli.main:app"
+=======
+pr-fix-agent = "pr_fix_agent.cli:main"
+pr-benchmark = "benchmarking_real:main"
+pr-improve = "continuous_improvement_real:main"
+>>>>>>> main
 
 [project.urls]
 Homepage = "https://github.com/org/pr-fix-agent"
@@ -133,6 +139,7 @@ build-backend = "hatchling.build"
 packages = ["src/pr_fix_agent"]
 
 [tool.pytest.ini_options]
+<<<<<<< HEAD
 minversion = "7.0"
 pythonpath = ["src"]  # Critical: Tells pytest where to find modules
 testpaths = ["tests"]
@@ -264,6 +271,13 @@ ignore = [
 [tool.ruff.isort]
 known-first-party = ["pr_fix_agent"]
 force-sort-within-sections = true
+=======
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --strict-markers"
+>>>>>>> main
 
 [tool.black]
 line-length = 100

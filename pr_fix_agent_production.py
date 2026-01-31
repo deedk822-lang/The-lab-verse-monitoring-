@@ -4,19 +4,18 @@ PR Error-Fixing Agent using Ollama
 Production-ready version with proper library structure
 """
 
-import os
-import json
-import subprocess
 import re
+import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
+
 import requests
 
 # Import from proper src/ directory
 sys.path.insert(0, str(Path(__file__).parent / "src"))
-from security import SecurityValidator, SecurityError
 from analyzer import PRErrorAnalyzer
+from security import SecurityError, SecurityValidator
 
 
 class OllamaAgent:
@@ -115,7 +114,7 @@ Include only the essential code structure. Format your response as pure code wit
                 # Remove the submodule reference
                 gitmodules_path = self.repo_path / ".gitmodules"
                 if gitmodules_path.exists():
-                    with open(gitmodules_path, 'r') as f:
+                    with open(gitmodules_path) as f:
                         content = f.read()
 
                     # Remove the submodule section
@@ -147,7 +146,7 @@ Include only the essential code structure. Format your response as pure code wit
         # Check for requirements.txt
         req_file = self.repo_path / "requirements.txt"
         if req_file.exists():
-            with open(req_file, 'r') as f:
+            with open(req_file) as f:
                 current_deps = f.read()
 
             if validated_module not in current_deps:
@@ -181,7 +180,7 @@ class PRFixAgent:
 
     def process_github_actions_log(self, log_file: str) -> Dict:
         """Process a GitHub Actions log file and fix errors"""
-        with open(log_file, 'r') as f:
+        with open(log_file) as f:
             log_content = f.read()
 
         # Parse errors
@@ -220,7 +219,7 @@ class PRFixAgent:
                 results["fixes_applied"].append(fix_result)
                 print(f"  ✓ Applied fix: {fix_result}")
             else:
-                print(f"  ℹ Manual intervention may be required")
+                print("  ℹ Manual intervention may be required")
 
         return results
 
@@ -303,7 +302,7 @@ def main():
     # Initialize agent
     agent = PRFixAgent(model=args.model, repo_path=args.repo_path)
 
-    print(f"🤖 PR Fix Agent starting...")
+    print("🤖 PR Fix Agent starting...")
     print(f"   Model: {args.model}")
     print(f"   Log file: {args.log_file}")
     print(f"   Repository: {args.repo_path}\n")
@@ -327,7 +326,7 @@ def main():
     if args.commit and results['fixes_applied']:
         agent.create_fix_commit()
 
-    print(f"\n✅ Processing complete!")
+    print("\n✅ Processing complete!")
     return 0
 
 

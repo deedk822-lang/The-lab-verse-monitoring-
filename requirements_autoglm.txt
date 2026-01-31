@@ -1,0 +1,9 @@
+# AutoGLM Additional Requirements
+torch>=2.0.0
+transformers>=4.30.0
+vllm>=0.2.0
+adb-helper>=1.0.0
+pillow>=9.0.0
+opencv-python>=4.5.0
+numpy>=1.21.0
+requests>=2.25.0

@@ -1,4 +1,9 @@
+# ============================================================================
+# Grafana Datasource - Prometheus
+# ============================================================================
+
 apiVersion: 1
+
 datasources:
   - name: Prometheus
     type: prometheus
@@ -8,5 +13,5 @@ datasources:
     editable: true
     jsonData:
       timeInterval: "15s"
-      httpMethod: POST
-    secureJsonData: {}
+      queryTimeout: "60s"
+      httpMethod: "POST"

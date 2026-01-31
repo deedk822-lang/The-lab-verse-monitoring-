@@ -1,6 +1,11 @@
-import asyncio, json, click
-from .service import KimiInstructService
+import asyncio
+import json
+
+import click
+
 from .recursive_usaa import RecursiveUSAA
+from .service import KimiInstructService
+
 
 @click.command()
 @click.option("--goal", required=True, help="Goal to pursue recursively")
@@ -14,6 +19,7 @@ def recursive(goal, context, dry_run):
         ctx["dry_run_only"] = True
     result = asyncio.run(wrapper.run_recursive(goal, ctx))
     click.echo(json.dumps(result, indent=2))
+
 
 if __name__ == "__main__":
     recursive()

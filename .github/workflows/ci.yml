@@ -51,7 +51,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e .
+          pip install -e ".[dev]"
       - name: Run tests
         run: pytest
 
@@ -64,10 +64,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/aliyun-oidc-auth-action@v2
+        uses: aliyun/alibabacloud-oidc-auth@v2
         with:
-          provider-id: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
           role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          region-id: ${{ env.ALIBABA_CLOUD_REGION_ID }}
 
       - name: Install Alibaba Cloud CLI
         run: |

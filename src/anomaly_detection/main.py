@@ -34,9 +34,7 @@ app = FastAPI(
 # --- Global Components (Initialize on startup) ---
 lstm_model = LSTMAnomalyDetector()
 transformer_model = TransformerAnomalyDetector()
-cloud_detector = MultiCloudAnomalyDetector(
-    cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
-)
+cloud_detector = MultiCloudAnomalyDetector(cloud_configs={"aws": {}, "azure": {}, "gcp": {}})
 alerting_system = EnhancedAlertingSystem()
 explainer = None
 
@@ -49,9 +47,7 @@ async def startup_event():
     logger.info("Anomaly Detection Service is starting up.")
     if not os.environ.get("PYTEST_RUNNING"):
         background_data = np.random.rand(10, 10, 1)
-        explainer = AdvancedExplainabilityEngine(
-            model=lstm_model, training_data=background_data
-        )
+        explainer = AdvancedExplainabilityEngine(model=lstm_model, training_data=background_data)
         logger.info("Explainability engine initialized.")
     else:
         logger.warning("Explainability engine not initialized in test environment.")
@@ -112,9 +108,7 @@ async def detect_multi_cloud_anomalies(data: dict):
 async def explain_anomaly(data: dict):
     """Provide a detailed explanation for an anomalous data point."""
     if explainer is None:
-        raise HTTPException(
-            status_code=503, detail="Explainability engine is not available."
-        )
+        raise HTTPException(status_code=503, detail="Explainability engine is not available.")
     try:
         sample = np.array(data["sample"])
         context = data.get("context")
@@ -125,9 +119,7 @@ async def explain_anomaly(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post(
-    "/alert", summary="Trigger an enhanced alert for an anomaly", tags=["Alerting"]
-)
+@app.post("/alert", summary="Trigger an enhanced alert for an anomaly", tags=["Alerting"])
 async def trigger_alert(alert_data: dict):
     """Trigger a multi-channel alert for a critical anomaly."""
     try:
@@ -136,15 +128,11 @@ async def trigger_alert(alert_data: dict):
             title=alert_data["title"],
             description=alert_data["description"],
             severity=AlertSeverity(alert_data.get("severity", "high")),
-            channels=[
-                AlertChannel(c) for c in alert_data.get("channels", ["slack", "email"])
-            ],
+            channels=[AlertChannel(c) for c in alert_data.get("channels", ["slack", "email"])],
             anomaly_data=alert_data["anomaly_data"],
             created_at=datetime.now(),
             expires_at=None,
-            actions_required=alert_data.get(
-                "actions_required", ["Investigate immediately."]
-            ),
+            actions_required=alert_data.get("actions_required", ["Investigate immediately."]),
             auto_remediation_enabled=alert_data.get("auto_remediation_enabled", False),
             escalation_path=[],
             mobile_optimized=True,

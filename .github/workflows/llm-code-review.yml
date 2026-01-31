@@ -14,6 +14,19 @@ jobs:
   # STEP 1: Collect Findings
   # ========================================================================
 
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-3-Clause
+
   collect-findings:
     name: Collect Code Review Findings
     runs-on: ubuntu-latest
@@ -44,7 +57,48 @@ jobs:
           bandit -r src/ -f json -o analysis-results/bandit.json || echo "bandit failed"
           ruff check src/ --output-format=json > analysis-results/ruff.json || echo "ruff failed"
           mypy src/ --json-report analysis-results/ || echo "mypy failed"
-          safety check --json > analysis-results/safety.json || echo "safety failed"
+          safety check > analysis-results/safety.txt || echo "safety failed"
+
+          # Convert safety text output to JSON
+          python3 << 'PY'
+import json
+import re
+import os
+
+findings = []
+
+try:
+    if os.path.exists('analysis-results/safety.txt'):
+        with open('analysis-results/safety.txt', 'r') as f:
+            content = f.read()
+
+        # Parse safety output format
+        # Example: "requests 2.28.1 (CVE-2023-32681) - High severity"
+        pattern = r'(\S+)\s+([\d.]+)\s+\(([^)]+)\)'
+
+        for line in content.split('\n'):
+            match = re.search(pattern, line)
+            if match:
+                findings.append({
+                    'file': 'requirements.txt',
+                    'line': 0,
+                    'severity': 'high' if 'high' in line.lower() else 'medium',
+                    'issue': f"Vulnerability in {match.group(1)} {match.group(2)}: {match.group(3)}",
+                    'suggestion': 'Update dependency'
+                })
+
+    # Write as JSON
+    with open('analysis-results/safety.json', 'w') as f:
+        json.dump(findings, f, indent=2)
+
+    print(f"✅ Converted {len(findings)} safety findings to JSON")
+
+except Exception as e:
+    print(f"⚠️ Safety parse error: {e}")
+    # Create empty JSON to prevent crash
+    with open('analysis-results/safety.json', 'w') as f:
+        json.dump([], f)
+PY
 
           echo "findings_file=analysis-results" >> $GITHUB_OUTPUT
 
@@ -88,33 +142,64 @@ jobs:
           name: analysis-results
           path: analysis-results/
 
+      - name: 🔒 Setup network restrictions
+        run: |
+          # Block metadata service (defense in depth)
+          sudo iptables -A OUTPUT -d 169.254.169.254 -j DROP
+          # Block internal GitHub network ranges
+          sudo iptables -A OUTPUT -d 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 -j DROP
+
       - name: Install and start Ollama
+        timeout-minutes: 10
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
           sleep 10
           # Use smaller models for standard runners
-          ollama pull deepseek-r1:1.5b
-          ollama pull qwen2.5-coder:1.5b
+          ollama pull deepseek-r1:1.5b &
+          ollama pull qwen2.5-coder:1.5b &
+          wait
 
-      - name: Run orchestrator (reasoning + coding)
+      - name: Run orchestrator (review)
+        timeout-minutes: 10
         run: |
+          # Pre-validate findings size
+          FINDINGS_SIZE=$(wc -c < analysis-results/safety.json 2>/dev/null || echo 0)
+
+          if [ $FINDINGS_SIZE -gt 50000 ]; then
+            echo "⚠️ Findings too large (${FINDINGS_SIZE} bytes), truncating..."
+            python3 << 'PY'
+import json
+try:
+    with open('analysis-results/safety.json', 'r') as f:
+        data = json.load(f)
+    # Keep only first 20 findings
+    if isinstance(data, list):
+        data = data[:20]
+    elif isinstance(data, dict) and 'findings' in data:
+        data['findings'] = data['findings'][:20]
+    with open('analysis-results/safety.json', 'w') as f:
+        json.dump(data, f)
+except:
+    pass
+PY
+          fi
+
           # Create directory for proposals
           mkdir -p artifacts/proposals
 
-          python -m pr_fix_agent.orchestrator \
-            --mode reasoning \
-            --findings analysis-results/ \
-            --output artifacts/proposals/proposals.json \
-            --reasoning-model deepseek-r1:1.5b \
-            --coding-model qwen2.5-coder:1.5b
+          # Run with timeout protection
+          timeout 300 python src/pr_fix_agent/orchestrator.py \
+            review \
+            --findings analysis-results/safety.json \
+            --limit 5 || echo "Analysis timed out but continuing..."
 
-          python -m pr_fix_agent.orchestrator \
-            --mode coding \
-            --proposals artifacts/proposals/proposals.json \
-            --apply \
-            --reasoning-model deepseek-r1:1.5b \
-            --coding-model qwen2.5-coder:1.5b
+          # Move proposals to expected location
+          if [ -f proposals.json ]; then
+            mv proposals.json artifacts/proposals/proposals.json
+          else
+            echo "[]" > artifacts/proposals/proposals.json
+          fi
 
       - name: Run tests (FIXED LOGIC)
         id: test

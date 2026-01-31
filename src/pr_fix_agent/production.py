@@ -51,9 +51,9 @@ def main():
 
     # Initialize components (validation already done)
     agent = OllamaAgent(model=args.model)
-    validator = SecurityValidator(repo_path)
-    analyzer = PRErrorAnalyzer(agent=agent)
-    fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path))
+    _validator = SecurityValidator(repo_path)
+    _analyzer = PRErrorAnalyzer(agent=agent)
+    _fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path))
 
     print("✅ PR Fix Agent initialized and ready to analyze and fix errors.")
     return 0

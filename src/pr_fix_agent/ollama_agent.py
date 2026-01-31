@@ -8,7 +8,7 @@ import os
 import threading
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -19,6 +19,7 @@ logger = structlog.get_logger()
 # Try to import OpenLIT for observability
 try:
     import openlit
+
     OPENLIT_AVAILABLE = True
 except ImportError:
     OPENLIT_AVAILABLE = False
@@ -29,9 +30,11 @@ except ImportError:
 # Cost Tracking & Budget Enforcement
 # ============================================================================
 
+
 @dataclass
 class LLMCost:
     """Track single LLM invocation cost"""
+
     model: str
     prompt_tokens: int
     completion_tokens: int
@@ -60,17 +63,13 @@ class CostTracker:
     }
 
     def __init__(self, budget_usd: float = 10.0):
-        self.budget_usd = budget_usd
+        # Allow environment variable override for daily budget
+        self.budget_usd = float(os.getenv("MAX_DAILY_BUDGET", budget_usd))
         self.total_cost = 0.0
         self.costs: List[LLMCost] = []
         self._lock = threading.Lock()
 
-    def record_usage(
-        self,
-        model: str,
-        prompt: str,
-        response: str
-    ) -> LLMCost:
+    def record_usage(self, model: str, prompt: str, response: str) -> LLMCost:
         """Record usage with cost calculation"""
 
         # Estimate tokens (rough approximation: 1 token ≈ 4 chars)
@@ -88,7 +87,7 @@ class CostTracker:
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             estimated_cost=estimated_cost,
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         with self._lock:
@@ -96,21 +95,10 @@ class CostTracker:
             self.total_cost += estimated_cost
 
             if self.total_cost > self.budget_usd:
-                logger.warning(
-                    "budget_exceeded",
-                    total_cost=self.total_cost,
-                    budget=self.budget_usd
-                )
-                raise BudgetExceededError(
-                    f"Budget exceeded: ${self.total_cost:.2f} > ${self.budget_usd:.2f}"
-                )
+                logger.warning("budget_exceeded", total_cost=self.total_cost, budget=self.budget_usd)
+                raise BudgetExceededError(f"Budget exceeded: ${self.total_cost:.2f} > ${self.budget_usd:.2f}")
 
-        logger.info(
-            "llm_cost_recorded",
-            model=model,
-            tokens=total_tokens,
-            cost=estimated_cost
-        )
+        logger.info("llm_cost_recorded", model=model, tokens=total_tokens, cost=estimated_cost)
 
         return cost
 
@@ -118,23 +106,14 @@ class CostTracker:
         """Generate usage report"""
         with self._lock:
             if not self.costs:
-                return {
-                    "total_calls": 0,
-                    "total_tokens": 0,
-                    "total_cost": 0.0,
-                    "budget_remaining": self.budget_usd
-                }
+                return {"total_calls": 0, "total_tokens": 0, "total_cost": 0.0, "budget_remaining": self.budget_usd}
 
             total_tokens = sum(c.total_tokens for c in self.costs)
 
             by_model: Dict[str, Dict[str, Any]] = {}
             for cost in self.costs:
                 if cost.model not in by_model:
-                    by_model[cost.model] = {
-                        "calls": 0,
-                        "tokens": 0,
-                        "cost": 0.0
-                    }
+                    by_model[cost.model] = {"calls": 0, "tokens": 0, "cost": 0.0}
                 by_model[cost.model]["calls"] += 1
                 by_model[cost.model]["tokens"] += cost.total_tokens
                 by_model[cost.model]["cost"] += cost.estimated_cost
@@ -145,22 +124,26 @@ class CostTracker:
                 "total_cost": self.total_cost,
                 "budget_limit": self.budget_usd,
                 "budget_remaining": self.budget_usd - self.total_cost,
-                "usage_by_model": by_model
+                "usage_by_model": by_model,
             }
 
 
 class BudgetExceededError(Exception):
     """Raised when budget limit is exceeded"""
+
     pass
+
 
 class OllamaQueryError(Exception):
     """Raised when Ollama query fails"""
+
     pass
 
 
 # ============================================================================
 # Canonical OllamaAgent
 # ============================================================================
+
 
 class OllamaAgent:
     """
@@ -178,7 +161,7 @@ class OllamaAgent:
         self,
         model: str = "codellama",
         base_url: str = "http://localhost:11434",
-        cost_tracker: Optional[CostTracker] = None
+        cost_tracker: Optional[CostTracker] = None,
     ):
         self.model = model
         self.base_url = base_url
@@ -189,41 +172,25 @@ class OllamaAgent:
         if OPENLIT_AVAILABLE:
             try:
                 openlit.init(
-                    otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318"),
-                    application_name="pr-fix-agent"
+                    otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318"), application_name="pr-fix-agent"
                 )
                 logger.info("openlit_initialized")
             except Exception as e:
                 logger.warning("openlit_init_failed", error=str(e))
 
-    def query(
-        self,
-        prompt: str,
-        temperature: float = 0.2,
-        timeout: int = 120,
-        trace_id: Optional[str] = None
-    ) -> str:
+    def query(self, prompt: str, temperature: float = 0.2, timeout: int = 120, trace_id: Optional[str] = None) -> str:
         """Query with full observability and tracing"""
         start_time = time.time()
         trace_id = trace_id or str(time.time())
 
-        logger.info(
-            "ollama_query_start",
-            model=self.model,
-            prompt_length=len(prompt),
-            trace_id=trace_id
-        )
+        logger.info("ollama_query_start", model=self.model, prompt_length=len(prompt), trace_id=trace_id)
 
         try:
             if OPENLIT_AVAILABLE:
                 with openlit.trace(
                     name="ollama_query",
                     kind="llm",
-                    attributes={
-                        "llm.model": self.model,
-                        "llm.temperature": temperature,
-                        "trace_id": trace_id
-                    }
+                    attributes={"llm.model": self.model, "llm.temperature": temperature, "trace_id": trace_id},
                 ):
                     response_text = self._make_request(prompt, temperature, timeout)
             else:
@@ -232,28 +199,14 @@ class OllamaAgent:
             duration = time.time() - start_time
 
             # Record usage
-            self.cost_tracker.record_usage(
-                model=self.model,
-                prompt=prompt,
-                response=response_text
-            )
+            self.cost_tracker.record_usage(model=self.model, prompt=prompt, response=response_text)
 
-            logger.info(
-                "ollama_query_success",
-                model=self.model,
-                duration=duration,
-                response_length=len(response_text)
-            )
+            logger.info("ollama_query_success", model=self.model, duration=duration, response_length=len(response_text))
 
             return response_text
 
         except Exception as e:
-            logger.error(
-                "ollama_query_failed",
-                model=self.model,
-                error=str(e),
-                duration=time.time() - start_time
-            )
+            logger.error("ollama_query_failed", model=self.model, error=str(e), duration=time.time() - start_time)
             if isinstance(e, (BudgetExceededError, OllamaQueryError)):
                 raise
             raise OllamaQueryError(str(e)) from e
@@ -262,13 +215,8 @@ class OllamaAgent:
         """Make HTTP request to Ollama"""
         response = requests.post(
             self.api_url,
-            json={
-                "model": self.model,
-                "prompt": prompt,
-                "stream": False,
-                "temperature": temperature
-            },
-            timeout=timeout
+            json={"model": self.model, "prompt": prompt, "stream": False, "temperature": temperature},
+            timeout=timeout,
         )
         response.raise_for_status()
         data = response.json()

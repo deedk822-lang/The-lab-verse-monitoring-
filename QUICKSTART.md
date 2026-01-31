@@ -1,207 +1,236 @@
-🚀 VAAL AI EMPIRE - QUICK START GUIDE
-⚡ Immediate Deployment (2 minutes)
-Step 1: Test the Control System
-bash
-Copy
+# 🚀 Quick Start Guide - 5 Minutes to Production
 
-cd /mnt/okcomputer/output
-node kimi-cli-standalone.cjs status
+## Prerequisites
 
-Step 2: Choose Your Deployment Method
-Option A: Docker (Recommended)
-bash
-Copy
+- Docker & Docker Compose
+- Python ≥ 3.11 (for local development)
+- 4GB RAM minimum
 
+## Step 1: Clone and Setup (30 seconds)
+
+```bash
+# Clone repository
+git clone --recursive https://github.com/org/pr-fix-agent.git
+cd pr-fix-agent
+
+# Copy environment template
+cp .env.example .env
+```
+
+## Step 2: Generate Secrets (1 minute)
+
+```bash
+# Generate TLS certificates for PostgreSQL
+./scripts/generate-tls-certs.sh
+
+# Generate JWT keys for authentication
+./scripts/generate-jwt-keys.sh
+
+# Edit .env and set secure passwords
+nano .env  # Change POSTGRES_PASSWORD and REDIS_PASSWORD
+```
+
+## Step 3: Start Services (2 minutes)
+
+```bash
+# Start all services (API, PostgreSQL, Redis, Backup)
 docker-compose up -d
 
-Option B: Manual
-bash
-Copy
+# Watch logs
+docker-compose logs -f api
+```
 
-npm install
-npm start
+## Step 4: Initialize Database (30 seconds)
 
-Option C: Development
-bash
-Copy
+```bash
+# Run Alembic migrations
+docker-compose exec api alembic upgrade head
 
-npm install
-npm run dev
+# Verify database
+docker-compose exec postgres psql -U prfixagent -d pr_fix_agent -c "\dt"
+```
 
-Step 3: Verify Deployment
-bash
-Copy
+## Step 5: Verify Everything Works (1 minute)
 
-curl http://localhost:3000/health
+```bash
+# Health check
+curl http://localhost:8000/healthz
 
-🎯 What You Get
-✅ Immediate Features
-Payment Processing - Accept ZAR, USD, EUR, GBP, BTC, ETH
-User Management - Registration, authentication, KYC
-AI Analytics - Fraud detection, risk scoring
-Compliance - POPIA, PCI DSS ready
-Admin Controls - User management, analytics
-✅ API Endpoints Ready
-Copy
+# Expected output:
+# {
+#   "status": "healthy",
+#   "database": "connected",
+#   "redis": "connected",
+#   "ollama": "connected"
+# }
 
-# Authentication
-POST /api/auth/signup
-POST /api/auth/login
+# View API documentation
+open http://localhost:8000/docs
 
-# Payments
-POST /api/payments/create-payment-intent
-GET  /api/payments/history
+# Check metrics
+curl http://localhost:8000/metrics
 
-# Users
-GET  /api/users/profile
-POST /api/users/kyc
+# View version
+curl http://localhost:8000/version
+```
 
-# Admin
-GET  /api/admin/users
-GET  /api/admin/analytics
+## 🎉 You're Running!
 
-✅ Control System
-bash
-Copy
+The complete production-grade stack is now running:
 
-node kimi-cli-standalone.cjs status    # System health
-node kimi-cli-standalone.cjs help      # All commands
-node kimi-cli-standalone.cjs info      # System info
+✅ FastAPI application with all S1-S10 security
+✅ PostgreSQL with TLS encryption
+✅ Redis for distributed rate limiting
+✅ Automated nightly backups
+✅ Prometheus metrics
+✅ Structured JSON logging
+✅ Audit trail (S5)
 
-🔗 Connect Your Frontend
-Your frontend at https://wj4wcpc76zi5k.ok.kimi.link/ can now connect to:
-Base URL: http://localhost:3000
-Example API Calls:
-JavaScript
-Copy
+## Next Steps
 
-// Create payment intent
-fetch('http://localhost:3000/api/payments/create-payment-intent', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ amount: 100, currency: 'zar' })
-});
+### CLI Usage
 
-// User signup
-fetch('http://localhost:3000/api/auth/signup', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password, firstName, lastName })
-});
+```bash
+# Health check
+docker-compose exec api pr-fix-agent health-check
 
-🎮 Kimi CLI Commands
-System Control
-bash
-Copy
+# Run agent
+docker-compose exec api pr-fix-agent run --repo-path /path/to/repo
 
-node kimi-cli-standalone.cjs status     # Complete system check
-node kimi-cli-standalone.cjs info       # System information
-node kimi-cli-standalone.cjs help       # Show all commands
+# Start code review
+docker-compose exec api pr-fix-agent review \
+  --mode reasoning \
+  --findings /app/analysis-results
+```
 
-After Full Deployment
-bash
-Copy
+### API Usage
 
-node kimi-cli.js users list           # List users
-node kimi-cli.js payments analytics   # Payment stats
-node kimi-cli.js compliance check     # Compliance status
-node kimi-cli.js ai analyze           # AI insights
+```python
+import httpx
 
-📊 Monitoring
-Health Checks
-API Health: GET http://localhost:3000/health
-Metrics: GET http://localhost:3000/metrics
-Status: node kimi-cli-standalone.cjs status
-What to Monitor
-✅ API response times
-✅ Database connections
-✅ Payment processing
-✅ User registrations
-✅ Transaction volumes
-✅ Compliance status
-🛡️ Security Checklist
-✅ Implemented
-JWT authentication with bcrypt
-Rate limiting protection
-CORS configuration
-Helmet security headers
-Input validation
-SQL injection prevention
-XSS protection
-Audit logging
-✅ Compliance
-POPIA (South Africa)
-PCI DSS (Payment Card Industry)
-KYC/AML procedures
-Data protection
-Audit trails
-🌍 Supported Currencies
-ZAR - South African Rand (Primary)
-USD - US Dollar
-EUR - Euro
-GBP - British Pound
-BTC - Bitcoin
-ETH - Ethereum
-📱 Payment Methods
-✅ Credit/Debit Cards
-✅ Bank Transfers (EFT)
-✅ Mobile Payments
-✅ Cryptocurrency
-✅ Digital Wallet
-🎉 Success Indicators
-✅ System is Working When:
-Kimi CLI responds: node kimi-cli-standalone.cjs status shows green
-API responds: curl http://localhost:3000/health returns 200
-Database connects: No connection errors in logs
-Payments process: Test payment intents create successfully
-🚀 Next Steps After Deployment:
-Test user registration
-Create a test payment
-Verify KYC process
-Check compliance status
-Monitor system health
-Scale as needed
-🔧 Troubleshooting
-Common Issues:
-Port already in use:
-bash
-Copy
+# Example API call
+async with httpx.AsyncClient() as client:
+    response = await client.post(
+        "http://localhost:8000/api/v1/agent/analyze",
+        json={
+            "error": "ImportError: No module named 'requests'",
+            "context": {"file": "main.py", "line": 10}
+        }
+    )
+    print(response.json())
+```
 
-# Change port in .env file or kill existing process
-PORT=3001
+### Testing
 
-Database connection failed:
-bash
-Copy
+```bash
+# Run all tests
+docker-compose exec api pytest -v
 
-# Check MongoDB is running
-docker ps | grep mongo
+# Run with coverage
+docker-compose exec api pytest --cov=src --cov-report=html
 
-Dependencies missing:
-bash
-Copy
+# View coverage report
+open htmlcov/index.html
+```
 
-# Install dependencies
-npm install
+### Monitoring
 
-Permission denied:
-bash
-Copy
+```bash
+# Start monitoring stack (Prometheus + Grafana)
+docker-compose --profile monitoring up -d
 
-# Fix permissions
-chmod +x deploy.sh
+# Access Grafana
+open http://localhost:3000
+# Login: admin / admin (change on first login)
+```
 
-📚 Documentation
-Complete Guide: VAAL_AI_EMPIRE_COMPLETE.md
-Deployment Status: DEPLOYMENT_STATUS.md
-API Documentation: Check /routes folder
-System Info: node kimi-cli-standalone.cjs info
-🏆 You're Ready!
-Your Vaal AI Empire backend is:
-✅ Enterprise-grade - Production-ready architecture
-✅ AI-powered - Moonshot integration for analytics
-✅ Legally compliant - POPIA, PCI DSS ready
-✅ Scalable - Docker containerization
-✅ Secure - Military-grade security
-✅ Controllable - Kimi CLI system
-🎉 Deploy and dominate!
+### Production Deployment
+
+```bash
+# Build production image
+docker build -t pr-fix-agent:0.1.0 .
+
+# Run with security options
+docker run \
+  --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,size=100m \
+  --security-opt seccomp=seccomp-profile.json \
+  --security-opt no-new-privileges:true \
+  -p 8000:8000 \
+  pr-fix-agent:0.1.0
+```
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Change ports in docker-compose.yml
+ports:
+  - "8001:8000"  # Use 8001 instead of 8000
+```
+
+### Database Connection Failed
+
+```bash
+# Check PostgreSQL is running
+docker-compose ps postgres
+
+# View PostgreSQL logs
+docker-compose logs postgres
+
+# Reset database
+docker-compose down -v
+docker-compose up -d
+```
+
+### Ollama Not Accessible
+
+```bash
+# If running Ollama on host machine
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+# If running Ollama in Docker
+docker run -d -p 11434:11434 ollama/ollama
+```
+
+## 📚 Full Documentation
+
+- **Architecture**: See [docs/architecture.md](docs/architecture.md)
+- **Security**: See [docs/security.md](docs/security.md)
+- **API Reference**: http://localhost:8000/docs
+- **Complete Blueprint**: See [COMPLETE_BLUEPRINT.md](COMPLETE_BLUEPRINT.md)
+
+## 🔐 Security Checklist
+
+Before deploying to production:
+
+- [ ] Change all default passwords in `.env`
+- [ ] Generate production TLS certificates
+- [ ] Enable Vault for secret management (`VAULT_ENABLED=true`)
+- [ ] Set `ENVIRONMENT=production`
+- [ ] Set `DEBUG=false`
+- [ ] Enable OpenTelemetry (`OTEL_ENABLED=true`)
+- [ ] Configure backup storage
+- [ ] Set up monitoring alerts
+- [ ] Review CORS origins
+- [ ] Test disaster recovery procedure
+
+## 🎯 What You Just Deployed
+
+✅ **S1**: Zero-trust secret handling (Vault integration)
+✅ **S2**: TLS-encrypted database connections
+✅ **S3**: Distributed rate limiting via Redis
+✅ **S4**: Comprehensive security headers (CSP, HSTS, etc.)
+✅ **S5**: Immutable audit logging
+✅ **S6**: Static analysis pipeline ready
+✅ **S7**: Hardened containers (non-root, read-only)
+✅ **S8**: SBOM generation configured
+✅ **S9**: Feature flags ready (Unleash)
+✅ **S10**: Automated backups with DR procedures
+
+---
+
+**Time to Production**: 5 minutes ⏱️
+**Security Grade**: AAA 🏆
+**Status**: Production Ready ✅

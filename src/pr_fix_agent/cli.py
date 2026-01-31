@@ -20,7 +20,7 @@ def health_check() -> int:
     Returns:
         0 if healthy, 1 otherwise
     """
-    from pr_fix_agent.ollama_agent import OllamaAgent, OllamaQueryError
+    from pr_fix_agent.agents.ollama import OllamaAgent, OllamaQueryError
 
     print("🏥 PR Fix Agent Health Check")
     print("=" * 50)

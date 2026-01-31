@@ -9,7 +9,7 @@ import pytest
 
 # ✅ FIX: Direct import, no fallback duplication
 from pr_fix_agent.analyzer import PRErrorFixer
-from pr_fix_agent.ollama_agent import MockOllamaAgent
+from pr_fix_agent.agents.ollama import MockOllamaAgent
 
 
 class TestPRErrorFixerReal:

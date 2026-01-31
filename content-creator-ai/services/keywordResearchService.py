@@ -1,9 +1,11 @@
+import os
+from typing import Dict, List, Optional
+
 import cohere
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
-import os
-from typing import List, Dict, Optional
+
 
 class KeywordResearchService:
     """
@@ -204,8 +206,8 @@ Format: Return only a JSON array of objects with title, description, and format 
         print(f"Results exported to {output_path}")
 
 
-import sys
 import json
+import sys
 
 # Example usage
 if __name__ == "__main__":

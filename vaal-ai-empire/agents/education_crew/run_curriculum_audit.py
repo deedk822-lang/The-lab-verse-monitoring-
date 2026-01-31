@@ -1,7 +1,9 @@
 import os
-from crewai import Agent, Task, Crew, Process
-from langchain_openai import ChatOpenAI
+
 from edu_tools import EducationTools
+from langchain_openai import ChatOpenAI
+
+from crewai import Agent, Crew, Process, Task
 
 # 1. Setup
 llm = ChatOpenAI(model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))

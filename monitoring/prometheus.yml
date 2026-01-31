@@ -1,3 +1,7 @@
+# ============================================================================
+# VAAL AI Empire - Prometheus Configuration
+# ============================================================================
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -5,40 +9,70 @@ global:
     cluster: 'vaal-ai-empire'
     environment: 'production'
 
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
 scrape_configs:
-  # Next.js App Metrics
-  - job_name: 'vaal-gateway'
-    static_configs:
-      - targets: ['app:3000']
-    metrics_path: '/api/metrics'
-
-  # GDELT Monitor
-  - job_name: 'gdelt-monitor'
-    static_configs:
-      - targets: ['gdelt-monitor:9091']
-    scrape_interval: 60s
-
-  # System Metrics
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # Prometheus Self-Monitoring
+  # -------------------------------------------------------------------------
+  # Prometheus self-monitoring
+  # -------------------------------------------------------------------------
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
-<<<<<<< HEAD
-=======
-    scrape_interval: 30s
-    
-  - job_name: 'ollama'
+
+  # -------------------------------------------------------------------------
+  # VAAL AI Empire Application
+  # -------------------------------------------------------------------------
+  - job_name: 'vaal-app'
+    scrape_interval: 10s
     static_configs:
-      - targets: ['ollama:11434']
-    scrape_interval: 30s
+      - targets: ['app:9090']
+        labels:
+          service: 'vaal-api'
+          env: 'production'
     metrics_path: '/metrics'
 
-  - job_name: 'vaal-gateway'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics'
->>>>>>> pr-960-fix
+  # -------------------------------------------------------------------------
+  # PostgreSQL Database (if postgres_exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+
+  # -------------------------------------------------------------------------
+  # Redis Cache (if redis_exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: 'redis'
+
+  # -------------------------------------------------------------------------
+  # Node Exporter for System Metrics (optional)
+  # -------------------------------------------------------------------------
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+
+  # -------------------------------------------------------------------------
+  # NVIDIA GPU Metrics (if dcgm-exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'gpu'
+  #   static_configs:
+  #     - targets: ['dcgm-exporter:9400']
+  #       labels:
+  #         service: 'gpu-metrics'

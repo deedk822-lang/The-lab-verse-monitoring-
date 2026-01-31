@@ -147,7 +147,7 @@ jobs:
         if: steps.ai_sync.outputs.body != ''
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.KIMI_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore: AI-generated CMS content update"
           title: "🤖 AI CMS Update"
           body: ${{ steps.ai_sync.outputs.body }}

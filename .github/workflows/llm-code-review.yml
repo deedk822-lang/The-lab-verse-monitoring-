@@ -208,12 +208,12 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.KIMI_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings"
           title: "🤖 Auto-fix: Code review findings"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
-          base: ${{ github.event.pull_request.base.ref || 'main' }}
+          base: ${{ github.base_ref || 'main' }}
           labels: |
             automated-fix
             code-review
@@ -264,12 +264,12 @@ jobs:
       - name: Create Draft Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.KIMI_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings (TESTS FAILED)"
           title: "🤖 [DRAFT] Auto-fix: Code review findings ❌ Tests Failed"
           body-path: pr-body.md
           branch: auto-fix/code-review-failed-${{ github.run_number }}
-          base: ${{ github.event.pull_request.base.ref || 'main' }}
+          base: ${{ github.base_ref || 'main' }}
           labels: |
             automated-fix
             code-review

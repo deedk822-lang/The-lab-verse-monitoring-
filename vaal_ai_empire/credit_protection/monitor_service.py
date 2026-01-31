@@ -3,14 +3,14 @@ Credit Protection Background Monitor Service
 Runs scheduled tasks for quota resets, alerts, and health checks.
 """
 
-import os
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Optional
+import os
 import smtplib
-from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Optional
 
 import httpx
 

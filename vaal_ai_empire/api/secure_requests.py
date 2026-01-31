@@ -4,11 +4,11 @@ Prevents Server-Side Request Forgery attacks.
 """
 
 import ipaddress
-import socket
 import logging
-from typing import Optional
-import httpx
+import socket
 from urllib.parse import urlparse
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +40,12 @@ def is_safe_url(url: str) -> bool:
     """
     try:
         parsed = urlparse(url)
-        
+
         # Must have a hostname
         if not parsed.hostname:
             logger.warning(f"URL has no hostname: {url}")
             return False
-        
+
         # Resolve hostname to IP
         try:
             ip_str = socket.gethostbyname(parsed.hostname)
@@ -53,7 +53,7 @@ def is_safe_url(url: str) -> bool:
         except (socket.gaierror, ValueError) as e:
             logger.error(f"Could not resolve hostname {parsed.hostname}: {e}")
             return False
-        
+
         # Check if IP is in blocked ranges
         for blocked_range in BLOCKED_IP_RANGES:
             if ip in blocked_range:
@@ -62,14 +62,14 @@ def is_safe_url(url: str) -> bool:
                     f"(range: {blocked_range}) for URL: {url}"
                 )
                 return False
-        
+
         # Check protocol
         if parsed.scheme not in ('http', 'https'):
             logger.error(f"Blocked request with unsupported scheme: {parsed.scheme}")
             return False
-        
+
         return True
-        
+
     except Exception as e:
         logger.error(f"Error checking URL safety: {e}")
         return False
@@ -98,7 +98,7 @@ def create_ssrf_safe_async_session(
             if not is_safe_url(url):
                 raise ValueError(f"Blocked SSRF attempt to: {url}")
             return await super().handle_async_request(request)
-    
+
     return httpx.AsyncClient(
         transport=SSRFSafeTransport(),
         timeout=timeout,

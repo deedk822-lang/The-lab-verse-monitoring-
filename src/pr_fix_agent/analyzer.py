@@ -10,15 +10,12 @@ All 6 security issues fixed:
 """
 
 import re
-import time
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional
-from dataclasses import dataclass
+from typing import Dict, Optional
 
-from pr_fix_agent.security import SecurityValidator, SecurityError
 from pr_fix_agent.ollama_agent import OllamaAgent, OllamaQueryError
-
+from pr_fix_agent.security import SecurityError, SecurityValidator
 
 # ============================================================================
 # FIX #4: Input Length Limits
@@ -124,7 +121,7 @@ class SafeRegex:
 
         if thread.is_alive():
             # Timeout - possible ReDoS
-            raise TimeoutError(f"Regex search timed out (possible ReDoS)")
+            raise TimeoutError("Regex search timed out (possible ReDoS)")
 
         if exception[0]:
             raise exception[0]
@@ -311,7 +308,7 @@ class PRErrorFixer:
         """
         packages = set()
 
-        with open(req_file, 'r') as f:
+        with open(req_file) as f:
             for line in f:
                 line = line.strip()
 

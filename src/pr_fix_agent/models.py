@@ -3,8 +3,8 @@ Model Selection logic
 Issue Fixed: #21: Budget-aware model selection
 """
 
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+from typing import List, Optional
 
 
 @dataclass

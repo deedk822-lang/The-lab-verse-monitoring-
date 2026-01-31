@@ -1,15 +1,16 @@
 # scripts/rainmaker_cli.py
 
 import asyncio
-import sys
 import os
-import json
+import sys
 
 # Adjust path to import orchestrator
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from rainmaker_orchestrator.auto_switch import AdaptiveModelRouter
+
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
 
 async def main():
     """CLI for the Rainmaker Agent"""
@@ -24,7 +25,7 @@ async def main():
 
     # Load context
     if os.path.exists(input_data):
-        with open(input_data, 'r') as f:
+        with open(input_data) as f:
             context = f.read()
         print(f"📄 Loaded {len(context)} characters from {input_data}")
     else:
@@ -42,7 +43,7 @@ async def main():
     orchestrator = RainmakerOrchestrator()
     router = AdaptiveModelRouter(orchestrator)
 
-    print(f"\n🧠 Routing task...")
+    print("\n🧠 Routing task...")
     routing = orchestrator.route_task(task)
     print(f"   Model: {routing['model']}")
     print(f"   Reason: {routing['reason']}")

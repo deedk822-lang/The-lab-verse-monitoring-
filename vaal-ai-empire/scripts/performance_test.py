@@ -1,9 +1,7 @@
+import logging
 import os
 import sys
 import time
-import logging
-from pathlib import Path
-import concurrent.futures
 
 # Add the project root to sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))

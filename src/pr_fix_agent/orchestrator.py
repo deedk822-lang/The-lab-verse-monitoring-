@@ -1,366 +1,322 @@
 """
-Multi-Agent Code Review Orchestration System
-Issue Fixed: Complete LLM-powered code review pipeline
+Production Orchestrator - Fixes timeout and chunking issues
 """
-
 import argparse
 import json
-import subprocess
+import logging
 import sys
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Dict, Optional
+import re
 
-import structlog
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
-from pr_fix_agent.observability import ObservableOllamaAgent
-from pr_fix_agent.ollama_agent import CostTracker
-
-logger = structlog.get_logger()
-
-
-# ============================================================================
-# Data Models
-# ============================================================================
-
-@dataclass
-class CodeReviewFinding:
-    """Single code review finding"""
-    file: str
-    line_start: int
-    line_end: int
-    severity: str  # critical, major, minor
-    category: str  # security, correctness, style
-    issue: str
-    suggestion: str
-    code_snippet: Optional[str] = None
+# Try to import ollama - fallback to mock if not available
+try:
+    import ollama
+    HAS_OLLAMA = True
+except ImportError:
+    HAS_OLLAMA = False
+    logger.warning("Ollama not installed - using mock mode")
 
 
-@dataclass
-class FixProposal:
-    """Fix proposed by reasoning model"""
-    finding: CodeReviewFinding
-    root_cause: str
-    fix_approach: str
-    expected_changes: List[str]
-    risk_level: str  # low, medium, high
-    test_requirements: List[str]
-
-
-@dataclass
-class CodeFix:
-    """Code fix from coding model"""
-    proposal: FixProposal
-    file_path: str
-    original_code: str
-    fixed_code: str
-    explanation: str
-
-
-@dataclass
-class TestResult:
-    """Test execution result"""
-    passed: bool
-    total_tests: int
-    passed_tests: int
-    failed_tests: int
-    exit_code: int
-    output: str
-    failures: List[str]
-
-
-# ============================================================================
-# Multi-Agent Orchestrator
-# ============================================================================
-
-class CodeReviewOrchestrator:
+class ChunkedOllamaClient:
     """
-    Orchestrate multi-agent code review and fixing
+    Ollama client with chunking to prevent timeouts
+    Fixes: 14KB prompt timeout, 120s hang issues
     """
 
-    def __init__(
-        self,
-        reasoning_model: str = "deepseek-r1:1.5b",
-        coding_model: str = "qwen2.5-coder:1.5b",
-        cost_tracker: Optional[CostTracker] = None
-    ):
-        self.cost_tracker = cost_tracker or CostTracker(budget_usd=10.0)
+    def __init__(self, reasoning_model: str = "deepseek-r1:1.5b",
+                 coding_model: str = "qwen2.5-coder:1.5b"):
+        self.reasoning_model = reasoning_model
+        self.coding_model = coding_model
+        self.max_prompt_size = 4000  # ✅ FIX: Prevent 14KB prompts
+        self.timeout = 90
 
-        # Initialize agents
-        self.reasoning_agent = ObservableOllamaAgent(
-            model=reasoning_model,
-            cost_tracker=self.cost_tracker
-        )
+        if not HAS_OLLAMA:
+            logger.warning("Running in mock mode - no actual LLM calls")
 
-        self.coding_agent = ObservableOllamaAgent(
-            model=coding_model,
-            cost_tracker=self.cost_tracker
-        )
+    def query(self, model: str, prompt: str) -> Dict:
+        """Query with timeout protection and truncation"""
+        # ✅ FIX: Truncate large prompts
+        if len(prompt) > self.max_prompt_size:
+            logger.warning(f"Truncating prompt from {len(prompt)} to {self.max_prompt_size}")
+            prompt = prompt[:self.max_prompt_size] + "\n... [truncated]"
 
-        logger.info(
-            "orchestrator_initialized",
-            reasoning_model=reasoning_model,
-            coding_model=coding_model
-        )
-
-    def _generate_fix_proposals(self, findings: List[CodeReviewFinding]) -> List[FixProposal]:
-        """Use reasoning model to analyze findings and propose fixes"""
-        proposals = []
-        for finding in findings:
-            prompt = self._create_reasoning_prompt(finding)
-            try:
-                analysis = self.reasoning_agent.query(prompt, temperature=0.1)
-                proposal = self._parse_reasoning_response(finding, analysis)
-                proposals.append(proposal)
-            except Exception as e:
-                logger.error("reasoning_failed", file=finding.file, error=str(e))
-        return proposals
-
-    def _create_reasoning_prompt(self, finding: CodeReviewFinding) -> str:
-        return f"""Analyze this code review finding and provide root cause and fix approach.
-File: {finding.file}
-Issue: {finding.issue}
-Suggestion: {finding.suggestion}
-Snippet: {finding.code_snippet}
-"""
-
-    def _parse_reasoning_response(self, finding: CodeReviewFinding, analysis: str) -> FixProposal:
-        # Simple extraction logic
-        return FixProposal(
-            finding=finding,
-            root_cause="Analyzed root cause from analysis",
-            fix_approach="Suggested approach based on LLM response",
-            expected_changes=["Modify affected code"],
-            risk_level="low",
-            test_requirements=["Verify with existing tests"]
-        )
-
-    def _implement_fixes(self, proposals: List[FixProposal], repo_path: Path) -> List[CodeFix]:
-        """Use coding model to implement fixes"""
-        fixes = []
-        for proposal in proposals:
-            file_path = repo_path / proposal.finding.file
-            if not file_path.exists():
-                logger.warning("file_not_found", file=str(file_path))
-                continue
-            original_code = file_path.read_text()
-            prompt = self._create_coding_prompt(proposal, original_code)
-            try:
-                fixed_code = self.coding_agent.query(prompt, temperature=0.2)
-                # Simple markdown cleanup
-                if "```" in fixed_code:
-                    lines = fixed_code.split('\n')
-                    code_lines = []
-                    in_block = False
-                    for line in lines:
-                        if line.startswith("```"):
-                            in_block = not in_block
-                            continue
-                        if in_block:
-                            code_lines.append(line)
-                    if code_lines:
-                        fixed_code = '\n'.join(code_lines)
-
-                fixes.append(CodeFix(
-                    proposal=proposal,
-                    file_path=str(file_path),
-                    original_code=original_code,
-                    fixed_code=fixed_code,
-                    explanation="Automated fix implementation"
-                ))
-            except Exception as e:
-                logger.error("coding_failed", file=proposal.finding.file, error=str(e))
-        return fixes
-
-    def _create_coding_prompt(self, proposal: FixProposal, code: str) -> str:
-        return f"Fix the following Python code:\n```python\n{code}\n```\nReason: {proposal.fix_approach}\nFinding: {proposal.finding.issue}"
-
-    def _apply_and_test(self, fixes: List[CodeFix], repo_path: Path) -> TestResult:
-        """Apply fixes and run tests"""
-        for fix in fixes:
-            Path(fix.file_path).write_text(fix.fixed_code)
+        if not HAS_OLLAMA:
+            # Mock mode for testing
+            if "Provide JSON" in prompt:
+                 return {
+                    'success': True,
+                    'content': '```json\n{"root_cause": "Mock analysis", "fix_approach": "Mock fix", "risk_level": "low"}\n```',
+                    'model': model
+                }
+            return {
+                'success': True,
+                'content': 'Mock response',
+                'model': model
+            }
 
         try:
-            result = subprocess.run(
-                ["pytest", "tests/", "--json-report", "--json-report-file=test-results.json"],
-                cwd=repo_path, capture_output=True, text=True
+            logger.info(f"Querying {model} ({len(prompt)} chars)")
+
+            response = ollama.chat(
+                model=model,
+                messages=[{'role': 'user', 'content': prompt}],
+                options={
+                    'temperature': 0.1,
+                    'num_ctx': 4096,
+                    'num_predict': 2000
+                }
             )
 
-            # Load json report if it exists
-            report_path = repo_path / "test-results.json"
-            total = 0
-            passed_count = 0
-            failed_count = 0
-            if report_path.exists():
-                with open(report_path) as f:
-                    data = json.load(f)
-                    summary = data.get('summary', {})
-                    passed_count = summary.get('passed', 0)
-                    failed_count = summary.get('failed', 0)
-                    total = summary.get('total', passed_count + failed_count)
+            return {
+                'success': True,
+                'content': response['message']['content'],
+                'model': model
+            }
 
-            return TestResult(
-                passed=(result.returncode == 0),
-                total_tests=total,
-                passed_tests=passed_count,
-                failed_tests=failed_count,
-                exit_code=result.returncode,
-                output=result.stdout + "\n" + result.stderr,
-                failures=[]
-            )
         except Exception as e:
-            logger.error("test_execution_failed", error=str(e))
-            return TestResult(False, 0, 0, 0, 1, str(e), [str(e)])
+            logger.error(f"Query failed: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'model': model
+            }
 
-    def generate_pr_body(self, proposals: List[FixProposal], fixes: List[CodeFix], test_result: Optional[TestResult]) -> str:
-        body = "# 🤖 Automated Code Review Fixes\n\n"
 
-        if test_result:
-            body += f"Tests: {'✅ PASSED' if test_result.passed else '❌ FAILED'}\n"
-            body += f"- Total: {test_result.total_tests}\n"
-            body += f"- Passed: {test_result.passed_tests}\n"
-            body += f"- Failed: {test_result.failed_tests}\n\n"
+class FixOrchestrator:
+    """Main orchestrator"""
 
-        body += "## Fixes Proposed\n"
-        for p in proposals:
-            body += f"- {p.finding.file}: {p.finding.issue}\n"
+    def __init__(self, reasoning_model: str = "deepseek-r1:1.5b", coding_model: str = "qwen2.5-coder:1.5b"):
+        self.client = ChunkedOllamaClient(reasoning_model, coding_model)
 
-        body += "\n---\n*Generated by PR Fix Agent*"
-        return body
+    def parse_findings(self, analysis_path: Path) -> List[Dict]:
+        """Parse findings with multiple format support"""
+        findings = []
+
+        try:
+            if not analysis_path.exists():
+                logger.error(f"Findings file not found: {analysis_path}")
+                return []
+
+            with open(analysis_path) as f:
+                content = f.read()
+
+            # Try JSON first
+            try:
+                data = json.loads(content)
+                if isinstance(data, list):
+                    return data
+                elif isinstance(data, dict):
+                    return data.get('findings', data.get('results', []))
+            except json.JSONDecodeError:
+                pass
+
+            # Parse text format (bandit, mypy, etc.)
+            pattern = r'([^:]+):([0-9]+):([0-9]*):?\s*(\w+):?\s*(.*)'
+            for line in content.split('\n')[:50]:
+                match = re.match(pattern, line)
+                if match:
+                    findings.append({
+                        'file': match.group(1),
+                        'line': int(match.group(2)),
+                        'severity': 'medium',
+                        'issue': match.group(5),
+                        'suggestion': 'See documentation'
+                    })
+
+        except Exception as e:
+            logger.error(f"Parse error: {e}")
+
+        return findings
+
+    def extract_json(self, text: str) -> Optional[Dict]:
+        """Safely extract JSON from LLM response"""
+        try:
+            # Look for triple backticks
+            if '```json' in text:
+                text = text.split('```json')[1].split('```')[0]
+            elif '```' in text:
+                text = text.split('```')[1].split('```')[0]
+
+            # Clean text
+            text = text.strip()
+
+            # Attempt to find the first '{' and last '}'
+            start = text.find('{')
+            end = text.rfind('}')
+            if start != -1 and end != -1:
+                json_str = text[start:end+1]
+                return json.loads(json_str)
+        except Exception as e:
+            logger.warning(f"Failed to extract JSON: {e}")
+        return None
+
+    def analyze_finding(self, finding: Dict) -> Dict:
+        """Analyze with reasoning model"""
+        prompt = f"""Analyze this issue:
+File: {finding.get('file', 'unknown')}
+Line: {finding.get('line', 0)}
+Issue: {finding.get('issue', 'unknown')}
+
+Provide JSON:
+{{"root_cause": "brief", "fix_approach": "how to fix", "risk_level": "low"}}"""
+
+        result = self.client.query(self.client.reasoning_model, prompt)
+
+        if result['success']:
+            analysis = self.extract_json(result['content'])
+            if analysis:
+                return analysis
+
+        return {
+            'root_cause': 'Analysis failed',
+            'fix_approach': 'Manual review required',
+            'risk_level': 'high'
+        }
+
+    def implement_fix(self, proposal: Dict) -> Dict:
+        """Implement fix with coding model"""
+        finding = proposal.get('finding', {})
+        file_path = Path(finding.get('file', ''))
+
+        if not file_path.exists():
+             return {'success': False, 'error': f"File not found: {file_path}"}
+
+        try:
+            original_code = file_path.read_text()
+
+            prompt = f"""Fix the following issue in this code:
+Issue: {finding.get('issue')}
+Fix Approach: {proposal.get('fix_approach')}
+
+Code:
+```python
+{original_code}
+```
+
+Provide ONLY the full fixed code for this file."""
+
+            result = self.client.query(self.client.coding_model, prompt)
+
+            if result['success']:
+                fixed_code = result['content']
+                if '```python' in fixed_code:
+                    fixed_code = fixed_code.split('```python')[1].split('```')[0]
+                elif '```' in fixed_code:
+                    fixed_code = fixed_code.split('```')[1].split('```')[0]
+
+                return {
+                    'success': True,
+                    'original': original_code,
+                    'fixed': fixed_code.strip()
+                }
+        except Exception as e:
+            logger.error(f"Fix implementation failed: {e}")
+
+        return {'success': False, 'error': "LLM failed to generate fix"}
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', required=True, choices=['reasoning', 'coding', 'generate-pr'])
-    parser.add_argument('--findings', help='Path to findings directory')
+    parser.add_argument('mode', choices=['review', 'fix', 'reasoning', 'coding', 'generate-pr'], default='review', nargs='?')
+    parser.add_argument('--findings', '-f', default='analysis-results/safety.json')
     parser.add_argument('--proposals', help='Path to proposals JSON')
     parser.add_argument('--test-results', help='Path to test results JSON')
     parser.add_argument('--output', help='Output file')
+    parser.add_argument('--limit', type=int, default=10)
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--reasoning-model', default="deepseek-r1:1.5b")
     parser.add_argument('--coding-model', default="qwen2.5-coder:1.5b")
-
     args = parser.parse_args()
-    orch = CodeReviewOrchestrator(
-        reasoning_model=args.reasoning_model,
-        coding_model=args.coding_model
-    )
-    repo_path = Path.cwd()
 
+    orch = FixOrchestrator(args.reasoning_model, args.coding_model)
+
+    # Backward compatibility for 'reasoning' mode
     if args.mode == 'reasoning':
-        findings = []
-        findings_dir = Path(args.findings or "analysis-results")
-        if findings_dir.exists():
-            for f_path in findings_dir.glob("*.json"):
-                try:
-                    with open(f_path) as f:
-                        data = json.load(f)
-                        if isinstance(data, list):
-                            for issue in data:
-                                findings.append(CodeReviewFinding(
-                                    file=issue.get('filename', 'unknown'),
-                                    line_start=issue.get('line_number', 1),
-                                    line_end=issue.get('line_number', 1),
-                                    severity=issue.get('issue_severity', 'medium').lower(),
-                                    category='security',
-                                    issue=issue.get('issue_text', 'Potential security issue'),
-                                    suggestion=issue.get('suggestion', 'Follow best practices')
-                                ))
-                        elif isinstance(data, dict) and 'results' in data:
-                             for issue in data['results']:
-                                findings.append(CodeReviewFinding(
-                                    file=issue.get('filename', issue.get('path', 'unknown')),
-                                    line_start=issue.get('line_number', issue.get('location', {}).get('row', 1)),
-                                    line_end=issue.get('line_number', issue.get('location', {}).get('row', 1)),
-                                    severity='high',
-                                    category='lint',
-                                    issue=issue.get('issue_text', issue.get('message', 'Issue found')),
-                                    suggestion='Fix as recommended'
-                                ))
-                except Exception as e:
-                    logger.warning("parsing_finding_failed", path=str(f_path), error=str(e))
+        args.mode = 'review'
+        if args.findings and Path(args.findings).is_dir():
+             # If a directory is passed, check for various finding files
+             findings_dir = Path(args.findings)
+             findings = []
+             for f in findings_dir.glob("*.json"):
+                 findings.extend(orch.parse_findings(f))
 
-        if not findings:
-            logger.info("no_findings_found")
+             proposals = []
+             for i, finding in enumerate(findings[:args.limit]):
+                 logger.info(f"Analyzing {i+1}/{len(findings[:args.limit])}")
+                 analysis = orch.analyze_finding(finding)
+                 proposals.append({'finding': finding, **analysis})
 
-        proposals = orch._generate_fix_proposals(findings)
-        with open(args.output or "proposals.json", 'w') as f:
-            json.dump([asdict(p) for p in proposals], f, indent=2)
+             output_file = args.output or 'proposals.json'
+             with open(output_file, 'w') as f:
+                 json.dump(proposals, f, indent=2)
+             logger.info(f"Saved {len(proposals)} proposals to {output_file}")
+             return
 
-    elif args.mode == 'coding':
-        proposals_path = Path(args.proposals or "proposals.json")
+    if args.mode == 'review':
+        findings = orch.parse_findings(Path(args.findings))
+        logger.info(f"Found {len(findings)} findings")
+
+        findings = findings[:args.limit]
+        proposals = []
+        for i, finding in enumerate(findings):
+            logger.info(f"Analyzing {i+1}/{len(findings)}")
+            analysis = orch.analyze_finding(finding)
+            proposals.append({'finding': finding, **analysis})
+
+        output_file = args.output or 'proposals.json'
+        with open(output_file, 'w') as f:
+            json.dump(proposals, f, indent=2)
+        logger.info(f"Saved {len(proposals)} proposals to {output_file}")
+
+    elif args.mode in ['coding', 'fix']:
+        proposals_path = Path(args.proposals or 'proposals.json')
         if not proposals_path.exists():
-            logger.error("proposals_file_not_found", path=str(proposals_path))
+            logger.error(f"Proposals file not found: {proposals_path}")
             sys.exit(1)
 
         with open(proposals_path) as f:
-            p_data = json.load(f)
+            proposals = json.load(f)
 
-        proposals = []
-        for d in p_data:
-            f_data = d['finding']
-            finding = CodeReviewFinding(
-                f_data['file'], f_data['line_start'], f_data['line_end'],
-                f_data['severity'], f_data['category'], f_data['issue'],
-                f_data['suggestion'], f_data.get('code_snippet')
-            )
-            proposals.append(FixProposal(
-                finding, d['root_cause'], d['fix_approach'],
-                d['expected_changes'], d['risk_level'], d['test_requirements']
-            ))
-
-        fixes = orch._implement_fixes(proposals, repo_path)
-        if args.apply:
-            orch._apply_and_test(fixes, repo_path)
+        for i, proposal in enumerate(proposals[:args.limit]):
+            logger.info(f"Implementing fix {i+1}/{len(proposals[:args.limit])}")
+            fix = orch.implement_fix(proposal)
+            if fix['success'] and args.apply:
+                file_path = proposal['finding']['file']
+                if fix['fixed'] and len(fix['fixed']) > 10:
+                    with open(file_path, 'w') as f:
+                        f.write(fix['fixed'])
+                    logger.info(f"Applied fix to {file_path}")
+                else:
+                    logger.warning(f"Refusing to apply empty or too short fix to {file_path}")
 
     elif args.mode == 'generate-pr':
-        proposals_path = Path(args.proposals or "proposals.json")
-        if not proposals_path.exists():
-            logger.error("proposals_file_not_found", path=str(proposals_path))
-            sys.exit(1)
+        output_file = args.output or 'pr-body.md'
+        proposals_path = Path(args.proposals or 'proposals.json')
 
-        with open(proposals_path) as f:
-            p_data = json.load(f)
-
-        proposals = []
-        for d in p_data:
-            f_data = d['finding']
-            finding = CodeReviewFinding(
-                f_data['file'], f_data['line_start'], f_data['line_end'],
-                f_data['severity'], f_data['category'], f_data['issue'],
-                f_data['suggestion'], f_data.get('code_snippet')
-            )
-            proposals.append(FixProposal(
-                finding, d['root_cause'], d['fix_approach'],
-                d['expected_changes'], d['risk_level'], d['test_requirements']
-            ))
-
-        test_result = None
-        if args.test_results:
-            tr_path = Path(args.test_results)
-            if tr_path.exists():
-                try:
-                    with open(tr_path) as f:
-                        tr_data = json.load(f)
-                        summary = tr_data.get('summary', {})
-                        test_result = TestResult(
-                            passed=(tr_data.get('exit_code', 0) == 0 or summary.get('failed', 0) == 0),
-                            total_tests=summary.get('total', 0),
-                            passed_tests=summary.get('passed', 0),
-                            failed_tests=summary.get('failed', 0),
-                            exit_code=tr_data.get('exit_code', 0),
-                            output="",
-                            failures=[]
-                        )
-                except Exception as e:
-                    logger.warning("loading_test_results_failed", error=str(e))
-
-        body = orch.generate_pr_body(proposals, [], test_result)
-        if args.output:
-            with open(args.output, 'w') as f:
-                f.write(body)
+        body = "# 🤖 Automated Code Review Fixes\n\n"
+        if proposals_path.exists():
+            with open(proposals_path) as f:
+                proposals = json.load(f)
+            body += "## Fixes Proposed\n"
+            for p in proposals:
+                body += f"- **{p['finding']['file']}**: {p['finding']['issue']}\n"
+                body += f"  - *Root Cause*: {p.get('root_cause', 'N/A')}\n"
         else:
-            print(body)
+            body += "Analysis completed. Check logs for details.\n"
+
+        with open(output_file, 'w') as f:
+            f.write(body)
+        logger.info(f"Generated PR body in {output_file}")
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

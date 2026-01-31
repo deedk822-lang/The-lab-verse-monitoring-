@@ -1,269 +1,65 @@
-name: 🤖 PR Fix Agent (Local Ollama)
+name: 🤖 PR Fix Agent (Codespace Optimized)
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-    branches: [main, develop]
-  workflow_call:
+  workflow_run:
+    workflows: ["LLM-Powered Code Review (FIXED)"]
+    types:
+      - completed
 
 jobs:
-  analyze-and-fix:
+  fix-and-propose:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      # ==========================================
-      # 1. Setup Environment
-      # ==========================================
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      # ==========================================
-      # 2. Install Ollama (Local LLM - FREE)
-      # ==========================================
-      - name: 🦙 Install Ollama
+      # ✅ FIX: Install Ollama with proper setup
+      - name: 🦙 Setup Ollama
         run: |
+          # Install Ollama
           curl -fsSL https://ollama.com/install.sh | sh
+
+          # Start service
           nohup ollama serve > /tmp/ollama.log 2>&1 &
           sleep 5
-          ollama --version
 
-      - name: 🧠 Pull Local Models (Cache Optimized)
-        run: |
-          # Pull lightweight models for different tasks
-          ollama pull codellama:7b &
-          ollama pull mistral:7b &
-          ollama pull llama3.2 &
+          # Pull lightweight models
+          ollama pull deepseek-r1:1.5b &
+          ollama pull qwen2.5-coder:1.5b &
           wait
-          ollama list
 
-      # ==========================================
-      # 3. Install Project Dependencies
-      # ==========================================
-      - name: 📦 Install Dependencies
+          echo "✅ Ollama ready"
+
+      # ✅ FIX: Install dependencies properly
+      - name: 📦 Install dependencies
         run: |
-          pip install -e ".[dev]" || pip install -r requirements.txt
-          pip install ollama pytest bandit ruff mypy safety
+          pip install ollama
+          # Create minimal structure if not exists
+          mkdir -p src/pr_fix_agent
 
-      # ==========================================
-      # 4. Run CI Checks & Capture Errors
-      # ==========================================
-      - name: 🔍 Run Type Checker (mypy)
-        id: typecheck
-        continue-on-error: true
+      # ✅ FIX: Run with timeout protection
+      - name: 🤖 Run PR Fix Agent
+        timeout-minutes: 15  # Overall job timeout
         run: |
-          mypy src/ --ignore-missing-imports --show-error-codes 2>&1 | tee type_errors.txt || true
-          echo "TYPE_ERRORS=$(wc -l < type_errors.txt)" >> $GITHUB_ENV
+          # Download findings from previous workflow
+          gh run download ${{ github.event.workflow_run.id }} -n analysis-results || true
 
-      - name: 🔒 Run Security Scan (bandit)
-        id: security
-        continue-on-error: true
-        run: |
-          bandit -r src/ -f txt -o security_errors.txt || true
-          echo "SECURITY_ERRORS=$(wc -l < security_errors.txt)" >> $GITHUB_ENV
+          # Create analysis-results directory if download failed
+          mkdir -p analysis-results
 
-      - name: 🧹 Run Linter (ruff)
-        id: lint
-        continue-on-error: true
-        run: |
-          ruff check src/ 2>&1 | tee lint_errors.txt || true
-          echo "LINT_ERRORS=$(wc -l < lint_errors.txt)" >> $GITHUB_ENV
+          # Run orchestrator with limited scope
+          python src/pr_fix_agent/orchestrator.py review \
+            --findings analysis-results/safety.json \
+            --limit 5  # ✅ FIX: Limit to 5 to prevent timeout
 
-      - name: 🧪 Run Tests
-        id: tests
-        continue-on-error: true
-        run: |
-          pytest tests/ -v --tb=short 2>&1 | tee test_errors.txt || true
-          echo "TEST_ERRORS=$(wc -l < test_errors.txt)" >> $GITHUB_ENV
-
-      # ==========================================
-      # 5. AI Analysis with Local Models
-      # ==========================================
-      - name: 🤖 Analyze Errors with Ollama
-        id: analysis
-        run: |
-          cat > analyze_errors.py << 'SCRIPT'
-          import ollama
-          import json
-          import sys
-
-          def analyze_with_model(model, error_file, error_type):
-              """Analyze errors using local Ollama model"""
-              try:
-                  with open(error_file, 'r') as f:
-                      errors = f.read()[:4000]  # Limit context
-
-                  if not errors or len(errors) < 10:
-                      return None
-
-                  prompt = f"""You are a Python expert. Fix these {error_type} errors:
-
-{errors}
-
-Provide:
-1. Root cause analysis (2 sentences)
-2. Specific fixes with file paths and code changes
-3. Shell commands to apply fixes
-
-Format as JSON:
-{{"fixes": [{{"file": "path", "action": "description", "command": "shell command"}}]}}"""
-
-                  response = ollama.chat(
-                      model=model,
-                      messages=[{'role': 'user', 'content': prompt}],
-                      options={'temperature': 0.1, 'num_ctx': 4096}
-                  )
-
-                  return response['message']['content']
-              except Exception as e:
-                  return f"Analysis failed: {str(e)}"
-
-          # Analyze different error types with appropriate models
-          results = {}
-
-          # Type errors -> CodeLlama (code specialist)
-          if ${{ env.TYPE_ERRORS }} > 0:
-              print("🔍 Analyzing type errors with CodeLlama...")
-              results['type_fixes'] = analyze_with_model('codellama:7b', 'type_errors.txt', 'type checking (mypy)')
-
-          # Security -> Mistral (reasoning)
-          if ${{ env.SECURITY_ERRORS }} > 0:
-              print("🔒 Analyzing security issues with Mistral...")
-              results['security_fixes'] = analyze_with_model('mistral:7b', 'security_errors.txt', 'security (bandit)')
-
-          # Lint errors -> Llama 3.2 (fast)
-          if ${{ env.LINT_ERRORS }} > 0:
-              print("🧹 Analyzing lint errors with Llama 3.2...")
-              results['lint_fixes'] = analyze_with_model('llama3.2', 'lint_errors.txt', 'linting (ruff)')
-
-          # Write results
-          with open('ai_fixes.json', 'w') as f:
-              json.dump(results, f, indent=2)
-
-          print("✅ Analysis complete")
-          SCRIPT
-
-          python analyze_errors.py
-
-      # ==========================================
-      # 6. Auto-Apply Safe Fixes
-      # ==========================================
-      - name: 🔧 Auto-Fix with Ruff (Safe Mode)
-        if: env.LINT_ERRORS > 0
-        run: |
-          # Auto-fix what we can safely
-          ruff check src/ tests/ --fix --exit-zero
-          ruff format src/ tests/
-
-          # Check if changes were made
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "CHANGES_MADE=true" >> $GITHUB_ENV
-          fi
-
-      - name: 🔧 Auto-Fix Import Issues
-        if: env.TYPE_ERRORS > 0
-        run: |
-          # Common Python import fixes using Ollama guidance
-          python << 'FIX'
-          import ollama
-          import re
-
-          # Read type errors
-          try:
-              with open('type_errors.txt', 'r') as f:
-                  errors = f.read()
-
-              # Extract missing imports
-              missing = re.findall(r'"([^"]+)" is not defined', errors)
-
-              if missing:
-                  print(f"Found missing imports: {missing}")
-
-                  # Ask Ollama for import suggestions
-                  response = ollama.chat(
-                      model='codellama:7b',
-                      messages=[{
-                          'role': 'user',
-                          'content': f'What are the correct import statements for: {", ".join(missing)}? Return only the import lines.'
-                      }]
-                  )
-
-                  print("Suggested imports:", response['message']['content'])
-          except Exception as e:
-              print(f"Auto-fix error: {e}")
-          FIX
-
-      # ==========================================
-      # 7. Commit Fixes Back to PR
-      # ==========================================
-      - name: 💾 Commit Auto-Fixes
-        if: env.CHANGES_MADE == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "🤖 PR Fix Agent"
-          git add .
-          git commit -m "🤖 Auto-fix: Ruff formatting and lint issues" || echo "No changes to commit"
-          git push
-
-      # ==========================================
-      # 8. Generate Report
-      # ==========================================
-      - name: 📝 Generate PR Comment
-        if: github.event.pull_request
-        uses: actions/github-script@v7
+      - name: 💾 Upload proposals
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-
-            let report = `## 🤖 PR Fix Agent Report
-
-            **Models Used**: \`codellama:7b\` (code), \`mistral:7b\` (security), \`llama3.2\` (lint) - **Zero API costs**
-
-            ### Check Results
-            `;
-
-            // Add results for each check
-            const typeErrors = process.env.TYPE_ERRORS || 0;
-            const secErrors = process.env.SECURITY_ERRORS || 0;
-            const lintErrors = process.env.LINT_ERRORS || 0;
-            const testErrors = process.env.TEST_ERRORS || 0;
-
-            report += `- ${typeErrors > 0 ? '❌' : '✅'} Type Check (mypi): ${typeErrors} issues\n`;
-            report += `- ${secErrors > 0 ? '❌' : '✅'} Security (bandit): ${secErrors} issues\n`;
-            report += `- ${lintErrors > 0 ? '⚠️' : '✅'} Lint (ruff): ${lintErrors} issues (auto-fixed if possible)\n`;
-            report += `- ${testErrors > 0 ? '❌' : '✅'} Tests: ${testErrors} issues\n`;
-
-            // Add AI suggestions if available
-            try {
-              const fixes = JSON.parse(fs.readFileSync('ai_fixes.json', 'utf8'));
-              if (Object.keys(fixes).length > 0) {
-                report += `\n### 💡 AI Suggestions (Powered by Ollama)\n`;
-                for (const [category, suggestion] of Object.entries(fixes)) {
-                  if (suggestion) {
-                    report += `<details><summary>${category}</summary>\n\n\`\`\`\n${suggestion}\n\`\`\`\n</details>\n\n`;
-                  }
-                }
-              }
-            } catch (e) {
-              console.log('No AI fixes file found');
-            }
-
-            report += `\n---\n🦙 Using local Ollama models to save API credits. Manual review recommended for complex fixes.`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
+          name: fix-proposals
+          path: proposals.json

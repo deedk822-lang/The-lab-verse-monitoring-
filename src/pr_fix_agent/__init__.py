@@ -7,7 +7,7 @@ from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .models import ModelSelector, ModelSpec
 from .observability import BudgetExceededError, CostTracker, LLMCost, ObservableOllamaAgent
 from .ollama_agent import OllamaAgent, OllamaQueryError
-from .orchestrator import CodeReviewOrchestrator
+from .orchestrator import FixOrchestrator as CodeReviewOrchestrator
 from .security import InputValidator, RateLimiter, SecurityError, SecurityValidator
 
 __all__ = [

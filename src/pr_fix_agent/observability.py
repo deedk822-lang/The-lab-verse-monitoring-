@@ -28,3 +28,11 @@ def configure_structured_logging():
 
 configure_structured_logging()
 logger = structlog.get_logger()
+
+# Re-export consolidated components from ollama_agent.py
+from .ollama_agent import (
+    BudgetExceededError,
+    CostTracker,
+    LLMCost,
+    OllamaAgent as ObservableOllamaAgent
+)

@@ -5,12 +5,15 @@ from typing import Dict, List
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class CohereAPI:
     def __init__(self):
         try:
             import cohere
         except ImportError:
-            raise ImportError("Cohere SDK not installed. Please install it with 'pip install cohere'")
+            raise ImportError(
+                "Cohere SDK not installed. Please install it with 'pip install cohere'"
+            )
 
         api_key = os.getenv("COHERE_API_KEY")
         if not api_key:
@@ -24,10 +27,7 @@ class CohereAPI:
         """Generate content and track usage"""
         try:
             response = self.client.chat(
-                model=self.model,
-                message=prompt,
-                max_tokens=max_tokens,
-                temperature=0.7
+                model=self.model, message=prompt, max_tokens=max_tokens, temperature=0.7
             )
 
             input_tokens = 0
@@ -39,14 +39,11 @@ class CohereAPI:
             usage = {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "cost_usd": 0.0  # NOTE: Actual cost calculation would require model-specific pricing
+                "cost_usd": 0.0,  # NOTE: Actual cost calculation would require model-specific pricing
             }
 
             self.usage_log.append(usage)
-            return {
-                "text": response.text,
-                "usage": usage
-            }
+            return {"text": response.text, "usage": usage}
         except Exception as e:
             logger.error(f"Cohere API error: {e}")
             raise e
@@ -62,9 +59,5 @@ class CohereAPI:
             subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
             body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
 
-            sequence.append({
-                "day": day,
-                "subject": subject,
-                "body": body
-            })
+            sequence.append({"day": day, "subject": subject, "body": body})
         return sequence

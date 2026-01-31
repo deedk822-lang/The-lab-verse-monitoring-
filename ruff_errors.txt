@@ -1,0 +1,432 @@
+warning: The top-level linter settings are deprecated in favour of their counterparts in the `lint` section. Please update the following options in `pyproject.toml`:
+  - 'select' -> 'lint.select'
+E501 Line too long (103 > 100)
+  --> vaal-ai-empire/agents/education_crew/edu_tools.py:38:101
+   |
+36 |             }
+37 |
+38 |             # Perform a proper gap analysis by finding skills in global standards not in SA curriculum.
+   |                                                                                                     ^^^
+39 |             sa_all_skills = {skill for skills_list in sa_curr.values() for skill in skills_list}
+40 |             global_all_skills = {
+   |
+
+E501 Line too long (113 > 100)
+  --> vaal-ai-empire/agents/education_crew/edu_tools.py:48:101
+   |
+47 |             gap_report["sellable_opportunity"] = (
+48 |                 f"Create a 'Term 1 Future Pack' covering: {', '.join(gap_report['missing_critical_skills'][:3])}"
+   |                                                                                                     ^^^^^^^^^^^^^
+49 |             )
+   |
+
+E501 Line too long (130 > 100)
+  --> vaal-ai-empire/agents/education_crew/run_curriculum_audit.py:17:101
+   |
+15 |     role="Curriculum Auditor",
+16 |     goal="Identify exactly what South African education is missing compared to the 1st world",
+17 |     backstory="You are an expert in comparative pedagogy. You look at CAPS and cry, then you look at Finland and see the future.",
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |     tools=[EducationTools.CurriculumGapAnalyzer()],
+19 |     llm=llm,
+   |
+
+E501 Line too long (119 > 100)
+  --> vaal-ai-empire/agents/education_crew/run_curriculum_audit.py:27:101
+   |
+25 |     role="Educational Product Architect",
+26 |     goal="Create a low-cost, high-value Term 1 syllabus that fills the identified gaps",
+27 |     backstory="You design educational products that sell. You know how to package complex AI/Finance topics for kids.",
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^
+28 |     tools=[EducationTools.SyllabusGenerator()],
+29 |     llm=llm,
+   |
+
+E501 Line too long (113 > 100)
+  --> vaal-ai-empire/agents/education_crew/run_curriculum_audit.py:37:101
+   |
+35 | # Task 1: Spot the Gap
+36 | task_audit = Task(
+37 |     description="Analyze 'Grade 10'. Compare SA CAPS to Global Standards. Identify the specific missing skills.",
+   |                                                                                                     ^^^^^^^^^^^^^
+38 |     expected_output="A JSON report detailing the Skills Gap.",
+39 |     agent=auditor,
+   |
+
+E501 Line too long (105 > 100)
+  --> vaal-ai-empire/api/aya_vision.py:13:102
+   |
+11 | except ImportError:
+12 |     logger.warning(
+13 |         "⚠️  Transformers library not found or not the correct version. AyaVisionAPI will be unavailable."
+   |                                                                                                     ^^^^^
+14 |     )
+15 |     TRANSFORMERS_AVAILABLE = False
+   |
+
+E501 Line too long (108 > 100)
+  --> vaal-ai-empire/api/aya_vision.py:26:101
+   |
+24 |         if not TRANSFORMERS_AVAILABLE:
+25 |             raise ImportError(
+26 |                 "Please install the specific version of 'transformers' and 'torch' to use the AyaVisionAPI."
+   |                                                                                                     ^^^^^^^^
+27 |             )
+   |
+
+E501 Line too long (102 > 100)
+  --> vaal-ai-empire/api/cohere.py:42:101
+   |
+40 |                 "input_tokens": input_tokens,
+41 |                 "output_tokens": output_tokens,
+42 |                 "cost_usd": 0.0,  # NOTE: Actual cost calculation would require model-specific pricing
+   |                                                                                                     ^^
+43 |             }
+   |
+
+E501 Line too long (131 > 100)
+  --> vaal-ai-empire/api/cohere.py:55:101
+   |
+53 |         sequence = []
+54 |         for day in range(1, days + 1):
+55 |             prompt = f"Write day {day} of a {days}-day email sequence for a {business_type} in South Africa. Include subject line."
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+56 |             result = self.generate_content(prompt, max_tokens=300)
+   |
+
+E722 Do not use bare `except`
+  --> vaal-ai-empire/api/image_generation.py:69:17
+   |
+67 |                         logger.info(f"Local SD found at {endpoint}")
+68 |                         return True
+69 |                 except:
+   |                 ^^^^^^
+70 |                     continue
+   |
+
+F841 Local variable `api_token` is assigned to but never used
+   --> vaal-ai-empire/api/image_generation.py:180:9
+    |
+178 |     def _generate_replicate(self, prompt: str) -> Dict:
+179 |         """Generate using Replicate API"""
+180 |         api_token = os.getenv("REPLICATE_API_TOKEN")
+    |         ^^^^^^^^^
+181 |
+182 |         import replicate
+    |
+help: Remove assignment to unused variable `api_token`
+
+N806 Variable `API_URL` in function should be lowercase
+   --> vaal-ai-empire/api/image_generation.py:218:9
+    |
+217 |         # Use Stable Diffusion XL on HuggingFace
+218 |         API_URL = (
+    |         ^^^^^^^
+219 |             "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+220 |         )
+    |
+
+E722 Do not use bare `except`
+   --> vaal-ai-empire/api/image_generation.py:309:13
+    |
+307 |             try:
+308 |                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+309 |             except:
+    |             ^^^^^^
+310 |                 font = ImageFont.load_default()
+    |
+
+E501 Line too long (138 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:30:101
+   |
+28 | …"{password}"
+29 | …
+30 | …n, click the navigation link or button that leads to the "Live" or "Live TV" section.
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+31 | …
+32 | …tor the screen content.
+   |
+
+E501 Line too long (211 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:33:101
+   |
+31 | …
+32 | …
+33 | …escription is currently playing: "{ad_description}". This could involve looking for specific text, logos, or brand colors.
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+34 | …ion]" if the ad is found, or "STATUS: Still monitoring..." if not.
+35 | …m of 5 minutes before timing out and printing "Error: Ad not detected within 5 minutes."
+   |
+
+E501 Line too long (155 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:34:101
+   |
+32 | …screen content.
+33 | …ent matching the following description is currently playing: "{ad_description}". This could involve looking for specific text, logos,…
+34 | …ole: "AD DETECTED: [description]" if the ad is found, or "STATUS: Still monitoring..." if not.
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+35 | …ction in a loop for a maximum of 5 minutes before timing out and printing "Error: Ad not detected within 5 minutes."
+36 | …handle potential errors like login failure, elements not being found, or page load issues.
+   |
+
+E501 Line too long (177 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:35:101
+   |
+33 | …g the following description is currently playing: "{ad_description}". This could involve looking for specific text, logos, or brand c…
+34 | …TECTED: [description]" if the ad is found, or "STATUS: Still monitoring..." if not.
+35 | …loop for a maximum of 5 minutes before timing out and printing "Error: Ad not detected within 5 minutes."
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+36 | …ntial errors like login failure, elements not being found, or page load issues.
+37 | …aywright is installed (`pip install playwright`).
+   |
+
+E501 Line too long (151 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:36:101
+   |
+34 | …nsole: "AD DETECTED: [description]" if the ad is found, or "STATUS: Still monitoring..." if not.
+35 | …tection in a loop for a maximum of 5 minutes before timing out and printing "Error: Ad not detected within 5 minutes."
+36 | …o handle potential errors like login failure, elements not being found, or page load issues.
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 | …ed. Assume Playwright is installed (`pip install playwright`).
+   |
+
+E501 Line too long (121 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:37:101
+   |
+35 |     6.  **Loop and Timeout**: The script should run this detection in a loop for a maximum of 5 minutes before timing out and printing…
+36 |     7.  **Error Handling**: Include `try...except` blocks to handle potential errors like login failure, elements not being found, or …
+37 |     8.  **Dependencies**: The script should be self-contained. Assume Playwright is installed (`pip install playwright`).
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^
+38 |
+39 |     Provide only the Python code, without any introductory text or explanations.
+   |
+
+E501 Line too long (104 > 100)
+  --> vaal-ai-empire/scripts/generate_sabc_script.py:53:101
+   |
+51 | def main():
+52 |     parser = ArgumentParser(
+53 |         description="Generate a Playwright script for SABC+ ad detection using the Sovereign AI Engine."
+   |                                                                                                     ^^^^
+54 |     )
+55 |     parser.add_argument("--username", required=True, help="SABC+ login username.")
+   |
+
+E501 Line too long (106 > 100)
+  --> vaal-ai-empire/services/african_manuscript_transcriber.py:31:101
+   |
+29 |             )
+30 |             # Placeholder logic to simulate a transcription
+31 |             return f"Placeholder: Transcribed text from '{os.path.basename(image_path)}' in '{language}'."
+   |                                                                                                     ^^^^^^
+32 |
+33 |         # In a real implementation:
+   |
+
+E501 Line too long (157 > 100)
+   --> vaal-ai-empire/services/content_generator.py:279:101
+    |
+277 | …language_instructions["afrikaans"])
+278 | …
+279 | …th Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+280 | …e, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
+281 | …ca. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+    |
+
+E501 Line too long (177 > 100)
+   --> vaal-ai-empire/services/content_generator.py:280:101
+    |
+278 | …
+279 | … Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
+280 | …frica. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+281 | …on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+282 | …ocus on delicious food, specials, events, and dining experience.",
+    |
+
+E501 Line too long (146 > 100)
+   --> vaal-ai-empire/services/content_generator.py:281:101
+    |
+279 | …e, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
+280 | …riangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
+281 | …h Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+282 | … South Africa. Focus on delicious food, specials, events, and dining experience.",
+283 | …angle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
+    |
+
+E501 Line too long (139 > 100)
+   --> vaal-ai-empire/services/content_generator.py:282:101
+    |
+280 | …l Triangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
+281 | …outh Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+282 | …le, South Africa. Focus on delicious food, specials, events, and dining experience.",
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+283 | …Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
+284 | …, South Africa. Focus on product quality, special offers, customer service, and new arrivals.",
+    |
+
+E501 Line too long (162 > 100)
+   --> vaal-ai-empire/services/content_generator.py:283:101
+    |
+281 | …. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+282 | …frica. Focus on delicious food, specials, events, and dining experience.",
+283 | …outh Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+284 | …ica. Focus on product quality, special offers, customer service, and new arrivals.",
+285 | …
+    |
+
+E501 Line too long (149 > 100)
+   --> vaal-ai-empire/services/content_generator.py:284:101
+    |
+282 | …outh Africa. Focus on delicious food, specials, events, and dining experience.",
+283 | …gle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
+284 | …th Africa. Focus on product quality, special offers, customer service, and new arrivals.",
+    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+285 | …
+286 | …
+    |
+
+E501 Line too long (163 > 100)
+   --> vaal-ai-empire/services/content_generator.py:301:100
+    |
+300 | …
+301 | … today for the best quality meat in Vaal. Special: Buy 2kg, get 500g free! #Vaalbraai #FreshMeat
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+302 | …
+303 | …aximum juiciness. Visit us for expert advice and premium cuts! 🔥
+    |
+
+E501 Line too long (132 > 100)
+   --> vaal-ai-empire/services/content_generator.py:303:100
+    |
+301 | …aai! Come see us today for the best quality meat in Vaal. Special: Buy 2kg, get 500g free! #Vaalbraai #FreshMeat
+302 | …
+303 | …r grilling for maximum juiciness. Visit us for expert advice and premium cuts! 🔥
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+304 | …
+    |
+
+E501 Line too long (113 > 100)
+   --> vaal-ai-empire/services/content_generator.py:345:101
+    |
+343 |         self, business_name: str, business_type: str, days: int = 7
+344 |     ) -> List[Dict]:
+345 |         prompt = f"""Generate a {days}-day email sequence for {business_name}, a {business_type} in South Africa.
+    |                                                                                                     ^^^^^^^^^^^^^
+346 |
+347 | Each email should include:
+    |
+
+E501 Line too long (102 > 100)
+   --> vaal-ai-empire/services/content_generator.py:390:101
+    |
+388 |             {
+389 |                 "subject": f"Welcome to {business_name}!",
+390 |                 "body": f"Thank you for connecting with {business_name}. We're excited to serve you!",
+    |                                                                                                     ^^
+391 |             },
+392 |             {
+    |
+
+E501 Line too long (107 > 100)
+   --> vaal-ai-empire/services/content_generator.py:415:101
+    |
+413 |             <meta charset="UTF-8">
+414 |             <style>
+415 |                 body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }}
+    |                                                                                                     ^^^^^^^
+416 |                 h1 {{ color: #2563eb; }}
+417 |                 .post {{ margin: 20px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }}
+    |
+
+E501 Line too long (105 > 100)
+   --> vaal-ai-empire/services/content_generator.py:417:101
+    |
+415 |                 body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }}
+416 |                 h1 {{ color: #2563eb; }}
+417 |                 .post {{ margin: 20px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }}
+    |                                                                                                     ^^^^^
+418 |                 .image {{ max-width: 100%; height: auto; margin: 10px 0; }}
+419 |                 .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }}
+    |
+
+E501 Line too long (130 > 100)
+   --> vaal-ai-empire/services/content_generator.py:419:101
+    |
+417 |                 .post {{ margin: 20px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }}
+418 |                 .image {{ max-width: 100%; height: auto; margin: 10px 0; }}
+419 |                 .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }}
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+420 |             </style>
+421 |         </head>
+    |
+
+E501 Line too long (111 > 100)
+  --> vaal-ai-empire/services/revenue_anomaly_detector.py:30:101
+   |
+28 |                     "type": "revenue_drop",
+29 |                     "severity": "high",
+30 |                     "message": f"Sudden revenue drop detected: R{daily_now} today vs R{daily_avg_7d:.2f} avg.",
+   |                                                                                                     ^^^^^^^^^^^
+31 |                     "timestamp": datetime.now().isoformat(),
+32 |                 }
+   |
+
+E501 Line too long (140 > 100)
+  --> vaal-ai-empire/services/revenue_anomaly_detector.py:45:101
+   |
+43 | …
+44 | …
+45 | …: Only {clients_with_revenue}/{len(active_clients)} active clients billed in 7 days.",
+   |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+46 | …mat(),
+47 | …
+   |
+
+E501 Line too long (164 > 100)
+  --> vaal-ai-empire/src/agents/market_intelligence/the_oracle.py:14:101
+   |
+12 | …
+13 | …
+14 | …for the Vaal AI Empire. Identify sellable gaps in the South African market based on recent news.",
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | …
+16 | …
+   |
+
+E501 Line too long (171 > 100)
+  --> vaal-ai-empire/src/products/content_studio.py:79:101
+   |
+77 | …
+78 | …
+79 | …ntered on {topic}, cinematic lighting, 8k resolution, highly detailed, photorealistic, rule of thirds"
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+80 | …
+81 | …f.image_model)
+   |
+
+E501 Line too long (103 > 100)
+   --> vaal_ai_empire/credit_protection/manager.py:188:101
+    |
+186 |             return (
+187 |                 False,
+188 |                 f"Request tokens ({estimated_tokens}) exceeds limit ({self.quota.max_request_tokens})",
+    |                                                                                                     ^^^
+189 |             )
+    |
+
+E501 Line too long (111 > 100)
+   --> vaal_ai_empire/credit_protection/manager.py:194:101
+    |
+192 |             return (
+193 |                 False,
+194 |                 f"Request cost (${estimated_cost:.4f}) exceeds limit (${self.quota.max_request_cost_usd:.4f})",
+    |                                                                                                     ^^^^^^^^^^^
+195 |             )
+    |
+
+Found 40 errors.
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).

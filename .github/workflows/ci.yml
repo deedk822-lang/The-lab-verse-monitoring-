@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/alibabacloud-oidc-auth@v2
+        uses: aliyun/alibabacloud-auth-action@v1
         with:
           oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
           role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}

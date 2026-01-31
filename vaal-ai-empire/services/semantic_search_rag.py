@@ -24,7 +24,7 @@ class SemanticSearchService:
         self,
         cohere_key: Optional[str] = None,
         backend: str = "annoy",  # "annoy" or "elasticsearch"
-        embedding_model: str = "embed-v4.0"
+        embedding_model: str = "embed-v4.0",
     ):
         """
         Initialize semantic search service
@@ -49,11 +49,7 @@ class SemanticSearchService:
         self.documents = []
         self.embeddings = None
 
-    def embed_texts(
-        self,
-        texts: List[str],
-        input_type: str = "search_document"
-    ) -> np.ndarray:
+    def embed_texts(self, texts: List[str], input_type: str = "search_document") -> np.ndarray:
         """
         Generate embeddings for a list of texts
 
@@ -69,21 +65,13 @@ class SemanticSearchService:
             return np.random.rand(len(texts), 1024)
 
         try:
-            response = self.co.embed(
-                texts=texts,
-                model=self.embedding_model,
-                input_type=input_type
-            )
+            response = self.co.embed(texts=texts, model=self.embedding_model, input_type=input_type)
             return np.array(response.embeddings)
         except Exception as e:
             logger.error(f"Embedding error: {e}")
             return np.random.rand(len(texts), 1024)
 
-    def build_index(
-        self,
-        documents: List[Dict],
-        text_field: str = "text"
-    ):
+    def build_index(self, documents: List[Dict], text_field: str = "text"):
         """
         Build search index from documents
 
@@ -113,7 +101,7 @@ class SemanticSearchService:
             from annoy import AnnoyIndex
 
             n_dims = self.embeddings.shape[1]
-            self.search_index = AnnoyIndex(n_dims, 'angular')
+            self.search_index = AnnoyIndex(n_dims, "angular")
 
             for i, embedding in enumerate(self.embeddings):
                 self.search_index.add_item(i, embedding)
@@ -125,12 +113,7 @@ class SemanticSearchService:
             logger.warning("Annoy not installed - using brute force search")
             self.search_index = None
 
-    def search(
-        self,
-        query: str,
-        top_k: int = 10,
-        include_distances: bool = True
-    ) -> List[Dict]:
+    def search(self, query: str, top_k: int = 10, include_distances: bool = True) -> List[Dict]:
         """
         Search for documents similar to query
 
@@ -156,25 +139,20 @@ class SemanticSearchService:
             return self._search_brute_force(query_embedding, top_k, include_distances)
 
     def _search_annoy(
-        self,
-        query_embedding: np.ndarray,
-        top_k: int,
-        include_distances: bool
+        self, query_embedding: np.ndarray, top_k: int, include_distances: bool
     ) -> List[Dict]:
         """Search using Annoy index"""
         try:
             indices, distances = self.search_index.get_nns_by_vector(
-                query_embedding,
-                top_k,
-                include_distances=True
+                query_embedding, top_k, include_distances=True
             )
 
             results = []
             for idx, dist in zip(indices, distances):
                 result = self.documents[idx].copy()
                 if include_distances:
-                    result['similarity_score'] = 1 - (dist**2 / 2)  # Convert to 0-1 similarity
-                    result['distance'] = dist
+                    result["similarity_score"] = 1 - (dist**2 / 2)  # Convert to 0-1 similarity
+                    result["distance"] = dist
                 results.append(result)
 
             return results
@@ -183,10 +161,7 @@ class SemanticSearchService:
             return self._search_brute_force(query_embedding, top_k, include_distances)
 
     def _search_brute_force(
-        self,
-        query_embedding: np.ndarray,
-        top_k: int,
-        include_distances: bool
+        self, query_embedding: np.ndarray, top_k: int, include_distances: bool
     ) -> List[Dict]:
         """Fallback brute force search using cosine similarity"""
         # Compute cosine similarity
@@ -201,16 +176,12 @@ class SemanticSearchService:
         for idx in top_indices:
             result = self.documents[idx].copy()
             if include_distances:
-                result['similarity_score'] = float(similarities[idx])
+                result["similarity_score"] = float(similarities[idx])
             results.append(result)
 
         return results
 
-    def find_similar(
-        self,
-        document_id: int,
-        top_k: int = 10
-    ) -> List[Dict]:
+    def find_similar(self, document_id: int, top_k: int = 10) -> List[Dict]:
         """
         Find documents similar to an existing document
 
@@ -228,14 +199,14 @@ class SemanticSearchService:
             indices, distances = self.search_index.get_nns_by_item(
                 document_id,
                 top_k + 1,  # +1 to exclude the query document itself
-                include_distances=True
+                include_distances=True,
             )
 
             results = []
             for idx, dist in zip(indices[1:], distances[1:]):  # Skip first (itself)
                 result = self.documents[idx].copy()
-                result['similarity_score'] = 1 - (dist**2 / 2)
-                result['distance'] = dist
+                result["similarity_score"] = 1 - (dist**2 / 2)
+                result["distance"] = dist
                 results.append(result)
 
             return results
@@ -254,7 +225,7 @@ class RAGService:
         self,
         cohere_key: Optional[str] = None,
         chat_model: str = "command-a-03-2025",
-        rerank_model: str = "rerank-english-v3.0"
+        rerank_model: str = "rerank-english-v3.0",
     ):
         """
         Initialize RAG service
@@ -282,11 +253,7 @@ class RAGService:
         self.search_service.build_index(documents, text_field)
 
     def rerank_documents(
-        self,
-        query: str,
-        documents: List[Dict],
-        top_n: int = 10,
-        text_field: str = "text"
+        self, query: str, documents: List[Dict], top_n: int = 10, text_field: str = "text"
     ) -> List[Dict]:
         """
         Rerank documents using Cohere's rerank model
@@ -313,14 +280,14 @@ class RAGService:
                 query=query,
                 documents=texts,
                 top_n=top_n,
-                return_documents=True
+                return_documents=True,
             )
 
             # Reconstruct documents with rerank scores
             reranked = []
             for result in response.results:
                 doc = documents[result.index].copy()
-                doc['rerank_score'] = result.relevance_score
+                doc["rerank_score"] = result.relevance_score
                 reranked.append(doc)
 
             return reranked
@@ -330,11 +297,7 @@ class RAGService:
             return documents[:top_n]
 
     def generate_response(
-        self,
-        query: str,
-        top_k: int = 10,
-        use_rerank: bool = True,
-        rerank_top_n: int = 5
+        self, query: str, top_k: int = 10, use_rerank: bool = True, rerank_top_n: int = 5
     ) -> Dict:
         """
         Generate a grounded response using RAG
@@ -353,7 +316,7 @@ class RAGService:
                 "response": f"[MOCK] Response to: {query}",
                 "citations": [],
                 "documents": [],
-                "mock": True
+                "mock": True,
             }
 
         # Step 1: Retrieve relevant documents
@@ -363,16 +326,13 @@ class RAGService:
             return {
                 "response": "I don't have enough information to answer that question.",
                 "citations": [],
-                "documents": []
+                "documents": [],
             }
 
         # Step 2: Rerank (optional)
         if use_rerank:
             documents = self.rerank_documents(
-                query,
-                retrieved_docs,
-                top_n=rerank_top_n,
-                text_field="text"
+                query, retrieved_docs, top_n=rerank_top_n, text_field="text"
             )
         else:
             documents = retrieved_docs[:rerank_top_n]
@@ -380,19 +340,17 @@ class RAGService:
         # Step 3: Format documents for Chat API
         formatted_docs = []
         for i, doc in enumerate(documents):
-            formatted_docs.append({
-                "id": str(i),
-                "text": doc.get("text", ""),
-                "title": doc.get("title", f"Document {i}")
-            })
+            formatted_docs.append(
+                {
+                    "id": str(i),
+                    "text": doc.get("text", ""),
+                    "title": doc.get("title", f"Document {i}"),
+                }
+            )
 
         # Step 4: Generate response with Chat API
         try:
-            response = self.co.chat(
-                message=query,
-                documents=formatted_docs,
-                model=self.chat_model
-            )
+            response = self.co.chat(message=query, documents=formatted_docs, model=self.chat_model)
 
             # Extract citations
             source_documents = []
@@ -408,14 +366,14 @@ class RAGService:
                         "text": cite.text,
                         "start": cite.start,
                         "end": cite.end,
-                        "document_ids": cite.document_ids
+                        "document_ids": cite.document_ids,
                     }
                     for cite in response.citations
                 ],
                 "documents": formatted_docs,
                 "source_document_ids": source_documents,
                 "query": query,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except Exception as e:
@@ -424,15 +382,10 @@ class RAGService:
                 "response": "Error generating response",
                 "error": str(e),
                 "citations": [],
-                "documents": formatted_docs
+                "documents": formatted_docs,
             }
 
-    def hybrid_search_rag(
-        self,
-        query: str,
-        top_k: int = 50,
-        rerank_top_n: int = 10
-    ) -> Dict:
+    def hybrid_search_rag(self, query: str, top_k: int = 50, rerank_top_n: int = 10) -> Dict:
         """
         Perform hybrid search (semantic + keyword) with RAG
 
@@ -441,10 +394,7 @@ class RAGService:
         """
         # For now, just use semantic search
         return self.generate_response(
-            query,
-            top_k=top_k,
-            use_rerank=True,
-            rerank_top_n=rerank_top_n
+            query, top_k=top_k, use_rerank=True, rerank_top_n=rerank_top_n
         )
 
 
@@ -461,10 +411,7 @@ class ContentClusteringService:
         self.cluster_keywords = None
 
     def cluster_documents(
-        self,
-        documents: List[Dict],
-        n_clusters: int = 8,
-        text_field: str = "text"
+        self, documents: List[Dict], n_clusters: int = 8, text_field: str = "text"
     ) -> Dict:
         """
         Cluster documents into topics
@@ -490,36 +437,25 @@ class ContentClusteringService:
         self.clusters = kmeans.fit_predict(embeddings)
 
         # Extract keywords per cluster
-        self.cluster_keywords = self._extract_cluster_keywords(
-            documents,
-            self.clusters,
-            text_field
-        )
+        self.cluster_keywords = self._extract_cluster_keywords(documents, self.clusters, text_field)
 
         # Add cluster info to documents
         clustered_docs = []
         for i, doc in enumerate(documents):
             doc_copy = doc.copy()
-            doc_copy['cluster'] = int(self.clusters[i])
-            doc_copy['cluster_keywords'] = self.cluster_keywords[self.clusters[i]]
+            doc_copy["cluster"] = int(self.clusters[i])
+            doc_copy["cluster_keywords"] = self.cluster_keywords[self.clusters[i]]
             clustered_docs.append(doc_copy)
 
         return {
             "documents": clustered_docs,
             "n_clusters": n_clusters,
             "cluster_keywords": self.cluster_keywords,
-            "cluster_sizes": {
-                int(i): int(np.sum(self.clusters == i))
-                for i in range(n_clusters)
-            }
+            "cluster_sizes": {int(i): int(np.sum(self.clusters == i)) for i in range(n_clusters)},
         }
 
     def _extract_cluster_keywords(
-        self,
-        documents: List[Dict],
-        clusters: np.ndarray,
-        text_field: str,
-        top_n: int = 10
+        self, documents: List[Dict], clusters: np.ndarray, text_field: str, top_n: int = 10
     ) -> Dict[int, List[str]]:
         """Extract top keywords for each cluster"""
         from sklearn.feature_extraction.text import CountVectorizer
@@ -535,13 +471,10 @@ class ContentClusteringService:
 
             # Extract keywords
             keywords = {}
-            vectorizer = CountVectorizer(
-                max_features=100,
-                stop_words='english'
-            )
+            vectorizer = CountVectorizer(max_features=100, stop_words="english")
 
             for cluster_id, texts in cluster_texts.items():
-                combined_text = ' '.join(texts)
+                combined_text = " ".join(texts)
                 try:
                     counts = vectorizer.fit_transform([combined_text])
                     feature_names = vectorizer.get_feature_names_out()
@@ -557,11 +490,7 @@ class ContentClusteringService:
             logger.error(f"Keyword extraction error: {e}")
             return {i: [f"cluster_{i}"] for i in range(len(set(clusters)))}
 
-    def visualize_clusters(
-        self,
-        documents: List[Dict],
-        text_field: str = "text"
-    ) -> Dict:
+    def visualize_clusters(self, documents: List[Dict], text_field: str = "text") -> Dict:
         """
         Prepare data for cluster visualization using UMAP
 
@@ -582,22 +511,17 @@ class ContentClusteringService:
             # Add coordinates to documents
             viz_data = []
             for i, doc in enumerate(documents):
-                viz_data.append({
-                    **doc,
-                    'x': float(coords_2d[i, 0]),
-                    'y': float(coords_2d[i, 1]),
-                    'cluster': int(self.clusters[i]) if self.clusters is not None else 0
-                })
+                viz_data.append(
+                    {
+                        **doc,
+                        "x": float(coords_2d[i, 0]),
+                        "y": float(coords_2d[i, 1]),
+                        "cluster": int(self.clusters[i]) if self.clusters is not None else 0,
+                    }
+                )
 
-            return {
-                "documents": viz_data,
-                "success": True
-            }
+            return {"documents": viz_data, "success": True}
 
         except ImportError:
             logger.warning("UMAP not installed - visualization not available")
-            return {
-                "documents": documents,
-                "success": False,
-                "error": "UMAP not installed"
-            }
+            return {"documents": documents, "success": False, "error": "UMAP not installed"}

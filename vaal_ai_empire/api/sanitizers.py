@@ -25,14 +25,15 @@ DANGEROUS_PATTERNS = [
 ]
 
 
-class PromptInjectionDetected(ValueError):
+class PromptInjectionError(ValueError):
     """Exception raised when a prompt injection attempt is detected."""
+
     pass
 
 
 def normalize_unicode(text: str) -> str:
     """Normalize unicode to NFKC to prevent obfuscation."""
-    return unicodedata.normalize('NFKC', text)
+    return unicodedata.normalize("NFKC", text)
 
 
 def detect_injection_patterns(text: str) -> List[str]:
@@ -46,10 +47,7 @@ def detect_injection_patterns(text: str) -> List[str]:
 
 
 def sanitize_prompt(
-    prompt: str,
-    max_length: int = 10000,
-    strict: bool = True,
-    allow_system_messages: bool = True
+    prompt: str, max_length: int = 10000, strict: bool = True, allow_system_messages: bool = True
 ) -> str:
     """
     Sanitize user prompts to prevent injection attacks.
@@ -72,14 +70,14 @@ def sanitize_prompt(
     if matches:
         logger.error(f"Dangerous patterns detected: {matches}")
         if strict:
-            raise PromptInjectionDetected("Prompt contains potentially unsafe content")
+            raise PromptInjectionError("Prompt contains potentially unsafe content")
         else:
             # Filter matches
             for pattern in DANGEROUS_PATTERNS:
                 normalized = re.sub(pattern, "[FILTERED]", normalized)
 
     # Remove null bytes
-    normalized = normalized.replace('\x00', '')
+    normalized = normalized.replace("\x00", "")
 
     return normalized.strip()
 
@@ -104,6 +102,7 @@ def sanitize_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 class RateLimiter:
     """Base class for rate limiting."""
+
     def __init__(self, max_requests: int, window_seconds: int):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
@@ -115,20 +114,20 @@ class RateLimiter:
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filenames to prevent directory traversal.
-    
+
     Args:
         filename: Input filename
-        
+
     Returns:
         Sanitized filename
     """
     # Remove path separators
-    filename = filename.replace('/', '').replace('\\', '')
+    filename = filename.replace("/", "").replace("\\", "")
 
     # Remove dangerous characters
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    filename = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
 
     # Remove leading dots
-    filename = filename.lstrip('.')
+    filename = filename.lstrip(".")
 
     return filename[:255]  # Max filename length

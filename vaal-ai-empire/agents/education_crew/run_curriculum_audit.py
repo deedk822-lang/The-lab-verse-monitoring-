@@ -12,22 +12,22 @@ llm = ChatOpenAI(model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))
 
 # Agent A: The Auditor (Sub-division: Search & Compare)
 auditor = Agent(
-    role='Curriculum Auditor',
-    goal='Identify exactly what South African education is missing compared to the 1st world',
+    role="Curriculum Auditor",
+    goal="Identify exactly what South African education is missing compared to the 1st world",
     backstory="You are an expert in comparative pedagogy. You look at CAPS and cry, then you look at Finland and see the future.",
     tools=[EducationTools.CurriculumGapAnalyzer()],
     llm=llm,
-    verbose=True
+    verbose=True,
 )
 
 # Agent B: The Architect (Sub-division: Enhance & Create)
 architect = Agent(
-    role='Educational Product Architect',
-    goal='Create a low-cost, high-value Term 1 syllabus that fills the identified gaps',
+    role="Educational Product Architect",
+    goal="Create a low-cost, high-value Term 1 syllabus that fills the identified gaps",
     backstory="You design educational products that sell. You know how to package complex AI/Finance topics for kids.",
     tools=[EducationTools.SyllabusGenerator()],
     llm=llm,
-    verbose=True
+    verbose=True,
 )
 
 # 3. Define Tasks
@@ -36,7 +36,7 @@ architect = Agent(
 task_audit = Task(
     description="Analyze 'Grade 10'. Compare SA CAPS to Global Standards. Identify the specific missing skills.",
     expected_output="A JSON report detailing the Skills Gap.",
-    agent=auditor
+    agent=auditor,
 )
 
 # Task 2: Create the Product (Human Verification Step)
@@ -50,7 +50,7 @@ task_design = Task(
     expected_output="A Markdown formatted Course Outline ready for sale.",
     agent=architect,
     context=[task_audit],
-    human_input=True # <--- CRITICAL: YOU MUST APPROVE THE CURRICULUM
+    human_input=True,  # <--- CRITICAL: YOU MUST APPROVE THE CURRICULUM
 )
 
 # 4. The Crew
@@ -58,7 +58,7 @@ education_crew = Crew(
     agents=[auditor, architect],
     tasks=[task_audit, task_design],
     process=Process.sequential,
-    verbose=True
+    verbose=True,
 )
 
 # 5. Execution

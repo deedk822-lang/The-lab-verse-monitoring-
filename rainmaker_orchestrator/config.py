@@ -71,19 +71,22 @@ class ConfigManager:
     def get_bool(self, key: str, default: bool = False) -> bool:
         """
         Parse a configuration value as a boolean.
-        
+
         Recognizes the case-insensitive values "true", "1", "yes", "on" as truthy and
         "false", "0", "no", "off" as falsy. If the environment variable is not set or
         its value is not recognized, returns the provided default.
-        
+
         Parameters:
             key (str): The configuration key or environment variable name to read.
             default (bool): Value to return when the config value is missing or unrecognized.
-        
+
         Returns:
             `true` if the config value represents a truthy value, `false` otherwise.
         """
-        value: Optional[str] = self.get(key, "").lower()
+        val: Optional[str] = self.get(key)
+        if val is None:
+            return default
+        value: str = val.lower()
         if value in ("true", "1", "yes", "on"):
             return True
         if value in ("false", "0", "no", "off"):

@@ -5,8 +5,8 @@ import re
 from typing import Any, Dict, Optional
 
 import httpx
-import openlit
-from opik import track
+import openlit  # type: ignore[import-untyped]
+from opik import track  # type: ignore[import-untyped]
 from rainmaker_orchestrator.fs_agent import FileSystemAgent
 
 from rainmaker_orchestrator.config import ConfigManager

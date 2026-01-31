@@ -14,27 +14,27 @@ logger = logging.getLogger(__name__)
 
 # Blocked IP ranges (private networks, localhost, etc.)
 BLOCKED_IP_RANGES = [
-    ipaddress.ip_network('0.0.0.0/8'),
-    ipaddress.ip_network('10.0.0.0/8'),
-    ipaddress.ip_network('127.0.0.0/8'),
-    ipaddress.ip_network('169.254.0.0/16'),
-    ipaddress.ip_network('172.16.0.0/12'),
-    ipaddress.ip_network('192.168.0.0/16'),
-    ipaddress.ip_network('224.0.0.0/4'),
-    ipaddress.ip_network('240.0.0.0/4'),
-    ipaddress.ip_network('::1/128'),
-    ipaddress.ip_network('fe80::/10'),
-    ipaddress.ip_network('fc00::/7'),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("240.0.0.0/4"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("fc00::/7"),
 ]
 
 
 def is_safe_url(url: str) -> bool:
     """
     Check if URL is safe to request (not private/localhost).
-    
+
     Args:
         url: URL to check
-        
+
     Returns:
         True if safe, False otherwise
     """
@@ -64,7 +64,7 @@ def is_safe_url(url: str) -> bool:
                 return False
 
         # Check protocol
-        if parsed.scheme not in ('http', 'https'):
+        if parsed.scheme not in ("http", "https"):
             logger.error(f"Blocked request with unsupported scheme: {parsed.scheme}")
             return False
 
@@ -76,21 +76,20 @@ def is_safe_url(url: str) -> bool:
 
 
 def create_ssrf_safe_async_session(
-    timeout: float = 30.0,
-    follow_redirects: bool = False,
-    max_redirects: int = 0
+    timeout: float = 30.0, follow_redirects: bool = False, max_redirects: int = 0
 ) -> httpx.AsyncClient:
     """
     Create SSRF-safe async HTTP client.
-    
+
     Args:
         timeout: Request timeout in seconds
         follow_redirects: Whether to follow redirects
         max_redirects: Maximum number of redirects
-        
+
     Returns:
         Configured async HTTP client
     """
+
     # Custom transport that checks URLs before connecting
     class SSRFSafeTransport(httpx.AsyncHTTPTransport):
         async def handle_async_request(self, request):
@@ -104,7 +103,5 @@ def create_ssrf_safe_async_session(
         timeout=timeout,
         follow_redirects=follow_redirects,
         max_redirects=max_redirects,
-        headers={
-            'User-Agent': 'VAAL-AI-Empire/1.0'
-        }
+        headers={"User-Agent": "VAAL-AI-Empire/1.0"},
     )

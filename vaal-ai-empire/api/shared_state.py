@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class RedisDedupeCache:
     """Redis-backed TTL cache for webhook deduplication."""
 
@@ -18,8 +19,8 @@ class RedisDedupeCache:
 
     def generate_key(self, payload: Dict[str, Any]) -> str:
         """Generate unique key for payload."""
-        webhook_id = payload.get('webhookEvent', payload.get('id', ''))
-        timestamp = payload.get('timestamp', payload.get('created_at', ''))
+        webhook_id = payload.get("webhookEvent", payload.get("id", ""))
+        timestamp = payload.get("timestamp", payload.get("created_at", ""))
         unique_str = f"{webhook_id}:{timestamp}:{str(payload)[:100]}"
         return hashlib.sha256(unique_str.encode()).hexdigest()
 
@@ -27,16 +28,12 @@ class RedisDedupeCache:
         """Check if key exists in Redis, if not add it."""
         try:
             # SET NX returns True if set, None/False if already exists
-            result = await self.redis.set(
-                f"dedupe:{key}",
-                str(time.time()),
-                ex=self.ttl,
-                nx=True
-            )
+            result = await self.redis.set(f"dedupe:{key}", str(time.time()), ex=self.ttl, nx=True)
             return result is None or result is False
         except Exception as e:
             logger.error(f"Redis dedupe check failed: {e}")
             return False  # Fallback: allow request on Redis failure
+
 
 class RedisRateLimiter:
     """Redis-backed distributed rate limiter using sliding window."""
@@ -64,7 +61,7 @@ class RedisRateLimiter:
             if results and len(results) > 1:
                 current_count = results[1]
                 # Handle cases where current_count might be a Mock in tests
-                if hasattr(current_count, '__lt__'):
+                if hasattr(current_count, "__lt__"):
                     return current_count < self.max_requests
 
             return True

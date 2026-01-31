@@ -1,0 +1,27 @@
+# Local Ollama models for Codespace (FREE)
+default_model = "codellama-local"
+
+[providers.ollama-local]
+type = "openai"
+base_url = "http://localhost:11434/v1"
+api_key = "ollama"
+
+[models.codellama-local]
+provider = "ollama-local"
+model = "codellama:7b"
+max_context_size = 16384
+
+[models.mistral-local]
+provider = "ollama-local"
+model = "mistral:7b"
+max_context_size = 32768
+
+[moonshot]
+type = "kimi"
+base_url = "https://api.moonshot.cn/v1"
+api_key = "${MOONSHOT_API_KEY}"
+
+[models.kimi-special]
+provider = "moonshot"
+model = "kimi-k2-0905"
+max_context_size = 262144

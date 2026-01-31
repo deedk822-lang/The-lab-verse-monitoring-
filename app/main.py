@@ -20,11 +20,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
+from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 # Configure logging
 logging.basicConfig(

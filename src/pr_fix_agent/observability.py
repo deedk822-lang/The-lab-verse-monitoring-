@@ -7,6 +7,12 @@ import logging
 
 import structlog
 
+# Re-export from ollama_agent
+from .ollama_agent import BudgetExceededError, CostTracker, LLMCost, OllamaAgent
+
+# Alias for backward compatibility if needed
+ObservableOllamaAgent = OllamaAgent
+
 
 # Re-configure structured logging for consistent output
 def configure_structured_logging():

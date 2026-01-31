@@ -25,7 +25,7 @@ DANGEROUS_PATTERNS = [
 ]
 
 
-class PromptInjectionDetected(ValueError):
+class PromptInjectionError(ValueError):
     """Exception raised when a prompt injection attempt is detected."""
     pass
 
@@ -72,7 +72,7 @@ def sanitize_prompt(
     if matches:
         logger.error(f"Dangerous patterns detected: {matches}")
         if strict:
-            raise PromptInjectionDetected("Prompt contains potentially unsafe content")
+            raise PromptInjectionError("Prompt contains potentially unsafe content")
         else:
             # Filter matches
             for pattern in DANGEROUS_PATTERNS:

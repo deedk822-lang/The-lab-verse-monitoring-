@@ -76,9 +76,12 @@ target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py38"
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]  # Ignore line length violations as many files have long prompt/data strings
 
 [tool.mypy]
 python_version = "3.8"

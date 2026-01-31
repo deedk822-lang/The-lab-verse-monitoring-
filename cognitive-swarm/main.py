@@ -1,14 +1,14 @@
-import os
 import asyncio
 import json
 import logging
-from typing import Dict, Any, List
+import os
+from typing import Any, Dict
 
-import yaml
 import aiohttp
-import redis.asyncio as redis
-from openai import AsyncOpenAI
 import openlit
+import redis.asyncio as redis
+import yaml
+from openai import AsyncOpenAI
 
 openlit.init()
 
@@ -189,7 +189,7 @@ class CognitiveSwarmOrchestrator:
 
 async def main():
     # Load configuration
-    with open("config.yaml", 'r') as f:
+    with open("config.yaml") as f:
         config = yaml.safe_load(f)
 
     # Initialize services

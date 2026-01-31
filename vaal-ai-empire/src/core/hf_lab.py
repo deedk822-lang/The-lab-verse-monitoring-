@@ -1,9 +1,27 @@
-import os
 import logging
+import os
+from functools import lru_cache
+
 from huggingface_hub import InferenceClient
 from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
+
+SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
+
+
+# ⚡ Bolt Optimization: Cache the model loading
+@lru_cache(maxsize=None)
+def get_seo_model():
+    """Loads and caches the SentenceTransformer model."""
+    try:
+        model = SentenceTransformer(SEO_MODEL_NAME)
+        logger.info("✅ HF Lab: Local SEO Model Loaded.")
+        return model
+    except Exception as e:
+        logger.warning(f"⚠️ HF Lab: Local SEO Model missing: {e}")
+        return None
+
 
 class HuggingFaceLab:
     """
@@ -15,16 +33,13 @@ class HuggingFaceLab:
         self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
 
         # Load Local SEO Model (CPU-friendly)
-        try:
-            self.seo_model = SentenceTransformer('all-MiniLM-L6-v2')
-            logger.info("✅ HF Lab: Local SEO Model Loaded.")
-        except Exception:
-            self.seo_model = None
-            logger.warning("⚠️ HF Lab: Local SEO Model missing.")
+        # ⚡ Bolt Optimization: Use the cached model loader
+        self.seo_model = get_seo_model()
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""
-        if not self.client: return "N/A"
+        if not self.client:
+            return "N/A"
         try:
             model = "cardiffnlp/twitter-roberta-base-sentiment-latest"
             response = self.client.text_classification(text, model=model)
@@ -36,7 +51,8 @@ class HuggingFaceLab:
 
     def optimize_keywords(self, keywords: list):
         """Free Tier Semantic Analysis (Local)"""
-        if not self.seo_model: return 0
+        if not self.seo_model:
+            return 0
         embeddings = self.seo_model.encode(keywords)
         return len(embeddings)
 

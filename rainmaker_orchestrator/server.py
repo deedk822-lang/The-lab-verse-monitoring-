@@ -4,6 +4,7 @@ This file maintains backward compatibility with existing deployments.
 For new implementations, use api/server.py instead.
 """
 import logging
+
 from fastapi import FastAPI
 
 logger: logging.Logger = logging.getLogger("server")
@@ -16,7 +17,7 @@ app: FastAPI = FastAPI(
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, str]:
     """
     Provide a legacy-compatibility health response for the server.
     

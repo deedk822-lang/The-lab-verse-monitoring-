@@ -1,8 +1,9 @@
-import requests
-import os
 import logging
-from typing import Dict, List, Optional
+import os
 from datetime import datetime
+from typing import Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 

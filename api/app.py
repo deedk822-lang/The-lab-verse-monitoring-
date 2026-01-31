@@ -1,6 +1,9 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

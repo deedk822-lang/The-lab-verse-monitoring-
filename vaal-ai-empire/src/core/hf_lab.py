@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger("HFLab")
 
-SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
+SEO_MODEL_NAME = "all-MiniLM-L6-v2"
 
 
 # ⚡ Bolt Optimization: Cache the model loading
@@ -28,6 +28,7 @@ class HuggingFaceLab:
     The Cost-Optimization Engine.
     Handles low-complexity tasks (Sentiment, SEO, Summaries) for free.
     """
+
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_KEY")
         self.client = InferenceClient(token=self.hf_token) if self.hf_token else None
@@ -56,11 +57,13 @@ class HuggingFaceLab:
         embeddings = self.seo_model.encode(keywords)
         return len(embeddings)
 
+
 class CostRouter:
     """
     The Gatekeeper.
     Decides: Send to 'Intern' (HF) or 'Titan' (Kimi/Mistral)?
     """
+
     def __init__(self, hf_lab):
         self.lab = hf_lab
 

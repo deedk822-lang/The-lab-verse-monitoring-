@@ -6,27 +6,29 @@ logger = logging.getLogger(__name__)
 try:
     import torch
     from transformers import pipeline
+
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     logger.warning("⚠️  Transformers library not found or not the correct version. AyaVisionAPI will be unavailable.")
     TRANSFORMERS_AVAILABLE = False
 
+
 class AyaVisionAPI:
     """
     API wrapper for the CohereLabs/aya-vision-32b multimodal model.
     """
+
     def __init__(self):
         if not TRANSFORMERS_AVAILABLE:
-            raise ImportError("Please install the specific version of 'transformers' and 'torch' to use the AyaVisionAPI.")
+            raise ImportError(
+                "Please install the specific version of 'transformers' and 'torch' to use the AyaVisionAPI."
+            )
 
         self.model_id = "CohereLabs/aya-vision-32b"
         try:
             logger.info(f"🚀 Initializing Aya Vision pipeline for model: {self.model_id}...")
             self.pipe = pipeline(
-                model=self.model_id,
-                task="image-text-to-text",
-                device_map="auto",
-                torch_dtype=torch.float16
+                model=self.model_id, task="image-text-to-text", device_map="auto", torch_dtype=torch.float16
             )
             logger.info("✅ Aya Vision pipeline initialized successfully.")
         except Exception as e:
@@ -53,8 +55,8 @@ class AyaVisionAPI:
                     "input_tokens": 0,
                     "output_tokens": 0,
                     "total_tokens": 0,
-                    "cost_usd": 0.0  # Self-hosted model, no direct API cost
-                }
+                    "cost_usd": 0.0,  # Self-hosted model, no direct API cost
+                },
             }
         except Exception as e:
             logger.error(f"❌ Aya Vision content generation failed: {e}")

@@ -6,8 +6,9 @@ from pathlib import Path
 from huggingface_hub import InferenceClient
 
 # Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("ContentStudio")
+
 
 class ContentStudio:
     """
@@ -16,6 +17,7 @@ class ContentStudio:
     - Text: Meta Llama 3.1 8B
     - Image: FLUX.1-dev
     """
+
     def __init__(self):
         self.token = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
 
@@ -59,12 +61,7 @@ class ContentStudio:
             Write the post now.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
             """
 
-            response = self.client.text_generation(
-                prompt,
-                model=self.text_model,
-                max_new_tokens=400,
-                temperature=0.7
-            )
+            response = self.client.text_generation(prompt, model=self.text_model, max_new_tokens=400, temperature=0.7)
             caption = response.strip()
             logger.info("   ✅ Text Generated.")
 
@@ -79,10 +76,7 @@ class ContentStudio:
 
             image_prompt = f"Professional photography for {niche}, centered on {topic}, cinematic lighting, 8k resolution, highly detailed, photorealistic, rule of thirds"
 
-            image = self.client.text_to_image(
-                image_prompt,
-                model=self.image_model
-            )
+            image = self.client.text_to_image(image_prompt, model=self.image_model)
 
             # Save Image locally
             filename = f"gen_{timestamp}.png"
@@ -102,8 +96,9 @@ class ContentStudio:
             "timestamp": timestamp,
             "caption": caption,
             "local_image_path": image_path_str,
-            "models_used": [self.text_model, self.image_model]
+            "models_used": [self.text_model, self.image_model],
         }
+
 
 if __name__ == "__main__":
     # Local Test
@@ -112,5 +107,5 @@ if __name__ == "__main__":
         print("--- RUNNING TEST GENERATION ---")
         result = studio.generate_social_bundle("Tech Startups", "The Future of AI Agents in South Africa")
         print("\nCAPTION:")
-        print(result['caption'])
+        print(result["caption"])
         print(f"\nIMAGE: {result['local_image_path']}")

@@ -3,12 +3,14 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
+
 class AfricanManuscriptTranscriber:
     """
     A service for transcribing handwritten historical African manuscripts,
     designed to support the Thabo Mbeki Presidential Library's digital archive.
     This is a placeholder implementation.
     """
+
     def __init__(self):
         # In a real implementation, this would load a multilingual, multimodal model
         # capable of handling various African languages and scripts.
@@ -51,6 +53,7 @@ class AfricanManuscriptTranscriber:
         # - Confidence scoring.
         return text
 
+
 # Example Usage:
 if __name__ == "__main__":
     import os
@@ -66,4 +69,4 @@ if __name__ == "__main__":
     manuscript_files = ["doc1.jpg", "doc2.png", "doc3.jpeg"]
     transcribed_batch = transcriber.batch_transcribe(manuscript_files, language="swahili")
     for i, text in enumerate(transcribed_batch):
-        print(f"Batch item {i+1}: {text}")
+        print(f"Batch item {i + 1}: {text}")

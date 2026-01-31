@@ -50,8 +50,8 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                         "error": "Service temporarily unavailable",
                         "reason": "Instance resource limits exceeded",
                         "details": message,
-                        "retry_after": 300
-                    }
+                        "retry_after": 300,
+                    },
                 )
 
         # Estimate request cost
@@ -63,8 +63,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
 
         # Check quota
         allowed, reason = self.credit_manager.check_quota(
-            estimated_tokens=estimated_tokens,
-            estimated_cost=estimated_cost
+            estimated_tokens=estimated_tokens, estimated_cost=estimated_cost
         )
 
         if not allowed:
@@ -78,17 +77,16 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                     "error": "Credit limit exceeded",
                     "reason": reason,
                     "usage": usage_summary,
-                    "retry_after": self._get_retry_after(reason)
+                    "retry_after": self._get_retry_after(reason),
                 },
                 headers={
                     "Retry-After": str(self._get_retry_after(reason)),
                     "X-RateLimit-Limit": str(self.credit_manager.quota.daily_requests),
                     "X-RateLimit-Remaining": str(
-                        max(0, self.credit_manager.quota.daily_requests -
-                        usage_summary["daily"]["requests"])
+                        max(0, self.credit_manager.quota.daily_requests - usage_summary["daily"]["requests"])
                     ),
-                    "X-RateLimit-Reset": self._get_reset_time()
-                }
+                    "X-RateLimit-Reset": self._get_reset_time(),
+                },
             )
 
         # Process request
@@ -98,9 +96,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             duration_ms = int((time.time() - start_time) * 1000)
 
-            actual_tokens, actual_cost = await self._extract_actual_usage(
-                response, estimated_tokens, estimated_cost
-            )
+            actual_tokens, actual_cost = await self._extract_actual_usage(response, estimated_tokens, estimated_cost)
 
             provider = self._get_provider_type(request)
             self.credit_manager.record_usage(
@@ -110,10 +106,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                 cost=actual_cost,
                 duration_ms=duration_ms,
                 status="success",
-                metadata={
-                    "endpoint": request.url.path,
-                    "method": request.method
-                }
+                metadata={"endpoint": request.url.path, "method": request.method},
             )
 
             usage_summary = self.credit_manager.get_usage_summary()
@@ -134,23 +127,14 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                 cost=estimated_cost,
                 duration_ms=duration_ms,
                 status="error",
-                metadata={
-                    "endpoint": request.url.path,
-                    "error": str(e)
-                }
+                metadata={"endpoint": request.url.path, "error": str(e)},
             )
 
             raise
 
     def _is_llm_endpoint(self, request: Request) -> bool:
         """Check if endpoint is an LLM request."""
-        llm_paths = [
-            "/api/generate",
-            "/api/chat",
-            "/api/complete",
-            "/v1/completions",
-            "/v1/chat/completions"
-        ]
+        llm_paths = ["/api/generate", "/api/chat", "/api/complete", "/v1/completions", "/v1/chat/completions"]
         return any(request.url.path.startswith(path) for path in llm_paths)
 
     async def _estimate_request_cost(self, request: Request) -> tuple:

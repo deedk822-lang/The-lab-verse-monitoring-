@@ -19,9 +19,7 @@ class PolicyGate:
         """
         violations = []
         if metrics.get("risk", 0) > self.policies["max_risk_score"]:
-            violations.append(
-                f"Risk score {metrics['risk']} exceeds maximum of {self.policies['max_risk_score']}"
-            )
+            violations.append(f"Risk score {metrics['risk']} exceeds maximum of {self.policies['max_risk_score']}")
 
         if not violations:
             self.log.info("Policy check passed.")

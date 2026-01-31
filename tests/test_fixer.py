@@ -32,11 +32,7 @@ class TestPRErrorFixerReal:
         from pr_fix_agent.security import SecurityValidator
 
         validator = SecurityValidator(tmp_path)
-        return PRErrorFixer(
-            agent=mock_agent,
-            repo_path=str(tmp_path),
-            validator=validator
-        )
+        return PRErrorFixer(agent=mock_agent, repo_path=str(tmp_path), validator=validator)
 
     def test_fix_missing_file_creates_file(self, fixer, tmp_path):
         """Test: Creates missing file"""

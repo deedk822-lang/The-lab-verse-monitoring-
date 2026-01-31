@@ -6,8 +6,8 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
-from typing import Optional, Set, Any, Tuple
 
 import httpx
 
@@ -15,32 +15,32 @@ logger = logging.getLogger(__name__)
 
 # Blocked IP ranges (private networks, localhost, etc.)
 BLOCKED_IP_RANGES = [
-    ipaddress.ip_network('0.0.0.0/8'),
-    ipaddress.ip_network('10.0.0.0/8'),
-    ipaddress.ip_network('127.0.0.0/8'),
-    ipaddress.ip_network('169.254.0.0/16'),
-    ipaddress.ip_network('172.16.0.0/12'),
-    ipaddress.ip_network('192.168.0.0/16'),
-    ipaddress.ip_network('224.0.0.0/4'),
-    ipaddress.ip_network('240.0.0.0/4'),
-    ipaddress.ip_network('::1/128'),
-    ipaddress.ip_network('fe80::/10'),
-    ipaddress.ip_network('fc00::/7'),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("240.0.0.0/4"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("fc00::/7"),
 ]
 
 
 class SSRFBlocker:
     """Helper class for SSRF protection."""
-    
+
     def __init__(
         self,
         allow_private_ips: bool = False,
         allowed_schemes: Optional[Set[str]] = None,
         allowed_domains: Optional[Set[str]] = None,
-        blocked_domains: Optional[Set[str]] = None
+        blocked_domains: Optional[Set[str]] = None,
     ):
         self.allow_private_ips = allow_private_ips
-        self.allowed_schemes = allowed_schemes or {'http', 'https'}
+        self.allowed_schemes = allowed_schemes or {"http", "https"}
         self.allowed_domains = allowed_domains
         self.blocked_domains = blocked_domains
 
@@ -118,10 +118,10 @@ def create_ssrf_safe_async_session(
     timeout: float = 30.0,
     follow_redirects: bool = False,
     max_redirects: int = 0,
-    allowed_domains: Optional[Set[str]] = None
+    allowed_domains: Optional[Set[str]] = None,
 ) -> httpx.AsyncClient:
     """Create SSRF-safe async HTTP client."""
-    
+
     blocker = SSRFBlocker(allowed_domains=allowed_domains)
 
     class SSRFSafeTransport(httpx.AsyncHTTPTransport):
@@ -136,7 +136,7 @@ def create_ssrf_safe_async_session(
         timeout=timeout,
         follow_redirects=follow_redirects,
         max_redirects=max_redirects,
-        headers={'User-Agent': 'VAAL-AI-Empire/1.0'}
+        headers={"User-Agent": "VAAL-AI-Empire/1.0"},
     )
 
 
@@ -144,7 +144,7 @@ def create_ssrf_safe_session(
     timeout: float = 30.0,
     follow_redirects: bool = False,
     max_redirects: int = 0,
-    allowed_domains: Optional[Set[str]] = None
+    allowed_domains: Optional[Set[str]] = None,
 ) -> httpx.Client:
     """Create SSRF-safe sync HTTP client."""
 
@@ -162,5 +162,5 @@ def create_ssrf_safe_session(
         timeout=timeout,
         follow_redirects=follow_redirects,
         max_redirects=max_redirects,
-        headers={'User-Agent': 'VAAL-AI-Empire/1.0'}
+        headers={"User-Agent": "VAAL-AI-Empire/1.0"},
     )

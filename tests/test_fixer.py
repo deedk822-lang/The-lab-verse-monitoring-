@@ -3,6 +3,7 @@ Fixed Test File - No Duplication
 Issue Fixed: 82 lines of duplicate production code removed
 """
 
+<<<<<<< HEAD
 import pytest
 from unittest.mock import Mock
 from pathlib import Path
@@ -10,6 +11,15 @@ from pathlib import Path
 # ✅ FIX: Direct import, no fallback duplication
 from pr_fix_agent.analyzer import PRErrorFixer
 from pr_fix_agent.ollama_agent import OllamaAgent as MockOllamaAgent
+=======
+from pathlib import Path
+
+import pytest
+
+# ✅ FIX: Direct import, no fallback duplication
+from pr_fix_agent.analyzer import PRErrorFixer
+from pr_fix_agent.ollama_agent import MockOllamaAgent
+>>>>>>> main
 
 
 class TestPRErrorFixerReal:

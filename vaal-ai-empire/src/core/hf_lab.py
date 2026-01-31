@@ -1,6 +1,7 @@
-import os
 import logging
+import os
 from functools import lru_cache
+
 from huggingface_hub import InferenceClient
 from sentence_transformers import SentenceTransformer
 

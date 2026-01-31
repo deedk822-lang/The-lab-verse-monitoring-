@@ -6,8 +6,7 @@ Validates Z.ai GLM-4.7 and Perplexity Sonar Pro connectivity
 
 import os
 import sys
-import json
-import time
+
 from openai import OpenAI
 
 # Load environment

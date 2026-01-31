@@ -80,6 +80,44 @@ python -c "from pr_fix_agent.security import SecurityValidator; print('Works!')"
 
 # Run tests
 pytest tests/ -v
+<<<<<<< HEAD
+=======
+```
+
+**Add to shell profile for persistence:**
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+echo 'export PYTHONPATH="${PYTHONPATH}:/path/to/pr-fix-agent"' >> ~/.bashrc
+```
+
+---
+
+## 📝 Import Convention
+
+### ✅ Correct (Conventional) Imports
+
+After installation with `pip install -e .`:
+
+```python
+# In your code or tests
+from pr_fix_agent.security import SecurityValidator, SecurityError
+from pr_fix_agent.analyzer import PRErrorAnalyzer
+
+# This is the conventional Python package import
+# No sys.path manipulation needed!
+```
+
+### ❌ Incorrect (Non-conventional) Imports
+
+```python
+# DON'T do this (not conventional)
+import sys
+sys.path.insert(0, "path/to/src")
+from security import SecurityValidator
+
+# This requires manual path manipulation
+# Not the Python conventional way
+>>>>>>> main
 ```
 
 ---
@@ -98,7 +136,11 @@ pytest tests/ -v
 pytest tests/test_security.py -v
 
 # With coverage
+<<<<<<< HEAD
 pytest tests/ --cov=src/pr_fix_agent --cov-report=html
+=======
+pytest tests/ --cov=src --cov-report=html
+>>>>>>> main
 ```
 
 ---
@@ -127,12 +169,32 @@ Edit files in `src/pr_fix_agent/`, tests in `tests/`
 ### 3. Test Changes
 
 ```bash
+<<<<<<< HEAD
+=======
+# Run affected tests
+pytest tests/test_security.py -v
+
+>>>>>>> main
 # Run all tests
 pytest tests/ -v
 ```
 
 ---
 
+<<<<<<< HEAD
+=======
+## 🔍 Why This Is Conventional
+
+### Python Packaging Standards
+
+1. **PEP 517/518**: Modern Python packaging
+2. **Editable installs**: Standard for development (`pip install -e .`)
+4. **Package discovery**: setuptools finds packages automatically
+5. **Import resolution**: Python resolves `from pr_fix_agent.X import Y` (the package name, not the src/ directory)
+
+---
+
+>>>>>>> main
 ## 📚 Additional Commands
 
 ### Format Code

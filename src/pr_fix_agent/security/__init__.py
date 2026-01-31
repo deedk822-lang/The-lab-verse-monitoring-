@@ -2,15 +2,24 @@
 Security module for PR Fix Agent.
 """
 
+<<<<<<< HEAD:src/pr_fix_agent/security/__init__.py
 import time
 import json
 import threading
+=======
+import json  # ✅ FIX: Module-level, not local
+>>>>>>> main:src/pr_fix_agent/security.py
 import re
+import threading
+import time  # ✅ FIX: Module-level, not local
 from pathlib import Path
+<<<<<<< HEAD:src/pr_fix_agent/security/__init__.py
 
 from .middleware import SecurityHeadersMiddleware, RequestIDMiddleware, AuditLoggingMiddleware
 from .audit import get_audit_logger, AuditLogger
 from .redis_client import get_redis_client, close_redis
+=======
+>>>>>>> main:src/pr_fix_agent/security.py
 
 
 class SecurityError(Exception):

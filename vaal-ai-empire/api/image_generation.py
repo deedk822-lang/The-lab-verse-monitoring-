@@ -3,10 +3,8 @@ Real Image Generation Service
 Supports multiple providers: Stable Diffusion, DALL-E, Replicate
 """
 
-import os
-import logging
-import requests
 import base64
+<<<<<<< HEAD
 from typing import Dict, List, Optional
 
 try:
@@ -14,9 +12,16 @@ try:
     SSRF_SAFE_AVAILABLE = True
 except ImportError:
     SSRF_SAFE_AVAILABLE = False
+=======
+import concurrent.futures
+import logging
+import os
+>>>>>>> main
 from datetime import datetime
 from pathlib import Path
-import io
+from typing import Dict, List
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +29,8 @@ class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
+        # ⚡ Bolt Optimization: Use a session for connection pooling
+        self.session = requests.Session()
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +83,11 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
+<<<<<<< HEAD
                     response = check_session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+=======
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+>>>>>>> main
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -358,23 +369,40 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """
+        Generate multiple images in parallel.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to speed up multiple API calls.
+        """
+        results = [None] * len(prompts)
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
-
+        def _generate_single(index, prompt):
+            logger.info(f"Generating image {index+1}/{len(prompts)}: {prompt[:50]}...")
             try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
+                return index, self.generate(prompt, style=style)
             except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
+                logger.error(f"Failed to generate image {index+1}: {e}")
+                return index, {
                     "image_url": self._create_placeholder(prompt),
                     "provider": "error",
                     "cost_usd": 0.0,
                     "error": str(e)
-                })
+                }
+
+        # Use max 5 threads to avoid overwhelming providers/system
+        max_workers = min(len(prompts), 5)
+        if max_workers <= 1:
+            # Fallback to sequential if only 1 prompt
+            for i, prompt in enumerate(prompts):
+                _, results[i] = _generate_single(i, prompt)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_index = {
+                    executor.submit(_generate_single, i, prompt): i
+                    for i, prompt in enumerate(prompts)
+                }
+                for future in concurrent.futures.as_completed(future_to_index):
+                    index, result = future.result()
+                    results[index] = result
 
         return results
 

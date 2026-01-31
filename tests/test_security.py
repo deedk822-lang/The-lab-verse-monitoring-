@@ -3,32 +3,28 @@ Security tests for VAAL AI Empire.
 Tests sanitizers, SSRF protection, webhook security, and authentication.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from fastapi.testclient import TestClient
-import ipaddress
-import os
-import hmac
 import hashlib
+import hmac
 import json
+import os
+from unittest.mock import AsyncMock, Mock, patch
 
-from vaal_ai_empire.api.sanitizers import (
-    sanitize_prompt,
-    sanitize_context,
-    sanitize_webhook_payload,
-    detect_injection_patterns,
-    normalize_unicode,
-    PromptInjectionDetected,
-    RateLimiter
-)
-
-from vaal_ai_empire.api.secure_requests import (
-    SSRFBlocker,
-    SSRFProtectionError,
-    create_ssrf_safe_session
-)
+import pytest
+from fastapi.testclient import TestClient
 
 from app.main import app
+from vaal_ai_empire.api.sanitizers import (
+    PromptInjectionDetected,
+    detect_injection_patterns,
+    normalize_unicode,
+    sanitize_context,
+    sanitize_prompt,
+    sanitize_webhook_payload,
+)
+from vaal_ai_empire.api.secure_requests import (
+    SSRFBlocker,
+    create_ssrf_safe_session,
+)
 
 client = TestClient(app)
 
@@ -347,8 +343,9 @@ class TestAuthenticationSecurity:
     @pytest.mark.asyncio
     async def test_missing_auth_key_rejected(self):
         """Test that requests without auth key are rejected."""
-        from app.main import verify_self_healing_key
         from fastapi import HTTPException
+
+        from app.main import verify_self_healing_key
 
         with patch.dict(os.environ, {"SELF_HEALING_KEY": "test-key"}):
             with pytest.raises(HTTPException) as exc_info:
@@ -359,8 +356,9 @@ class TestAuthenticationSecurity:
     @pytest.mark.asyncio
     async def test_invalid_auth_key_rejected(self):
         """Test that requests with invalid auth key are rejected."""
-        from app.main import verify_self_healing_key
         from fastapi import HTTPException
+
+        from app.main import verify_self_healing_key
 
         with patch.dict('os.environ', {'SELF_HEALING_KEY': 'correct_key'}):
             with pytest.raises(HTTPException) as exc_info:
@@ -384,9 +382,9 @@ class TestSecurityIntegration:
     @pytest.mark.asyncio
     async def test_end_to_end_webhook_security(self):
         """Test complete webhook security flow."""
-        import app.main
-        from app.main import atlassian_webhook
         from fastapi import Request
+
+        from app.main import atlassian_webhook
 
         # Mock request with malicious payload
         mock_request = Mock(spec=Request)

@@ -1,0 +1,172 @@
+[
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/__init__.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "issue",
+      "issue": "Issue found",
+      "suggestion": "Fix issue",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  }
+]

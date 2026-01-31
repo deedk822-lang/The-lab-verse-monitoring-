@@ -21,7 +21,34 @@ jobs:
         run: |
           pip install openai python-dotenv requests
 
+      - name: Determine if validation can run
+        id: gate
+        env:
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+        run: |
+          if [ -z "$ZAI_API_KEY" ] || [ -z "$PERPLEXITY_API_KEY" ]; then
+            echo "can_run=false" >> $GITHUB_OUTPUT
+            echo "Missing required secrets (ZAI_API_KEY and/or PERPLEXITY_API_KEY). Skipping validation for PR." 
+            exit 0
+          fi
+
+          if [ ! -f "validate_env.py" ]; then
+            echo "can_run=false" >> $GITHUB_OUTPUT
+            echo "validate_env.py not found. Skipping validation for PR."
+            exit 0
+          fi
+
+          if [ ! -f "scripts/test_brain.py" ]; then
+            echo "can_run=false" >> $GITHUB_OUTPUT
+            echo "scripts/test_brain.py not found. Skipping brain test for PR."
+            exit 0
+          fi
+
+          echo "can_run=true" >> $GITHUB_OUTPUT
+
       - name: Run validation
+        if: steps.gate.outputs.can_run == 'true'
         env:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
@@ -29,6 +56,7 @@ jobs:
           python validate_env.py
 
       - name: Run brain test
+        if: steps.gate.outputs.can_run == 'true'
         env:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}

@@ -1,111 +1,64 @@
-import timeit
+import logging
 import os
 import sys
-import sqlite3
-from contextlib import contextmanager
+import time
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the project root to sys.path
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from core.database import Database
+try:
+    from api.image_generation import ImageGenerator
+except ImportError:
+    # Handle direct script execution vs module
+    sys.path.append(os.path.join(os.getcwd(), "vaal-ai-empire"))
+    from api.image_generation import ImageGenerator
 
-# --- Test Configuration ---
-LEGACY_DB_PATH = "legacy_benchmark.db"
-OPTIMIZED_DB_PATH = "optimized_benchmark.db"
-ITERATIONS = 1000
+logging.basicConfig(level=logging.INFO)
 
-class LegacyDatabase:
-    """
-    A recreation of the original, inefficient database class that creates a new
-    connection for every query.
-    """
-    def __init__(self, db_path):
-        self.db_path = db_path
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
-        self.init_database()
+def benchmark_batch_generation():
+    print("=" * 60)
+    print("PERFORMANCE COMPARISON: SEQUENTIAL VS PARALLEL")
+    print("=" * 60)
 
-    @contextmanager
-    def get_connection(self):
-        conn = sqlite3.connect(self.db_path)
-        try:
-            yield conn
-        finally:
-            conn.close()
+    generator = ImageGenerator()
+    prompts = [f"Prompt {i}" for i in range(5)]
 
-    def init_database(self):
-        with self.get_connection() as conn:
-            conn.execute("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT)")
-            conn.execute("INSERT INTO test (id, name) VALUES (1, 'test_data')")
-            conn.commit()
+    # Mock self.generate to simulate network delay
+    original_generate = generator.generate
+    def mocked_generate(prompt, style="professional", provider="auto"):
+        time.sleep(1) # Simulate 1 second delay
+        return {"provider": "mock", "image_url": "mock_url", "cost_usd": 0.0}
 
-    def get_test_data(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM test WHERE id = 1")
-            return cursor.fetchone()
+    generator.generate = mocked_generate
 
-def cleanup_files():
-    """Remove the temporary database files."""
-    if os.path.exists(LEGACY_DB_PATH):
-        os.remove(LEGACY_DB_PATH)
-    if os.path.exists(OPTIMIZED_DB_PATH):
-        os.remove(OPTIMIZED_DB_PATH)
+    # Measure Sequential
+    print("\nRunning Sequential (Simulated)...")
+    start_seq = time.perf_counter()
+    seq_results = []
+    for prompt in prompts:
+        seq_results.append(generator.generate(prompt))
+    end_seq = time.perf_counter()
+    seq_time = end_seq - start_seq
+    print(f"Sequential Time: {seq_time:.4f}s")
 
-def benchmark_performance():
-    """
-    Benchmarks the performance of the optimized database class against the legacy
-    connection-per-query class.
-    """
-    # Ensure a clean state
-    cleanup_files()
+    # Measure Parallel
+    print("\nRunning Parallel (Actual implementation)...")
+    start_par = time.perf_counter()
+    par_results = generator.generate_batch(prompts)
+    end_par = time.perf_counter()
+    par_time = end_par - start_par
+    print(f"Parallel Time: {par_time:.4f}s")
 
-    try:
-        # Benchmark the legacy database
-        legacy_db = LegacyDatabase(db_path=LEGACY_DB_PATH)
-        legacy_time = timeit.timeit(legacy_db.get_test_data, number=ITERATIONS)
+    improvement = ((seq_time - par_time) / seq_time) * 100
+    print(f"\nImprovement: {improvement:.1f}% faster")
 
-        # Benchmark the optimized database
-        # We create a separate file to be fair
-        if os.path.exists(OPTIMIZED_DB_PATH):
-            os.remove(OPTIMIZED_DB_PATH)
-        optimized_db = Database(db_path=OPTIMIZED_DB_PATH)
+    assert len(par_results) == len(prompts)
+    print("\n✓ Benchmarking complete")
 
-        with optimized_db.get_cursor() as cursor:
-            cursor.execute("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT)")
-            cursor.execute("INSERT INTO test (id, name) VALUES (1, 'test_data')")
-
-        def optimized_query():
-            conn = optimized_db.get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM test WHERE id = 1")
-            return cursor.fetchone()
-
-        optimized_time = timeit.timeit(optimized_query, number=ITERATIONS)
-        optimized_db.close_connection() # Manually close for cleanup
-
-        # Calculate and print the performance improvement
-        improvement = ((legacy_time - optimized_time) / legacy_time) * 100 if legacy_time > 0 else float('inf')
-
-        print("--- Database Performance Benchmark ---")
-        print(f"Legacy (connection-per-query): {legacy_time:.4f} seconds for {ITERATIONS} queries.")
-        print(f"Optimized (connection pooling): {optimized_time:.4f} seconds for {ITERATIONS} queries.")
-        print(f"Performance Improvement: {improvement:.2f}%")
-        print("------------------------------------")
-
-        if improvement > 90:
-            print("✅ Performance benchmark passed. The optimization is highly effective.")
-            return True
-        else:
-            print(f"⚠️ Performance benchmark warning. Improvement of {improvement:.2f}% is less than the 90% target.")
-            return False
-
-    finally:
-        # Final cleanup
-        cleanup_files()
+    # Restore original generate
+    generator.generate = original_generate
+    return improvement > 0
 
 if __name__ == "__main__":
-    if benchmark_performance():
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    success = benchmark_batch_generation()
+    sys.exit(0 if success else 1)

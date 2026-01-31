@@ -3,12 +3,11 @@ Centralized Configuration - Global Production Standard (S1)
 Uses pydantic-settings for zero-trust environment handling.
 """
 
-from typing import Optional, Union
+from typing import Optional
 from pathlib import Path
 
 from pydantic import Field, PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 class Settings(BaseSettings):
     """
@@ -34,13 +33,13 @@ class Settings(BaseSettings):
     hf_api_token: Optional[str] = Field(default=None)
 
     # Database Settings (S2)
-    database_url: Union[PostgresDsn, str] = Field(
+    database_url: PostgresDsn = Field(
         default="postgresql://user:pass@localhost:5432/db"
     )
     db_ssl_ca: Optional[Path] = Field(default=None)
 
     # Redis Settings (S3)
-    redis_url: Union[RedisDsn, str] = Field(
+    redis_url: RedisDsn = Field(
         default="redis://localhost:6379/0"
     )
 

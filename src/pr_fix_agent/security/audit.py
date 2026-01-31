@@ -6,7 +6,7 @@ FIXED: No duplicate handlers, thread-safe, append-only
 import json
 import logging
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 

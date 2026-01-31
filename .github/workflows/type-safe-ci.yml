@@ -14,7 +14,6 @@ env:
 jobs:
   type-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,15 +26,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]" --quiet
+          pip install -r rainmaker_orchestrator/requirements.txt openai
+          pip install mypy
 
       - name: Run MyPy type checking
         run: |
-          python -m mypy src/pr_fix_agent --ignore-missing-imports --no-error-summary
+          python -m mypy --strict --package rainmaker_orchestrator
 
   security-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       contents: read
       security-events: write
@@ -62,15 +61,15 @@ jobs:
       - name: Install jq
         if: steps.gate.outputs.can_run == 'true'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq jq
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Install Alibaba Cloud CLI
         if: steps.gate.outputs.can_run == 'true'
         run: |
           # Pin to specific version for supply chain security
           CLI_VERSION="3.0.198"
-          curl -fsSL "https://aliyuncli.alicdn.com/aliyun-cli-linux-${CLI_VERSION}-amd64.tgz" -o aliyun.tgz
+          curl -sSL "https://aliyuncli.alicdn.com/aliyun-cli-linux-${CLI_VERSION}-amd64.tgz" -o aliyun.tgz
 
           # Verify download succeeded
           if [ ! -f aliyun.tgz ]; then
@@ -108,7 +107,7 @@ jobs:
             HEAD_REF=$(git rev-parse HEAD)
           fi
 
-          CHANGED_FILES=$(git diff --name-only $BASE_REF $HEAD_REF | grep -E 'src/pr_fix_agent|.github/workflows' || true)
+          CHANGED_FILES=$(git diff --name-only $BASE_REF $HEAD_REF | grep -E 'rainmaker_orchestrator|scripts|.github/workflows' || true)
 
           cat > security_report.json <<EOF
           {
@@ -169,7 +168,6 @@ jobs:
     if: github.event_name == 'push'
     needs: [type-check, security-analysis]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     environment: production
     permissions:
       id-token: write
@@ -197,8 +195,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          context: rainmaker_orchestrator
+          file: rainmaker_orchestrator/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
@@ -211,7 +209,7 @@ jobs:
           aliyun ecs run-command \
             --instance-id "${{ secrets.ECS_INSTANCE_ID }}" \
             --region "${{ env.ALIYUN_REGION }}" \
-            --command-content "cd /app/The-lab-verse-monitoring- && docker pull ghcr.io/${{ github.repository }}:${{ github.sha }} && docker-compose -f docker-compose.prod.yml up -d" \
+            --command-content "cd /app/The-lab-verse-monitoring- && docker pull ghcr.io/${{ github.repository }}:${{ github.sha }} && docker-compose -f docker/compose/docker-compose.prod.yml up -d" \
             --timeout 600 \
             --name "deploy-$(date +%Y%m%d-%H%M%S)"
 
@@ -220,7 +218,7 @@ jobs:
           echo "✅ Verifying deployment health..."
 
           for i in {1..15}; do
-            HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.ECS_HOST }}:8000/health || echo "000")
+            HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.ECS_HOST }}:8000/health)
 
             if [ "$HEALTH_STATUS" == "200" ]; then
               echo "✅ Application is healthy"
@@ -242,5 +240,5 @@ jobs:
           aliyun ecs run-command \
             --instance-id "${{ secrets.ECS_INSTANCE_ID }}" \
             --region "${{ env.ALIYUN_REGION }}" \
-            --command-content "cd /app/The-lab-verse-monitoring- && docker pull ghcr.io/${{ github.repository }}:${{ github.event.before }} && docker-compose -f docker-compose.prod.yml up -d" \
+            --command-content "cd /app/The-lab-verse-monitoring- && docker pull ghcr.io/${{ github.repository }}:${{ github.event.before }} && docker-compose -f docker/compose/docker-compose.prod.yml up -d" \
             --timeout 600

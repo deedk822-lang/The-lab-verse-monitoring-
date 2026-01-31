@@ -34,11 +34,14 @@ app.mount("/metrics", metrics_app)
 # 2. Security Middleware (S4)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 3. CORS Middleware
+# 3. CORS Middleware (Tightened for AAA Standards)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
-    allow_methods=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://pr-fix-agent.example.com"
+    ],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -78,10 +81,40 @@ async def health_check():
         "version": "1.0.0"
     }
 
+
 @app.get("/readyz")
-async def readiness_check():
-    """Readiness check (S10)."""
-    return {"status": "ready"}
+async def readiness_check(settings: Settings = Depends(get_settings)):
+    """Readiness check with real dependency validation (S10)."""
+    status = "ready"
+    dependencies = {
+        "redis": "connected",
+        "ollama": "connected"
+    }
+
+    # Check Redis
+    try:
+        from pr_fix_agent.security.redis_client import get_redis_client
+        redis = await get_redis_client(settings)
+        await redis.ping()
+    except Exception as e:
+        dependencies["redis"] = f"unhealthy: {str(e)}"
+        status = "unready"
+
+    # Check Ollama
+    try:
+        import requests
+        resp = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=2)
+        if resp.status_code != 200:
+            dependencies["ollama"] = f"unhealthy: {resp.status_code}"
+            status = "unready"
+    except Exception as e:
+        dependencies["ollama"] = f"failed: {str(e)}"
+        status = "unready"
+
+    return {
+        "status": status,
+        "dependencies": dependencies
+    }
 
 @app.get("/")
 async def root():

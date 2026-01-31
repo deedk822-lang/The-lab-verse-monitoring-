@@ -38,8 +38,7 @@ class HuggingFaceLab:
 
     def analyze_sentiment(self, text: str):
         """Free Tier Sentiment Analysis"""
-        if not self.client:
-            return "N/A"
+        if not self.client: return "N/A"
         try:
             model = "cardiffnlp/twitter-roberta-base-sentiment-latest"
             response = self.client.text_classification(text, model=model)
@@ -51,8 +50,7 @@ class HuggingFaceLab:
 
     def optimize_keywords(self, keywords: list):
         """Free Tier Semantic Analysis (Local)"""
-        if not self.seo_model:
-            return 0
+        if not self.seo_model: return 0
         embeddings = self.seo_model.encode(keywords)
         return len(embeddings)
 

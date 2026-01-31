@@ -18,13 +18,13 @@ class SelfHealingAgent:
     """
 
     MAX_RETRIES: int = 3
-    COMMAND_INJECTION_PATTERNS: list[str] = [
+    COMMAND_INJECTION_PATTERNS: list = [
         r"[;&|`$()]",  # Shell metacharacters
         r"__import__",  # Python injection
         r"eval\(",  # Dynamic code execution
     ]
 
-    def __init__(self, kimi_client: Any = None, orchestrator: Any = None) -> None:
+    def __init__(self, kimi_client=None, orchestrator=None):
         """
         Initialize the self-healing agent.
 
@@ -36,7 +36,7 @@ class SelfHealingAgent:
         self.orchestrator = orchestrator or self._init_orchestrator()
         logger.info("Self-Healing Agent initialized")
 
-    def _init_kimi_client(self) -> KimiClient:
+    def _init_kimi_client(self):
         """
         Initialize a new KimiClient instance.
 
@@ -45,14 +45,15 @@ class SelfHealingAgent:
         """
         return KimiClient()
 
-    def _init_orchestrator(self) -> RainmakerOrchestrator:
+    def _init_orchestrator(self):
         """
         Initialize a new RainmakerOrchestrator instance.
 
         Returns:
             RainmakerOrchestrator: A new orchestrator instance
         """
-        return RainmakerOrchestrator(workspace_path="./workspace")
+        from rainmaker_orchestrator.server import settings
+        return RainmakerOrchestrator(workspace_path=settings.workspace_path)
 
     @staticmethod
     def validate_command(command: str) -> bool:
@@ -72,7 +73,7 @@ class SelfHealingAgent:
         return True
 
     @staticmethod
-    def safe_parse_command(command: str) -> list[str]:
+    def safe_parse_command(command: str) -> list:
         """
         Parse a shell command into a list of arguments after validating it against injection patterns.
         
@@ -88,7 +89,7 @@ class SelfHealingAgent:
         try:
             if not SelfHealingAgent.validate_command(command):
                 raise ValueError("Command failed security validation")
-            parsed: list[str] = shlex.split(command)
+            parsed: list = shlex.split(command)
             logger.info(f"Command parsed safely: {len(parsed)} args")
             return parsed
         except ValueError as e:

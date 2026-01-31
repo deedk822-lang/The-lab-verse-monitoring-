@@ -1,4 +1,4 @@
-name: CI/CD Pipeline (Main-Ready Checks)
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.10'
 
 jobs:
   # ==========================================================================
@@ -20,7 +20,6 @@ jobs:
   code-quality:
     name: Code Quality Check
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,28 +32,27 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]" --quiet
+          pip install -r requirements-dev.txt
 
       - name: Run Black
-        run: black --check src/pr_fix_agent || true
+        run: black --check .
         continue-on-error: true
 
       - name: Run Flake8
-        run: flake8 src/pr_fix_agent --max-line-length=120 --exclude=venv,__pycache__ || true
+        run: flake8 . --max-line-length=120 --exclude=venv,__pycache__
         continue-on-error: true
 
       - name: Run MyPy
-        run: mypy src/pr_fix_agent --ignore-missing-imports || true
+        run: mypy vaal_ai_empire agent app --ignore-missing-imports
         continue-on-error: true
 
       - name: Run isort
-        run: isort --check-only src/pr_fix_agent || true
+        run: isort --check-only .
         continue-on-error: true
 
   security-scan:
     name: Security Vulnerability Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,13 +64,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install safety bandit pip-audit detect-secrets --quiet
+          pip install safety bandit pip-audit detect-secrets
 
       - name: Run Safety check
         run: safety check --json || true
 
       - name: Run Bandit security scan
-        run: bandit -r src/pr_fix_agent -f json -o bandit-report.json || true
+        run: bandit -r vaal_ai_empire agent app -f json -o bandit-report.json || true
 
       - name: Run pip-audit
         run: pip-audit -r requirements.txt -o pip-audit-report.json -f json || true
@@ -85,19 +83,16 @@ jobs:
         with:
           name: bandit-security-report
           path: bandit-report.json
-        continue-on-error: true
 
       - name: Upload pip-audit report
         uses: actions/upload-artifact@v4
         with:
           name: pip-audit-report
           path: pip-audit-report.json
-        continue-on-error: true
 
   semgrep-scan:
     name: Semgrep Security Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,13 +109,12 @@ jobs:
   # ==========================================================================
   # Unit Tests
   # ==========================================================================
-  test-python:
-    name: Python Tests
+  test:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: vaal_test
@@ -154,7 +148,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]" --quiet
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install -e .
 
       - name: Run tests with coverage
         env:
@@ -165,59 +161,34 @@ jobs:
         run: |
           pytest \
             -v \
-            --cov=src/pr_fix_agent \
+            --cov=vaal_ai_empire \
+            --cov=agent \
+            --cov=app \
+            --cov=pr_fix_agent \
             --cov-report=xml \
             --cov-report=html \
-            --cov-report=term || true
+            --cov-report=term
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
-        continue-on-error: true
 
       - name: Archive coverage reports
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: htmlcov/
-        continue-on-error: true
-
-  lint-type-safety:
-    name: Lint & Type Safety
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          pip install -e ".[dev]" --quiet
-
-      - name: Run Ruff linting
-        run: ruff check src/pr_fix_agent --output-format=github
-
-      - name: Run MyPy type checking
-        run: mypy src/pr_fix_agent --ignore-missing-imports --no-error-summary
 
   # ==========================================================================
   # Build Docker Image
   # ==========================================================================
-  build-and-deploy:
+  build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [code-quality, security-scan, test-python, lint-type-safety]
-    if: github.event_name != 'pull_request'
+    needs: [code-quality, security-scan, test]
     permissions:
       contents: read
       packages: write
@@ -266,10 +237,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
-        continue-on-error: true
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-        continue-on-error: true

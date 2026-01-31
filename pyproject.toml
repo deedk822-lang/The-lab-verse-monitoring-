@@ -84,7 +84,7 @@ select = ["E", "F", "W", "I", "N", "UP"]
 ignore = ["E501"]  # Ignore line length violations as many files have long prompt/data strings
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

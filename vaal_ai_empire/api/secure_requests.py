@@ -6,7 +6,7 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
-from typing import Optional, Set, Tuple, Union
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
 
 import httpx
@@ -144,7 +144,7 @@ def create_ssrf_safe_async_session(
     max_redirects: int = 0
 ) -> httpx.AsyncClient:
     """Create SSRF-safe async HTTP client."""
-    
+
     blocker = SSRFBlocker()
 
     class SSRFSafeAsyncTransport(httpx.AsyncHTTPTransport):

@@ -115,10 +115,10 @@ class RateLimiter:
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filenames to prevent directory traversal.
-    
+
     Args:
         filename: Input filename
-        
+
     Returns:
         Sanitized filename
     """

@@ -1,0 +1,41 @@
+# FIX: Alternative coverage configuration file
+# Use this if pyproject.toml coverage settings aren't working
+
+[run]
+branch = True
+source = src/pr_fix_agent
+relative_files = True
+omit =
+    */tests/*
+    */migrations/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */site-packages/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+fail_under = 80
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abc.abstractmethod
+
+[paths]
+source =
+    src/pr_fix_agent
+    */pr-fix-agent/src/pr_fix_agent
+    /app/src/pr_fix_agent
+
+[xml]
+output = coverage.xml
+
+[html]
+directory = htmlcov

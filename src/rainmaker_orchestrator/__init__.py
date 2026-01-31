@@ -1,7 +1,7 @@
 """Rainmaker Orchestrator - AI-powered task orchestration and self-healing."""
 """Rainmaker Orchestrator - AI-powered task orchestration and self-healing."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.0-hashed"  # Change this to a secure version number with hashing
 
 __all__ = [
     "RainmakerOrchestrator",

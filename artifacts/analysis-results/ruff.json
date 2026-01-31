@@ -1,0 +1,1772 @@
+[
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 43,
+      "row": 50
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 39,
+      "row": 50
+    },
+    "message": "Undefined name `shap`",
+    "noqa_row": 50,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 43,
+      "row": 53
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 39,
+      "row": 53
+    },
+    "message": "Undefined name `shap`",
+    "noqa_row": 53,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 39,
+      "row": 65
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 35,
+      "row": 65
+    },
+    "message": "Undefined name `lime`",
+    "noqa_row": 65,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "N803",
+    "end_location": {
+      "column": 46,
+      "row": 148
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 33,
+      "row": 148
+    },
+    "message": "Argument name `X` should be lowercase",
+    "noqa_row": 148,
+    "url": "https://docs.astral.sh/ruff/rules/invalid-argument-name"
+  },
+  {
+    "cell": null,
+    "code": "N806",
+    "end_location": {
+      "column": 13,
+      "row": 149
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 149
+    },
+    "message": "Variable `X_3d` in function should be lowercase",
+    "noqa_row": 149,
+    "url": "https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function"
+  },
+  {
+    "cell": null,
+    "code": "N806",
+    "end_location": {
+      "column": 17,
+      "row": 152
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 152
+    },
+    "message": "Variable `X_tensor` in function should be lowercase",
+    "noqa_row": 152,
+    "url": "https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 43
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 43
+          },
+          "location": {
+            "column": 1,
+            "row": 43
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 43
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 58,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 45
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 45
+          },
+          "location": {
+            "column": 1,
+            "row": 45
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 45
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 58,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 48
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 48
+          },
+          "location": {
+            "column": 1,
+            "row": 48
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 48
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 58,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 55
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 55
+          },
+          "location": {
+            "column": 1,
+            "row": 55
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 55
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 58,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 121
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 121
+          },
+          "location": {
+            "column": 1,
+            "row": 121
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 121
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 134,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 124
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 124
+          },
+          "location": {
+            "column": 1,
+            "row": 124
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 124
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 134,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 131
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 131
+          },
+          "location": {
+            "column": 1,
+            "row": 131
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 131
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 134,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 164
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 164
+          },
+          "location": {
+            "column": 1,
+            "row": 164
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 164
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 173,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 166
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 166
+          },
+          "location": {
+            "column": 1,
+            "row": 166
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 166
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 173,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 64,
+      "row": 200
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 64,
+            "row": 200
+          },
+          "location": {
+            "column": 53,
+            "row": 200
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `autoglm`"
+    },
+    "location": {
+      "column": 57,
+      "row": 200
+    },
+    "message": "Local variable `autoglm` is assigned to but never used",
+    "noqa_row": 200,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 28
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 28
+          },
+          "location": {
+            "column": 1,
+            "row": 28
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 28
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 31,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 49
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 49
+          },
+          "location": {
+            "column": 1,
+            "row": 49
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 49
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 52,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 59
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 59
+          },
+          "location": {
+            "column": 1,
+            "row": 59
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 59
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 67,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 61
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 61
+          },
+          "location": {
+            "column": 1,
+            "row": 61
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 61
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 67,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 64
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 64
+          },
+          "location": {
+            "column": 1,
+            "row": 64
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 64
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 67,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 75
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 75
+          },
+          "location": {
+            "column": 1,
+            "row": 75
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 75
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 88,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 82
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 82
+          },
+          "location": {
+            "column": 1,
+            "row": 82
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 82
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 88,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 85
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 85
+          },
+          "location": {
+            "column": 1,
+            "row": 85
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 85
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 88,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 124
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 124
+          },
+          "location": {
+            "column": 1,
+            "row": 124
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 124
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 131,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 128
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 128
+          },
+          "location": {
+            "column": 1,
+            "row": 128
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 128
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 131,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 160
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 160
+          },
+          "location": {
+            "column": 1,
+            "row": 160
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 160
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 163,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 198
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 198
+          },
+          "location": {
+            "column": 1,
+            "row": 198
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 198
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 201,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 15
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/main.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 15
+          },
+          "location": {
+            "column": 1,
+            "row": 15
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 15
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 50
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/main.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 50
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 50
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 56,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 5,
+      "row": 75
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/main.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 5,
+            "row": 75
+          },
+          "location": {
+            "column": 1,
+            "row": 75
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 75
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 82,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 38
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 38
+          },
+          "location": {
+            "column": 1,
+            "row": 38
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 38
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 41,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 69
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 69
+          },
+          "location": {
+            "column": 1,
+            "row": 69
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 69
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 80,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 71
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 71
+          },
+          "location": {
+            "column": 1,
+            "row": 71
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 71
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 80,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 74
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 74
+          },
+          "location": {
+            "column": 1,
+            "row": 74
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 74
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 80,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 77
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 77
+          },
+          "location": {
+            "column": 1,
+            "row": 77
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 77
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 80,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 122
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 122
+          },
+          "location": {
+            "column": 1,
+            "row": 122
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 122
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 132,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 124
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 124
+          },
+          "location": {
+            "column": 1,
+            "row": 124
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 124
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 132,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 177
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 177
+          },
+          "location": {
+            "column": 1,
+            "row": 177
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 177
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 188,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 180
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 180
+          },
+          "location": {
+            "column": 1,
+            "row": 180
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 180
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 188,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 208
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 208
+          },
+          "location": {
+            "column": 1,
+            "row": 208
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 208
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 219,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 213
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 213
+          },
+          "location": {
+            "column": 1,
+            "row": 213
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 213
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 219,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 216
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 216
+          },
+          "location": {
+            "column": 1,
+            "row": 216
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 216
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 219,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 254
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 254
+          },
+          "location": {
+            "column": 1,
+            "row": 254
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 254
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 265,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 256
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 256
+          },
+          "location": {
+            "column": 1,
+            "row": 256
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 256
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 265,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 260
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 260
+          },
+          "location": {
+            "column": 1,
+            "row": 260
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 260
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 265,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 293
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 293
+          },
+          "location": {
+            "column": 1,
+            "row": 293
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 293
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 301,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 295
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 295
+          },
+          "location": {
+            "column": 1,
+            "row": 295
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 295
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 301,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "W293",
+    "end_location": {
+      "column": 9,
+      "row": 298
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 9,
+            "row": 298
+          },
+          "location": {
+            "column": 1,
+            "row": 298
+          }
+        }
+      ],
+      "message": "Remove whitespace from blank line"
+    },
+    "location": {
+      "column": 1,
+      "row": 298
+    },
+    "message": "Blank line contains whitespace",
+    "noqa_row": 301,
+    "url": "https://docs.astral.sh/ruff/rules/blank-line-with-whitespace"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 17,
+      "row": 32
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 20,
+            "row": 32
+          },
+          "location": {
+            "column": 9,
+            "row": 32
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `response`"
+    },
+    "location": {
+      "column": 9,
+      "row": 32
+    },
+    "message": "Local variable `response` is assigned to but never used",
+    "noqa_row": 32,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 42,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 34,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.analyzer` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 56,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 44,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.orchestrator` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 66,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 58,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.security` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 18,
+      "row": 154
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 21,
+            "row": 154
+          },
+          "location": {
+            "column": 5,
+            "row": 154
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `health_parser`"
+    },
+    "location": {
+      "column": 5,
+      "row": 154
+    },
+    "message": "Local variable `health_parser` is assigned to but never used",
+    "noqa_row": 154,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 14,
+      "row": 54
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/production.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 17,
+            "row": 54
+          },
+          "location": {
+            "column": 5,
+            "row": 54
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `validator`"
+    },
+    "location": {
+      "column": 5,
+      "row": 54
+    },
+    "message": "Local variable `validator` is assigned to but never used",
+    "noqa_row": 54,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 13,
+      "row": 55
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/production.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 16,
+            "row": 55
+          },
+          "location": {
+            "column": 5,
+            "row": 55
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `analyzer`"
+    },
+    "location": {
+      "column": 5,
+      "row": 55
+    },
+    "message": "Local variable `analyzer` is assigned to but never used",
+    "noqa_row": 55,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 10,
+      "row": 56
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/production.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 13,
+            "row": 56
+          },
+          "location": {
+            "column": 5,
+            "row": 56
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `fixer`"
+    },
+    "location": {
+      "column": 5,
+      "row": 56
+    },
+    "message": "Local variable `fixer` is assigned to but never used",
+    "noqa_row": 56,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "I001",
+    "end_location": {
+      "column": 56,
+      "row": 5
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from rainmaker_orchestrator.agents.healer import SelfHealingAgent\nfrom rainmaker_orchestrator.config import ConfigManager\nfrom rainmaker_orchestrator.orchestrator import RainmakerOrchestrator\n\n",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 3
+          }
+        }
+      ],
+      "message": "Organize imports"
+    },
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Import block is un-sorted or un-formatted",
+    "noqa_row": 3,
+    "url": "https://docs.astral.sh/ruff/rules/unsorted-imports"
+  }
+]

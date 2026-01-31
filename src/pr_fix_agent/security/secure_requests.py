@@ -5,12 +5,13 @@ Blocks internal/private IP probing using custom httpx transport.
 
 import socket
 import ipaddress
-from typing import Any, Set, Optional
+from typing import Any, Set, Optional, Union
 
 import httpx
 import structlog
 
 logger = structlog.get_logger()
+
 
 class SSRFBlocker:
     """
@@ -26,7 +27,7 @@ class SSRFBlocker:
     def __init__(self, allowed_domains: Optional[Set[str]] = None):
         self.allowed_domains = allowed_domains or set()
 
-    def validate_request(self, request: httpx.Request):
+    def validate_request(self, request: httpx.Request) -> None:
         """Validate request target before sending."""
         url = request.url
         host = url.host
@@ -82,7 +83,7 @@ class SSRFBlockerAsyncTransport(httpx.AsyncHTTPTransport):
 def create_ssrf_safe_session(
     allowed_domains: Optional[Set[str]] = None,
     is_async: bool = False
-) -> Any:
+) -> Union[httpx.Client, httpx.AsyncClient]:
     """
     Create a production-safe HTTP client with SSRF protection.
 
@@ -91,8 +92,8 @@ def create_ssrf_safe_session(
     blocker = SSRFBlocker(allowed_domains=allowed_domains)
 
     if is_async:
-        transport = SSRFBlockerAsyncTransport(blocker=blocker)
+        transport: SSRFBlockerAsyncTransport = SSRFBlockerAsyncTransport(blocker=blocker)
         return httpx.AsyncClient(transport=transport)
     else:
-        transport = SSRFBlockerTransport(blocker=blocker)
-        return httpx.Client(transport=transport)
+        sync_transport: SSRFBlockerTransport = SSRFBlockerTransport(blocker=blocker)
+        return httpx.Client(transport=sync_transport)

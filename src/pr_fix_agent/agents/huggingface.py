@@ -13,12 +13,12 @@ Features:
 
 from __future__ import annotations
 
+import io
 import time
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union, cast
 
 import structlog
-from huggingface_hub import InferenceClient
 from pydantic import BaseModel, Field
 
 from pr_fix_agent.core.config import get_settings
@@ -62,7 +62,7 @@ class HuggingFaceMessage(BaseModel):
 class HuggingFaceRequest(BaseModel):
     """HuggingFace inference request."""
     model: str = Field(..., description="Model ID (e.g., 'meta-llama/Meta-Llama-3-8B-Instruct')")
-    messages: list[HuggingFaceMessage] = Field(..., description="Chat messages")
+    messages: List[HuggingFaceMessage] = Field(..., description="Chat messages")
     provider: ProviderPolicy = Field(default=ProviderPolicy.AUTO, description="Provider selection")
     max_tokens: int = Field(default=1000, description="Maximum tokens to generate")
     temperature: float = Field(default=0.7, description="Sampling temperature")
@@ -73,11 +73,11 @@ class HuggingFaceResponse(BaseModel):
     """HuggingFace inference response."""
     content: str = Field(..., description="Assistant response")
     model: str = Field(..., description="Model used")
-    provider: str | None = Field(None, description="Provider used")
-    prompt_tokens: int | None = Field(None, description="Prompt tokens")
-    completion_tokens: int | None = Field(None, description="Completion tokens")
-    total_tokens: int | None = Field(None, description="Total tokens")
-    cost_estimate: float | None = Field(None, description="Estimated cost in USD")
+    provider: Optional[str] = Field(None, description="Provider used")
+    prompt_tokens: Optional[int] = Field(None, description="Prompt tokens")
+    completion_tokens: Optional[int] = Field(None, description="Completion tokens")
+    total_tokens: Optional[int] = Field(None, description="Total tokens")
+    cost_estimate: Optional[float] = Field(None, description="Estimated cost in USD")
 
 
 class HuggingFaceAgent:
@@ -103,7 +103,7 @@ class HuggingFaceAgent:
     """
 
     # Cost estimates (USD per 1M tokens) - updated regularly
-    PROVIDER_COSTS = {
+    PROVIDER_COSTS: Dict[ProviderPolicy, float] = {
         ProviderPolicy.CEREBRAS: 0.0,  # Free tier available
         ProviderPolicy.GROQ: 0.0,  # Free tier available
         ProviderPolicy.HF_INFERENCE: 0.0,  # Free tier available
@@ -117,10 +117,10 @@ class HuggingFaceAgent:
 
     def __init__(
         self,
-        api_key: str | None = None,
+        api_key: Optional[str] = None,
         default_model: str = "meta-llama/Meta-Llama-3-70B-Instruct",
         default_provider: ProviderPolicy = ProviderPolicy.AUTO,
-        cost_tracker: Any | None = None,
+        cost_tracker: Optional[Any] = None,
     ):
         """
         Initialize HuggingFace agent.
@@ -131,6 +131,8 @@ class HuggingFaceAgent:
             default_provider: Default provider selection policy
             cost_tracker: Optional cost tracker for budget management
         """
+        from huggingface_hub import InferenceClient
+
         settings = get_settings()
 
         # Initialize client
@@ -197,11 +199,11 @@ class HuggingFaceAgent:
     def chat(
         self,
         prompt: str,
-        model: str | None = None,
-        provider: ProviderPolicy | None = None,
+        model: Optional[str] = None,
+        provider: Optional[ProviderPolicy] = None,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        system_message: str | None = None,
+        system_message: Optional[str] = None,
     ) -> HuggingFaceResponse:
         """
         Send chat completion request.
@@ -224,7 +226,7 @@ class HuggingFaceAgent:
         provider = provider or self.default_provider
 
         # Build messages
-        messages = []
+        messages: List[Dict[str, str]] = []
         if system_message:
             messages.append({"role": "system", "content": system_message})
         messages.append({"role": "user", "content": prompt})
@@ -262,7 +264,7 @@ class HuggingFaceAgent:
             total_tokens = getattr(usage, 'total_tokens', None) if usage else None
 
             # Estimate cost
-            cost_estimate = None
+            cost_estimate: Optional[float] = None
             if prompt_tokens and completion_tokens:
                 cost_estimate = self._estimate_cost(provider, prompt_tokens, completion_tokens)
 
@@ -320,7 +322,7 @@ class HuggingFaceAgent:
         self,
         text: str,
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
-    ) -> list[float]:
+    ) -> List[float]:
         """
         Generate embeddings.
 
@@ -329,8 +331,10 @@ class HuggingFaceAgent:
             model: Embedding model ID
 
         Returns:
-            Embedding vector
+            Embedding vector as list of floats
         """
+        import numpy as np
+
         logger.info("huggingface_embed_start", model=model, text_length=len(text))
 
         try:
@@ -340,7 +344,11 @@ class HuggingFaceAgent:
             )
 
             logger.info("huggingface_embed_success", model=model)
-            return embedding
+
+            # Convert numpy array to list of floats
+            if hasattr(embedding, 'tolist'):
+                return cast(List[float], embedding.tolist())
+            return cast(List[float], list(embedding))
 
         except Exception as e:
             logger.error("huggingface_embed_failed", model=model, error=str(e))
@@ -380,7 +388,6 @@ class HuggingFaceAgent:
             logger.info("huggingface_text_to_image_success", model=model)
 
             # Convert PIL Image to bytes
-            import io
             img_bytes = io.BytesIO()
             image.save(img_bytes, format='PNG')
             return img_bytes.getvalue()
@@ -435,5 +442,5 @@ class UnifiedLLMAgent:
 
         # Normalize response
         if hasattr(response, 'content'):
-            return response.content
-        return response
+            return str(response.content)
+        return str(response)

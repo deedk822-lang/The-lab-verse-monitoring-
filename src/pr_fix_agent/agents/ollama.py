@@ -11,7 +11,6 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import requests
 import structlog
 
 logger = structlog.get_logger()
@@ -39,7 +38,7 @@ class LLMCost:
     estimated_cost: float
     timestamp: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
 
@@ -153,6 +152,7 @@ class BudgetExceededError(Exception):
     """Raised when budget limit is exceeded"""
     pass
 
+
 class OllamaQueryError(Exception):
     """Raised when Ollama query fails"""
     pass
@@ -204,6 +204,8 @@ class OllamaAgent:
         trace_id: Optional[str] = None
     ) -> str:
         """Query with full observability and tracing"""
+        import requests
+
         start_time = time.time()
         trace_id = trace_id or str(time.time())
 
@@ -260,6 +262,8 @@ class OllamaAgent:
 
     def _make_request(self, prompt: str, temperature: float, timeout: int) -> str:
         """Make HTTP request to Ollama"""
+        import requests
+
         response = requests.post(
             self.api_url,
             json={
@@ -271,12 +275,12 @@ class OllamaAgent:
             timeout=timeout
         )
         response.raise_for_status()
-        data = response.json()
+        data: Dict[str, Any] = response.json()
 
         if "response" not in data:
             raise OllamaQueryError(f"Invalid response format: {data}")
 
-        return data["response"]
+        return str(data["response"])
 
 
 class MockOllamaAgent:
@@ -287,12 +291,12 @@ class MockOllamaAgent:
         self.queries: List[str] = []
         self.responses: Dict[str, str] = {}
 
-    def query(self, prompt: str, **kwargs) -> str:
+    def query(self, prompt: str, **kwargs: Any) -> str:
         self.queries.append(prompt)
         for key, response in self.responses.items():
             if key in prompt:
                 return response
         return "Mock response"
 
-    def set_response(self, key: str, response: str):
+    def set_response(self, key: str, response: str) -> None:
         self.responses[key] = response

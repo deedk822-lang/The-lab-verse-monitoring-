@@ -7,6 +7,7 @@ PROVIDES: Single pr-fix-agent command with subcommands
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 import structlog
 
@@ -29,7 +30,7 @@ def health_check() -> int:
     print("\n1. Checking Ollama connectivity...")
     try:
         agent = OllamaAgent(model="codellama")
-        response = agent.query("test", timeout=10)
+        agent.query("test", timeout=10)
         print("   ✅ Ollama is running and responsive")
     except OllamaQueryError as e:
         print(f"   ❌ Ollama connectivity failed: {e}")
@@ -69,27 +70,21 @@ def health_check() -> int:
     return 0
 
 
-def run_orchestrator(args) -> int:
+def run_orchestrator(args: Any) -> int:
     """Run orchestration mode"""
     from pr_fix_agent.orchestrator import main as orchestrator_main
 
     # Convert args to orchestrator format
     sys.argv = [
         'orchestrator',
-        '--mode', args.mode
+        args.mode
     ]
 
     if args.findings:
         sys.argv.extend(['--findings', args.findings])
 
-    if args.proposals:
-        sys.argv.extend(['--proposals', args.proposals])
-
-    if args.test_results:
-        sys.argv.extend(['--test-results', args.test_results])
-
-    if args.output:
-        sys.argv.extend(['--output', args.output])
+    if args.backend:
+        sys.argv.extend(['--backend', args.backend])
 
     if args.apply:
         sys.argv.append('--apply')
@@ -97,7 +92,7 @@ def run_orchestrator(args) -> int:
     return orchestrator_main()
 
 
-def run_production(args) -> int:
+def run_production(args: Any) -> int:
     """Run production fix mode"""
     from pr_fix_agent.production import main as production_main
 
@@ -127,7 +122,7 @@ def run_production(args) -> int:
     return production_main()
 
 
-def main():
+def main() -> int:
     """
     Unified CLI entry point
 
@@ -151,7 +146,7 @@ def main():
     # health-check command
     # ========================================================================
 
-    health_parser = subparsers.add_parser(
+    subparsers.add_parser(
         'health-check',
         help='Perform system health check'
     )
@@ -168,13 +163,20 @@ def main():
     orch_parser.add_argument(
         '--mode',
         required=True,
-        choices=['reasoning', 'coding', 'generate-pr'],
+        choices=['review', 'fix', 'generate-pr'],
         help='Orchestration mode'
     )
 
     orch_parser.add_argument(
         '--findings',
         help='Path to analysis findings directory'
+    )
+
+    orch_parser.add_argument(
+        '--backend',
+        choices=['ollama', 'huggingface'],
+        default='ollama',
+        help='LLM backend to use'
     )
 
     orch_parser.add_argument(

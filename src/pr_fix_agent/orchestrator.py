@@ -24,7 +24,7 @@ import sys
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import structlog
 from pydantic import BaseModel, Field
@@ -136,11 +136,12 @@ class RobustLLMClient:
         logger.info("llm_client_initialized", backend=backend)
 
     def chunk_text(self, text: str, max_chunk: int = 3500) -> List[str]:
+        """Split text into chunks of maximum size."""
         if len(text) <= max_chunk:
             return [text]
         lines = text.split('\n')
-        chunks = []
-        current_chunk = []
+        chunks: List[str] = []
+        current_chunk: List[str] = []
         current_size = 0
         for line in lines:
             line_size = len(line) + 1
@@ -184,9 +185,11 @@ class RobustLLMClient:
             return {'success': False, 'error': str(e)}
 
     def query_reasoning(self, prompt: str) -> Dict[str, Any]:
+        """Query the reasoning model."""
         return self._query(self.reasoning_agent, prompt, self.reasoning_timeout, self.reasoning_model)
 
     def query_coding(self, prompt: str) -> Dict[str, Any]:
+        """Query the coding model."""
         return self._query(self.coding_agent, prompt, self.coding_timeout, self.coding_model)
 
 
@@ -195,6 +198,8 @@ class RobustLLMClient:
 # ==============================================================================
 
 class FixOrchestrator:
+    """Production-grade orchestrator for automated code fixes."""
+
     def __init__(self, backend: Literal["ollama", "huggingface"] = "ollama", repo_path: Path = Path(".")):
         self.repo_path = repo_path
         self.client = RobustLLMClient(backend=backend)
@@ -202,20 +207,25 @@ class FixOrchestrator:
         logger.info("orchestrator_initialized", backend=backend, repo_path=str(repo_path))
 
     def parse_findings(self, analysis_path: Path) -> List[CodeReviewFinding]:
-        findings = []
+        """Parse findings from analysis results directory or file."""
+        findings: List[CodeReviewFinding] = []
         if analysis_path.is_dir():
             for f_path in analysis_path.glob("*.json"):
                 findings.extend(self._parse_single_file(f_path))
         else:
             findings.extend(self._parse_single_file(analysis_path))
 
-        self.audit_logger.log_event("findings_parsed", "system", "localhost", str(analysis_path), "parse", "success", "orch", {"count": len(findings)})
+        self.audit_logger.log_event(
+            "findings_parsed", "system", "localhost", str(analysis_path), "parse", "success", "orch",
+            {"count": len(findings)}
+        )
         return findings
 
     def _parse_single_file(self, f_path: Path) -> List[CodeReviewFinding]:
-        findings = []
+        """Parse a single findings file."""
+        findings: List[CodeReviewFinding] = []
         try:
-            with open(f_path) as f:
+            with open(f_path, encoding='utf-8') as f:
                 data = json.load(f)
                 items = data if isinstance(data, list) else data.get('results', data.get('findings', []))
                 for item in items:
@@ -234,6 +244,7 @@ class FixOrchestrator:
         return findings
 
     def analyze_finding(self, finding: CodeReviewFinding) -> FixProposal:
+        """Analyze a finding and generate a fix proposal."""
         prompt = f"Analyze this code issue:\nFile: {finding.file}\nIssue: {finding.issue}\nSuggestion: {finding.suggestion}\n\nProvide JSON response with keys: root_cause, fix_approach, expected_changes, risk_level, test_requirements."
         result = self.client.query_reasoning(prompt)
         if result['success']:
@@ -247,43 +258,84 @@ class FixOrchestrator:
                     risk_level=data.get('risk_level', 'medium'),
                     test_requirements=data.get('test_requirements', [])
                 )
-            except: pass
-        return FixProposal(finding=finding, root_cause="Analysis failed", fix_approach="Manual fix", expected_changes=[], risk_level="high", test_requirements=[])
+            except Exception:
+                pass
+        return FixProposal(
+            finding=finding,
+            root_cause="Analysis failed",
+            fix_approach="Manual fix",
+            expected_changes=[],
+            risk_level="high",
+            test_requirements=[]
+        )
 
     def implement_fix(self, proposal: FixProposal) -> Optional[CodeFix]:
+        """Implement a fix for a proposal."""
         file_path = self.repo_path / proposal.finding.file
-        if not file_path.exists(): return None
-        original_code = file_path.read_text()
+        if not file_path.exists():
+            return None
+        original_code = file_path.read_text(encoding='utf-8')
         prompt = f"Fix this code:\n```python\n{original_code}\n```\nIssue: {proposal.finding.issue}\nApproach: {proposal.fix_approach}\nReturn ONLY the fixed code."
         result = self.client.query_coding(prompt)
         if result['success']:
             fixed_code = result['content']
             if "```" in fixed_code:
                 fixed_code = fixed_code.split("```")[1]
-                if fixed_code.startswith("python"): fixed_code = fixed_code[6:]
-            return CodeFix(proposal=proposal, file_path=str(file_path), original_code=original_code, fixed_code=fixed_code.strip(), explanation="Automated fix")
+                if fixed_code.startswith("python"):
+                    fixed_code = fixed_code[6:]
+            return CodeFix(
+                proposal=proposal,
+                file_path=str(file_path),
+                original_code=original_code,
+                fixed_code=fixed_code.strip(),
+                explanation="Automated fix"
+            )
         return None
 
     def _extract_json(self, text: str) -> Dict[str, Any]:
+        """Extract JSON from text, handling various formats."""
         match = re.search(r'\{.*\}', text, re.DOTALL)
-        if match: return json.loads(match.group())
-        return json.loads(text)
+        if match:
+            return cast(Dict[str, Any], json.loads(match.group()))
+        return cast(Dict[str, Any], json.loads(text))
 
     def run_tests(self) -> TestResult:
+        """Run tests and return results."""
         try:
-            result = subprocess.run(['pytest', 'tests/', '--json-report', '--json-report-file=.test_report.json'], cwd=self.repo_path, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(
+                ['pytest', 'tests/', '--json-report', '--json-report-file=.test_report.json'],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
             report_path = self.repo_path / ".test_report.json"
             passed, total = 0, 0
             if report_path.exists():
-                data = json.loads(report_path.read_text())
+                data = json.loads(report_path.read_text(encoding='utf-8'))
                 summary = data.get('summary', {})
                 passed = summary.get('passed', 0)
                 total = summary.get('total', 0)
-            return TestResult(passed=(result.returncode == 0), total_tests=total, passed_tests=passed, failed_tests=total-passed, exit_code=result.returncode, output=result.stdout)
+            return TestResult(
+                passed=(result.returncode == 0),
+                total_tests=total,
+                passed_tests=passed,
+                failed_tests=total - passed,
+                exit_code=result.returncode,
+                output=result.stdout
+            )
         except Exception as e:
-            return TestResult(passed=False, total_tests=0, passed_tests=0, failed_tests=0, exit_code=1, output=str(e))
+            return TestResult(
+                passed=False,
+                total_tests=0,
+                passed_tests=0,
+                failed_tests=0,
+                exit_code=1,
+                output=str(e)
+            )
 
     def generate_pr_body(self, proposals: List[FixProposal], test_result: Optional[TestResult]) -> str:
+        """Generate PR body from proposals and test results."""
         body = "# 🤖 Automated Code Review Fixes\n\n"
         if test_result:
             body += f"Tests: {'✅ PASSED' if test_result.passed else '❌ FAILED'} ({test_result.passed_tests}/{test_result.total_tests})\n\n"
@@ -293,7 +345,8 @@ class FixOrchestrator:
         return body
 
 
-def main():
+def main() -> int:
+    """Main entry point for CLI."""
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['review', 'fix', 'generate-pr'])
     parser.add_argument('--findings', default='analysis-results')
@@ -307,25 +360,32 @@ def main():
     if args.mode == 'review':
         proposals = [orch.analyze_finding(f) for f in findings[:10]]
         print(f"✅ Analyzed {len(proposals)} findings. Proposals saved to proposals.json")
-        with open('proposals.json', 'w') as f: json.dump([p.model_dump() for p in proposals], f, indent=2)
+        with open('proposals.json', 'w', encoding='utf-8') as f:
+            json.dump([p.model_dump() for p in proposals], f, indent=2)
+        return 0
 
     elif args.mode == 'fix':
         proposals = [orch.analyze_finding(f) for f in findings[:10]]
-        fixes = []
+        fixes: List[CodeFix] = []
         for p in proposals:
             fix = orch.implement_fix(p)
             if fix:
                 if args.apply:
-                    Path(fix.file_path).write_text(fix.fixed_code)
+                    Path(fix.file_path).write_text(fix.fixed_code, encoding='utf-8')
                     logger.info("applied_fix", file=fix.file_path)
                 fixes.append(fix)
         test_res = orch.run_tests()
         print(f"✅ Applied {len(fixes)} fixes. Tests: {'Passed' if test_res.passed else 'Failed'}")
+        return 0 if test_res.passed else 1
 
     elif args.mode == 'generate-pr':
         proposals = [orch.analyze_finding(f) for f in findings[:10]]
         test_res = orch.run_tests()
         print(orch.generate_pr_body(proposals, test_res))
+        return 0 if test_res.passed else 1
+
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

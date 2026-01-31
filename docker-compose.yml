@@ -1,157 +1,249 @@
 version: '3.8'
 
+# ============================================================================
+# VAAL AI Empire - Production Docker Compose Configuration
+# ============================================================================
+
 services:
-  app:
-    build: .
-    container_name: lapverse-app
-    image: lapverse-monitoring:2.0.0
+  # --------------------------------------------------------------------------
+  # PostgreSQL Database
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: vaal-postgres
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
-      - REDIS_URL=redis://redis:6379
-      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://openlit:4317
-      - COST_CENTER=lapverse-core
-    ports:
-      - "3000:3000"
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - lapverse-network
-    user: "lapverse"
+      POSTGRES_DB: vaal_ai_empire
+      POSTGRES_USER: ${DB_USER:-vaaluser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - ./logs:/app/logs
-
-  redis:
-    image: redis:7-alpine
-    container_name: lapverse-redis
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-redis123}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+      - ./vaal_ai_empire/update_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vaaluser}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - vaal-network
+
+  # --------------------------------------------------------------------------
+  # Redis Cache
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: vaal-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - lapverse-network
+      - vaal-network
 
+  # --------------------------------------------------------------------------
+  # Main Application
+  # --------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaal-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-vaaluser}:${DB_PASSWORD:-changeme}@postgres:5432/vaal_ai_empire
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+    volumes:
+      - ./models:/models:ro
+      - ./cache:/cache
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Prometheus metrics
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 8G
+          cpus: '4'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - vaal-network
+
+  # --------------------------------------------------------------------------
+  # Nginx Reverse Proxy
+  # --------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
-    container_name: lapverse-nginx
+    container_name: vaal-nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       - app
-    restart: unless-stopped
     networks:
-      - lapverse-network
+      - vaal-network
 
+  # --------------------------------------------------------------------------
+  # Prometheus Monitoring
+  # --------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
-    container_name: lapverse-prometheus
+    container_name: vaal-prometheus
+    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    ports:
-      - "9090:9090"
+      - '--storage.tsdb.retention.time=30d'
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    restart: unless-stopped
+    ports:
+      - "9091:9090"
     networks:
-      - lapverse-network
+      - vaal-network
 
+  # --------------------------------------------------------------------------
+  # Grafana Dashboard
+  # --------------------------------------------------------------------------
   grafana:
     image: grafana/grafana:latest
-    container_name: lapverse-grafana
-    ports:
-      - "3001:3000"
+    container_name: vaal-grafana
+    restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    restart: unless-stopped
-    networks:
-      - lapverse-network
-
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.4.1
-    container_name: clickhouse
-    environment:
-      CLICKHOUSE_PASSWORD: ${OPENLIT_DB_PASSWORD:-OPENLIT}
-      CLICKHOUSE_USER: ${OPENLIT_DB_USER:-default}
-    volumes:
-      - clickhouse-data:/var/lib/clickhouse
-      - ./assets/clickhouse-config.xml:/etc/clickhouse-server/config.d/custom-config.xml:ro
     ports:
-      - "9000:9000"
-      - "8123:8123"
-    restart: always
-    networks:
-      - lapverse-network
-
-  openlit:
-    image: ghcr.io/openlit/openlit:latest
-    container_name: openlit
-    environment:
-      TELEMETRY_ENABLED: "true"
-      INIT_DB_HOST: clickhouse
-      INIT_DB_PORT: 8123
-      INIT_DB_DATABASE: ${OPENLIT_DB_NAME:-openlit}
-      INIT_DB_USERNAME: ${OPENLIT_DB_USER:-default}
-      INIT_DB_PASSWORD: ${OPENLIT_DB_PASSWORD:-OPENLIT}
-      SQLITE_DATABASE_URL: file:/app/client/data/data.db
-      PORT: "3000"
-      DOCKER_PORT: "3000"
-    ports:
-      - "3002:3000"
-      - "4317:4317"
-      - "4318:4318"
+      - "3000:3000"
     depends_on:
-      - clickhouse
-    volumes:
-      - openlit-data:/app/client/data
-      - ./assets/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml
-      - ./assets/supervisor-dynamic.yaml:/etc/otel/supervisor-dynamic.yaml
-    restart: always
+      - prometheus
     networks:
-      - lapverse-network
+      - vaal-network
 
-volumes:
-  redis_data:
-  prometheus_data:
-  grafana_data:
-  clickhouse-data:
-  openlit-data:
+  # --------------------------------------------------------------------------
+  # PostgreSQL Backup Service
+  # --------------------------------------------------------------------------
+  backup:
+    image: postgres:15-alpine
+    container_name: vaal-backup
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGUSER: ${DB_USER:-vaaluser}
+      PGPASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATABASE: vaal_ai_empire
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    command: /bin/sh /backup.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vaal-network
+    profiles:
+      - backup
 
+  # --------------------------------------------------------------------------
+  # pgAdmin (Optional - for database management)
+  # --------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: vaal-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@vaal.ai}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - vaal-network
+    profiles:
+      - tools
+
+  # --------------------------------------------------------------------------
+  # Redis Commander (Optional - for Redis management)
+  # --------------------------------------------------------------------------
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: vaal-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-changeme}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - vaal-network
+    profiles:
+      - tools
+
+# ============================================================================
+# Networks
+# ============================================================================
 networks:
-  lapverse-network:
+  vaal-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  nginx_logs:
+    driver: local

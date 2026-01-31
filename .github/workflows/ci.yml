@@ -1,1 +1,96 @@
-curl -fsSL https://raw.githubusercontent.com/aliyun/aliyun-cli/master/install.sh | bash
+name: CI/CD Pipeline (Main-Ready Checks)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  ALIBABA_CLOUD_REGION_ID: ${{ secrets.ALIBABA_CLOUD_REGION_ID }}
+  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  lint-and-type-check:
+    runs-on: ubuntu-latest
+    name: Lint & Type Safety
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run Linting
+        run: |
+          pip install ruff black mypy
+          ruff check .
+          black --check .
+          mypy --strict rainmaker_orchestrator/ api/
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+      - name: Run tests
+        run: pytest
+
+  build-and-deploy:
+    needs: [lint-and-type-check, test-python]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Alibaba Cloud OIDC
+        uses: aliyun/alibabacloud-auth-action@v1.0.0
+        with:
+          oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          region-id: ${{ env.ALIBABA_CLOUD_REGION_ID }}
+
+      - name: Install Alibaba Cloud CLI
+        run: |
+          curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar xzvf aliyun-cli-linux-latest-amd64.tgz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
+
+      - name: Run Security Analysis
+        run: |
+          python3 scripts/alibaba_cloud_security_scan.py
+
+      - name: Build and Push Docker Image
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/myapp:latest
+
+      - name: Deploy to Production
+        run: |
+          echo "🚀 Deploying to Alibaba Cloud ECS..."
+          # Deployment logic here

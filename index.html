@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Setup Guide - Complete Configuration Wizard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .wizard-step { opacity: 0; transform: translateX(20px); }
+        .wizard-step.active { opacity: 1; transform: translateX(0); transition: all 0.3s ease; }
+        .progress-bar { transition: width 0.5s ease; }
+        .template-card { transition: all 0.3s ease; border: 2px solid transparent; }
+        .template-card:hover { border-color: #008DA8; transform: scale(1.02); }
+        .template-card.selected { border-color: #008DA8; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">Jira Setup Guide</h1>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#" class="text-gray-900 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                        <a href="templates.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Templates</a>
+                        <a href="workflows.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Workflows</a>
+                        <a href="checklist.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Checklist</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg pt-24 pb-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8">
+                    <div class="space-y-4">
+                        <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+                            Complete Jira Setup
+                            <span class="text-teal-600">Made Simple</span>
+                        </h1>
+                        <p class="text-xl text-gray-600 leading-relaxed">
+                            Master Jira configuration with our interactive setup wizard. From basic installation to advanced workflows, get your team productive in minutes.
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="openWizard()" class="bg-teal-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-teal-700 transition-colors shadow-lg">
+                            Start Setup Wizard
+                        </button>
+                        <button onclick="scrollToFeatures()" class="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold hover:border-teal-600 hover:text-teal-600 transition-colors">
+                            Explore Features
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-8 pt-8">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-teal-600">6</div>
+                            <div class="text-sm text-gray-600">Setup Steps</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-teal-600">25+</div>
+                            <div class="text-sm text-gray-600">Templates</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-teal-600">50+</div>
+                            <div class="text-sm text-gray-600">Best Practices</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img src="resources/hero-main.jpg" alt="Jira Setup Workspace" class="rounded-2xl shadow-2xl w-full h-auto">
+                    <div class="absolute -bottom-6 -left-6 bg-white rounded-lg shadow-lg p-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-gray-700">Setup Complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Everything You Need for Jira Success</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">From initial setup to advanced configuration, our comprehensive guide covers every aspect of Jira implementation.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Interactive Setup Wizard</h3>
+                    <p class="text-gray-600">Step-by-step guided configuration with real-time validation and personalized recommendations.</p>
+                </div>
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Template Library</h3>
+                    <p class="text-gray-600">25+ pre-configured project templates for software development, marketing, sales, and more.</p>
+                </div>
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Workflow Builder</h3>
+                    <p class="text-gray-600">Visual workflow designer with drag-and-drop interface and best practice templates.</p>
+                </div>
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Setup Checklist</h3>
+                    <p class="text-gray-600">Comprehensive 50+ item checklist with progress tracking and completion certificates.</p>
+                </div>
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Best Practices</h3>
+                    <p class="text-gray-600">Industry-proven methodologies and expert recommendations for optimal Jira configuration.</p>
+                </div>
+                <div class="card-hover bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Troubleshooting</h3>
+                    <p class="text-gray-600">Common issues and solutions with detailed debugging guides and community support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Setup Wizard Modal -->
+    <div id="wizardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <!-- Wizard Header -->
+            <div class="bg-gradient-to-r from-teal-600 to-teal-700 px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Jira Setup Wizard</h2>
+                        <p class="text-teal-100 mt-1">Configure your Jira instance in 6 simple steps</p>
+                    </div>
+                    <button onclick="closeWizard()" class="text-white hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Progress Bar -->
+                <div class="mt-6">
+                    <div class="flex justify-between text-sm text-teal-100 mb-2">
+                        <span>Step <span id="currentStep">1</span> of 6</span>
+                        <span id="progressPercent">17%</span>
+                    </div>
+                    <div class="w-full bg-teal-800 rounded-full h-2">
+                        <div id="progressBar" class="progress-bar bg-white h-2 rounded-full" style="width: 17%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wizard Content -->
+            <div class="p-8 overflow-y-auto max-h-[60vh]">
+                <!-- Step 1: Instance Type -->
+                <div id="step1" class="wizard-step active">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Choose Your Jira Instance Type</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="template-card p-6 rounded-xl cursor-pointer" onclick="selectInstanceType('cloud')">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Jira Cloud</h4>
+                                    <p class="text-sm text-gray-600">Hosted by Atlassian</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 mb-4">Perfect for teams who want to get started quickly without managing infrastructure. Automatic updates, maintenance, and security handled by Atlassian.</p>
+                            <ul class="text-sm text-gray-600 space-y-2">
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>No server maintenance</li>
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>Automatic updates</li>
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>99.9% uptime SLA</li>
+                            </ul>
+                        </div>
+                        <div class="template-card p-6 rounded-xl cursor-pointer" onclick="selectInstanceType('datacenter')">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Jira Data Center</h4>
+                                    <p class="text-sm text-gray-600">Self-hosted solution</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 mb-4">Ideal for organizations requiring complete control over their data, custom integrations, and enterprise-grade security and performance.</p>
+                            <ul class="text-sm text-gray-600 space-y-2">
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>Complete data control</li>
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>Custom integrations</li>
+                                <li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>Enterprise security</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Project Management Type -->
+                <div id="step2" class="wizard-step hidden">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Select Project Management Type</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="template-card p-6 rounded-xl cursor-pointer" onclick="selectManagementType('team')">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Team-Managed</h4>
+                                    <p class="text-sm text-gray-600">Independent team projects</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 mb-4">Perfect for individual teams working on specific projects. Each team manages their own settings independently.</p>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-800"><strong>Best for:</strong> Small teams (&lt;10 people), independent projects, simple workflows</p>
+                            </div>
+                        </div>
+                        <div class="template-card p-6 rounded-xl cursor-pointer" onclick="selectManagementType('company')">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Company-Managed</h4>
+                                    <p class="text-sm text-gray-600">Enterprise-wide standardization</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 mb-4">Ideal for organizations needing standardized processes across multiple teams and projects.</p>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-sm text-purple-800"><strong>Best for:</strong> Large teams, multiple projects, standardized workflows, cross-team collaboration</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Project Type -->
+                <div id="step3" class="wizard-step hidden">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Select Your Project Type</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="template-card p-4 rounded-xl cursor-pointer text-center" onclick="selectProjectType('software')">
+                            <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Software Development</h4>
+                            <p class="text-sm text-gray-600">Agile development, bug tracking, releases</p>
+                        </div>
+                        <div class="template-card p-4 rounded-xl cursor-pointer text-center" onclick="selectProjectType('service')">
+                            <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Service Management</h4>
+                            <p class="text-sm text-gray-600">IT support, customer service, requests</p>
+                        </div>
+                        <div class="template-card p-4 rounded-xl cursor-pointer text-center" onclick="selectProjectType('work')">
+                            <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Work Management</h4>
+                            <p class="text-sm text-gray-600">Project management, task tracking</p>
+                        </div>
+                        <div class="template-card p-4 rounded-xl cursor-pointer text-center" onclick="selectProjectType('discovery')">
+                            <div class="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Product Discovery</h4>
+                            <p class="text-sm text-gray-600">Ideas, roadmaps, stakeholder feedback</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Template Selection -->
+                <div id="step4" class="wizard-step hidden">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Choose Your Template</h3>
+                    <div class="mb-6">
+                        <input type="text" id="templateSearch" placeholder="Search templates..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" onkeyup="filterTemplates()">
+                    </div>
+                    <div id="templateGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Templates will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Step 5: Team Configuration -->
+                <div id="step5" class="wizard-step hidden">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Configure Your Team</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                            <input type="text" id="projectName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Enter your project name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Project Key</label>
+                            <input type="text" id="projectKey" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="PROJ (auto-generated)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Team Members</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <input type="email" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" placeholder="teammate@company.com">
+                                    <select class="px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option>Admin</option>
+                                        <option>Developer</option>
+                                        <option>Viewer</option>
+                                    </select>
+                                    <button class="text-red-600 hover:text-red-800">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button onclick="addTeamMember()" class="text-teal-600 hover:text-teal-800 text-sm font-medium">+ Add Team Member</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Summary -->
+                <div id="step6" class="wizard-step hidden">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-6">Setup Summary</h3>
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <div id="summaryContent">
+                            <!-- Summary will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Next Steps</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-xs font-semibold text-teal-600">1</span>
+                                </div>
+                                <span class="text-gray-700">Create your Jira instance at <a href="https://www.atlassian.com/software/jira" class="text-teal-600 hover:underline">atlassian.com</a></span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-xs font-semibold text-teal-600">2</span>
+                                </div>
+                                <span class="text-gray-700">Follow our detailed setup checklist for configuration</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-xs font-semibold text-teal-600">3</span>
+                                </div>
+                                <span class="text-gray-700">Invite your team members and start collaborating</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wizard Footer -->
+            <div class="px-8 py-6 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-between">
+                    <button id="prevBtn" onclick="previousStep()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors hidden">
+                        Previous
+                    </button>
+                    <div class="flex space-x-4">
+                        <button onclick="closeWizard()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button id="nextBtn" onclick="nextStep()" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                            Next Step
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">Jira Setup Guide</h3>
+                <p class="text-gray-400 mb-8">Your comprehensive resource for Jira configuration and best practices</p>
+                <div class="border-t border-gray-800 pt-8">
+                    <p class="text-gray-500">&copy; 2025 Jira Setup Guide. Built with modern web technologies for optimal performance.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

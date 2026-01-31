@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Tuple, List
+from typing import Dict, List, Tuple
 
 
 class PolicyGate:

@@ -5,12 +5,12 @@ Grafana Metrics Validator - Enhanced Version
 Verifies metrics are flowing correctly to Grafana Cloud
 Validates data integrity and alert configurations
 """
-import requests
 import os
 import sys
-import time
-from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from datetime import datetime
+from typing import Dict, Optional
+
+import requests
 
 
 class GrafanaValidator:
@@ -142,7 +142,7 @@ def validate_metrics():
                     print(f'   ⚠️  Missing labels: {", ".join(missing)}')
 
                 # Show sample values
-                print(f'   📈 Sample series:')
+                print('   📈 Sample series:')
                 for i, series in enumerate(result_data[:3]):  # Show first 3
                     metric_labels = series.get('metric', {})
                     value = series.get('value', [None, 'N/A'])[1]
@@ -155,13 +155,13 @@ def validate_metrics():
                     'series_count': len(result_data)
                 })
             else:
-                print(f'   ⚠️  Metric exists but no data')
+                print('   ⚠️  Metric exists but no data')
                 results.append({
                     'name': metric['name'],
                     'status': 'no_data'
                 })
         else:
-            print(f'   ❌ Metric not found or query failed')
+            print('   ❌ Metric not found or query failed')
             results.append({
                 'name': metric['name'],
                 'status': 'failed'
@@ -181,13 +181,13 @@ def validate_metrics():
     print(f'❌ Failed metrics: {len(failed)}/{len(results)}')
 
     if no_data:
-        print(f'\n⚠️  Metrics without data:')
+        print('\n⚠️  Metrics without data:')
         for r in no_data:
             print(f'   - {r["name"]}')
-        print(f'\n💡 Tip: Run live_test_agent.py to generate data')
+        print('\n💡 Tip: Run live_test_agent.py to generate data')
 
     if failed:
-        print(f'\n❌ Failed metrics:')
+        print('\n❌ Failed metrics:')
         for r in failed:
             print(f'   - {r["name"]}')
 
@@ -227,23 +227,23 @@ def check_data_freshness():
                 print(f'⏱️  Age: {age_seconds:.0f} seconds ago')
 
                 if age_seconds < 60:
-                    print(f'✅ Data is fresh (< 1 minute old)')
+                    print('✅ Data is fresh (< 1 minute old)')
                     return True
                 elif age_seconds < 300:
                     print(f'⚠️  Data is slightly stale ({age_seconds/60:.1f} minutes old)')
                     return True
                 else:
                     print(f'❌ Data is stale ({age_seconds/60:.1f} minutes old)')
-                    print(f'💡 Check if metrics push is working')
+                    print('💡 Check if metrics push is working')
                     return False
             else:
-                print(f'❌ No timestamp data available')
+                print('❌ No timestamp data available')
                 return False
         else:
-            print(f'❌ No data found')
+            print('❌ No data found')
             return False
     else:
-        print(f'❌ Query failed')
+        print('❌ Query failed')
         return False
 
 
@@ -255,7 +255,10 @@ def validate_slo_query():
     print('║' + ' ' * 20 + '🎯 SLO QUERY VALIDATION' + ' ' * 23 + '║')
     print('╚' + '═' * 68 + '╝\n')
 
-    slo_query = '1 - (sum(rate(ai_provider_errors_total[5m])) / sum(rate(ai_provider_request_total[5m])))'
+    slo_query = (
+        '1 - (sum(rate(ai_provider_errors_total[5m])) / '
+        'sum(rate(ai_provider_request_total[5m])))'
+    )
 
     print(f'Query: {slo_query}\n')
 
@@ -269,25 +272,25 @@ def validate_slo_query():
             value = float(result_data[0].get('value', [None, 0])[1])
             percentage = value * 100
 
-            print(f'✅ SLO Query successful')
+            print('✅ SLO Query successful')
             print(f'📊 Current Availability: {percentage:.2f}%')
 
             if percentage >= 99:
-                print(f'🏆 Excellent availability (≥ 99%)')
+                print('🏆 Excellent availability (≥ 99%)')
             elif percentage >= 95:
-                print(f'✅ Good availability (≥ 95%)')
+                print('✅ Good availability (≥ 95%)')
             elif percentage >= 90:
-                print(f'⚠️  Acceptable availability (≥ 90%)')
+                print('⚠️  Acceptable availability (≥ 90%)')
             else:
-                print(f'❌ Poor availability (< 90%)')
+                print('❌ Poor availability (< 90%)')
 
             return True
         else:
-            print(f'⚠️  Query returned no data')
-            print(f'💡 This is normal if no requests have been made recently')
+            print('⚠️  Query returned no data')
+            print('💡 This is normal if no requests have been made recently')
             return False
     else:
-        print(f'❌ SLO query failed')
+        print('❌ SLO query failed')
         return False
 
 
@@ -329,16 +332,16 @@ def check_provider_distribution():
 
             # Check if fallback is working
             if len(providers) > 1:
-                print(f'\n✅ Multiple providers active - fallback working')
+                print('\n✅ Multiple providers active - fallback working')
             else:
-                print(f'\n⚠️  Only one provider active - verify fallback configuration')
+                print('\n⚠️  Only one provider active - verify fallback configuration')
 
             return True
         else:
-            print(f'⚠️  No provider data found')
+            print('⚠️  No provider data found')
             return False
     else:
-        print(f'❌ Query failed')
+        print('❌ Query failed')
         return False
 
 
@@ -353,7 +356,10 @@ def check_latency_percentiles():
     percentiles = [50, 95, 99]
 
     for p in percentiles:
-        query = f'histogram_quantile({p/100}, sum(rate(ai_provider_request_duration_seconds_bucket[5m])) by (le, provider))'
+        query = (
+            f'histogram_quantile({p/100}, '
+            'sum(rate(ai_provider_request_duration_seconds_bucket[5m])) by (le, provider))'
+        )
         result = validator.query(query)
 
         if result and result.get('status') == 'success':

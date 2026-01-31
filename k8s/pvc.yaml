@@ -1,0 +1,32 @@
+# =============================================================================
+# VAAL AI Empire - Persistent Volume Claims
+# =============================================================================
+
+# Credit protection data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vaal-credit-data-pvc
+  namespace: vaal-ai-empire
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+# Model cache (for HuggingFace models)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vaal-model-cache-pvc
+  namespace: vaal-ai-empire
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard

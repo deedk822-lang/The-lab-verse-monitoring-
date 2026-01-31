@@ -1,6 +1,8 @@
 # --------------------  A2A  --------------------
-import aiohttp, logging
+import logging
 from typing import Dict
+
+import aiohttp
 
 
 class A2AAdapter:

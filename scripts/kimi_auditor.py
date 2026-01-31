@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import os
+import re
 import subprocess
+import tempfile
 import time
 from datetime import datetime
+
 import openai
-import tempfile
-import re
 
 # ========================
 # CONFIG

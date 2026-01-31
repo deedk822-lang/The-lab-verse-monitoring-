@@ -2,29 +2,29 @@
 Enhanced main application with security, monitoring, distributed state, and Atlassian integration.
 """
 
-import os
-import time
-import logging
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Union
+import logging
+import os
+import time
 from collections import OrderedDict
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional, Union
 
-from fastapi import FastAPI, Request, Response, HTTPException, Header, Depends
+import httpx
+import redis.asyncio as redis
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 from pydantic import BaseModel
-import httpx
-import redis.asyncio as redis
+from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
+from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
-from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
-from agent.tools.llm_provider import initialize_from_env, get_global_provider, TaskType
 
 # Configure logging
 logging.basicConfig(

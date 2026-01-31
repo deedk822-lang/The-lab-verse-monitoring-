@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +16,11 @@ class RevenueAnomalyDetector:
         Returns a list of detected anomalies with descriptions
         """
         anomalies = []
-        
+
         # 1. Check for sudden drop in daily revenue
         daily_now = self.db.get_revenue_summary(days=1)["total_revenue"]
         daily_avg_7d = self.db.get_revenue_summary(days=7)["total_revenue"] / 7
-        
+
         if daily_now < daily_avg_7d * 0.5 and daily_avg_7d > 100:
             anomalies.append({
                 "type": "revenue_drop",
@@ -33,7 +33,7 @@ class RevenueAnomalyDetector:
         # This is a simplified check
         active_clients = self.db.get_active_clients()
         clients_with_revenue = self.db.get_revenue_summary(days=7)["client_count"]
-        
+
         if len(active_clients) > 0 and clients_with_revenue < len(active_clients) * 0.3:
             anomalies.append({
                 "type": "low_engagement",

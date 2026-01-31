@@ -1,279 +1,249 @@
 version: '3.8'
 
+# ============================================================================
+# VAAL AI Empire - Production Docker Compose Configuration
+# ============================================================================
+
 services:
-  # Kimi Instruct AI Project Manager - Main Service
-  kimi-project-manager:
-    build:
-      context: .
-      dockerfile: Dockerfile.kimi
-    container_name: labverse-kimi
-    restart: unless-stopped
-    ports:
-      - "8084:8084"
-    environment:
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - NODE_ENV=production
-      - PYTHON_ENV=production
-      # AI Provider Keys - loaded from .env.local
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
-      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
-      # System Configuration
-      - REDIS_URL=redis://redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      - HUMAN_OVERSIGHT_MODE=${HUMAN_OVERSIGHT_MODE:-collaborative}
-      - AUTO_EXECUTION_THRESHOLD=${AUTO_EXECUTION_THRESHOLD:-0.75}
-      - PROJECT_BUDGET=${PROJECT_BUDGET:-100000}
-      - TARGET_MRR=${TARGET_MRR:-75000}
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./config:/app/config
-    depends_on:
-      - redis
-      - prometheus
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8084/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - labverse-network
-
-  # LapVerse Core (original service)
-  app:
-    build: .
-    container_name: lapverse-app
-    image: lapverse-monitoring:2.0.0
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
-      - REDIS_URL=redis://redis:6379
-      - KAGGLE_API_KEY=${KAGGLE_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - COST_CENTER=lapverse-core
-    ports:
-      - "3000:3000"
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - labverse-network
-    user: "lapverse"
-    volumes:
-      - ./logs:/app/logs
-
-  # Redis - Message Queue and Cache
-  redis:
-    image: redis:7-alpine
-    container_name: labverse-redis
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-redis123}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis123}","ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - redis_data:/data
-    networks:
-      - labverse-network
-
-  # Ollama - Local AI Models (Free MoE)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: labverse-ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    environment:
-      - OLLAMA_ORIGINS=*
-      - OLLAMA_HOST=0.0.0.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - labverse-network
-
-  # PostgreSQL - Advanced Data Storage
+  # --------------------------------------------------------------------------
+  # PostgreSQL Database
+  # --------------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
-    container_name: labverse-postgres
+    container_name: vaal-postgres
     restart: unless-stopped
+    environment:
+      POSTGRES_DB: vaal_ai_empire
+      POSTGRES_USER: ${DB_USER:-vaaluser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./vaal_ai_empire/update_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=labverse
-      - POSTGRES_USER=labverse
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-labverse123}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U labverse"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vaaluser}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - labverse-network
+      - vaal-network
 
-  # Nginx - Reverse Proxy
+  # --------------------------------------------------------------------------
+  # Redis Cache
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: vaal-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vaal-network
+
+  # --------------------------------------------------------------------------
+  # Main Application
+  # --------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaal-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-vaaluser}:${DB_PASSWORD:-changeme}@postgres:5432/vaal_ai_empire
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+    volumes:
+      - ./models:/models:ro
+      - ./cache:/cache
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Prometheus metrics
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 8G
+          cpus: '4'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - vaal-network
+
+  # --------------------------------------------------------------------------
+  # Nginx Reverse Proxy
+  # --------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
-    container_name: labverse-nginx
+    container_name: vaal-nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       - app
-      - kimi-project-manager
-    restart: unless-stopped
     networks:
-      - labverse-network
+      - vaal-network
 
-  # Prometheus - Metrics Collection
+  # --------------------------------------------------------------------------
+  # Prometheus Monitoring
+  # --------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
-    container_name: labverse-prometheus
+    container_name: vaal-prometheus
+    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=15d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    ports:
-      - "9090:9090"
+      - '--storage.tsdb.retention.time=30d'
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    restart: unless-stopped
-    depends_on:
-      - kimi-project-manager
-      - app
+    ports:
+      - "9091:9090"
     networks:
-      - labverse-network
+      - vaal-network
 
-  # Grafana - Visualization Dashboard
+  # --------------------------------------------------------------------------
+  # Grafana Dashboard
+  # --------------------------------------------------------------------------
   grafana:
     image: grafana/grafana:latest
-    container_name: labverse-grafana
-    ports:
-      - "3001:3000"
+    container_name: vaal-grafana
+    restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    restart: unless-stopped
+    ports:
+      - "3000:3000"
     depends_on:
       - prometheus
     networks:
-      - labverse-network
+      - vaal-network
 
-  # AlertManager - Alert Management
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: labverse-alertmanager
-    restart: unless-stopped
-    ports:
-      - "9093:9093"
+  # --------------------------------------------------------------------------
+  # PostgreSQL Backup Service
+  # --------------------------------------------------------------------------
+  backup:
+    image: postgres:15-alpine
+    container_name: vaal-backup
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGUSER: ${DB_USER:-vaaluser}
+      PGPASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATABASE: vaal_ai_empire
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
     volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
-      - '--cluster.advertise-address=0.0.0.0:9093'
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    command: /bin/sh /backup.sh
     depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      postgres:
+        condition: service_healthy
     networks:
-      - labverse-network
+      - vaal-network
+    profiles:
+      - backup
 
-  # Node Exporter - System Metrics
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: labverse-node-exporter
+  # --------------------------------------------------------------------------
+  # pgAdmin (Optional - for database management)
+  # --------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: vaal-pgadmin
     restart: unless-stopped
-    ports:
-      - "9100:9100"
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@vaal.ai}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    networks:
-      - labverse-network
-
-  # OpenTelemetry Collector - Distributed Tracing
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: labverse-otel
-    restart: unless-stopped
+      - pgadmin_data:/var/lib/pgadmin
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics
-    volumes:
-      - ./monitoring/otel-collector.yml:/etc/otel-collector-config.yml:ro
-    command: ["--config=/etc/otel-collector-config.yml"]
+      - "5050:80"
     depends_on:
-      - prometheus
+      - postgres
     networks:
-      - labverse-network
+      - vaal-network
+    profiles:
+      - tools
 
-volumes:
-  redis_data:
-  prometheus_data:
-  grafana_data:
-  ollama-data:
-    driver: local
-  postgres-data:
-    driver: local
-  alertmanager-data:
-    driver: local
+  # --------------------------------------------------------------------------
+  # Redis Commander (Optional - for Redis management)
+  # --------------------------------------------------------------------------
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: vaal-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-changeme}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - vaal-network
+    profiles:
+      - tools
 
+# ============================================================================
+# Networks
+# ============================================================================
 networks:
-  labverse-network:
+  vaal-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.25.0.0/16
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  nginx_logs:
+    driver: local

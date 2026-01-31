@@ -6,6 +6,7 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
 
 import httpx
@@ -28,51 +29,113 @@ BLOCKED_IP_RANGES = [
 ]
 
 
-def is_safe_url(url: str) -> bool:
-    """
-    Check if URL is safe to request (not private/localhost).
-    
-    Args:
-        url: URL to check
-        
-    Returns:
-        True if safe, False otherwise
-    """
-    try:
-        parsed = urlparse(url)
+class SSRFBlocker:
+    """Validator for URLs to prevent SSRF attacks."""
 
-        # Must have a hostname
-        if not parsed.hostname:
-            logger.warning(f"URL has no hostname: {url}")
-            return False
+    def __init__(
+        self,
+        allow_private_ips: bool = False,
+        allowed_domains: Optional[Set[str]] = None,
+        blocked_domains: Optional[Set[str]] = None,
+        allowed_schemes: Optional[Set[str]] = None
+    ):
+        self.allow_private_ips = allow_private_ips
+        self.allowed_domains = allowed_domains
+        self.blocked_domains = blocked_domains
+        self.allowed_schemes = allowed_schemes or {'http', 'https'}
 
-        # Resolve hostname to IP
+    def is_private_ip(self, ip_str: str) -> bool:
+        """Check if IP address is private/local."""
         try:
-            ip_str = socket.gethostbyname(parsed.hostname)
             ip = ipaddress.ip_address(ip_str)
-        except (socket.gaierror, ValueError) as e:
-            logger.error(f"Could not resolve hostname {parsed.hostname}: {e}")
+            return any(ip in net for net in BLOCKED_IP_RANGES)
+        except ValueError:
             return False
 
-        # Check if IP is in blocked ranges
-        for blocked_range in BLOCKED_IP_RANGES:
-            if ip in blocked_range:
-                logger.error(
-                    f"Blocked request to private IP: {ip} "
-                    f"(range: {blocked_range}) for URL: {url}"
-                )
-                return False
+    def is_metadata_endpoint(self, hostname: str) -> bool:
+        """Check if hostname is a known cloud metadata endpoint."""
+        metadata_hosts = {
+            '169.254.169.254',
+            'metadata.google.internal',
+            'instance-data',
+            '100.100.100.200'  # Alibaba Cloud
+        }
+        return hostname.lower() in metadata_hosts
 
-        # Check protocol
-        if parsed.scheme not in ('http', 'https'):
-            logger.error(f"Blocked request with unsupported scheme: {parsed.scheme}")
-            return False
+    def validate_url(self, url: str) -> Tuple[bool, str]:
+        """
+        Validate URL for security.
 
-        return True
+        Returns:
+            (is_valid, error_message)
+        """
+        try:
+            parsed = urlparse(url)
 
-    except Exception as e:
-        logger.error(f"Error checking URL safety: {e}")
-        return False
+            if not parsed.scheme or parsed.scheme not in self.allowed_schemes:
+                return False, f"Scheme {parsed.scheme} is not allowed"
+
+            if not parsed.hostname:
+                return False, "URL has no hostname"
+
+            # Domain blocklist
+            if self.blocked_domains and parsed.hostname.lower() in self.blocked_domains:
+                return False, f"Domain {parsed.hostname} is blocked"
+
+            # Domain allowlist
+            if self.allowed_domains and parsed.hostname.lower() not in self.allowed_domains:
+                return False, f"Domain {parsed.hostname} is not in allowlist"
+
+            # Metadata protection
+            if self.is_metadata_endpoint(parsed.hostname):
+                return False, "Access to metadata endpoints is blocked"
+
+            # DNS resolution and IP check
+            try:
+                # Use getaddrinfo to handle IPv4/IPv6 and prevent some rebinding
+                addr_info = socket.getaddrinfo(parsed.hostname, parsed.port or 80)
+                for item in addr_info:
+                    ip_str = item[4][0]
+                    if not self.allow_private_ips and self.is_private_ip(ip_str):
+                        return False, f"URL resolves to private IP: {ip_str}"
+            except socket.gaierror:
+                return False, f"Could not resolve hostname: {parsed.hostname}"
+
+            return True, ""
+
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+
+
+def is_safe_url(url: str) -> bool:
+    """Check if URL is safe to request."""
+    blocker = SSRFBlocker()
+    valid, _ = blocker.validate_url(url)
+    return valid
+
+
+def create_ssrf_safe_session(
+    allowed_domains: Optional[Set[str]] = None,
+    timeout: float = 30.0,
+    **kwargs
+) -> httpx.Client:
+    """Create SSRF-safe synchronous HTTP client."""
+
+    blocker = SSRFBlocker(allowed_domains=allowed_domains)
+
+    class SSRFSafeTransport(httpx.HTTPTransport):
+        def handle_request(self, request):
+            url = str(request.url)
+            valid, error = blocker.validate_url(url)
+            if not valid:
+                raise ValueError(f"Blocked SSRF attempt: {error}")
+            return super().handle_request(request)
+
+    return httpx.Client(
+        transport=SSRFSafeTransport(),
+        timeout=timeout,
+        **kwargs
+    )
 
 
 def create_ssrf_safe_async_session(
@@ -80,27 +143,20 @@ def create_ssrf_safe_async_session(
     follow_redirects: bool = False,
     max_redirects: int = 0
 ) -> httpx.AsyncClient:
-    """
-    Create SSRF-safe async HTTP client.
-    
-    Args:
-        timeout: Request timeout in seconds
-        follow_redirects: Whether to follow redirects
-        max_redirects: Maximum number of redirects
-        
-    Returns:
-        Configured async HTTP client
-    """
-    # Custom transport that checks URLs before connecting
-    class SSRFSafeTransport(httpx.AsyncHTTPTransport):
+    """Create SSRF-safe async HTTP client."""
+
+    blocker = SSRFBlocker()
+
+    class SSRFSafeAsyncTransport(httpx.AsyncHTTPTransport):
         async def handle_async_request(self, request):
             url = str(request.url)
-            if not is_safe_url(url):
-                raise ValueError(f"Blocked SSRF attempt to: {url}")
+            valid, error = blocker.validate_url(url)
+            if not valid:
+                raise ValueError(f"Blocked SSRF attempt: {error}")
             return await super().handle_async_request(request)
 
     return httpx.AsyncClient(
-        transport=SSRFSafeTransport(),
+        transport=SSRFSafeAsyncTransport(),
         timeout=timeout,
         follow_redirects=follow_redirects,
         max_redirects=max_redirects,

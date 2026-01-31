@@ -10,6 +10,7 @@ import pytest
 
 
 # Test fixtures
+@pytest.mark.asyncio
 @pytest.fixture
 def clean_env(monkeypatch):
     """Clean environment for testing."""
@@ -19,6 +20,8 @@ def clean_env(monkeypatch):
     monkeypatch.delenv('HF_MODEL_PATH', raising=False)
 
 
+@pytest.mark.asyncio
+@pytest.fixture
 @pytest.fixture
 async def redis_client():
     """Mock Redis client for testing."""
@@ -84,7 +87,7 @@ class TestHuggingFaceTokenUsage:
         )
 
         with caplog.at_level('WARNING'):
-            provider = HuggingFaceProvider(config)
+            HuggingFaceProvider(config)
 
         # Should log warning about missing token
         assert "HuggingFace token" in caplog.text
@@ -113,7 +116,7 @@ class TestHuggingFaceTokenUsage:
         # Don't set HF_TOKEN
 
         with caplog.at_level('WARNING'):
-            provider = initialize_from_env()
+            initialize_from_env()
 
         # Should warn about missing token
         assert "HF_TOKEN not set" in caplog.text
@@ -266,6 +269,7 @@ class TestProviderInitialization:
         assert global_provider is provider
 
 
+@pytest.mark.asyncio
 class TestRedisSharedState:
     """Test Redis-backed shared state components."""
 
@@ -351,6 +355,7 @@ class TestSecurityIntegration:
 
 
 # Fixture to run async tests
+@pytest.mark.asyncio
 @pytest.fixture
 def event_loop():
     """Create event loop for async tests."""

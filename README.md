@@ -436,7 +436,7 @@ MIT License - See LICENSE file for details
 
 Contributions welcome! Please:
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch. Use the **[Enterprise Git SOP](docs/git-standards/ENTERPRISE_GIT_SOP.md)** for branch synchronization standards.
 3. Add tests for new features
 4. Submit a pull request
 

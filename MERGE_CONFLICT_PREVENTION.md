@@ -10,6 +10,18 @@ The `package.json` file became corrupted due to **unresolved merge conflicts** f
 
 ---
 
+## 🚀 Enterprise Git Standards (Global Standards)
+
+For comprehensive branch synchronization and conflict prevention at scale, please refer to the **[Enterprise Git SOP](docs/git-standards/ENTERPRISE_GIT_SOP.md)**.
+
+This standard includes:
+- ✅ Automated branch synchronization with `enterprise_sync.sh`
+- ✅ Pre-sync safety protocols
+- ✅ GPG-signed audit trails
+- ✅ Standardized conflict resolution runbooks
+
+---
+
 ## ✅ Prevention Systems Implemented
 
 ### 1. **GitHub Actions - Automatic Validation**

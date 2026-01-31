@@ -1,10 +1,5 @@
-"""
-Standalone server module for rainmaker orchestrator.
-This file maintains backward compatibility with existing deployments.
-For new implementations, use api/server.py instead.
-"""
 import logging
-
+from typing import Dict
 from fastapi import FastAPI
 
 logger: logging.Logger = logging.getLogger("server")
@@ -15,9 +10,8 @@ app: FastAPI = FastAPI(
     description="Legacy endpoint - use api/server.py for new deployments",
 )
 
-
 @app.get("/health")
-async def health() -> dict:
+async def health() -> Dict[str, str]:
     """
     Provide a legacy-compatibility health response for the server.
     

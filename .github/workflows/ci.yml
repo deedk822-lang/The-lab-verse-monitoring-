@@ -44,16 +44,76 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+<<<<<<< HEAD
+          pip install -e .
+
+      # FIX: Set working directory and verify tests exist
+      - name: Verify tests exist
+        run: |
+          ls -la tests/
+          ls -la tests/test_security.py || echo "WARNING: test_security.py missing"
+          ls -la tests/test_integration.py || echo "WARNING: test_integration.py missing"
+          ls -la tests/test_main.py || echo "WARNING: test_main.py missing"
+
+      # FIX: Run tests with correct coverage path and exit code check
+      - name: Run tests with coverage
+        working-directory: ${{ github.workspace }}  # FIX: Explicit working directory
+        run: |
+          # Run pytest with coverage
+          pytest -v \
+            --cov=src/pr_fix_agent \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            tests/
+
+          # FIX: Explicitly check exit code
+          TEST_EXIT_CODE=$?
+
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "❌ Tests failed with exit code: $TEST_EXIT_CODE"
+            exit $TEST_EXIT_CODE
+          fi
+
+          echo "✅ All tests passed"
+
+      # FIX: Verify coverage.xml was generated
+      - name: Verify coverage file
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "❌ ERROR: coverage.xml not generated!"
+            exit 1
+          fi
+
+          # Check coverage.xml has actual data (not 0 hits)
+          TOTAL_HITS=$(grep -oP 'hits="\K[0-9]+' coverage.xml | awk '{s+=$1} END {print s}')
+          echo "Total coverage hits: $TOTAL_HITS"
+
+          if [ "$TOTAL_HITS" -eq 0 ]; then
+            echo "❌ ERROR: coverage.xml shows 0 hits - coverage tracked wrong path!"
+            echo "Contents of coverage.xml:"
+            head -50 coverage.xml
+            exit 1
+          fi
+
+          echo "✅ Coverage tracking successful: $TOTAL_HITS hits"
+=======
           pip install -e ".[dev]"
       - name: Run tests
         run: pytest
+>>>>>>> main
 
   build-and-deploy:
     needs: [lint-and-type-check, test-python]

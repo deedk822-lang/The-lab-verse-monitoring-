@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+name: LLM-Powered Code Review
+=======
 name: LLM-Powered Code Review (FIXED)
+>>>>>>> main
 
 on:
   pull_request:
@@ -13,7 +17,10 @@ jobs:
   # ========================================================================
   # STEP 1: Collect Findings
   # ========================================================================
+<<<<<<< HEAD
+=======
 
+>>>>>>> main
   collect-findings:
     name: Collect Code Review Findings
     runs-on: ubuntu-latest
@@ -33,12 +40,29 @@ jobs:
 
       - name: Install analysis tools
         run: |
+<<<<<<< HEAD
+          python -m pip install --upgrade pip
+          pip install -e .
+=======
+>>>>>>> main
           pip install bandit ruff mypy safety
 
       - name: Run static analysis
         id: collect
         continue-on-error: true
         run: |
+<<<<<<< HEAD
+          mkdir -p artifacts
+          # Run static analysis tools
+          bandit -r src/ -f json -o artifacts/bandit.json || echo "bandit failed"
+          ruff check src/ --output-format=json > artifacts/ruff.json || echo "ruff failed"
+          # mypy src/ --json-report artifacts/ || echo "mypy failed"
+          # safety check --json > artifacts/safety.json || echo "safety failed"
+
+          # Ensure findings.json exists even if tools fail
+          echo '{"findings": []}' > artifacts/findings.json
+          echo "findings_file=artifacts/findings.json" >> $GITHUB_OUTPUT
+=======
           mkdir -p analysis-results
 
           bandit -r src/ -f json -o analysis-results/bandit.json || echo "bandit failed"
@@ -47,10 +71,20 @@ jobs:
           safety check --json > analysis-results/safety.json || echo "safety failed"
 
           echo "findings_file=analysis-results" >> $GITHUB_OUTPUT
+>>>>>>> main
 
       - name: Upload findings
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< HEAD
+          name: findings
+          path: artifacts/
+          retention-days: 7
+
+  # ========================================================================
+  # STEP 2: Reasoning + Coding + Testing (Combined for optimization)
+  # ========================================================================
+=======
           name: analysis-results
           path: analysis-results/
           retention-days: 7
@@ -59,6 +93,7 @@ jobs:
   # STEP 2: Reasoning + Coding + Testing (Combined)
   # ========================================================================
 
+>>>>>>> main
   process-and-test:
     name: Process Findings and Test
     runs-on: ubuntu-latest
@@ -72,6 +107,30 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 0
+<<<<<<< HEAD
+
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /etc/mysql
+          sudo rm -rf /usr/local/lib/node_modules
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune -af
+
+      - name: Install Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 10
+          ollama pull deepseek-r1:1.5b
+          ollama pull qwen2.5-coder:1.5b
+=======
+>>>>>>> main
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -80,11 +139,39 @@ jobs:
 
       - name: Install package
         run: |
+<<<<<<< HEAD
+          python -m pip install --upgrade pip
+=======
+>>>>>>> main
           pip install -e ".[dev]"
 
       - name: Download findings
         uses: actions/download-artifact@v4
         with:
+<<<<<<< HEAD
+          name: findings
+          path: artifacts/
+
+      - name: Run orchestrator (reasoning + coding)
+        run: |
+          pr-fix-agent --mode reasoning \
+            --findings artifacts/findings.json \
+            --output artifacts/proposals.json
+
+          pr-fix-agent --mode coding \
+            --proposals artifacts/proposals.json \
+            --output artifacts/fixes \
+            --apply
+
+      - name: Run tests
+        id: test
+        run: |
+          set +e
+          pytest tests/ -v \
+            --json-report \
+            --json-report-file=artifacts/test-results.json \
+            --tb=short
+=======
           name: analysis-results
           path: analysis-results/
 
@@ -127,12 +214,17 @@ jobs:
             --json-report-file=artifacts/test-results/test-results.json \
             --tb=short
 
+>>>>>>> main
           TEST_EXIT_CODE=$?
           set -e
 
           echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+<<<<<<< HEAD
+          if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results.json ]; then
+=======
 
           if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results/test-results.json ]; then
+>>>>>>> main
             echo "tests_passed=true" >> $GITHUB_OUTPUT
             echo "✅ All tests passed (exit code: 0)"
           else
@@ -140,6 +232,17 @@ jobs:
             echo "❌ Tests failed (exit code: $TEST_EXIT_CODE)"
           fi
 
+<<<<<<< HEAD
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: process-results
+          path: |
+            artifacts/proposals.json
+            artifacts/test-results.json
+            artifacts/fixes/
+=======
       - name: Upload proposals
         if: always()
         uses: actions/upload-artifact@v4
@@ -167,12 +270,20 @@ jobs:
   # ========================================================================
   # STEP 3: Create PR (Only if tests pass)
   # ========================================================================
+>>>>>>> main
 
+  # ========================================================================
+  # STEP 3: Create PR
+  # ========================================================================
   create-pr:
     name: Create Pull Request
     runs-on: ubuntu-latest
     needs: [process-and-test]
+<<<<<<< HEAD
+    if: always()
+=======
     if: needs.process-and-test.outputs.tests_passed == 'true'
+>>>>>>> main
 
     steps:
       - uses: actions/checkout@v4
@@ -186,11 +297,21 @@ jobs:
           python-version: '3.11'
 
       - name: Install package
+<<<<<<< HEAD
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+=======
         run: pip install -e .
+>>>>>>> main
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+<<<<<<< HEAD
+          name: process-results
+=======
+>>>>>>> main
           path: artifacts/
 
       - name: Generate PR body (FIXED)
@@ -210,14 +331,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings"
-          title: "🤖 Auto-fix: Code review findings"
+          title: "🤖 Auto-fix: Code review findings ${{ needs.process-and-test.outputs.tests_passed == 'true' && '✅' || '❌' }}"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
           base: ${{ github.event.pull_request.base.ref || 'main' }}
           labels: |
             automated-fix
             code-review
+<<<<<<< HEAD
+            ${{ needs.process-and-test.outputs.tests_passed == 'true' && 'tests-passed' || 'tests-failed' }}
+          draft: ${{ needs.process-and-test.outputs.tests_passed == 'false' }}
+=======
           draft: false
+>>>>>>> main
           delete-branch: true
 
   # ========================================================================
@@ -284,7 +410,11 @@ jobs:
   report-summary:
     name: Report Summary
     runs-on: ubuntu-latest
+<<<<<<< HEAD
+    needs: [process-and-test, create-pr]
+=======
     needs: [process-and-test, create-pr, create-draft-pr]
+>>>>>>> main
     if: always()
 
     steps:
@@ -292,6 +422,10 @@ jobs:
         run: |
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+<<<<<<< HEAD
+          echo "- **Tests**: ${{ needs.process-and-test.outputs.tests_passed == 'true' && '✅ PASSED' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR Created**: ${{ create-pr.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+=======
 
           if [ "${{ needs.process-and-test.outputs.tests_passed }}" == "true" ]; then
             echo "- **Tests**: ✅ PASSED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
@@ -306,3 +440,4 @@ jobs:
           echo "- Exit code indicates actual test outcome" >> $GITHUB_STEP_SUMMARY
           echo "- Draft PR created if tests fail" >> $GITHUB_STEP_SUMMARY
           echo "- Regular PR created if tests pass" >> $GITHUB_STEP_SUMMARY
+>>>>>>> main

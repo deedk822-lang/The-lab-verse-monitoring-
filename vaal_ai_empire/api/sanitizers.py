@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 # Dangerous patterns to detect/block
 DANGEROUS_PATTERNS = [
-    r"(?i)(ignore|forget|disregard)\s+(previous|above|all)\s+(instructions|prompts|rules)",
+    r"(?i)(ignore|forget|disregard)\s+(all\s+|everything\s+|previous\s+|above\s+|the\s+|these\s+|any\s+|safety\s*)*(instructions|prompts|rules|commands|guidelines|safety|everything)",
     r"(?i)system\s*:\s*you\s+are",
-    r"(?i)new\s+(instructions|rules|prompt)",
+    r"(?i)new\s+(instructions|rules|prompt|commands)",
     r"(?i)(execute|run|eval)\s*\(",
     r"<\s*script\s*>",
     r"javascript\s*:",

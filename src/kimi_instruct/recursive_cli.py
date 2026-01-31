@@ -1,6 +1,10 @@
-import asyncio, json, click
-from .service import KimiInstructService
+import asyncio
+import json
+
+import click
+
 from .recursive_usaa import RecursiveUSAA
+from .service import KimiInstructService
 
 
 @click.command()

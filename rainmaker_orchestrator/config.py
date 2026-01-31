@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
@@ -83,7 +83,11 @@ class ConfigManager:
         Returns:
             `true` if the config value represents a truthy value, `false` otherwise.
         """
-        value: Optional[str] = self.get(key, "").lower()
+        raw_value = self.get(key, "")
+        if not raw_value:
+            return default
+
+        value = raw_value.lower()
         if value in ("true", "1", "yes", "on"):
             return True
         if value in ("false", "0", "no", "off"):

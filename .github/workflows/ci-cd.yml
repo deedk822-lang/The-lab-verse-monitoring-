@@ -150,6 +150,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+          pip install -e .
       
       - name: Run tests with coverage
         env:
@@ -158,11 +159,12 @@ jobs:
           SECRET_KEY: test-secret-key
           SELF_HEALING_KEY: test-webhook-key
         run: |
-          pytest tests/ \
+          pytest \
             -v \
             --cov=vaal_ai_empire \
             --cov=agent \
             --cov=app \
+            --cov=pr_fix_agent \
             --cov-report=xml \
             --cov-report=html \
             --cov-report=term
@@ -179,6 +181,16 @@ jobs:
         with:
           name: coverage-report
           path: htmlcov/
+
+  # ==========================================================================
+  # PR Fix Agent Integration
+  # ==========================================================================
+  pr-fix:
+    name: PR Fix Agent
+    needs: [test]
+    if: failure()
+    uses: ./.github/workflows/pr-fix-agent.yml
+    secrets: inherit
 
   # ==========================================================================
   # Build Docker Image

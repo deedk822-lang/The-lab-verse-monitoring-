@@ -32,6 +32,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e .
       - name: Run Linting
         run: |
           pip install ruff black mypy
@@ -50,8 +51,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e ".[dev]"
       - name: Run tests
-        run: pytest tests/
+        run: pytest
 
   build-and-deploy:
     needs: [lint-and-type-check, test-python]
@@ -62,10 +64,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/aliyun-oidc-auth-action@v2
+        uses: aliyun/alibabacloud-auth-action@v1.0.0
         with:
-          provider-id: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
           role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          region-id: ${{ env.ALIBABA_CLOUD_REGION_ID }}
 
       - name: Install Alibaba Cloud CLI
         run: |

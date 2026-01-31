@@ -1,7 +1,8 @@
-import os
 import logging
+import os
 from typing import Optional
-from openai import OpenAI, APIError
+
+from openai import APIError, OpenAI  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,7 @@ class KimiClient:
     """
     API wrapper for Kimi model, using an OpenAI-compatible client.
     """
-    def __init__(self, api_key=None):
+    def __init__(self, api_key: Optional[str] = None) -> None:
         self.client = OpenAI(
             base_url=os.getenv("KIMI_API_BASE", "http://kimi-linear:8000/v1"),
             api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY")
@@ -52,7 +53,7 @@ class KimiClient:
                 logger.error("Kimi API returned empty content")
                 return None
 
-            return response.choices[0].message.content
+            return str(response.choices[0].message.content)
         except APIError as e:
             logger.exception(f"API error during Kimi API call: {e!r}")
             return None

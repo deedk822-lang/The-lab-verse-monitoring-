@@ -38,6 +38,7 @@ class ConfigManager:
         value: str = (self.get(key, "") or "").lower()
         if value in ("true", "1", "yes", "on"):
             return True
-        if value in ("false", "0", "no", "off"):
+        elif value in ("false", "0", "no", "off"):
             return False
+        logger.warning("Invalid boolean config: %s=%s, using default=%r", key, value, default)
         return default

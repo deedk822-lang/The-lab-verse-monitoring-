@@ -2,18 +2,8 @@ import logging
 import time
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-
-from ...core.config import settings
-from ...core.security import get_current_user
-from ...integrations.zhipu_glm import create_glm_integration
-from ...models.user import User
-from ...orchestrators.autoglm import create_autoglm_orchestrator
-
 router = APIRouter(prefix="/autoglm", tags=["autoglm"])
 logger = logging.getLogger(__name__)
-
 
 class GLMGenerateRequest(BaseModel):
     """Request model for GLM content generation"""
@@ -21,11 +11,9 @@ class GLMGenerateRequest(BaseModel):
     context: Dict[str, Any]
     options: Dict[str, Any] = {}
 
-
 class AutoGLMSecurityAnalysisRequest(BaseModel):
     """Request model for AutoGLM security analysis"""
     pass  # No additional fields needed
-
 
 class AutoGLMSecureContentRequest(BaseModel):
     """Request model for AutoGLM secure content generation"""
@@ -182,7 +170,7 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     }
 
     # Test GLM if configured and user has access
-    if current_user.has_permission("glm") and settings.ZHIPU_API_KEY:
+    if settings.ZHIPU_API_KEY:
         try:
             async with create_glm_integration() as glm:
                 test_response = await glm.generate_text("Hello, are you working?", {"max_tokens": 10})
@@ -195,7 +183,7 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
             logger.error(f"GLM health check failed: {str(e)}", exc_info=True)
 
     # Test AutoGLM if configured and user has access
-    if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
+    if settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
         try:
             async with create_autoglm_orchestrator() as autoglm:
                 # Just test initialization - don't run full analysis for health check

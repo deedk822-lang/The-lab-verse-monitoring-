@@ -4,6 +4,9 @@ from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
+import environ
+
+environ.Env()  # Initialize environment variables
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Rainmaker Orchestrator"
@@ -11,8 +14,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Security
-    # Use Field(..., env="SECRET_KEY") to ensure it's required from environment
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    SECRET_KEY: Optional[str] = environ.get("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 

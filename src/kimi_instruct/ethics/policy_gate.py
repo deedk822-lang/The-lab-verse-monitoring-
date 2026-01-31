@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, List, Tuple
 
-
 class PolicyGate:
     """
     Checks execution metrics against a set of ethical and safety policies.
@@ -10,8 +9,10 @@ class PolicyGate:
     def __init__(self, base_service):
         self.base = base_service
         self.log = logging.getLogger("PolicyGate")
-        # In a real system, policies would be loaded from a config file or database.
-        self.policies = {"max_risk_score": 0.5}
+        # Load policies from an environment variable or configuration file
+        self.policies = {
+            "max_risk_score": float(os.getenv('POLICY_MAX_RISK_SCORE', '0.5'))
+        }
 
     def check(self, metrics: Dict) -> Tuple[bool, List[str]]:
         """
@@ -24,8 +25,8 @@ class PolicyGate:
             )
 
         if not violations:
-            self.log.info("Policy check passed.")
+            self.log.info(f"Policy check passed at {datetime.now()} - {self.policies}")
             return True, []
         else:
-            self.log.warning(f"Policy violations detected: {violations}")
+            self.log.warning(f"Policy violations detected at {datetime.now()}: {violations}")
             return False, violations

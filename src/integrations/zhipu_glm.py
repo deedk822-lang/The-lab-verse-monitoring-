@@ -4,10 +4,6 @@ import re
 from typing import Any, Dict, Optional
 
 import aiohttp
-from pydantic import BaseModel, Field
-
-from ..core.config import settings
-
 
 class GLMConfig(BaseModel):
     """Configuration for GLM integration"""
@@ -30,17 +26,16 @@ class GLMIntegration:
             config (GLMConfig): Configuration for the integration (includes API key, optional base_url, and model selection). The instance will store this config, initialize the HTTP session to None, and create a module-scoped logger.
         """
         self.config = config
-        self.session = None
-        self.logger = logging.getLogger(__name__)
-
-    async def __aenter__(self):
-        """Async context manager entry"""
         self.session = aiohttp.ClientSession(
             headers={
                 "Authorization": f"Bearer {self.config.api_key}",
                 "Content-Type": "application/json"
             }
         )
+        self.logger = logging.getLogger(__name__)
+
+    async def __aenter__(self):
+        """Async context manager entry"""
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -50,14 +45,13 @@ class GLMIntegration:
         This ensures the underlying aiohttp ClientSession is properly closed to release network
         resources.
         """
-        if self.session:
-            await self.session.close()
+        await self.session.close()
 
     def sanitize_input(self, user_input: str) -> str:
         """
         Sanitize a user-provided string to mitigate prompt-injection risks.
         
-        Removes braces, square brackets, double quotes, and backslashes from the input, truncates the result to at most 1000 characters, and wraps it in <user_input>...</user_input> tags.
+        Removes potential injection patterns and converts special characters to HTML entities.
         
         Parameters:
             user_input (str): The raw user input to sanitize.
@@ -67,6 +61,11 @@ class GLMIntegration:
         """
         # Remove potential injection patterns
         sanitized = re.sub(r'[{}[\]"\\]', '', user_input)[:1000]  # Length limit
+
+        # Convert special characters to HTML entities
+        for char in '<>"\\':
+            sanitized = sanitized.replace(char, f"&{char};" if char == '\\' else f"&#x{ord(char):X};")
+
         return f"<user_input>{sanitized}</user_input>"
 
     async def generate_text(self, prompt: str, options: Optional[Dict] = None, sanitize: bool = True) -> str:
@@ -145,13 +144,13 @@ class GLMIntegration:
         }}
         """
 
-        # Call generate_text with sanitize=False to preserve JSON structure in prompt
+        # Call generate_text with sanitize=False to preserve content structure
         response = await self.generate_text(prompt, {"max_tokens": 2048}, sanitize=False)
 
         try:
             return json.loads(response)
         except json.JSONDecodeError:
-            self.logger.warning("Failed to parse GLM response as JSON, returning raw text")
+            self.logger.warning("Failed to parse GLM response as JSON")
             return {"content": response}
 
     async def analyze_content_security(self, content: str) -> Dict[str, Any]:

@@ -123,24 +123,16 @@ class InputValidator:
             json.loads(data)  # ✅ FIX: No local import needed
             return True
         except (json.JSONDecodeError, TypeError):
-            return False
+            raise SecurityError("Invalid JSON input")
 
     @staticmethod
     def validate_yaml_safe(data: str) -> bool:
         """Validate YAML is safe to parse"""
-        # Check for dangerous YAML constructs
-        dangerous_patterns = [
-            r'!!python/',
-            r'__import__',
-            r'eval\s*\(',
-            r'exec\s*\(',
-        ]
-
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-
-        return True
+        try:
+            yaml.safe_load(data)  # ✅ FIX: No local import needed
+            return True
+        except (yaml.YAMLError, TypeError):
+            raise SecurityError("Invalid YAML input")
 
     @staticmethod
     def validate_url(url: str) -> bool:
@@ -172,8 +164,7 @@ class RateLimiter:
         """
         now = time.time()  # ✅ FIX: No local import needed
 
-        # ✅ FIX: Atomic operations under lock
-        with self._lock:
+        try:
             # Remove old requests outside window
             self.requests = [
                 req for req in self.requests
@@ -187,18 +178,31 @@ class RateLimiter:
             # Record this request
             self.requests.append(now)
             return True
+        except Exception as e:
+            # Handle the exception gracefully
+            print(f"Rate limit check failed: {e}")
+            return False
 
     def get_stats(self) -> dict:
         """Get rate limiter statistics (thread-safe)"""
-        with self._lock:
-            return {
-                "requests_in_window": len(self.requests),
-                "max_requests": self.max_requests,
-                "remaining": self.max_requests - len(self.requests),
-                "window_seconds": self.window_seconds
-            }
+        try:
+            with self._lock:
+                return {
+                    "requests_in_window": len(self.requests),
+                    "max_requests": self.max_requests,
+                    "remaining": self.max_requests - len(self.requests),
+                    "window_seconds": self.window_seconds
+                }
+        except Exception as e:
+            # Handle the exception gracefully
+            print(f"Failed to get stats: {e}")
+            return None
 
     def reset(self):
         """Reset the rate limiter (thread-safe)"""
-        with self._lock:
-            self.requests.clear()
+        try:
+            with self._lock:
+                self.requests.clear()
+        except Exception as e:
+            # Handle the exception gracefully
+            print(f"Failed to reset rate limiter: {e}")

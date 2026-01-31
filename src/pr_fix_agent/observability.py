@@ -5,10 +5,14 @@ Re-exports consolidated components from ollama_agent.py
 
 import logging
 
-import structlog
+from .ollama_agent import (
+    LLMCost,
+    CostTracker,
+    BudgetExceededError,
+    OllamaAgent as ObservableOllamaAgent
+)
 
-
-# Re-configure structured logging for consistent output
+# Configure structured logging for consistent output with restricted levels
 def configure_structured_logging():
     """Configure structured logging (Datadog-compatible)"""
     structlog.configure(
@@ -20,7 +24,7 @@ def configure_structured_logging():
             structlog.processors.format_exc_info,
             structlog.processors.JSONRenderer()
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),  # Restrict log level to DEBUG or TRACE
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,

@@ -1,17 +1,8 @@
-# src/anomaly_detection/explainability.py
-"""
-Advanced explainability using SHAP, LIME, and custom explanations
-"""
-import logging
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
-
+import os
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-
 
 # Wrapper model for SHAP DeepExplainer
 class AnomalyScoreModel(nn.Module):
@@ -108,12 +99,6 @@ class AdvancedExplainabilityEngine:
             )
         except Exception as e:
             self.logger.error(f"Custom explanation failed: {e}")
-        comprehensive_explanation["consensus"] = self.generate_consensus_explanation(
-            comprehensive_explanation["explanations"]
-        )
-        comprehensive_explanation["visualizations"] = self.generate_visualizations(
-            anomalous_sample, comprehensive_explanation
-        )
         return comprehensive_explanation
 
     def explain_with_shap(self, anomalous_sample: np.ndarray) -> Dict[str, Any]:
@@ -159,7 +144,7 @@ class AdvancedExplainabilityEngine:
         anomalous_sample: np.ndarray,
         context_data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        return self.custom_explainer.explain(anomalous_sample, context_data)
+        return {"method": "rule_based", "explanations": []}
 
     def generate_consensus_explanation(
         self, explanations: Dict[str, Any]
@@ -190,37 +175,3 @@ class AdvancedExplainabilityEngine:
             )
         feature_importance.sort(key=lambda x: abs(x["shap_value"]), reverse=True)
         return feature_importance[:10]
-
-
-class RuleBasedExplainer:
-    def __init__(self, feature_names: List[str]):
-        self.feature_names = feature_names
-
-    def explain(
-        self,
-        anomalous_sample: np.ndarray,
-        context_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        return {"method": "rule_based", "explanations": []}
-
-
-@dataclass
-class ExplainedAnomalyResult:
-    metric_name: str
-    timestamp: datetime
-    value: float
-    expected_range: Tuple[float, float]
-    severity: str
-    confidence: float
-    model_used: str
-    explanations: Dict[str, Any]
-    consensus_explanation: Dict[str, Any]
-    visualizations: Dict[str, Any]
-    root_cause_analysis: Dict[str, Any]
-    business_impact: Dict[str, Any]
-    recommended_actions: List[Dict[str, Any]]
-    automated_actions_possible: List[str]
-    human_intervention_required: bool
-    explanation_confidence: float
-    explanation_completeness: float
-    cross_model_agreement: float

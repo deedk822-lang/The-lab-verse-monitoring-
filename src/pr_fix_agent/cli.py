@@ -1,7 +1,5 @@
 """
 Unified CLI Entry Point
-FIXES: Entry point documentation mismatch
-PROVIDES: Single pr-fix-agent command with subcommands
 """
 
 import argparse
@@ -15,7 +13,7 @@ logger = structlog.get_logger()
 
 def health_check() -> int:
     """
-    Perform health check
+    Perform system health check
 
     Returns:
         0 if healthy, 1 otherwise
@@ -70,7 +68,7 @@ def health_check() -> int:
 
 
 def run_orchestrator(args) -> int:
-    """Run orchestration mode"""
+    """Run multi-agent orchestration"""
     from pr_fix_agent.orchestrator import main as orchestrator_main
 
     # Convert args to orchestrator format

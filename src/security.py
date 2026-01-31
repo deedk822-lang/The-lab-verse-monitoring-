@@ -6,7 +6,6 @@ Proper library structure for reusable components
 import re
 from pathlib import Path
 
-
 class SecurityError(Exception):
     """Security validation error"""
     pass
@@ -31,7 +30,7 @@ class SecurityValidator:
         Raises:
             SecurityError: If path is invalid or attempts traversal
         """
-        # Security: Basic checks before resolution
+        # Basic checks before resolution
         if len(user_path) > 1000:
             raise SecurityError(f"Path too long: {len(user_path)}")
 

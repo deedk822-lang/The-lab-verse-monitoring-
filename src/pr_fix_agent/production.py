@@ -25,7 +25,7 @@ def main():
     FIXED: Fail fast if repo path invalid
     """
     parser = argparse.ArgumentParser(description="PR Fix Agent Production")
-    parser.add_argument("--repo-path", default=".", help="Path to repository")
+    parser.add_argument("--repo-path", required=True, help="Path to repository")
     parser.add_argument("--health-check", action="store_true", help="Run health check")
     parser.add_argument("--model", default="codellama", help="Ollama model to use")
 
@@ -47,11 +47,18 @@ def main():
         print(f"❌ Error: Repository path is not a directory: {repo_path}")
         return 2
 
+    # Validate the repository for security vulnerabilities
+    validator = SecurityValidator(repo_path)
+    try:
+        validator.validate()
+    except SecurityError as e:
+        print(f"❌ Error validating repository: {e}")
+        return 3
+
     print(f"✅ Using repository: {repo_path}")
 
     # Initialize components (validation already done)
     agent = OllamaAgent(model=args.model)
-    validator = SecurityValidator(repo_path)
     analyzer = PRErrorAnalyzer(agent=agent)
     fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path))
 

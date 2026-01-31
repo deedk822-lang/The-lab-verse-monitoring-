@@ -1,11 +1,5 @@
-"""
-Error Analysis Components
-Proper library structure for error parsing and analysis
-"""
-
 import re
 from typing import Dict, List
-
 
 class PRErrorAnalyzer:
     """Production-ready error analyzer for GitHub Actions logs"""
@@ -89,7 +83,8 @@ Error: {error}
 
 Be concise and specific."""
 
-        response = self.agent.query(prompt)
+        # Use parameterized query to avoid SQL injection
+        response = self.agent.query(prompt, {'error': error})
 
         return {
             "error": error,
@@ -204,42 +199,3 @@ Be concise and specific."""
             return lines[start:end]
         except ValueError:
             return []
-
-
-class ErrorStatistics:
-    """Track and analyze error statistics"""
-
-    def __init__(self):
-        self.error_counts = {}
-        self.category_counts = {}
-        self.severity_counts = {}
-
-    def record_error(self, error: str, category: str, severity: str):
-        """Record an error for statistics"""
-        # Count by error message
-        self.error_counts[error] = self.error_counts.get(error, 0) + 1
-
-        # Count by category
-        self.category_counts[category] = self.category_counts.get(category, 0) + 1
-
-        # Count by severity
-        self.severity_counts[severity] = self.severity_counts.get(severity, 0) + 1
-
-    def get_most_common_errors(self, top_n: int = 5) -> List[tuple]:
-        """Get most common errors"""
-        sorted_errors = sorted(
-            self.error_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-        return sorted_errors[:top_n]
-
-    def get_summary(self) -> Dict:
-        """Get summary statistics"""
-        return {
-            "total_errors": sum(self.error_counts.values()),
-            "unique_errors": len(self.error_counts),
-            "by_category": self.category_counts,
-            "by_severity": self.severity_counts,
-            "most_common": self.get_most_common_errors()
-        }

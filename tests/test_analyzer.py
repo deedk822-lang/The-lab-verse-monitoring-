@@ -19,9 +19,11 @@ class TestPRErrorAnalyzerReal:
         """Mock agent to avoid HTTP calls"""
         agent = Mock()
         # Mocking query method to return a string response as expected by PRErrorAnalyzer
-        agent.query = Mock(return_value="""Root cause: Missing dependency
+        agent.query = Mock(
+            return_value="""Root cause: Missing dependency
 Suggested fix: Install the required package
-Code changes: Add to requirements.txt""")
+Code changes: Add to requirements.txt"""
+        )
         return agent
 
     @pytest.fixture

@@ -73,9 +73,7 @@ class KimiCLI:
         try:
             priority = TaskPriority(args.priority)
         except ValueError:
-            print(
-                f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical"
-            )
+            print(f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical")
             return
 
         # Create task
@@ -187,9 +185,7 @@ class KimiCLI:
         # Get current status
         status = await self.kimi.get_status_report()
 
-        print(
-            f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%"
-        )
+        print(f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%")
         print(f"Risk Level: {status['risk_level'].upper()}")
         print(f"Budget Remaining: ${status['project_context']['budget_remaining']:.2f}")
 
@@ -206,9 +202,7 @@ class KimiCLI:
         )
 
         print("\n✅ Checkin completed")
-        print(
-            f"Next checkin due: {self.kimi.context.last_human_checkin.strftime('%Y-%m-%d %H:%M')}"
-        )
+        print(f"Next checkin due: {self.kimi.context.last_human_checkin.strftime('%Y-%m-%d %H:%M')}")
 
     async def report_command(self, args):
         """Generate project report"""
@@ -249,9 +243,7 @@ class KimiCLI:
         print("-" * 25)
         print(f"Current Risk Level: {status['risk_level'].upper()}")
         print(f"Risk Score: {context['metrics'].get('risk_score', 0):.2f}")
-        print(
-            f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}"
-        )
+        print(f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}")
 
         # Critical Issues
         if status["critical_issues"]:
@@ -309,14 +301,10 @@ Examples:
         default="medium",
         help="Task priority",
     )
-    parser.add_argument(
-        "--execute", action="store_true", help="Execute task immediately after creation"
-    )
+    parser.add_argument("--execute", action="store_true", help="Execute task immediately after creation")
 
     # Output options
-    parser.add_argument(
-        "--output", choices=["json", "table"], default="table", help="Output format"
-    )
+    parser.add_argument("--output", choices=["json", "table"], default="table", help="Output format")
 
     args = parser.parse_args()
 

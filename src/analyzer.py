@@ -50,7 +50,7 @@ class PRErrorAnalyzer:
         errors = []
         warnings = []
 
-        for line in log_content.split('\n'):
+        for line in log_content.split("\n"):
             # Check errors
             for pattern in self.error_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
@@ -65,10 +65,7 @@ class PRErrorAnalyzer:
                     warnings.append(line.strip())
                     break
 
-        return {
-            "errors": errors,
-            "warnings": warnings
-        }
+        return {"errors": errors, "warnings": warnings}
 
     def analyze_error(self, error: str) -> Dict[str, str]:
         """
@@ -97,7 +94,7 @@ Be concise and specific."""
             "root_cause": self._extract_root_cause(response),
             "suggested_fix": self._extract_fix(response),
             "category": self.categorize_error(error),
-            "severity": self.get_error_severity(error)
+            "severity": self.get_error_severity(error),
         }
 
     def categorize_error(self, error: str) -> str:
@@ -113,38 +110,38 @@ Be concise and specific."""
         error_lower = error.lower()
 
         # Git/submodule errors
-        if 'submodule' in error_lower:
-            return 'submodule_error'
+        if "submodule" in error_lower:
+            return "submodule_error"
 
         # Module/import errors
-        if 'no module named' in error_lower or 'importerror' in error_lower or 'module' in error_lower:
-            return 'missing_module'
+        if "no module named" in error_lower or "importerror" in error_lower or "module" in error_lower:
+            return "missing_module"
 
         # File-related errors
-        if 'not found' in error_lower or 'no such file' in error_lower:
-            return 'missing_file'
+        if "not found" in error_lower or "no such file" in error_lower:
+            return "missing_file"
 
         # Syntax errors
-        if 'syntaxerror' in error_lower or 'invalid syntax' in error_lower:
-            return 'syntax_error'
+        if "syntaxerror" in error_lower or "invalid syntax" in error_lower:
+            return "syntax_error"
 
         # Permission errors
-        if 'permission denied' in error_lower:
-            return 'permission_error'
+        if "permission denied" in error_lower:
+            return "permission_error"
 
         # Network/timeout errors
-        if 'timeout' in error_lower or 'timed out' in error_lower:
-            return 'timeout_error'
+        if "timeout" in error_lower or "timed out" in error_lower:
+            return "timeout_error"
 
         # Type errors
-        if 'typeerror' in error_lower:
-            return 'type_error'
+        if "typeerror" in error_lower:
+            return "type_error"
 
         # Attribute errors
-        if 'attributeerror' in error_lower:
-            return 'attribute_error'
+        if "attributeerror" in error_lower:
+            return "attribute_error"
 
-        return 'unknown'
+        return "unknown"
 
     def get_error_severity(self, error: str) -> str:
         """
@@ -158,28 +155,28 @@ Be concise and specific."""
         """
         error_lower = error.lower()
 
-        if 'fatal' in error_lower or 'critical' in error_lower:
-            return 'critical'
-        elif 'error' in error_lower:
-            return 'high'
-        elif 'warn' in error_lower:
-            return 'low'
+        if "fatal" in error_lower or "critical" in error_lower:
+            return "critical"
+        elif "error" in error_lower:
+            return "high"
+        elif "warn" in error_lower:
+            return "low"
         else:
-            return 'medium'
+            return "medium"
 
     def _extract_root_cause(self, analysis: str) -> str:
         """Extract root cause from analysis text"""
-        lines = analysis.lower().split('\n')
+        lines = analysis.lower().split("\n")
         for line in lines:
-            if 'root cause' in line or 'cause:' in line:
+            if "root cause" in line or "cause:" in line:
                 return line.strip()
         return "Unknown"
 
     def _extract_fix(self, analysis: str) -> str:
         """Extract suggested fix from analysis text"""
-        lines = analysis.lower().split('\n')
+        lines = analysis.lower().split("\n")
         for line in lines:
-            if 'fix' in line or 'solution' in line:
+            if "fix" in line or "solution" in line:
                 return line.strip()
         return "No fix suggested"
 
@@ -195,7 +192,7 @@ Be concise and specific."""
         Returns:
             List of context lines
         """
-        lines = log_content.split('\n')
+        lines = log_content.split("\n")
 
         try:
             error_index = lines.index(error_line)
@@ -227,11 +224,7 @@ class ErrorStatistics:
 
     def get_most_common_errors(self, top_n: int = 5) -> List[tuple]:
         """Get most common errors"""
-        sorted_errors = sorted(
-            self.error_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        sorted_errors = sorted(self.error_counts.items(), key=lambda x: x[1], reverse=True)
         return sorted_errors[:top_n]
 
     def get_summary(self) -> Dict:
@@ -241,5 +234,5 @@ class ErrorStatistics:
             "unique_errors": len(self.error_counts),
             "by_category": self.category_counts,
             "by_severity": self.severity_counts,
-            "most_common": self.get_most_common_errors()
+            "most_common": self.get_most_common_errors(),
         }

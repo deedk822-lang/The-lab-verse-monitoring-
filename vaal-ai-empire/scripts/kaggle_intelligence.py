@@ -19,20 +19,21 @@ from pathlib import Path
 # Add vaal-ai-empire to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
 def check_environment():
     """Verify all required environment variables are set"""
     print("🔐 Checking environment variables...")
 
     required_vars = {
-        'KAGGLE_USERNAME': 'Kaggle username (lungeloluda)',
-        'KAGGLE_KEY': 'Kaggle API key',
-        'JIRA_BASE_URL': 'Jira base URL',
-        'JIRA_USER_EMAIL': 'Jira user email (dimakatsomoleli@gmail.com)',
-        'JIRA_API_TOKEN': 'Jira API token',
-        'OSS_ACCESS_KEY_ID': 'Alibaba OSS Access Key',
-        'OSS_ACCESS_KEY_SECRET': 'Alibaba OSS Secret',
-        'OSS_ENDPOINT': 'Alibaba OSS Endpoint',
-        'OSS_BUCKET': 'Alibaba OSS Bucket'
+        "KAGGLE_USERNAME": "Kaggle username (lungeloluda)",
+        "KAGGLE_KEY": "Kaggle API key",
+        "JIRA_BASE_URL": "Jira base URL",
+        "JIRA_USER_EMAIL": "Jira user email (dimakatsomoleli@gmail.com)",
+        "JIRA_API_TOKEN": "Jira API token",
+        "OSS_ACCESS_KEY_ID": "Alibaba OSS Access Key",
+        "OSS_ACCESS_KEY_SECRET": "Alibaba OSS Secret",
+        "OSS_ENDPOINT": "Alibaba OSS Endpoint",
+        "OSS_BUCKET": "Alibaba OSS Bucket",
     }
 
     missing = []
@@ -41,7 +42,7 @@ def check_environment():
             missing.append(f"  ❌ {var} ({description})")
         else:
             # Mask sensitive values in output
-            if var in ['KAGGLE_KEY', 'JIRA_API_TOKEN', 'OSS_ACCESS_KEY_SECRET']:
+            if var in ["KAGGLE_KEY", "JIRA_API_TOKEN", "OSS_ACCESS_KEY_SECRET"]:
                 print(f"  ✅ {var} (configured)")
             else:
                 print(f"  ✅ {var}: {os.getenv(var)}")
@@ -59,16 +60,13 @@ def setup_kaggle_credentials():
     """Create Kaggle credentials file from environment variables"""
     print("📁 Setting up Kaggle credentials for: lungeloluda...")
 
-    kaggle_dir = Path.home() / '.kaggle'
+    kaggle_dir = Path.home() / ".kaggle"
     kaggle_dir.mkdir(exist_ok=True, parents=True)
 
-    credentials = {
-        'username': os.getenv('KAGGLE_USERNAME'),
-        'key': os.getenv('KAGGLE_KEY')
-    }
+    credentials = {"username": os.getenv("KAGGLE_USERNAME"), "key": os.getenv("KAGGLE_KEY")}
 
-    credentials_file = kaggle_dir / 'kaggle.json'
-    with open(credentials_file, 'w') as f:
+    credentials_file = kaggle_dir / "kaggle.json"
+    with open(credentials_file, "w") as f:
         json.dump(credentials, f)
 
     # Set proper permissions (Kaggle requires 600)
@@ -89,13 +87,7 @@ def fetch_trending_datasets():
         api.authenticate()
 
         # Search for datasets relevant to South African business intelligence
-        search_terms = [
-            'south africa',
-            'financial analysis',
-            'market trends',
-            'consumer behavior',
-            'economic data'
-        ]
+        search_terms = ["south africa", "financial analysis", "market trends", "consumer behavior", "economic data"]
 
         datasets = []
         for term in search_terms[:2]:  # Limit to 2 searches to avoid rate limits
@@ -124,7 +116,7 @@ def analyze_dataset_value(dataset):
     insights = []
 
     # Check download count
-    if hasattr(dataset, 'downloadCount') and dataset.downloadCount:
+    if hasattr(dataset, "downloadCount") and dataset.downloadCount:
         if dataset.downloadCount > 10000:
             score += 3
             insights.append(f"High popularity ({dataset.downloadCount:,} downloads)")
@@ -133,23 +125,23 @@ def analyze_dataset_value(dataset):
             insights.append(f"Moderate popularity ({dataset.downloadCount:,} downloads)")
 
     # Check vote count
-    if hasattr(dataset, 'voteCount') and dataset.voteCount:
+    if hasattr(dataset, "voteCount") and dataset.voteCount:
         if dataset.voteCount > 100:
             score += 2
             insights.append(f"Well-received ({dataset.voteCount} votes)")
 
     # Check size
-    if hasattr(dataset, 'size') and dataset.size:
+    if hasattr(dataset, "size") and dataset.size:
         if dataset.size > 1000000:  # > 1MB
             score += 1
             insights.append("Substantial data volume")
 
     return {
-        'dataset_ref': dataset.ref,
-        'title': dataset.title if hasattr(dataset, 'title') else 'Unknown',
-        'score': score,
-        'insights': insights,
-        'url': f"https://www.kaggle.com/{dataset.ref}"
+        "dataset_ref": dataset.ref,
+        "title": dataset.title if hasattr(dataset, "title") else "Unknown",
+        "score": score,
+        "insights": insights,
+        "url": f"https://www.kaggle.com/{dataset.ref}",
     }
 
 
@@ -161,11 +153,7 @@ def create_jira_ticket(analysis):
         from jira import JIRA
 
         jira = JIRA(
-            server=os.getenv('JIRA_BASE_URL'),
-            basic_auth=(
-                os.getenv('JIRA_USER_EMAIL'),
-                os.getenv('JIRA_API_TOKEN')
-            )
+            server=os.getenv("JIRA_BASE_URL"), basic_auth=(os.getenv("JIRA_USER_EMAIL"), os.getenv("JIRA_API_TOKEN"))
         )
 
         # Get first available project
@@ -178,18 +166,18 @@ def create_jira_ticket(analysis):
 
         # Create issue
         issue_dict = {
-            'project': {'key': project_key},
-            'summary': f"Kaggle Dataset: {analysis['title'][:80]}",
-            'description': f"""
+            "project": {"key": project_key},
+            "summary": f"Kaggle Dataset: {analysis['title'][:80]}",
+            "description": f"""
 *Kaggle Intelligence Pipeline - Automated Discovery*
 
 *Discovered by:* Lungelo Luda (lungeloluda)
-*Dataset:* {analysis['title']}
-*URL:* {analysis['url']}
-*Value Score:* {analysis['score']}/6
+*Dataset:* {analysis["title"]}
+*URL:* {analysis["url"]}
+*Value Score:* {analysis["score"]}/6
 
 *Insights:*
-{chr(10).join('• ' + insight for insight in analysis['insights'])}
+{chr(10).join("• " + insight for insight in analysis["insights"])}
 
 *Recommended Actions:*
 1. Review dataset for potential use in Vaal AI Empire products
@@ -199,9 +187,9 @@ def create_jira_ticket(analysis):
 
 _Auto-generated by Kaggle Intelligence Pipeline_
 _Identity: Lungelo Luda (dimakatsomoleli@gmail.com)_
-_Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M SAST')}_
+_Timestamp: {datetime.now().strftime("%Y-%m-%d %H:%M SAST")}_
 """,
-            'issuetype': {'name': 'Task'},
+            "issuetype": {"name": "Task"},
         }
 
         new_issue = jira.create_issue(fields=issue_dict)
@@ -220,19 +208,12 @@ def upload_to_oss(analysis_results):
     try:
         import oss2
 
-        auth = oss2.Auth(
-            os.getenv('OSS_ACCESS_KEY_ID'),
-            os.getenv('OSS_ACCESS_KEY_SECRET')
-        )
+        auth = oss2.Auth(os.getenv("OSS_ACCESS_KEY_ID"), os.getenv("OSS_ACCESS_KEY_SECRET"))
 
-        bucket = oss2.Bucket(
-            auth,
-            os.getenv('OSS_ENDPOINT'),
-            os.getenv('OSS_BUCKET')
-        )
+        bucket = oss2.Bucket(auth, os.getenv("OSS_ENDPOINT"), os.getenv("OSS_BUCKET"))
 
         # Create filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"kaggle-intelligence/{timestamp}_lungeloluda_analysis.json"
 
         # Upload
@@ -276,13 +257,13 @@ def main():
 
         # Create empty result for tracking
         results = {
-            'timestamp': datetime.now().isoformat(),
-            'identity': 'lungeloluda',
-            'email': 'dimakatsomoleli@gmail.com',
-            'datasets_analyzed': 0,
-            'high_value_datasets': 0,
-            'analyses': [],
-            'status': 'no_datasets_found'
+            "timestamp": datetime.now().isoformat(),
+            "identity": "lungeloluda",
+            "email": "dimakatsomoleli@gmail.com",
+            "datasets_analyzed": 0,
+            "high_value_datasets": 0,
+            "analyses": [],
+            "status": "no_datasets_found",
         }
         upload_to_oss(results)
 
@@ -302,7 +283,7 @@ def main():
             analyses.append(analysis)
 
             # Create Jira ticket for high-value datasets (score >= 4)
-            if analysis['score'] >= 4:
+            if analysis["score"] >= 4:
                 ticket = create_jira_ticket(analysis)
                 if ticket:
                     jira_tickets_created += 1
@@ -314,14 +295,14 @@ def main():
 
     # Step 5: Upload results to OSS
     results = {
-        'timestamp': datetime.now().isoformat(),
-        'identity': 'lungeloluda',
-        'email': 'dimakatsomoleli@gmail.com',
-        'datasets_analyzed': len(analyses),
-        'high_value_datasets': len([a for a in analyses if a['score'] >= 4]),
-        'jira_tickets_created': jira_tickets_created,
-        'analyses': analyses,
-        'status': 'success'
+        "timestamp": datetime.now().isoformat(),
+        "identity": "lungeloluda",
+        "email": "dimakatsomoleli@gmail.com",
+        "datasets_analyzed": len(analyses),
+        "high_value_datasets": len([a for a in analyses if a["score"] >= 4]),
+        "jira_tickets_created": jira_tickets_created,
+        "analyses": analyses,
+        "status": "success",
     }
 
     upload_to_oss(results)
@@ -348,5 +329,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Fatal error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

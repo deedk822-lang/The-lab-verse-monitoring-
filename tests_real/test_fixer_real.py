@@ -21,29 +21,34 @@ def temp_repo():
     yield Path(temp_dir)
     shutil.rmtree(temp_dir)
 
+
 @pytest.fixture
 def agent():
     """Create mock Ollama agent"""
     return MockOllamaAgent(model="test")
+
 
 @pytest.fixture
 def fixer(agent, temp_repo):
     """Create fixer instance"""
     return PRErrorFixer(agent, str(temp_repo))
 
+
 # ============================================================================
 # REAL TESTS
 # ============================================================================
 
+
 class MockOllamaAgent:
     """Mock agent for testing"""
+
     def __init__(self, model="test"):
         self.model = model
 
     def query(self, prompt, temperature=0.2):
         # Return realistic mock responses based on prompt
         if "Generate code" in prompt or "test" in prompt:
-            return '''```python
+            return """```python
 #!/usr/bin/env python3
 def main():
     print("Test implementation")
@@ -51,7 +56,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-```'''
+```"""
         return "# Generated code"
 
 
@@ -89,7 +94,7 @@ class TestPRErrorFixerReal:
 
         # Should compile without syntax errors
         try:
-            compile(content, created_file.name, 'exec')
+            compile(content, created_file.name, "exec")
         except SyntaxError as e:
             pytest.fail(f"Generated file has syntax error: {e}")
 
@@ -98,7 +103,7 @@ class TestPRErrorFixerReal:
         attacks = [
             'Error: "../../../etc/passwd" not found',
             'Error: "../../etc/shadow" not found',
-            'Error: "/etc/passwd" not found'
+            'Error: "/etc/passwd" not found',
         ]
 
         for attack in attacks:
@@ -132,7 +137,7 @@ class TestPRErrorFixerReal:
         """Test: Actually removes submodule from .gitmodules"""
         # Create .gitmodules
         gitmodules = temp_repo / ".gitmodules"
-        gitmodules.write_text('''[submodule "good"]
+        gitmodules.write_text("""[submodule "good"]
     path = good
     url = https://github.com/example/good.git
 [submodule "broken"]
@@ -141,7 +146,7 @@ class TestPRErrorFixerReal:
 [submodule "other"]
     path = other
     url = https://github.com/example/other.git
-''')
+""")
 
         error = "fatal: No url found for submodule path 'broken'"
 
@@ -157,12 +162,12 @@ class TestPRErrorFixerReal:
         assert '[submodule "good"]' in content
         assert '[submodule "other"]' in content
         assert '[submodule "broken"]' not in content
-        assert 'broken' not in content  # Entire section gone
+        assert "broken" not in content  # Entire section gone
 
     def test_fix_submodule_preserves_other_entries(self, fixer, temp_repo):
         """Test: Preserves other submodules"""
         gitmodules = temp_repo / ".gitmodules"
-        gitmodules.write_text('''[submodule "keep1"]
+        gitmodules.write_text("""[submodule "keep1"]
     path = keep1
     url = https://example.com/keep1.git
 [submodule "remove"]
@@ -171,7 +176,7 @@ class TestPRErrorFixerReal:
 [submodule "keep2"]
     path = keep2
     url = https://example.com/keep2.git
-''')
+""")
 
         error = "fatal: No url found for submodule path 'remove'"
 
@@ -181,9 +186,9 @@ class TestPRErrorFixerReal:
             content = f.read()
 
         # Count submodule entries
-        assert content.count('[submodule') == 2
-        assert 'keep1' in content
-        assert 'keep2' in content
+        assert content.count("[submodule") == 2
+        assert "keep1" in content
+        assert "keep2" in content
 
     def test_fix_submodule_no_gitmodules_returns_none(self, fixer):
         """Test: Returns None when .gitmodules doesn't exist"""
@@ -200,7 +205,7 @@ class TestPRErrorFixerReal:
 
         attacks = [
             "fatal: No url found for submodule path '../evil'",
-            "fatal: No url found for submodule path '../../etc/passwd'"
+            "fatal: No url found for submodule path '../../etc/passwd'",
         ]
 
         for attack in attacks:
@@ -239,7 +244,7 @@ class TestPRErrorFixerReal:
 
         error = "ImportError: No module named 'numpy'"
 
-        result = fixer.fix_missing_dependency(error)
+        _result = fixer.fix_missing_dependency(error)
 
         # Should return None or message about already present
         with open(req_file) as f:
@@ -256,7 +261,7 @@ class TestPRErrorFixerReal:
         malicious_errors = [
             "ImportError: No module named 'os; rm -rf /'",
             "ImportError: No module named 'sys && cat /etc/passwd'",
-            "ImportError: No module named 'evil`whoami`'"
+            "ImportError: No module named 'evil`whoami`'",
         ]
 
         for error in malicious_errors:
@@ -283,12 +288,12 @@ class TestPRErrorFixerReal:
 
     def test_extract_code_from_markdown(self, fixer):
         """Test: Extracts code from markdown blocks"""
-        text = '''Here is the code:
+        text = """Here is the code:
 ```python
 def hello():
     return "world"
 ```
-This is some explanation.'''
+This is some explanation."""
 
         result = fixer._extract_code_block(text)
 
@@ -299,11 +304,11 @@ This is some explanation.'''
 
     def test_extract_code_without_markdown(self, fixer):
         """Test: Handles text without markdown"""
-        text = '''def test():
+        text = """def test():
     pass
 
 def another():
-    pass'''
+    pass"""
 
         result = fixer._extract_code_block(text)
 
@@ -331,15 +336,11 @@ def another():
         # File should be importable (valid Python)
         with open(created) as f:
             code = f.read()
-        compile(code, "config.py", 'exec')
+        compile(code, "config.py", "exec")
 
     def test_concurrent_fixes_safe(self, fixer, temp_repo):
         """Test: Multiple fixes don't interfere"""
-        errors = [
-            'Error: "file1.py" not found',
-            'Error: "file2.py" not found',
-            'Error: "file3.py" not found'
-        ]
+        errors = ['Error: "file1.py" not found', 'Error: "file2.py" not found', 'Error: "file3.py" not found']
 
         results = []
         for error in errors:
@@ -363,7 +364,7 @@ def another():
 
         # Should not crash
         try:
-            result = fixer.fix_missing_file_error(error)
+            _result = fixer.fix_missing_file_error(error)
             # May create file with garbage (that's ok for robustness)
         except Exception as e:
             pytest.fail(f"Should handle invalid response: {e}")
@@ -372,6 +373,7 @@ def another():
 # ============================================================================
 # Performance Tests
 # ============================================================================
+
 
 class TestPerformance:
     """Test performance characteristics"""
@@ -395,7 +397,7 @@ class TestPerformance:
 
         # Create large .gitmodules
         gitmodules = temp_repo / ".gitmodules"
-        with open(gitmodules, 'w') as f:
+        with open(gitmodules, "w") as f:
             for i in range(100):
                 f.write(f'[submodule "mod{i}"]\n    path = mod{i}\n\n')
             f.write('[submodule "broken"]\n    path = broken\n')

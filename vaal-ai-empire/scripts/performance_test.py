@@ -15,6 +15,7 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 
+
 def benchmark_batch_generation():
     print("=" * 60)
     print("PERFORMANCE COMPARISON: SEQUENTIAL VS PARALLEL")
@@ -25,8 +26,9 @@ def benchmark_batch_generation():
 
     # Mock self.generate to simulate network delay
     original_generate = generator.generate
+
     def mocked_generate(prompt, style="professional", provider="auto"):
-        time.sleep(1) # Simulate 1 second delay
+        time.sleep(1)  # Simulate 1 second delay
         return {"provider": "mock", "image_url": "mock_url", "cost_usd": 0.0}
 
     generator.generate = mocked_generate
@@ -58,6 +60,7 @@ def benchmark_batch_generation():
     # Restore original generate
     generator.generate = original_generate
     return improvement > 0
+
 
 if __name__ == "__main__":
     success = benchmark_batch_generation()

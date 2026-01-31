@@ -2,6 +2,7 @@
 """
 Advanced explainability using SHAP, LIME, and custom explanations
 """
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +12,17 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+
+try:
+    import shap
+except ImportError:
+    shap = None
+
+try:
+    import lime
+    import lime.lime_tabular
+except ImportError:
+    lime = None
 
 
 # Wrapper model for SHAP DeepExplainer
@@ -27,14 +39,10 @@ class AnomalyScoreModel(nn.Module):
 class AdvancedExplainabilityEngine:
     """Comprehensive explainability for ML anomaly detection"""
 
-    def __init__(
-        self, model, training_data: np.ndarray, feature_names: List[str] = None
-    ):
+    def __init__(self, model, training_data: np.ndarray, feature_names: List[str] = None):
         self.model = model
         self.training_data = training_data
-        self.feature_names = feature_names or [
-            f"feature_{i}" for i in range(training_data.shape[1])
-        ]
+        self.feature_names = feature_names or [f"feature_{i}" for i in range(training_data.shape[1])]
         self.logger = logging.getLogger("explainability_engine")
 
         self._setup_shap_explainer()
@@ -43,6 +51,11 @@ class AdvancedExplainabilityEngine:
 
     def _setup_shap_explainer(self):
         """Setup SHAP explainer using the more efficient DeepExplainer."""
+        if shap is None:
+            self.logger.warning("SHAP library not installed, skipping explainer setup")
+            self.shap_explainer = None
+            return
+
         try:
             if hasattr(self.model, "forward"):
                 shap_model = AnomalyScoreModel(self.model)
@@ -58,10 +71,13 @@ class AdvancedExplainabilityEngine:
 
     def _setup_lime_explainer(self):
         """Setup LIME explainer."""
+        if lime is None:
+            self.logger.warning("LIME library not installed, skipping explainer setup")
+            self.lime_explainer = None
+            return
+
         try:
-            lime_training_data = self.training_data.reshape(
-                (self.training_data.shape[0], -1)
-            )
+            lime_training_data = self.training_data.reshape((self.training_data.shape[0], -1))
             self.lime_explainer = lime.lime_tabular.LimeTabularExplainer(
                 lime_training_data,
                 mode="regression",
@@ -90,22 +106,16 @@ class AdvancedExplainabilityEngine:
         }
         if self.shap_explainer:
             try:
-                comprehensive_explanation["explanations"]["shap"] = (
-                    self.explain_with_shap(anomalous_sample)
-                )
+                comprehensive_explanation["explanations"]["shap"] = self.explain_with_shap(anomalous_sample)
             except Exception as e:
                 self.logger.error(f"SHAP explanation failed: {e}")
         if self.lime_explainer:
             try:
-                comprehensive_explanation["explanations"]["lime"] = (
-                    self.explain_with_lime(anomalous_sample)
-                )
+                comprehensive_explanation["explanations"]["lime"] = self.explain_with_lime(anomalous_sample)
             except Exception as e:
                 self.logger.error(f"LIME explanation failed: {e}")
         try:
-            comprehensive_explanation["explanations"]["rules"] = (
-                self.explain_with_rules(anomalous_sample, context_data)
-            )
+            comprehensive_explanation["explanations"]["rules"] = self.explain_with_rules(anomalous_sample, context_data)
         except Exception as e:
             self.logger.error(f"Custom explanation failed: {e}")
         comprehensive_explanation["consensus"] = self.generate_consensus_explanation(
@@ -134,23 +144,17 @@ class AdvancedExplainabilityEngine:
         if not self.lime_explainer:
             return {"error": "LIME explainer not available"}
         lime_sample = anomalous_sample.flatten()
-        explanation = self.lime_explainer.explain_instance(
-            lime_sample, self._predict_for_lime, num_features=10
-        )
+        explanation = self.lime_explainer.explain_instance(lime_sample, self._predict_for_lime, num_features=10)
         return {
             "method": "LIME",
             "predicted_value": float(explanation.predicted_value),
-            "feature_contributions": [
-                {"feature": str(f), "weight": w} for f, w in explanation.as_list()
-            ],
+            "feature_contributions": [{"feature": str(f), "weight": w} for f, w in explanation.as_list()],
         }
 
-    def _predict_for_lime(self, X: np.ndarray) -> np.ndarray:
-        X_3d = X.reshape(
-            X.shape[0], self.training_data.shape[1], self.training_data.shape[2]
-        )
-        X_tensor = torch.FloatTensor(X_3d)
-        _, anomaly_scores, _ = self.model(X_tensor)
+    def _predict_for_lime(self, x_input: np.ndarray) -> np.ndarray:
+        x_3d = x_input.reshape(x_input.shape[0], self.training_data.shape[1], self.training_data.shape[2])
+        x_tensor = torch.FloatTensor(x_3d)
+        _, anomaly_scores, _ = self.model(x_tensor)
         scores = anomaly_scores.detach().numpy()
         return np.hstack((1 - scores, scores))
 
@@ -161,23 +165,17 @@ class AdvancedExplainabilityEngine:
     ) -> Dict[str, Any]:
         return self.custom_explainer.explain(anomalous_sample, context_data)
 
-    def generate_consensus_explanation(
-        self, explanations: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def generate_consensus_explanation(self, explanations: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "agreement_score": 0.7,
             "consensus_features": [],
             "explanation_summary": "Consensus summary.",
         }
 
-    def generate_visualizations(
-        self, anomalous_sample: np.ndarray, explanation: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def generate_visualizations(self, anomalous_sample: np.ndarray, explanation: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
-    def _calculate_shap_importance(
-        self, shap_values: np.ndarray
-    ) -> List[Dict[str, Any]]:
+    def _calculate_shap_importance(self, shap_values: np.ndarray) -> List[Dict[str, Any]]:
         feature_importance = []
         abs_sum = np.sum(np.abs(shap_values))
         for i, shap_val in enumerate(shap_values):

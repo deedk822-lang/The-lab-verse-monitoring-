@@ -29,7 +29,7 @@ module.exports = {
       method: 'POST',
       path: '/users',
       body: { name: 'Test User', email: 'test@example.com' },
-      headers: { 'X-API-Key': 'some-secret-key' }, // Example custom header
+      headers: process.env.X_API_KEY ? { 'X-API-Key': process.env.X_API_KEY } : {},
       concurrencyLevels: [10, 50, 100], // Override global concurrency for this benchmark
       thresholds: {
         p95Ms: 300, // This benchmark is slower, allow more latency

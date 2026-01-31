@@ -1,0 +1,188 @@
+# =============================================================================
+# VAAL AI Empire - Kubernetes Deployment
+# Supports GPU acceleration and horizontal scaling
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaal-app
+  namespace: vaal-ai-empire
+  labels:
+    app: vaal-app
+    version: v1
+    component: api
+spec:
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: vaal-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: vaal-app
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: vaal-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      # Init container to wait for database
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z postgres-service 5432; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+      
+      containers:
+      - name: vaal-app
+        image: ghcr.io/deedk822-lang/the-lab-verse-monitoring-:latest
+        imagePullPolicy: Always
+        
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: vaal-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: vaal-secrets
+              key: redis-url
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vaal-secrets
+              key: hf-token
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vaal-secrets
+              key: openai-api-key
+              optional: true
+        - name: CREDIT_TIER
+          valueFrom:
+            configMapKeyRef:
+              name: vaal-config
+              key: credit-tier
+        
+        # Resource requests and limits
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+          limits:
+            cpu: "4000m"
+            memory: "8Gi"
+            # Uncomment for GPU support
+            # nvidia.com/gpu: "1"
+        
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # Readiness probe
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Startup probe
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+        
+        # Volume mounts
+        volumeMounts:
+        - name: credit-data
+          mountPath: /var/lib/vaal
+        - name: logs
+          mountPath: /var/log/vaal
+        - name: model-cache
+          mountPath: /models
+        - name: tmp
+          mountPath: /tmp
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      
+      # Volumes
+      volumes:
+      - name: credit-data
+        persistentVolumeClaim:
+          claimName: vaal-credit-data-pvc
+      - name: logs
+        emptyDir: {}
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: vaal-model-cache-pvc
+      - name: tmp
+        emptyDir: {}
+      
+      # Node affinity for GPU nodes (optional)
+      # affinity:
+      #   nodeAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       preference:
+      #         matchExpressions:
+      #         - key: accelerator
+      #           operator: In
+      #           values:
+      #           - nvidia-tesla-t4
+      #           - nvidia-tesla-v100
+      
+      # Tolerations for GPU nodes
+      # tolerations:
+      # - key: nvidia.com/gpu
+      #   operator: Exists
+      #   effect: NoSchedule

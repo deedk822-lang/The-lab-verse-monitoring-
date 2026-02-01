@@ -1,13 +1,13 @@
 """
-<<<<<<< HEAD:src/pr_fix_agent/observability/__init__.py
 Observability module for PR Fix Agent.
 """
 
 from __future__ import annotations
 
+import logging as std_logging
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import structlog
 
@@ -107,24 +107,6 @@ class CostTracker:
         }
 
 
-__all__ = [
-    'configure_logging',
-    'initialize_metrics',
-    'initialize_tracing',
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
-]
-=======
-Observability Module
-Re-exports consolidated components from ollama_agent.py
-"""
-
-import logging
-
-import structlog
-
-
 # Re-configure structured logging for consistent output
 def configure_structured_logging():
     """Configure structured logging (Datadog-compatible)"""
@@ -137,12 +119,24 @@ def configure_structured_logging():
             structlog.processors.format_exc_info,
             structlog.processors.JSONRenderer()
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(std_logging.INFO),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
 configure_structured_logging()
-logger = structlog.get_logger()
->>>>>>> main:src/pr_fix_agent/observability.py
+
+# Alias for compatibility
+from ..ollama_agent import OllamaAgent as ObservableOllamaAgent
+
+__all__ = [
+    'configure_logging',
+    'initialize_metrics',
+    'initialize_tracing',
+    'LLMCost',
+    'BudgetExceededError',
+    'CostTracker',
+    'configure_structured_logging',
+    'ObservableOllamaAgent'
+]

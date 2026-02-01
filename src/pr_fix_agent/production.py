@@ -10,13 +10,7 @@ from pathlib import Path
 
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .ollama_agent import OllamaAgent
-<<<<<<< HEAD
-=======
-
-# Conventional imports from the package
 from .security import SecurityValidator
->>>>>>> main
-
 
 def main():
     """Production entry point with early validation."""

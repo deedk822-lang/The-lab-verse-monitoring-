@@ -1,23 +1,41 @@
 """
-PR Fix Agent Core Library
-Production-ready components for error analysis, security validation, and automated fixing
+PR Fix Agent - Enterprise-grade AI-powered PR error fixing system
 """
 
-from .analyzer import PRErrorAnalyzer, PRErrorFixer
-from .models import ModelSelector, ModelSpec
-from .observability import BudgetExceededError, CostTracker, LLMCost, ObservableOllamaAgent
-from .ollama_agent import OllamaAgent, OllamaQueryError
-from .orchestrator import CodeReviewOrchestrator
-from .security import InputValidator, RateLimiter, SecurityError, SecurityValidator
+__version__ = "0.1.0"
+
+from .agents import *
+from .api import *
+from .core import *
+from .db import *
+from .observability import *
+from .security import *
 
 __all__ = [
+    # Version
+    "__version__",
     # Security
-    'SecurityError',
-    'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
-    # Analysis & Fixing
-    'PRErrorAnalyzer',
+    "SecurityValidator",
+    "RateLimiter",
+    "AuditLogger",
+    # Agents
+    "ObservableOllamaAgent",
+    "HuggingFaceAgent",
+    "CohereAgent",
+    "OpenAIAgent",
+    # Core
+    "CodeReviewOrchestrator",
+    "CostTracker",
+    # API
+    "create_app",
+    # Observability
+    "configure_structured_logging",
+    "setup_tracing",
+    "setup_metrics",
+    # Database
+    "get_db_engine",
+    "get_async_db_engine",
+]
     'PRErrorFixer',
     'OllamaAgent',
     'OllamaQueryError',

@@ -1,0 +1,191 @@
+[
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "medium",
+      "category": "security",
+      "issue": "Potential security issue",
+      "suggestion": "Follow best practices",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "src/pr_fix_agent/orchestrator.py",
+      "line_start": 8,
+      "line_end": 8,
+      "severity": "high",
+      "category": "lint",
+      "issue": "Consider possible security implications associated with the subprocess module.",
+      "suggestion": "Fix as recommended",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "src/pr_fix_agent/orchestrator.py",
+      "line_start": 184,
+      "line_end": 184,
+      "severity": "high",
+      "category": "lint",
+      "issue": "Starting a process with a partial executable path",
+      "suggestion": "Fix as recommended",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  },
+  {
+    "finding": {
+      "file": "src/pr_fix_agent/orchestrator.py",
+      "line_start": 184,
+      "line_end": 184,
+      "severity": "high",
+      "category": "lint",
+      "issue": "subprocess call - check for execution of untrusted input.",
+      "suggestion": "Fix as recommended",
+      "code_snippet": null
+    },
+    "root_cause": "Analyzed root cause from analysis",
+    "fix_approach": "Suggested approach based on LLM response",
+    "expected_changes": [
+      "Modify affected code"
+    ],
+    "risk_level": "low",
+    "test_requirements": [
+      "Verify with existing tests"
+    ]
+  }
+]

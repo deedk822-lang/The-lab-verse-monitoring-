@@ -1,0 +1,104 @@
+[
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 43,
+      "row": 50
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 39,
+      "row": 50
+    },
+    "message": "Undefined name `shap`",
+    "noqa_row": 50,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 43,
+      "row": 53
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 39,
+      "row": 53
+    },
+    "message": "Undefined name `shap`",
+    "noqa_row": 53,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 39,
+      "row": 65
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 35,
+      "row": 65
+    },
+    "message": "Undefined name `lime`",
+    "noqa_row": 65,
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "N803",
+    "end_location": {
+      "column": 46,
+      "row": 148
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 33,
+      "row": 148
+    },
+    "message": "Argument name `X` should be lowercase",
+    "noqa_row": 148,
+    "url": "https://docs.astral.sh/ruff/rules/invalid-argument-name"
+  },
+  {
+    "cell": null,
+    "code": "N806",
+    "end_location": {
+      "column": 13,
+      "row": 149
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 149
+    },
+    "message": "Variable `X_3d` in function should be lowercase",
+    "noqa_row": 149,
+    "url": "https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function"
+  },
+  {
+    "cell": null,
+    "code": "N806",
+    "end_location": {
+      "column": 17,
+      "row": 152
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 152
+    },
+    "message": "Variable `X_tensor` in function should be lowercase",
+    "noqa_row": 152,
+    "url": "https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function"
+  }
+]

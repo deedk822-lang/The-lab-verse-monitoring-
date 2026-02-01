@@ -84,7 +84,7 @@ def check_prerequisites():
         else:
             print("❌ Ollama not responding")
             checks_passed = False
-    except:
+    except Exception:
         print("❌ Ollama not running (start with: ollama serve)")
         checks_passed = False
 
@@ -186,7 +186,7 @@ Generated: {datetime.now().isoformat()}
                 report += f"- Pass Rate: {perf.get('passed_tests', 0)/perf.get('total_tests', 1)*100:.1f}%\n"
                 report += f"- Avg Response Time: {perf.get('avg_response_time', 0):.2f}s\n"
                 report += f"- Quality Score: {perf.get('avg_quality_score', 0):.2f}/1.00\n"
-        except:
+        except Exception:
             report += "- Benchmark data available in " + benchmark_file + "\n"
     else:
         report += "- ❌ Benchmark failed or file not found\n"
@@ -200,7 +200,7 @@ Generated: {datetime.now().isoformat()}
                 data = json.load(f)
                 report += f"- Issues Found: {len(data.get('issues', []))}\n"
                 report += f"- Improvements Suggested: {len(data.get('improvements', []))}\n"
-        except:
+        except Exception:
             report += "- Improvement data available in " + improvement_report + "\n"
     else:
         report += "- ❌ Improvement analysis failed\n"

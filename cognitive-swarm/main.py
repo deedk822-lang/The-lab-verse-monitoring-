@@ -10,6 +10,8 @@ import redis.asyncio as redis
 import yaml
 from openai import AsyncOpenAI
 
+from sensors.github import GitHubMonitorSensor
+
 openlit.init()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

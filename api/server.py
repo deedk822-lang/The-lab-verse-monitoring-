@@ -27,7 +27,7 @@ class ExecuteTaskPayload(BaseModel):
 
 class HubSpotWebhookPayload(BaseModel):
     """HubSpot webhook event payload."""
-    objectId: int = Field(..., description="HubSpot contact or deal ID")
+    object_id: int = Field(..., alias="objectId", description="HubSpot contact or deal ID")
     message_body: str = Field(..., description="Event message content")
 
 
@@ -113,7 +113,7 @@ async def hubspot_webhook(
             orchestrator.run_authority_flow,
             payload.model_dump(),
         )
-        logger.info(f"HubSpot event queued: contact_id={payload.objectId}")
+        logger.info(f"HubSpot event queued: contact_id={payload.object_id}")
         return {"status": "accepted", "message": "Authority Flow queued"}
     except Exception as e:
         logger.error(f"Webhook processing error: {str(e)}")

@@ -97,7 +97,7 @@ class OllamaBenchmarker:
             import psutil
             process = psutil.Process(os.getpid())
             return process.memory_info().rss / 1024 / 1024
-        except:
+        except Exception:
             return 0.0
 
     def evaluate_code_quality(self, code: str, expected_elements: List[str]) -> float:
@@ -469,7 +469,7 @@ def main():
     try:
         response = requests.get(f"{args.ollama_url}/api/tags", timeout=5)
         response.raise_for_status()
-    except:
+    except Exception:
         print(f"❌ Cannot connect to Ollama at {args.ollama_url}")
         print("   Please ensure Ollama is running: ollama serve")
         return 1

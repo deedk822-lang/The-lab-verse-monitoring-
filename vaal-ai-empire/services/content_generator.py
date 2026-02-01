@@ -99,6 +99,8 @@ class ContentFactory:
         self.db = db
         # Unpack the cached providers and image generator
         self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+        # ⚡ Bolt Optimization: Skip providers that failed recently
+        self._failed_providers = {}  # {provider_name: last_failure_time}
 
     def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
         """
@@ -129,10 +131,17 @@ class ContentFactory:
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
+        cooldown = 300  # 5 minutes in seconds
 
         for provider_name in priority:
             provider = self.providers.get(provider_name)
             if provider is None:
+                continue
+
+            # ⚡ Bolt Optimization: Check if provider is in cooldown
+            last_fail = self._failed_providers.get(provider_name)
+            if last_fail and (datetime.now() - last_fail).total_seconds() < cooldown:
+                logger.info(f"Skipping {provider_name} (in cooldown period)")
                 continue
 
             try:
@@ -161,6 +170,8 @@ class ContentFactory:
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
             except Exception as e:
                 logger.warning(f"{provider_name} failed: {e}")
+                # ⚡ Bolt Optimization: Record failure time
+                self._failed_providers[provider_name] = datetime.now()
                 continue
 
         raise Exception("All content generation providers failed")

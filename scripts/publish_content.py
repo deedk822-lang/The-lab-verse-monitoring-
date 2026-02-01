@@ -34,7 +34,7 @@ except ImportError:
     logger.error("✗ Requests not installed: pip install requests")
 
 try:
-    import mailchimp_marketing as MailchimpMarketing
+    import mailchimp_marketing
     from mailchimp_marketing.api_client import ApiClientError
     AVAILABLE_TOOLS['mailchimp'] = True
     logger.info("✓ MailChimp SDK loaded")
@@ -109,7 +109,7 @@ class MailChimpTool:
             return
 
         try:
-            self.client = MailchimpMarketing.Client()
+            self.client = mailchimp_marketing.Client()
             self.client.set_config({
                 "api_key": self.api_key,
                 "server": self.server

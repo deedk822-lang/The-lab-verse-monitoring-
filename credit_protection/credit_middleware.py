@@ -107,7 +107,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
         # Get request body
         try:
             body = await request.json()
-        except:
+        except Exception:
             body = {}
 
         # Estimate tokens and model

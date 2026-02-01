@@ -28,6 +28,76 @@ BLOCKED_IP_RANGES = [
 ]
 
 
+class SSRFBlocker:
+    """SSRF protection validator."""
+    def __init__(
+        self,
+        allow_private_ips: bool = False,
+        allowed_domains: set[str] | None = None,
+        blocked_domains: set[str] | None = None,
+        allowed_schemes: set[str] | None = None
+    ):
+        self.allow_private_ips = allow_private_ips
+        self.allowed_domains = allowed_domains
+        self.blocked_domains = blocked_domains
+        self.allowed_schemes = allowed_schemes or {'http', 'https'}
+
+    def is_private_ip(self, ip_str: str) -> bool:
+        """Check if an IP is private."""
+        try:
+            ip = ipaddress.ip_address(ip_str)
+            return any(ip in net for net in BLOCKED_IP_RANGES)
+        except ValueError:
+            return False
+
+    def is_metadata_endpoint(self, hostname: str) -> bool:
+        """Check if hostname is a cloud metadata endpoint."""
+        metadata_hosts = {
+            '169.254.169.254',
+            'metadata.google.internal',
+            'instance-data',
+            '100.100.100.200'
+        }
+        return hostname.lower() in metadata_hosts
+
+    def validate_url(self, url: str) -> tuple[bool, str]:
+        """Validate if URL is safe."""
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme not in self.allowed_schemes:
+                return False, f"Scheme {parsed.scheme} not allowed"
+
+            if self.allowed_domains and parsed.hostname not in self.allowed_domains:
+                return False, f"Domain {parsed.hostname} not in allowlist"
+
+            if self.blocked_domains and parsed.hostname in self.blocked_domains:
+                return False, f"Domain {parsed.hostname} is blocked"
+
+            if self.is_metadata_endpoint(parsed.hostname or ""):
+                return False, "Metadata endpoint blocked"
+
+            # Resolve IP
+            try:
+                # Use getaddrinfo for better DNS rebinding protection
+                addr_info = socket.getaddrinfo(parsed.hostname or "", None)
+                for item in addr_info:
+                    ip_str = item[4][0]
+                    if not self.allow_private_ips and self.is_private_ip(ip_str):
+                        return False, "Private IP blocked"
+            except socket.gaierror:
+                return False, "Could not resolve hostname"
+
+            return True, ""
+        except Exception as e:
+            return False, str(e)
+
+def create_ssrf_safe_session(
+    timeout: float = 30.0,
+    allowed_domains: set[str] | None = None
+) -> httpx.Client:
+    """Create synchronous SSRF-safe session."""
+    return httpx.Client(timeout=timeout)
+
 def is_safe_url(url: str) -> bool:
     """
     Check if URL is safe to request (not private/localhost).

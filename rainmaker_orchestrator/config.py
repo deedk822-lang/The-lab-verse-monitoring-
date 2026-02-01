@@ -83,7 +83,8 @@ class ConfigManager:
         Returns:
             `true` if the config value represents a truthy value, `false` otherwise.
         """
-        value: Optional[str] = self.get(key, "").lower()
+        raw_value = self.get(key, "")
+        value = (raw_value or "").lower()
         if value in ("true", "1", "yes", "on"):
             return True
         if value in ("false", "0", "no", "off"):

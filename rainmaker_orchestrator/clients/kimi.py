@@ -10,7 +10,7 @@ class KimiClient:
     """
     API wrapper for Kimi model, using an OpenAI-compatible client.
     """
-    def __init__(self, api_key=None):
+    def __init__(self, api_key: Optional[str] = None) -> None:
         self.client = OpenAI(
             base_url=os.getenv("KIMI_API_BASE", "http://kimi-linear:8000/v1"),
             api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY")

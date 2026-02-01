@@ -18,13 +18,13 @@ class SelfHealingAgent:
     """
 
     MAX_RETRIES: int = 3
-    COMMAND_INJECTION_PATTERNS: list = [
+    COMMAND_INJECTION_PATTERNS: list[str] = [
         r"[;&|`$()]",  # Shell metacharacters
         r"__import__",  # Python injection
         r"eval\(",  # Dynamic code execution
     ]
 
-    def __init__(self, kimi_client=None, orchestrator=None):
+    def __init__(self, kimi_client: Optional[KimiClient] = None, orchestrator: Optional[RainmakerOrchestrator] = None) -> None:
         """
         Initialize the self-healing agent.
 
@@ -32,11 +32,11 @@ class SelfHealingAgent:
             kimi_client: Optional KimiClient instance. If not provided, creates a new one.
             orchestrator: Optional RainmakerOrchestrator instance. If not provided, creates a new one.
         """
-        self.kimi_client = kimi_client or self._init_kimi_client()
-        self.orchestrator = orchestrator or self._init_orchestrator()
+        self.kimi_client: KimiClient = kimi_client or self._init_kimi_client()
+        self.orchestrator: RainmakerOrchestrator = orchestrator or self._init_orchestrator()
         logger.info("Self-Healing Agent initialized")
 
-    def _init_kimi_client(self):
+    def _init_kimi_client(self) -> KimiClient:
         """
         Initialize a new KimiClient instance.
 
@@ -45,15 +45,19 @@ class SelfHealingAgent:
         """
         return KimiClient()
 
-    def _init_orchestrator(self):
+    def _init_orchestrator(self) -> RainmakerOrchestrator:
         """
         Initialize a new RainmakerOrchestrator instance.
 
         Returns:
             RainmakerOrchestrator: A new orchestrator instance
         """
-        from rainmaker_orchestrator.server import settings
-        return RainmakerOrchestrator(workspace_path=settings.workspace_path)
+        try:
+            from rainmaker_orchestrator.server import settings # type: ignore
+            workspace_path = getattr(settings, 'workspace_path', './workspace')
+        except ImportError:
+            workspace_path = './workspace'
+        return RainmakerOrchestrator(workspace_path=workspace_path)
 
     @staticmethod
     def validate_command(command: str) -> bool:
@@ -73,7 +77,7 @@ class SelfHealingAgent:
         return True
 
     @staticmethod
-    def safe_parse_command(command: str) -> list:
+    def safe_parse_command(command: str) -> list[str]:
         """
         Parse a shell command into a list of arguments after validating it against injection patterns.
         
@@ -89,7 +93,7 @@ class SelfHealingAgent:
         try:
             if not SelfHealingAgent.validate_command(command):
                 raise ValueError("Command failed security validation")
-            parsed: list = shlex.split(command)
+            parsed: list[str] = shlex.split(command)
             logger.info(f"Command parsed safely: {len(parsed)} args")
             return parsed
         except ValueError as e:

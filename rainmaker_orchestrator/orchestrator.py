@@ -5,8 +5,8 @@ import re
 from typing import Any, Dict, Optional
 
 import httpx
-import openlit
-from opik import track
+import openlit # type: ignore
+from opik import track # type: ignore
 from rainmaker_orchestrator.fs_agent import FileSystemAgent
 
 from rainmaker_orchestrator.config import ConfigManager
@@ -65,7 +65,7 @@ class RainmakerOrchestrator:
         await self.client.aclose()
         logger.info("Orchestrator HTTP client closed")
 
-    @track(name="judge_call")
+    @track(name="judge_call") # type: ignore
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         """
         Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
@@ -94,7 +94,7 @@ class RainmakerOrchestrator:
             api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
             model: str = "glm-4.7"
         else:
-            api_key = mistral_key
+            api_key = mistral_key or ""
             api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
             model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
 
@@ -124,7 +124,7 @@ class RainmakerOrchestrator:
             logger.error(f"Judge API error ({judge_role}): {str(e)}")
             raise
 
-    @track(name="authority_flow")
+    @track(name="authority_flow") # type: ignore
     async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.

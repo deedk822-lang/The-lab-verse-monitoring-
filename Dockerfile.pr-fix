@@ -17,8 +17,11 @@ WORKDIR /app
 COPY requirements_production.txt .
 RUN pip install --no-cache-dir -r requirements_production.txt
 
-# Copy application code
-COPY . .
+# Copy application source and scripts specifically
+COPY src/ ./src/
+COPY api_production.py .
+COPY orchestrator_production.py .
+COPY test_findings.json .
 
 # Expose API port
 EXPOSE 8000

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PR Fix Agent - Production Orchestrator
+PR Fix Agent - Production Orchestrator (Hardened)
 Ready to run immediately with all fixes applied
 """
 import argparse
@@ -158,6 +158,23 @@ class Orchestrator:
         self.client = LLMClient(backend=backend)
         self.max_findings = max_findings
 
+    def sanitize_input(self, text: str) -> str:
+        """Sanitize input to prevent prompt injection"""
+        if not text:
+            return ""
+        # Remove control characters
+        text = "".join(char for char in text if ord(char) >= 32 or char in "\n\t")
+        # Filter dangerous patterns
+        dangerous_patterns = [
+            ("```", "[filtered]"),
+            ("IGNORE ABOVE", "[filtered]"),
+            ("SYSTEM:", "[filtered]"),
+            ("Assistant:", "[filtered]"),
+        ]
+        for pattern, replacement in dangerous_patterns:
+            text = text.replace(pattern, replacement)
+        return text
+
     def parse_findings(self, path: Path) -> List[Finding]:
         """Parse findings from file"""
         findings = []
@@ -220,12 +237,15 @@ class Orchestrator:
     def analyze_finding(self, finding: Finding) -> Proposal:
         """Analyze finding and create proposal"""
 
+        sanitized_issue = self.sanitize_input(finding.issue)
+        sanitized_file = self.sanitize_input(finding.file)
+
         prompt = f"""Analyze this code issue and respond with JSON only:
 
-File: {finding.file}
+File: {sanitized_file}
 Line: {finding.line_start}-{finding.line_end}
 Severity: {finding.severity}
-Issue: {finding.issue}
+Issue: {sanitized_issue}
 
 Respond with ONLY this JSON (no markdown, no extra text):
 {{

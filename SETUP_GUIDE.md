@@ -8,11 +8,15 @@ This project follows Python packaging best practices with proper imports.
 pr-fix-agent/
 ├── src/pr_fix_agent/                    # Source package
 │   ├── __init__.py
-│   ├── security.py
+│   ├── security/
+│   ├── api/
+│   ├── cli/
+│   ├── core/
+│   ├── db/
 │   └── analyzer.py
-├── tests_real/             # Test suite
-├── setup.py               # Package configuration
-├── pyproject.toml         # Modern Python packaging
+├── tests/             # Test suite
+├── setup.py           # Package configuration
+├── pyproject.toml     # Modern Python packaging
 └── README.md
 ```
 
@@ -149,9 +153,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install in editable mode (conventional)
 pip install -e ".[dev]"
-
-# Verify
-python -c "from pr_fix_agent.security import SecurityValidator; print('✓ Ready')"
 ```
 
 ### 2. Make Changes

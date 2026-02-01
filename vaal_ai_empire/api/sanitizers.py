@@ -5,14 +5,16 @@ Prevents prompt injection and other security issues.
 
 import logging
 import re
+import threading
+import time
 import unicodedata
-from typing import Any, Dict, List
+from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
 # Dangerous patterns to detect/block
 DANGEROUS_PATTERNS = [
-    r"(?i)(ignore|forget|disregard)\s+(previous|above|all|everything|instructions|prompts|rules)\b",
+    r"(?i)(ignore|forget|disregard)\s+(previous|above|all)\s+(instructions|prompts|rules)",
     r"(?i)system\s*:\s*you\s+are",
     r"(?i)new\s+(instructions|rules|prompt)",
     r"(?i)(execute|run|eval)\s*\(",
@@ -23,6 +25,14 @@ DANGEROUS_PATTERNS = [
     r"\[INST\]",
     r"\[/INST\]",
 ]
+
+# Refined regex for prompt injection
+INJECTION_PATTERN = re.compile(
+    r"(?i)(ignore|forget|disregard|reveal|reveal|delete|system|inst)\s+(?:.*?\s+)?(instructions|prompts|rules|everything|above|all|guidelines|secrets|message|start|end)",
+    re.UNICODE
+)
+
+SYSTEM_MESSAGE_PATTERN = re.compile(r"<\|im_start\|>system|<\|im_end\|>")
 
 
 class PromptInjectionDetected(ValueError):
@@ -39,9 +49,13 @@ def detect_injection_patterns(text: str) -> List[str]:
     """Detect dangerous patterns in text."""
     normalized = normalize_unicode(text)
     matches = []
+    # Check simple patterns
     for pattern in DANGEROUS_PATTERNS:
         if re.search(pattern, normalized):
             matches.append(pattern)
+    # Check refined injection pattern
+    if INJECTION_PATTERN.search(normalized):
+        matches.append("refined_injection_pattern")
     return matches
 
 
@@ -65,7 +79,7 @@ def sanitize_prompt(
     normalized = normalize_unicode(prompt)
 
     if not allow_system_messages:
-        normalized = normalized.replace("<|im_start|>", "").replace("<|im_end|>", "")
+        normalized = SYSTEM_MESSAGE_PATTERN.sub("", normalized)
 
     # Check for dangerous patterns
     matches = detect_injection_patterns(normalized)
@@ -77,6 +91,7 @@ def sanitize_prompt(
             # Filter matches
             for pattern in DANGEROUS_PATTERNS:
                 normalized = re.sub(pattern, "[FILTERED]", normalized)
+            normalized = INJECTION_PATTERN.sub("[FILTERED]", normalized)
 
     # Remove null bytes
     normalized = normalized.replace('\x00', '')
@@ -103,13 +118,42 @@ def sanitize_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class RateLimiter:
-    """Base class for rate limiting."""
-    def __init__(self, max_requests: int, window_seconds: int):
+    """Thread-safe rate limiter."""
+
+    def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
+        self.requests: List[float] = []
+        self._lock = threading.Lock()
 
     async def is_allowed(self, key: str) -> bool:
-        raise NotImplementedError()
+        """Check if request is allowed."""
+        return self.check_rate_limit()
+
+    def check_rate_limit(self) -> bool:
+        """Check if rate limit is exceeded."""
+        now = time.time()
+        with self._lock:
+            self.requests = [
+                req for req in self.requests
+                if now - req < self.window_seconds
+            ]
+            if len(self.requests) >= self.max_requests:
+                return False
+            self.requests.append(now)
+            return True
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get stats."""
+        with self._lock:
+            return {
+                "remaining": self.max_requests - len(self.requests)
+            }
+
+    def reset(self):
+        """Reset."""
+        with self._lock:
+            self.requests.clear()
 
 
 def sanitize_filename(filename: str) -> str:

@@ -9,9 +9,15 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import requests
+
+try:
+    from pr_fix_agent.security.secure_requests import create_ssrf_safe_requests_session
+    SSRF_SAFE_AVAILABLE = True
+except ImportError:
+    SSRF_SAFE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +30,12 @@ class ImageGenerator:
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # ✅ FIX: Use SSRF-safe session if available
+        if SSRF_SAFE_AVAILABLE:
+            self.session = create_ssrf_safe_requests_session()
+        else:
+            self.session = requests.Session()
 
         # Cost tracking (per image, USD)
         self.costs = {
@@ -59,9 +71,15 @@ class ImageGenerator:
                 "http://localhost:5000",  # Custom SD server
             ]
 
+            # Use a session that allows localhost
+            if SSRF_SAFE_AVAILABLE:
+                check_session = create_ssrf_safe_requests_session(allowed_domains={"localhost", "127.0.0.1"})
+            else:
+                check_session = self.session
+
             for endpoint in endpoints:
                 try:
-                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = check_session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -73,7 +91,7 @@ class ImageGenerator:
             return False
 
     def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto") -> Dict:
+                 provider: str = "auto", skip_enhance: bool = False) -> Dict:
         """
         Generate image from text prompt
 
@@ -81,12 +99,13 @@ class ImageGenerator:
             prompt: Text description of image
             style: Image style (professional, creative, realistic, artistic)
             provider: Provider to use (auto, stability, replicate, huggingface, local)
+            skip_enhance: Skip prompt enhancement (used in fallback)
 
         Returns:
             Dict with image_url, provider, cost_usd
         """
-        # Enhance prompt with style
-        enhanced_prompt = self._enhance_prompt(prompt, style)
+        # ✅ FIX: Only enhance if not skipped
+        enhanced_prompt = prompt if skip_enhance else self._enhance_prompt(prompt, style)
 
         # Select provider
         if provider == "auto":
@@ -291,7 +310,8 @@ class ImageGenerator:
             if self.providers[provider]:
                 try:
                     logger.info(f"Trying fallback provider: {provider}")
-                    return self.generate(prompt, provider=provider)
+                    # ✅ FIX: Skip enhancement in fallback call
+                    return self.generate(prompt, provider=provider, skip_enhance=True)
                 except Exception as e:
                     logger.warning(f"Provider {provider} failed: {e}")
                     continue

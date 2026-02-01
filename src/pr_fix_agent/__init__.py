@@ -5,7 +5,7 @@ Production-ready components for error analysis, security validation, and automat
 
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .models import ModelSelector, ModelSpec
-from .observability import BudgetExceededError, CostTracker, LLMCost, ObservableOllamaAgent
+from .observability import BudgetExceededError, CostTracker, LLMCost
 from .ollama_agent import OllamaAgent, OllamaQueryError
 from .orchestrator import CodeReviewOrchestrator
 from .security import InputValidator, RateLimiter, SecurityError, SecurityValidator
@@ -25,7 +25,6 @@ __all__ = [
     'CostTracker',
     'LLMCost',
     'BudgetExceededError',
-    'ObservableOllamaAgent',
     # Models
     'ModelSpec',
     'ModelSelector',
@@ -33,5 +32,5 @@ __all__ = [
     'CodeReviewOrchestrator',
 ]
 
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 __author__ = 'PR Fix Agent Team'

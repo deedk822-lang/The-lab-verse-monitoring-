@@ -165,9 +165,8 @@ jobs:
           retention-days: 7
 
   # ========================================================================
-  # STEP 3: Create PR (Only if tests pass)
+  # STEP 3: Create PR
   # ========================================================================
-
   create-pr:
     name: Create Pull Request
     runs-on: ubuntu-latest
@@ -210,7 +209,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "🤖 Auto-fix: Code review findings"
-          title: "🤖 Auto-fix: Code review findings"
+          title: "🤖 Auto-fix: Code review findings ✅"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
           base: ${{ github.event.pull_request.base.ref || 'main' }}

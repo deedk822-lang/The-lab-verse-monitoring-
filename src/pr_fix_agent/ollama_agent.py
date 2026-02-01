@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import structlog
+from pr_fix_agent.security.secure_requests import create_ssrf_safe_requests_session
 
 logger = structlog.get_logger()
 
@@ -185,6 +186,9 @@ class OllamaAgent:
         self.api_url = f"{base_url}/api/generate"
         self.cost_tracker = cost_tracker or CostTracker()
 
+        # ✅ FIX: Use SSRF-safe session (allowing localhost for Ollama by default)
+        self.session = create_ssrf_safe_requests_session(allowed_domains={"localhost", "127.0.0.1"})
+
         # Initialize OpenLIT if available
         if OPENLIT_AVAILABLE:
             try:
@@ -260,7 +264,7 @@ class OllamaAgent:
 
     def _make_request(self, prompt: str, temperature: float, timeout: int) -> str:
         """Make HTTP request to Ollama"""
-        response = requests.post(
+        response = self.session.post(
             self.api_url,
             json={
                 "model": self.model,

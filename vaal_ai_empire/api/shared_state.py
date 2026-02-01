@@ -3,9 +3,9 @@ Shared state management using Redis for distributed rate limiting and deduplicat
 """
 
 import hashlib
-import logging
 import time
-from typing import Any, Dict
+from typing import Dict, Any, Optional
+import logging
 
 logger = logging.getLogger(__name__)
 

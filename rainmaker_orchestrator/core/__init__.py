@@ -1,3 +1,3 @@
-from ..orchestrator import RainmakerOrchestrator
+from .orchestrator import RainmakerOrchestrator
 
 __all__ = ["RainmakerOrchestrator"]

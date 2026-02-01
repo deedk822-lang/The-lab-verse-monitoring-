@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from functools import lru_cache
-from typing import Literal, Optional
+from typing import Literal
 
 import torch
 from pydantic_settings import BaseSettings
@@ -29,7 +29,7 @@ class HuggingFaceConfig(BaseSettings):
 
     # Hub/cache
     hf_cache_dir: str = "./models"
-    hf_token: Optional[str] = None
+    hf_token: str | None = None
 
     # Serving (optional)
     use_vllm: bool = False
@@ -45,7 +45,7 @@ class BitbucketConfig(BaseSettings):
     workspace: str = "lab-verse-monitoring"
     username: str
     app_password: str
-    webhook_secret: Optional[str] = None
+    webhook_secret: str | None = None
 
     class Config:
         env_prefix = "BITBUCKET_"

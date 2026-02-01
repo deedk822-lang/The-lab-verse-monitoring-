@@ -20,11 +20,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
+from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 # Configure logging
 logging.basicConfig(
@@ -69,7 +69,8 @@ class InMemoryDedupeCache:
     def _cleanup(self):
         current_time = time.time()
         expired = [k for k, ts in self._cache.items() if current_time - ts > self.ttl_seconds]
-        for k in expired: del self._cache[k]
+        for k in expired:
+            del self._cache[k]
 
     def generate_key(self, payload: Dict[str, Any]) -> str:
         webhook_id = payload.get('webhookEvent', payload.get('id', ''))
@@ -79,9 +80,11 @@ class InMemoryDedupeCache:
 
     async def is_duplicate(self, key: str) -> bool:
         self._cleanup()
-        if key in self._cache: return True
+        if key in self._cache:
+            return True
         self._cache[key] = time.time()
-        if len(self._cache) > self.max_size: self._cache.popitem(last=False)
+        if len(self._cache) > self.max_size:
+            self._cache.popitem(last=False)
         return False
 
 class InMemoryRateLimiter:
@@ -92,10 +95,12 @@ class InMemoryRateLimiter:
 
     async def is_allowed(self, key: str) -> bool:
         now = time.time()
-        if key not in self._requests: self._requests[key] = []
+        if key not in self._requests:
+            self._requests[key] = []
         cutoff = now - self.window_seconds
         self._requests[key] = [ts for ts in self._requests[key] if ts > cutoff]
-        if len(self._requests[key]) >= self.max_requests: return False
+        if len(self._requests[key]) >= self.max_requests:
+            return False
         self._requests[key].append(now)
         return True
 
@@ -235,13 +240,15 @@ async def readiness_check():
     try:
         get_global_provider()
         checks["llm_provider"] = True
-    except: pass
+    except Exception:
+        pass
 
     if redis_client:
         try:
             await redis_client.ping()
             checks["redis"] = True
-        except: pass
+        except Exception:
+            pass
 
     all_ready = checks["llm_provider"]
     status_code = 200 if all_ready else 503
@@ -317,7 +324,8 @@ async def atlassian_webhook(
         result = await forward_webhook(standard_payload)
 
         return {"status": "success", "message": "Webhook processed", "result": result}
-    except HTTPException: raise
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Webhook processing error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -363,7 +371,8 @@ async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     else:
         return {"status": "skipped", "reason": "unknown_type"}
 
-    if not target_url: return {"status": "error", "reason": "missing_config"}
+    if not target_url:
+        return {"status": "error", "reason": "missing_config"}
 
     try:
         async with create_ssrf_safe_async_session(timeout=float(os.getenv('WEBHOOK_TIMEOUT', '30'))) as client:

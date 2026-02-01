@@ -113,7 +113,7 @@ class LLMProvider(ABC):
 class HuggingFaceProvider(LLMProvider):
     """
     HuggingFace local model provider with proper token authentication.
-    
+
     Critical: Uses HF_TOKEN (api_key) for:
     - Downloading models from HuggingFace Hub
     - Accessing gated/private models
@@ -159,7 +159,7 @@ class HuggingFaceProvider(LLMProvider):
     def _ensure_model_loaded(self, model_name: str):
         """
         Lazy load model with proper HuggingFace token authentication.
-        
+
         The token is used for:
         - snapshot_download() to fetch model files
         - AutoTokenizer.from_pretrained() for tokenizer download
@@ -441,14 +441,14 @@ class LLMProviderFactory:
     def create(provider_type: str, config: LLMConfig) -> LLMProvider:
         """
         Create provider instance with proper configuration.
-        
+
         Args:
             provider_type: Type of provider (huggingface, openai)
             config: LLM configuration with all required parameters
-            
+
         Returns:
             Configured LLM provider instance
-            
+
         Raises:
             ValueError: If provider_type is unknown
             RuntimeError: If provider cannot be initialized
@@ -496,22 +496,22 @@ def get_global_provider() -> LLMProvider:
 def initialize_from_env() -> LLMProvider:
     """
     Initialize provider from environment variables.
-    
+
     Environment Variables:
         LLM_PROVIDER: Provider type (huggingface, openai)
-        
+
         For HuggingFace:
             HF_TOKEN: HuggingFace API token (REQUIRED for most models)
             HF_MODEL_PATH: Model cache directory (optional)
             HF_DEVICE: Device to use (cpu, cuda) (optional)
-        
+
         For OpenAI:
             OPENAI_API_KEY: OpenAI API key (REQUIRED)
             OPENAI_BASE_URL: OpenAI base URL (optional)
-    
+
     Returns:
         Configured provider instance
-        
+
     Raises:
         RuntimeError: If required environment variables are missing
     """

@@ -12,6 +12,17 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+try:
+    import shap
+except ImportError:
+    shap = None
+
+try:
+    import lime
+    import lime.lime_tabular
+except ImportError:
+    lime = None
+
 
 # Wrapper model for SHAP DeepExplainer
 class AnomalyScoreModel(nn.Module):
@@ -145,12 +156,12 @@ class AdvancedExplainabilityEngine:
             ],
         }
 
-    def _predict_for_lime(self, X: np.ndarray) -> np.ndarray:
-        X_3d = X.reshape(
-            X.shape[0], self.training_data.shape[1], self.training_data.shape[2]
+    def _predict_for_lime(self, x: np.ndarray) -> np.ndarray:
+        x_3d = x.reshape(
+            x.shape[0], self.training_data.shape[1], self.training_data.shape[2]
         )
-        X_tensor = torch.FloatTensor(X_3d)
-        _, anomaly_scores, _ = self.model(X_tensor)
+        x_tensor = torch.FloatTensor(x_3d)
+        _, anomaly_scores, _ = self.model(x_tensor)
         scores = anomaly_scores.detach().numpy()
         return np.hstack((1 - scores, scores))
 

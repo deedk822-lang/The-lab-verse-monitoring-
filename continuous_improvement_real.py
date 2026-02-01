@@ -465,7 +465,7 @@ def main():
     # Check Ollama
     try:
         requests.get(f"{args.ollama_url}/api/tags", timeout=5).raise_for_status()
-    except:
+    except Exception:
         print(f"❌ Cannot connect to Ollama at {args.ollama_url}")
         return 1
 

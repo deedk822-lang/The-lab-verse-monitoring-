@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Optional
 
-from openai import APIError, OpenAI  # type: ignore
+from openai import APIError, OpenAI
 
 logger = logging.getLogger(__name__)
 

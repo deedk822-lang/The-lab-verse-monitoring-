@@ -239,7 +239,7 @@ class TestPRErrorFixerReal:
 
         error = "ImportError: No module named 'numpy'"
 
-        result = fixer.fix_missing_dependency(error)
+        fixer.fix_missing_dependency(error)
 
         # Should return None or message about already present
         with open(req_file) as f:
@@ -363,7 +363,7 @@ def another():
 
         # Should not crash
         try:
-            result = fixer.fix_missing_file_error(error)
+            fixer.fix_missing_file_error(error)
             # May create file with garbage (that's ok for robustness)
         except Exception as e:
             pytest.fail(f"Should handle invalid response: {e}")

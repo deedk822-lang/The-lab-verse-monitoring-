@@ -29,7 +29,7 @@ def health_check() -> int:
     print("\n1. Checking Ollama connectivity...")
     try:
         agent = OllamaAgent(model="codellama")
-        response = agent.query("test", timeout=10)
+        agent.query("test", timeout=10)
         print("   ✅ Ollama is running and responsive")
     except OllamaQueryError as e:
         print(f"   ❌ Ollama connectivity failed: {e}")
@@ -39,7 +39,9 @@ def health_check() -> int:
     # Check 2: Package imports
     print("\n2. Checking package imports...")
     try:
-        from pr_fix_agent import analyzer, orchestrator, security
+        import pr_fix_agent.analyzer  # noqa: F401
+        import pr_fix_agent.orchestrator  # noqa: F401
+        import pr_fix_agent.security  # noqa: F401
         print("   ✅ All package modules import successfully")
     except ImportError as e:
         print(f"   ❌ Import failed: {e}")
@@ -151,7 +153,7 @@ def main():
     # health-check command
     # ========================================================================
 
-    health_parser = subparsers.add_parser(
+    subparsers.add_parser(
         'health-check',
         help='Perform system health check'
     )

@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 from datetime import datetime
 from functools import lru_cache
@@ -98,6 +99,8 @@ class ContentFactory:
         self.db = db
         # Unpack the cached providers and image generator
         self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+        # ⚡ Bolt Optimization: Skip providers that failed recently
+        self._failed_providers = {}  # {provider_name: last_failure_time}
 
     def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
         """
@@ -128,10 +131,17 @@ class ContentFactory:
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
+        cooldown = 300  # 5 minutes in seconds
 
         for provider_name in priority:
             provider = self.providers.get(provider_name)
             if provider is None:
+                continue
+
+            # ⚡ Bolt Optimization: Check if provider is in cooldown
+            last_fail = self._failed_providers.get(provider_name)
+            if last_fail and (datetime.now() - last_fail).total_seconds() < cooldown:
+                logger.info(f"Skipping {provider_name} (in cooldown period)")
                 continue
 
             try:
@@ -160,32 +170,53 @@ class ContentFactory:
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
             except Exception as e:
                 logger.warning(f"{provider_name} failed: {e}")
+                # ⚡ Bolt Optimization: Record failure time
+                self._failed_providers[provider_name] = datetime.now()
                 continue
 
         raise Exception("All content generation providers failed")
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
+        """
+        Generate complete social media pack with REAL content.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate text and images in parallel.
+        """
 
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
+            # Parallel execution of text and image generation
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                # Submit text generation task
+                posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
+
+                # Submit image generation task (if generator available)
+                images_future = None
+                if self.image_generator:
+                    images_future = executor.submit(
+                        self.image_generator.generate_for_business,
+                        business_type,
+                        count=num_images
+                    )
+
+                # Wait for text generation to finish
+                posts_result = posts_future.result()
+                posts = self._parse_posts(posts_result["text"], num_posts)
+
+                # Get images (either from future or placeholders)
+                images = []
+                if images_future:
+                    try:
+                        images = images_future.result()
+                        logger.info(f"✅ Generated {len(images)} images")
+                    except Exception as e:
+                        logger.error(f"Image generation failed: {e}")
+                        images = self._create_placeholder_images(num_images)
+                else:
                     images = self._create_placeholder_images(num_images)
-            else:
-                images = self._create_placeholder_images(num_images)
 
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)

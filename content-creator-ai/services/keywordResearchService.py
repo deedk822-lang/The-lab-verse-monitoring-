@@ -1,4 +1,6 @@
+import json
 import os
+import sys
 from typing import Dict, List, Optional
 
 import cohere
@@ -205,9 +207,6 @@ Format: Return only a JSON array of objects with title, description, and format 
         df.to_csv(output_path, index=False)
         print(f"Results exported to {output_path}")
 
-
-import json
-import sys
 
 # Example usage
 if __name__ == "__main__":

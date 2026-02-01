@@ -7,6 +7,26 @@ import logging
 
 import structlog
 
+# Re-exports for compatibility
+from .ollama_agent import (
+    BudgetExceededError,
+    CostTracker,
+    LLMCost,
+)
+from .ollama_agent import (
+    OllamaAgent as ObservableOllamaAgent,
+)
+
+# Explicitly export them to satisfy linters and avoid F401
+__all__ = [
+    "BudgetExceededError",
+    "CostTracker",
+    "LLMCost",
+    "ObservableOllamaAgent",
+    "configure_structured_logging",
+    "logger",
+]
+
 
 # Re-configure structured logging for consistent output
 def configure_structured_logging():
@@ -18,7 +38,7 @@ def configure_structured_logging():
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
         context_class=dict,
@@ -26,13 +46,6 @@ def configure_structured_logging():
         cache_logger_on_first_use=True,
     )
 
+
 configure_structured_logging()
 logger = structlog.get_logger()
-
-# Re-exports for compatibility
-from .ollama_agent import (
-    BudgetExceededError,
-    CostTracker,
-    LLMCost,
-    OllamaAgent as ObservableOllamaAgent
-)

@@ -12,6 +12,7 @@ import pytest
 
 # Import the actual code we're testing
 from pr_fix_agent.analyzer import PRErrorFixer
+from pr_fix_agent.security import SecurityValidator
 
 
 @pytest.fixture
@@ -29,7 +30,8 @@ def agent():
 @pytest.fixture
 def fixer(agent, temp_repo):
     """Create fixer instance"""
-    return PRErrorFixer(agent, str(temp_repo))
+    validator = SecurityValidator(temp_repo)
+    return PRErrorFixer(agent, str(temp_repo), validator)
 
 # ============================================================================
 # REAL TESTS

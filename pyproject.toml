@@ -116,13 +116,9 @@ dev = [
 ]
 
 [project.scripts]
-<<<<<<< HEAD
 pr-fix-agent = "pr_fix_agent.cli.main:app"
-=======
-pr-fix-agent = "pr_fix_agent.cli:main"
 pr-benchmark = "benchmarking_real:main"
 pr-improve = "continuous_improvement_real:main"
->>>>>>> main
 
 [project.urls]
 Homepage = "https://github.com/org/pr-fix-agent"
@@ -139,9 +135,8 @@ build-backend = "hatchling.build"
 packages = ["src/pr_fix_agent"]
 
 [tool.pytest.ini_options]
-<<<<<<< HEAD
 minversion = "7.0"
-pythonpath = ["src"]  # Critical: Tells pytest where to find modules
+pythonpath = ["src"]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -150,12 +145,12 @@ addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=src/pr_fix_agent",  # FIX: Use relative path from repo root
+    "--cov=src/pr_fix_agent",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html:htmlcov",
-    "--cov-report=xml:coverage.xml",  # FIX: Explicit output path
-    "--cov-fail-under=80",  # FIX: Fail if coverage drops below 80%
+    "--cov-report=xml:coverage.xml",
+    "--cov-fail-under=80",
 ]
 markers = [
     "unit: Unit tests",
@@ -170,8 +165,8 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
-source = ["src/pr_fix_agent"]  # FIX: Correct source path
-relative_files = true  # FIX: Use relative paths in coverage.xml
+source = ["src/pr_fix_agent"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/migrations/*",
@@ -185,7 +180,7 @@ omit = [
 precision = 2
 show_missing = true
 skip_covered = false
-fail_under = 80  # FIX: Enforce minimum coverage
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -198,7 +193,6 @@ exclude_lines = [
 ]
 
 [tool.coverage.paths]
-# FIX: Map different paths to same source (CI vs local)
 source = [
     "src/pr_fix_agent",
     "*/pr-fix-agent/src/pr_fix_agent",
@@ -206,7 +200,7 @@ source = [
 ]
 
 [tool.coverage.xml]
-output = "coverage.xml"  # FIX: Explicit output file
+output = "coverage.xml"
 
 [tool.mypy]
 python_version = "3.11"
@@ -271,13 +265,6 @@ ignore = [
 [tool.ruff.isort]
 known-first-party = ["pr_fix_agent"]
 force-sort-within-sections = true
-=======
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = "-v --strict-markers"
->>>>>>> main
 
 [tool.black]
 line-length = 100

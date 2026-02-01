@@ -1,0 +1,52 @@
+[
+  {
+    "file": "src/api/routes/auth.py",
+    "line_start": 45,
+    "line_end": 47,
+    "severity": "high",
+    "category": "security",
+    "issue": "Hardcoded password in authentication function",
+    "suggestion": "Use environment variables or secure vault for credentials",
+    "code": "password = 'admin123'"
+  },
+  {
+    "file": "src/db/session.py",
+    "line_start": 23,
+    "line_end": 23,
+    "severity": "medium",
+    "category": "database",
+    "issue": "SQL injection vulnerability - user input not sanitized",
+    "suggestion": "Use parameterized queries or ORM",
+    "code": "query = f\"SELECT * FROM users WHERE id={user_id}\""
+  },
+  {
+    "file": "src/security/redis_client.py",
+    "line_start": 67,
+    "line_end": 70,
+    "severity": "high",
+    "category": "concurrency",
+    "issue": "Race condition in Redis client initialization",
+    "suggestion": "Use asyncio.Lock for thread-safe singleton pattern",
+    "code": "if not _redis_client:\n    _redis_client = await aioredis.from_url()"
+  },
+  {
+    "file": "src/observability/audit.py",
+    "line_start": 34,
+    "line_end": 38,
+    "severity": "medium",
+    "category": "logging",
+    "issue": "Duplicate log handlers causing multiple log entries",
+    "suggestion": "Check for existing handlers before adding new ones",
+    "code": "handler = FileHandler(log_path)\nlogger.addHandler(handler)"
+  },
+  {
+    "file": "src/agents/cohere.py",
+    "line_start": 89,
+    "line_end": 92,
+    "severity": "low",
+    "category": "deprecation",
+    "issue": "Using deprecated Cohere v1 API",
+    "suggestion": "Migrate to Cohere ClientV2 with messages array",
+    "code": "client = cohere.Client(api_key)\nresponse = client.generate(prompt=text)"
+  }
+]

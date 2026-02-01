@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Optional
 
-from openai import APIError, OpenAI  # type: ignore
+from openai import APIError, OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class KimiClient:
                 logger.error("Kimi API returned empty content")
                 return None
 
-            return str(response.choices[0].message.content)
+            return response.choices[0].message.content
         except APIError as e:
             logger.exception(f"API error during Kimi API call: {e!r}")
             return None

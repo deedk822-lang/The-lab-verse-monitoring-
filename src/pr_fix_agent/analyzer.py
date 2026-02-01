@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 from typing import Dict, Optional
 
-from pr_fix_agent.ollama_agent import OllamaAgent, OllamaQueryError
+from pr_fix_agent.agents.ollama import OllamaAgent, OllamaQueryError
 from pr_fix_agent.security import SecurityError, SecurityValidator
 
 # ============================================================================

@@ -73,7 +73,7 @@ class ImageGenerator:
             return False
 
     def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto") -> Dict:
+                 provider: str = "auto", skip_enhance: bool = False) -> Dict:
         """
         Generate image from text prompt
 
@@ -81,12 +81,13 @@ class ImageGenerator:
             prompt: Text description of image
             style: Image style (professional, creative, realistic, artistic)
             provider: Provider to use (auto, stability, replicate, huggingface, local)
+            skip_enhance: Whether to skip prompt enhancement (e.g. for fallbacks)
 
         Returns:
             Dict with image_url, provider, cost_usd
         """
-        # Enhance prompt with style
-        enhanced_prompt = self._enhance_prompt(prompt, style)
+        # Enhance prompt with style unless skipped
+        enhanced_prompt = prompt if skip_enhance else self._enhance_prompt(prompt, style)
 
         # Select provider
         if provider == "auto":
@@ -291,7 +292,8 @@ class ImageGenerator:
             if self.providers[provider]:
                 try:
                     logger.info(f"Trying fallback provider: {provider}")
-                    return self.generate(prompt, provider=provider)
+                    # ✅ FIX: Use skip_enhance=True to prevent double enhancement
+                    return self.generate(prompt, provider=provider, skip_enhance=True)
                 except Exception as e:
                     logger.warning(f"Provider {provider} failed: {e}")
                     continue

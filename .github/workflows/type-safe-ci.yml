@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r rainmaker_orchestrator/requirements.txt
+          pip install -r rainmaker_orchestrator/requirements.txt openai
           pip install mypy
 
       - name: Run MyPy type checking
@@ -89,7 +89,7 @@ jobs:
 
       - name: Configure Alibaba Cloud OIDC
         if: steps.gate.outputs.can_run == 'true'
-        uses: aliyun/alibabacloud-auth-action@v1.0.0
+        uses: aliyun/alibabacloud-oidc-auth@v2
         with:
           role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
           oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
@@ -178,7 +178,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/alibabacloud-auth-action@v1.0.0
+        uses: aliyun/alibabacloud-oidc-auth@v2
         with:
           role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
           oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}

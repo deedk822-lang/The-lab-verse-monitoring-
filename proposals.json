@@ -1,0 +1,19 @@
+[
+  {
+    "finding": {
+      "file": "README.md",
+      "line_start": 1,
+      "line_end": 1,
+      "severity": "low",
+      "category": "info",
+      "issue": "Missing period",
+      "suggestion": "Add period",
+      "code_snippet": null
+    },
+    "root_cause": "Analysis failed",
+    "fix_approach": "Manual fix",
+    "expected_changes": [],
+    "risk_level": "high",
+    "test_requirements": []
+  }
+]

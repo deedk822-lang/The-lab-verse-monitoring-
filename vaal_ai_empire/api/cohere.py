@@ -16,35 +16,42 @@ class CohereAPI:
         if not api_key:
             raise ValueError("COHERE_API_KEY environment variable not set.")
 
-        self.client = cohere.Client(api_key)
-        self.model = "command-r"
+        self.client = cohere.ClientV2(api_key)
+        self.model = "command-r-plus"
         self.usage_log = []
 
     def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
-        """Generate content and track usage"""
+        """Generate content using Cohere V2 API and track usage"""
         try:
+            messages = [{"role": "user", "content": prompt}]
             response = self.client.chat(
                 model=self.model,
-                message=prompt,
+                messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.7
             )
 
             input_tokens = 0
             output_tokens = 0
-            if hasattr(response, "meta") and hasattr(response.meta, "tokens"):
-                input_tokens = response.meta.tokens.input_tokens or 0
-                output_tokens = response.meta.tokens.output_tokens or 0
+            if hasattr(response, "usage"):
+                input_tokens = response.usage.input_tokens or 0
+                output_tokens = response.usage.output_tokens or 0
 
             usage = {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "cost_usd": 0.0  # NOTE: Actual cost calculation would require model-specific pricing
+                "cost_usd": 0.0
             }
 
             self.usage_log.append(usage)
+
+            # V2 response content extraction
+            content = ""
+            if hasattr(response, "message") and hasattr(response.message, "content"):
+                content = response.message.content[0].text
+
             return {
-                "text": response.text,
+                "text": content,
                 "usage": usage
             }
         except Exception as e:

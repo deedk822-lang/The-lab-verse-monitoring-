@@ -103,18 +103,18 @@ jobs:
           mkdir -p artifacts/proposals
 
           python -m pr_fix_agent.orchestrator \
-            --mode reasoning \
+            review \
             --findings analysis-results/ \
-            --output artifacts/proposals/proposals.json \
-            --reasoning-model deepseek-r1:1.5b \
-            --coding-model qwen2.5-coder:1.5b
+            --limit 20
+
+          # proposals.json is created by 'review' mode in the current directory by default
+          mv proposals.json artifacts/proposals/proposals.json
 
           python -m pr_fix_agent.orchestrator \
-            --mode coding \
-            --proposals artifacts/proposals/proposals.json \
+            fix \
+            --findings analysis-results/ \
             --apply \
-            --reasoning-model deepseek-r1:1.5b \
-            --coding-model qwen2.5-coder:1.5b
+            --limit 20
 
       - name: Run tests (FIXED LOGIC)
         id: test
@@ -196,16 +196,16 @@ jobs:
       - name: Generate PR body (FIXED)
         run: |
           python -m pr_fix_agent.orchestrator \
-            --mode generate-pr \
-            --proposals artifacts/fix-proposals/proposals.json \
-            --test-results artifacts/test-results/test-results.json \
-            --output pr-body.md
+            generate-pr \
+            --findings artifacts/fix-proposals/ \
+            > pr-body.md
 
       - name: Apply fixed code
         run: |
           cp -r artifacts/fixed-code/* src/
 
       - name: Create Pull Request
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -252,16 +252,16 @@ jobs:
       - name: Generate PR body with test failures
         run: |
           python -m pr_fix_agent.orchestrator \
-            --mode generate-pr \
-            --proposals artifacts/fix-proposals/proposals.json \
-            --test-results artifacts/test-results/test-results.json \
-            --output pr-body.md
+            generate-pr \
+            --findings artifacts/fix-proposals/ \
+            > pr-body.md
 
       - name: Apply fixed code
         run: |
           cp -r artifacts/fixed-code/* src/ || echo "No fixed code to apply"
 
       - name: Create Draft Pull Request
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

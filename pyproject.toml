@@ -31,6 +31,13 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "structlog",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "slowapi>=0.1.8",
+    "httpx>=0.24.0",
+    "huggingface-hub>=0.20.0",
+    "prometheus-client>=0.17.0",
+    "redis>=4.5.0",
 ]
 
 [project.optional-dependencies]
@@ -86,3 +93,18 @@ python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
+
+[tool.coverage.run]
+source = ["src/pr_fix_agent"]
+relative_files = true
+
+[tool.coverage.paths]
+source = [
+    "src/pr_fix_agent",
+    "*/pr-fix-agent/src/pr_fix_agent",
+    "/app/src/pr_fix_agent",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80

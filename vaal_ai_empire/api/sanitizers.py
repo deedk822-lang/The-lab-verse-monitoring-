@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Dangerous patterns to detect/block
 DANGEROUS_PATTERNS = [
-    r"(?i)(ignore|forget|disregard)\s+(previous|above|all|everything|instructions|prompts|rules)\b",
+    r"(?i)(ignore|forget|disregard)\s+(?:.*?\s+)?(instructions|prompts|rules|everything|above)",
     r"(?i)system\s*:\s*you\s+are",
     r"(?i)new\s+(instructions|rules|prompt)",
     r"(?i)(execute|run|eval)\s*\(",
@@ -25,7 +25,7 @@ DANGEROUS_PATTERNS = [
 ]
 
 
-class PromptInjectionDetected(ValueError):
+class PromptInjectionError(ValueError):
     """Exception raised when a prompt injection attempt is detected."""
     pass
 
@@ -72,7 +72,7 @@ def sanitize_prompt(
     if matches:
         logger.error(f"Dangerous patterns detected: {matches}")
         if strict:
-            raise PromptInjectionDetected("Prompt contains potentially unsafe content")
+            raise PromptInjectionError("Prompt contains potentially unsafe content")
         else:
             # Filter matches
             for pattern in DANGEROUS_PATTERNS:

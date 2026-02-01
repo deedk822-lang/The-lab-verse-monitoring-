@@ -24,7 +24,7 @@ class SelfHealingAgent:
         r"eval\(",  # Dynamic code execution
     ]
 
-    def __init__(self, kimi_client: Any = None, orchestrator: Any = None) -> None:
+    def __init__(self, kimi_client: Optional[KimiClient] = None, orchestrator: Optional[RainmakerOrchestrator] = None) -> None:
         """
         Initialize the self-healing agent.
 
@@ -32,8 +32,8 @@ class SelfHealingAgent:
             kimi_client: Optional KimiClient instance. If not provided, creates a new one.
             orchestrator: Optional RainmakerOrchestrator instance. If not provided, creates a new one.
         """
-        self.kimi_client = kimi_client or self._init_kimi_client()
-        self.orchestrator = orchestrator or self._init_orchestrator()
+        self.kimi_client: KimiClient = kimi_client or self._init_kimi_client()
+        self.orchestrator: RainmakerOrchestrator = orchestrator or self._init_orchestrator()
         logger.info("Self-Healing Agent initialized")
 
     def _init_kimi_client(self) -> KimiClient:
@@ -52,7 +52,12 @@ class SelfHealingAgent:
         Returns:
             RainmakerOrchestrator: A new orchestrator instance
         """
-        return RainmakerOrchestrator(workspace_path="./workspace")
+        try:
+            from rainmaker_orchestrator.server import settings # type: ignore
+            workspace_path = getattr(settings, 'workspace_path', './workspace')
+        except ImportError:
+            workspace_path = './workspace'
+        return RainmakerOrchestrator(workspace_path=workspace_path)
 
     @staticmethod
     def validate_command(command: str) -> bool:

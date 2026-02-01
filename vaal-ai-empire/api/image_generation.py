@@ -65,7 +65,7 @@ class ImageGenerator:
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
-                except:
+                except Exception:
                     continue
 
             return False
@@ -180,8 +180,7 @@ class ImageGenerator:
 
     def _generate_replicate(self, prompt: str) -> Dict:
         """Generate using Replicate API"""
-        api_token = os.getenv("REPLICATE_API_TOKEN")
-
+        # Replicate SDK uses REPLICATE_API_TOKEN environment variable automatically
         import replicate
 
         output = replicate.run(
@@ -218,12 +217,12 @@ class ImageGenerator:
         api_token = os.getenv("HUGGINGFACE_TOKEN")
 
         # Use Stable Diffusion XL on HuggingFace
-        API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
         response = self.session.post(
-            API_URL,
+            api_url,
             headers=headers,
             json={"inputs": prompt},
             timeout=60
@@ -318,7 +317,7 @@ class ImageGenerator:
             # Try to use a font, fallback to default
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
-            except:
+            except Exception:
                 font = ImageFont.load_default()
 
             # Center text

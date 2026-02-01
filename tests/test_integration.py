@@ -7,6 +7,7 @@ import os
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+import pytest_asyncio
 
 
 # Test fixtures
@@ -19,7 +20,7 @@ def clean_env(monkeypatch):
     monkeypatch.delenv('HF_MODEL_PATH', raising=False)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def redis_client():
     """Mock Redis client for testing."""
     # Use MagicMock as base to avoid AsyncMock auto-coroutine behavior for all attributes
@@ -84,7 +85,7 @@ class TestHuggingFaceTokenUsage:
         )
 
         with caplog.at_level('WARNING'):
-            provider = HuggingFaceProvider(config)
+            HuggingFaceProvider(config)
 
         # Should log warning about missing token
         assert "HuggingFace token" in caplog.text
@@ -113,7 +114,7 @@ class TestHuggingFaceTokenUsage:
         # Don't set HF_TOKEN
 
         with caplog.at_level('WARNING'):
-            provider = initialize_from_env()
+            initialize_from_env()
 
         # Should warn about missing token
         assert "HF_TOKEN not set" in caplog.text

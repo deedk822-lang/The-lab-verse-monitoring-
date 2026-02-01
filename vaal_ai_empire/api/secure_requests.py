@@ -6,8 +6,8 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
-from typing import Optional, Set, Any, Tuple
 
 import httpx
 
@@ -31,7 +31,7 @@ BLOCKED_IP_RANGES = [
 
 class SSRFBlocker:
     """Helper class for SSRF protection."""
-    
+
     def __init__(
         self,
         allow_private_ips: bool = False,
@@ -121,7 +121,7 @@ def create_ssrf_safe_async_session(
     allowed_domains: Optional[Set[str]] = None
 ) -> httpx.AsyncClient:
     """Create SSRF-safe async HTTP client."""
-    
+
     blocker = SSRFBlocker(allowed_domains=allowed_domains)
 
     class SSRFSafeTransport(httpx.AsyncHTTPTransport):

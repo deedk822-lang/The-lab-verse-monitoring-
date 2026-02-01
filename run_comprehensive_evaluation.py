@@ -63,11 +63,7 @@ def check_prerequisites():
     checks_passed = True
 
     # Check Python
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ required")
-        checks_passed = False
-    else:
-        print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}")
+    print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}")
 
     # Check pytest
     result = subprocess.run(["pytest", "--version"], capture_output=True)

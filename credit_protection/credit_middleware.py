@@ -159,7 +159,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
 def protect_function(tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
     """
     Decorator to protect individual functions
-    
+
     Usage:
         @protect_function(tier="free")
         def my_llm_function(prompt: str):

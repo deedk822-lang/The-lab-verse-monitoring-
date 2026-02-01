@@ -12,7 +12,7 @@ from .core.config import settings
 async def lifespan(app: FastAPI):
     """
     Manage application lifespan for the FastAPI app.
-    
+
     On startup, prints a startup message; yields control to run the application; on shutdown, prints a shutdown message. This context manager is used by FastAPI to perform any necessary initialization or cleanup.
     """
     print("Starting Rainmaker Orchestrator with GLM-4.7 and AutoGLM integration")
@@ -47,7 +47,7 @@ app.include_router(autoglm.router, prefix=settings.API_V1_STR)
 async def root():
     """
     Provide application metadata and a list of supported features.
-    
+
     Returns:
         dict: A mapping with keys:
             - "message": Human-readable description of the application.
@@ -72,7 +72,7 @@ async def root():
 async def health_check():
     """
     Provide runtime health information for the Rainmaker Orchestrator service.
-    
+
     Returns:
         dict: Health payload containing:
             - status (str): service health status, e.g. "healthy".

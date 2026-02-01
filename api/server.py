@@ -35,7 +35,7 @@ class HubSpotWebhookPayload(BaseModel):
 async def lifespan(app: FastAPI) -> None:
     """
     Manage application startup and shutdown for the Authority Engine.
-    
+
     On startup, conditionally initialize OpenLIT telemetry (skipped when the environment variable CI is "true") using the OPENLIT_OTLP_ENDPOINT and ENVIRONMENT environment variables, instantiate a RainmakerOrchestrator, and attach it to app.state.orchestrator. On shutdown, close the orchestrator by calling its aclose() coroutine.
     """
     # Initialize OpenLIT only if not in CI environment
@@ -75,7 +75,7 @@ app: FastAPI = FastAPI(
 async def health() -> dict:
     """
     Report application health status and available engine features.
-    
+
     Returns:
         dict: A status payload with keys:
             - "status" (str): overall connectivity state, e.g. "connected".
@@ -97,13 +97,13 @@ async def hubspot_webhook(
 ) -> dict:
     """
     Enqueues an authority flow run for an incoming HubSpot webhook event.
-    
+
     Parameters:
         payload (HubSpotWebhookPayload): HubSpot event payload containing `objectId` and `message_body`.
-    
+
     Returns:
         dict: A response with status and human-readable message, e.g. `{"status": "accepted", "message": "Authority Flow queued"}`.
-    
+
     Raises:
         HTTPException: Raised with status code 500 when webhook processing fails.
     """
@@ -124,12 +124,12 @@ async def hubspot_webhook(
 async def execute(payload: ExecuteTaskPayload, request: Request) -> dict:
     """
     Execute a direct agent task using the application's orchestrator.
-    
+
     Calls the orchestrator attached to the FastAPI app state with the provided payload and returns the orchestrator's result.
-    
+
     Returns:
         dict: The task execution result dictionary (typically includes a 'status' key).
-    
+
     Raises:
         HTTPException: Raised with status 400 when payload validation fails, or status 500 for other execution errors.
     """

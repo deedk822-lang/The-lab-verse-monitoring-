@@ -1,5 +1,6 @@
 import subprocess
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 class FileSystemAgent:
     """Agent for interacting with the file system and executing scripts."""

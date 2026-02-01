@@ -40,19 +40,19 @@ async def generate_with_glm(
 ):
     """
     Generate structured content using the GLM-4.7 model for the given request.
-    
+
     Generates content of the specified content_type using request.context and returns a payload with the generated content, a Unix timestamp, and the tenant identifier from the authenticated user.
-    
+
     Parameters:
         request (GLMGenerateRequest): Request containing `content_type` (the kind of content to generate) and `context` (data used to guide generation).
-    
+
     Returns:
         dict: Response payload with keys:
             - `success` (bool): `True` on successful generation.
             - `content` (Any): Generated structured content.
             - `timestamp` (float): Unix timestamp when the response was created.
             - `tenant_id` (str): Tenant identifier of the authenticated user.
-    
+
     Raises:
         HTTPException: 403 if the user lacks the "glm" permission; 500 on internal errors during generation.
     """
@@ -118,17 +118,17 @@ async def autoglm_secure_content(
 ):
     """
     Generate security-reviewed content for the given content type and context using the AutoGLM orchestrator.
-    
+
     Parameters:
         request (AutoGLMSecureContentRequest): Request containing `content_type` (the kind of content to produce) and `context` (data used to inform generation).
-        
+
     Returns:
         dict: A payload with keys:
             - `success`: `True` on successful generation.
             - `content`: The generated secure content.
             - `timestamp`: Unix epoch time when the response was produced.
             - `tenant_id`: Tenant identifier of the requesting user.
-    
+
     Raises:
         HTTPException: 403 if the current user lacks the "autoglm" permission; 500 on internal errors during generation.
     """
@@ -161,9 +161,9 @@ async def autoglm_secure_content(
 async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     """
     Perform health checks for configured GLM and AutoGLM services and assemble an overall health status.
-    
+
     Only services for which the current user has permission and for which required configuration is present are checked; unchecked services are reported as "not configured". The returned payload includes a POSIX timestamp and the requesting user's tenant identifier.
-    
+
     Returns:
         dict: A mapping containing:
             - "status" (str): overall health status.
@@ -197,7 +197,7 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     # Test AutoGLM if configured and user has access
     if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
         try:
-            async with create_autoglm_orchestrator() as autoglm:
+            async with create_autoglm_orchestrator():
                 # Just test initialization - don't run full analysis for health check
                 health_status["services"]["autoglm"] = {"status": "operational"}
         except Exception as e:

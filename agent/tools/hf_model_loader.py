@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Dict
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -16,9 +15,9 @@ class HuggingFaceModelLoader:
     """Manages local Hugging Face model loading and inference."""
 
     def __init__(self) -> None:
-        self.models: Dict[str, object] = {}
-        self.tokenizers: Dict[str, object] = {}
-        self.pipelines: Dict[str, object] = {}
+        self.models: dict[str, object] = {}
+        self.tokenizers: dict[str, object] = {}
+        self.pipelines: dict[str, object] = {}
 
         os.makedirs(config.hf.hf_cache_dir, exist_ok=True)
         logger.info("✅ HF model cache initialized: %s", config.hf.hf_cache_dir)

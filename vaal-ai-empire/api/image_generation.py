@@ -4,24 +4,20 @@ Supports multiple providers: Stable Diffusion, DALL-E, Replicate
 """
 
 import base64
-<<<<<<< HEAD
+import concurrent.futures
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
+
+import requests
 
 try:
     from pr_fix_agent.security.secure_requests import create_ssrf_safe_requests_session
     SSRF_SAFE_AVAILABLE = True
 except ImportError:
     SSRF_SAFE_AVAILABLE = False
-=======
-import concurrent.futures
-import logging
-import os
->>>>>>> main
-from datetime import datetime
-from pathlib import Path
-from typing import Dict, List
-
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +79,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-<<<<<<< HEAD
                     response = check_session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
-=======
-                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
->>>>>>> main
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True

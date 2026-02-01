@@ -1,5 +1,6 @@
 """
 Enhanced main application with security, monitoring, distributed state, and Atlassian integration.
+Integrated with Prometheus and Grafana for observability.
 """
 
 import hashlib
@@ -25,6 +26,16 @@ from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
+
+from app.middleware.metrics import setup_metrics
+from app.middleware.metrics import (
+    llm_requests_total,
+    llm_request_duration_seconds,
+    llm_tokens_total,
+    db_connections_active,
+    db_queries_total,
+    redis_operations_total,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -167,6 +178,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Setup Prometheus metrics
+setup_metrics(app)
+
 # Security dependencies
 async def verify_self_healing_key(
     x_self_healing_key: Optional[str] = Header(None)
@@ -246,11 +260,6 @@ async def readiness_check():
     all_ready = checks["llm_provider"]
     status_code = 200 if all_ready else 503
     return JSONResponse(status_code=status_code, content={"ready": all_ready, "checks": checks})
-
-@app.get("/metrics")
-async def metrics():
-    from app.metrics import metrics_endpoint
-    return metrics_endpoint()
 
 @app.post("/webhook/bitbucket")
 async def handle_bitbucket_webhook(
@@ -456,22 +465,53 @@ async def jira_integration_status() -> Dict[str, Any]:
 
 @app.post("/api/generate")
 async def generate_text(request: Request, rate_limited: bool = Depends(check_rate_limit)):
+    start_time = time.time()
+    model = "unknown"
+    provider_name = "unknown"
     try:
         data = await request.json()
         prompt = data.get('prompt', '')
         task = TaskType[data.get('task', 'TEXT_GENERATION')]
+        model = data.get('model', 'default')
         provider = get_global_provider()
         response = await provider.generate_with_retry(
             prompt=prompt, task=task,
             max_tokens=data.get('max_tokens', 1000),
             temperature=data.get('temperature', 0.7)
         )
+        model = response.model
+        provider_name = response.provider
+
+        # Record metrics
+        llm_requests_total.labels(
+            backend=provider_name,
+            model=model,
+            status="success"
+        ).inc()
+
+        duration = time.time() - start_time
+        llm_request_duration_seconds.labels(
+            backend=provider_name,
+            model=model
+        ).observe(duration)
+
+        llm_tokens_total.labels(
+            backend=provider_name,
+            model=model,
+            type="output"
+        ).inc(response.tokens_used)
+
         return {
             "text": response.text, "model": response.model,
             "provider": response.provider, "tokens_used": response.tokens_used,
             "latency_ms": response.latency_ms
         }
     except Exception as e:
+        llm_requests_total.labels(
+            backend=provider_name,
+            model=model,
+            status="error"
+        ).inc()
         logger.error(f"Generation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

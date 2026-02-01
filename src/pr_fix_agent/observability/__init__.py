@@ -1,20 +1,36 @@
 """
-<<<<<<< HEAD:src/pr_fix_agent/observability/__init__.py
 Observability module for PR Fix Agent.
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from typing import Any, Dict
 
 import structlog
 
-from .logging import configure_logging
-from .metrics import initialize_metrics
-from .tracing import initialize_tracing
+# Re-configure structured logging for consistent output
+def configure_structured_logging():
+    """Configure structured logging (Datadog-compatible)"""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer()
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
 
+configure_structured_logging()
+logger = structlog.get_logger()
 
 @dataclass
 class LLMCost:
@@ -25,6 +41,9 @@ class LLMCost:
     total_tokens: int
     cost_usd: float
     timestamp: str
+
+    def to_dict(self) -> dict:
+        return asdict(self)
 
 
 class BudgetExceededError(Exception):
@@ -54,7 +73,6 @@ class CostTracker:
         self.budget_usd = budget_usd
         self.costs: list[LLMCost] = []
         self.total_spent = 0.0
-        self.logger = structlog.get_logger()
 
     def track(
         self,
@@ -79,7 +97,7 @@ class CostTracker:
         self.costs.append(cost)
         self.total_spent += cost_usd
 
-        self.logger.info(
+        logger.info(
             "llm_cost_tracked",
             model=model,
             tokens=total_tokens,
@@ -108,41 +126,7 @@ class CostTracker:
 
 
 __all__ = [
-    'configure_logging',
-    'initialize_metrics',
-    'initialize_tracing',
     'LLMCost',
     'BudgetExceededError',
     'CostTracker',
 ]
-=======
-Observability Module
-Re-exports consolidated components from ollama_agent.py
-"""
-
-import logging
-
-import structlog
-
-
-# Re-configure structured logging for consistent output
-def configure_structured_logging():
-    """Configure structured logging (Datadog-compatible)"""
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer()
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
-
-configure_structured_logging()
-logger = structlog.get_logger()
->>>>>>> main:src/pr_fix_agent/observability.py

@@ -1,7 +1,9 @@
 import time
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .api.v1.endpoints import autoglm
 from .core.config import settings
 

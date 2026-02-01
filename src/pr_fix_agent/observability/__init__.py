@@ -4,9 +4,10 @@ Observability module for PR Fix Agent.
 
 from __future__ import annotations
 
+import logging as std_logging
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import structlog
 
@@ -106,6 +107,29 @@ class CostTracker:
         }
 
 
+# Re-configure structured logging for consistent output
+def configure_structured_logging():
+    """Configure structured logging (Datadog-compatible)"""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer()
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(std_logging.INFO),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+configure_structured_logging()
+
+# Alias for compatibility
+from ..ollama_agent import OllamaAgent as ObservableOllamaAgent
+
 __all__ = [
     'configure_logging',
     'initialize_metrics',
@@ -113,4 +137,6 @@ __all__ = [
     'LLMCost',
     'BudgetExceededError',
     'CostTracker',
+    'configure_structured_logging',
+    'ObservableOllamaAgent'
 ]

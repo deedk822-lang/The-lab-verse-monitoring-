@@ -3,9 +3,9 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
-from pydantic import BaseModel, Field
 import openlit
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 
@@ -52,13 +52,13 @@ async def lifespan(app: FastAPI) -> None:
             logger.info("OpenLIT telemetry initialized")
         except Exception as e:
             logger.warning(f"OpenLIT initialization warning: {e}")
-    
+
     orchestrator: RainmakerOrchestrator = RainmakerOrchestrator()
     app.state.orchestrator = orchestrator
     logger.info("✅ Authority Engine initialized and ready")
-    
+
     yield
-    
+
     await orchestrator.aclose()
     logger.info("🛑 Authority Engine shut down gracefully")
 

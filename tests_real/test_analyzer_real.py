@@ -3,15 +3,12 @@ REAL Tests for PRErrorAnalyzer
 Tests actual log parsing and error analysis
 """
 
-import pytest
 from unittest.mock import Mock
-import re
+
+import pytest
 
 # Conventional import from src
 from pr_fix_agent.analyzer import PRErrorAnalyzer
-
-import sys
-from pathlib import Path
 
 # ============================================================================
 # REAL TESTS

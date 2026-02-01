@@ -7,6 +7,7 @@ report. This script is intentionally non-blocking and should not fail PRs.
 
 import sys
 
+
 def main() -> int:
     """
     Produce a short report of changed file paths read from standard input.

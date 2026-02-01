@@ -130,7 +130,7 @@ class InputValidator:
         try:
             json.loads(data)
             return True
-        except:
+        except Exception:
             return False
 
     @staticmethod

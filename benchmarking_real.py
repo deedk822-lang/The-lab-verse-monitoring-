@@ -115,7 +115,6 @@ class OllamaBenchmarker:
         has_function = "def " in code
         has_class = "class " in code
         has_docstring = '"""' in code or "'''" in code
-        has_typing = ":" in code and "->" in code
 
         structure_score = sum([has_function or has_class, has_docstring]) / 2
         score += structure_score * 0.3

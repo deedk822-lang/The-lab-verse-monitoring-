@@ -24,7 +24,6 @@ def benchmark_social_pack():
     factory = ContentFactory()
 
     # Mock generate_content to simulate delay
-    original_generate_content = factory.generate_content
     def mocked_generate_content(prompt, max_tokens=500):
         print("Starting text generation (simulated 2s delay)...")
         time.sleep(2)
@@ -38,7 +37,6 @@ def benchmark_social_pack():
 
     # Mock image_generator.generate_for_business to simulate delay
     if factory.image_generator:
-        original_generate_for_business = factory.image_generator.generate_for_business
         def mocked_generate_for_business(business_type, count=5):
             print("Starting image generation (simulated 2s delay)...")
             time.sleep(2)
@@ -56,7 +54,7 @@ def benchmark_social_pack():
     # Measure performance
     print("\nRunning generate_social_pack...")
     start_time = time.perf_counter()
-    result = factory.generate_social_pack("butchery", num_posts=2, num_images=2)
+    factory.generate_social_pack("butchery", num_posts=2, num_images=2)
     end_time = time.perf_counter()
 
     total_time = end_time - start_time

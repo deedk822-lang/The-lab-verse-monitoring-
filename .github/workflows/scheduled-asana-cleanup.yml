@@ -233,8 +233,8 @@ jobs:
 
           # Set environment variables
           export ASANA_PAT="${{ secrets.ASANA_PAT }}"
-          export DRY_RUN="${{ github.event.inputs.dry_run || 'true' }}"
-          export COMPLETION_CRITERIA="${{ github.event.inputs.completion_criteria || 'overdue' }}"
+          export DRY_RUN="${{ (github.event.inputs && github.event.inputs.dry_run) || 'true' }}"
+          export COMPLETION_CRITERIA="${{ (github.event.inputs && github.event.inputs.completion_criteria) || 'overdue' }}"
           
           python scheduled_cleanup.py
 
@@ -253,11 +253,11 @@ jobs:
           ## 🧹 Scheduled Asana Cleanup Report
           
           **Execution Time:** $(date -u)
-          **Mode:** ${{ github.event.inputs.dry_run == 'true' && 'DRY RUN' || 'LIVE EXECUTION' }}
-          **Criteria:** ${{ github.event.inputs.completion_criteria || 'overdue' }}
+          **Mode:** ${{ (github.event.inputs && github.event.inputs.dry_run == 'true') && 'DRY RUN' || 'LIVE EXECUTION' }}
+          **Criteria:** ${{ (github.event.inputs && github.event.inputs.completion_criteria) || 'overdue' }}
           
           ### Results Summary
-          - ✅ **${{ steps.cleanup.outputs.completed_count }}** tasks ${{ github.event.inputs.dry_run == 'true' && 'would be completed' || 'completed' }}
+          - ✅ **${{ steps.cleanup.outputs.completed_count }}** tasks ${{ (github.event.inputs && github.event.inputs.dry_run == 'true') && 'would be completed' || 'completed' }}
           - ⏭️ **${{ steps.cleanup.outputs.skipped_count }}** tasks skipped
           - ❌ **${{ steps.cleanup.outputs.error_count }}** errors encountered
           
@@ -267,7 +267,7 @@ jobs:
           - **old_completed_subtasks**: Tasks with all subtasks completed
           
           ### Next Steps
-          ${{ github.event.inputs.dry_run == 'true' && '- Review the results and run in live mode if satisfied' || '- Check Asana to verify task completions' }}
+          ${{ (github.event.inputs && github.event.inputs.dry_run == 'true') && '- Review the results and run in live mode if satisfied' || '- Check Asana to verify task completions' }}
           - Review the detailed log artifact for complete information
           - Adjust criteria if needed for future runs
           EOF
@@ -281,7 +281,7 @@ jobs:
       - name: Prepare Notification Message
         id: message
         run: |
-          if [ "${{ github.event.inputs.dry_run }}" == "false" ] || [ "${{ github.event_name }}" == "schedule" ]; then
+          if [ "${{ github.event.inputs && github.event.inputs.dry_run }}" == "false" ] || [ "${{ github.event_name }}" == "schedule" ]; then
             MODE="🔴 LIVE EXECUTION"
           else
             MODE="🟡 DRY RUN"
@@ -292,7 +292,7 @@ jobs:
           ⏭️ ${{ needs.scheduled-cleanup.outputs.skipped_count }} tasks skipped  
           ❌ ${{ needs.scheduled-cleanup.outputs.error_count }} errors
           
-          Criteria: ${{ github.event.inputs.completion_criteria || 'overdue' }}
+          Criteria: ${{ (github.event.inputs && github.event.inputs.completion_criteria) || 'overdue' }}
           Repository: ${{ github.repository }}
           Time: $(date -u)"
           

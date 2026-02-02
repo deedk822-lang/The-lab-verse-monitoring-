@@ -48,16 +48,16 @@ on:
     types: [closed]
 
 env:
-  DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-  CHECK_DEPENDENCIES: ${{ github.event.inputs.check_dependencies || 'false' }}
+  DRY_RUN: ${{ (github.event.inputs && github.event.inputs.dry_run) || 'false' }}
+  CHECK_DEPENDENCIES: ${{ (github.event.inputs && github.event.inputs.check_dependencies) || 'false' }}
 
 jobs:
   # Job 1: Complete a specific task by ID
   complete-single-task:
     if: |
-      (github.event_name == 'workflow_dispatch' && 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs &&
        (github.event.inputs.action_type == 'single_task' || github.event.inputs.task_id != '')) ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      (github.event_name == 'pull_request' && github.event.pull_request && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     outputs:
       completed-count: ${{ steps.task-completion.outputs.completed-count }}
@@ -217,7 +217,7 @@ jobs:
   # Job 2: Complete all tasks in a project
   complete-project-tasks:
     if: |
-      github.event_name == 'workflow_dispatch' && 
+      github.event_name == 'workflow_dispatch' && github.event.inputs &&
       (github.event.inputs.action_type == 'project_tasks' || github.event.inputs.project_id != '')
     runs-on: ubuntu-latest
     outputs:
@@ -338,7 +338,7 @@ jobs:
   # Job 3: Complete tasks by tag
   complete-tasks-by-tag:
     if: |
-      github.event_name == 'workflow_dispatch' && 
+      github.event_name == 'workflow_dispatch' && github.event.inputs &&
       (github.event.inputs.action_type == 'tagged_tasks' || github.event.inputs.task_tag != '')
     runs-on: ubuntu-latest
     outputs:
@@ -442,7 +442,7 @@ jobs:
   # Job 4: Bulk complete all incomplete tasks (use with caution)
   bulk-complete-all:
     if: |
-      github.event_name == 'workflow_dispatch' && 
+      github.event_name == 'workflow_dispatch' && github.event.inputs &&
       github.event.inputs.action_type == 'bulk_complete'
     runs-on: ubuntu-latest
     outputs:
@@ -568,7 +568,7 @@ jobs:
           echo "**Mode:** ${{ env.DRY_RUN == 'true' && '🧪 Dry Run' || '🚀 Live Run' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs }}" ]; then
             echo "**Action Type:** ${{ github.event.inputs.action_type }}" >> $GITHUB_STEP_SUMMARY
             
             if [ -n "${{ github.event.inputs.task_id }}" ]; then

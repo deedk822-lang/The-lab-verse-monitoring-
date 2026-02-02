@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class UsageRecord:
     estimated_cost: float
     duration_ms: int
     status: str
-    metadata: Dict
+    metadata: dict
 
 
 class CreditProtectionManager:
@@ -94,8 +94,8 @@ class CreditProtectionManager:
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
         # Usage tracking
-        self.daily_usage: Dict[str, int] = {}
-        self.hourly_usage: Dict[str, int] = {}
+        self.daily_usage: dict[str, int] = {}
+        self.hourly_usage: dict[str, int] = {}
         self.request_count = 0
 
         # Circuit breaker state
@@ -110,37 +110,37 @@ class CreditProtectionManager:
         today = datetime.now().strftime("%Y-%m-%d")
         return self.storage_path / f"usage_{period}_{today}.json"
 
-    def _load_usage(self):
+    def _load_usage(self) -> None:
         """Load existing usage data."""
         daily_file = self._get_usage_file("daily")
         hourly_file = self._get_usage_file("hourly")
 
         try:
             if daily_file.exists():
-                with open(daily_file) as f:
+                with daily_file.open() as f:
                     self.daily_usage = json.load(f)
 
             if hourly_file.exists():
-                with open(hourly_file) as f:
+                with hourly_file.open() as f:
                     self.hourly_usage = json.load(f)
         except Exception as e:
             logger.error(f"Error loading usage data: {e}")
 
-    def _save_usage(self):
+    def _save_usage(self) -> None:
         """Save current usage data."""
         daily_file = self._get_usage_file("daily")
         hourly_file = self._get_usage_file("hourly")
 
         try:
-            with open(daily_file, 'w') as f:
+            with daily_file.open('w') as f:
                 json.dump(self.daily_usage, f)
 
-            with open(hourly_file, 'w') as f:
+            with hourly_file.open('w') as f:
                 json.dump(self.hourly_usage, f)
         except Exception as e:
             logger.error(f"Error saving usage data: {e}")
 
-    def _get_current_usage(self, period: str = "daily") -> Dict:
+    def _get_current_usage(self, period: str = "daily") -> dict[str, Any]:
         """Get current usage statistics."""
         usage = self.daily_usage if period == "daily" else self.hourly_usage
 
@@ -156,7 +156,7 @@ class CreditProtectionManager:
         tokens: int,
         cost: float,
         period: str = "daily"
-    ):
+    ) -> None:
         """Update usage statistics."""
         usage = self.daily_usage if period == "daily" else self.hourly_usage
 
@@ -171,7 +171,7 @@ class CreditProtectionManager:
         self,
         estimated_tokens: int,
         estimated_cost: float
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Check if request is within quota limits.
 
@@ -180,11 +180,11 @@ class CreditProtectionManager:
         """
         # Check circuit breaker
         if self.circuit_open:
-            if datetime.now() < self.circuit_open_until:
+            if self.circuit_open_until and datetime.now() < self.circuit_open_until:
                 return False, f"Circuit breaker open until {self.circuit_open_until}"
-            else:
-                self.circuit_open = False
-                logger.info("Circuit breaker reset")
+
+            self.circuit_open = False
+            logger.info("Circuit breaker reset")
 
         # Check per-request limits
         if estimated_tokens > self.quota.max_request_tokens:
@@ -222,8 +222,8 @@ class CreditProtectionManager:
         cost: float,
         duration_ms: int,
         status: str = "success",
-        metadata: Optional[Dict] = None
-    ):
+        metadata: Optional[dict[str, Any]] = None
+    ) -> None:
         """Record actual usage."""
         total_tokens = request_tokens + response_tokens
 
@@ -246,12 +246,12 @@ class CreditProtectionManager:
 
         # Append to log file
         log_file = self.storage_path / f"usage_log_{datetime.now().strftime('%Y-%m')}.jsonl"
-        with open(log_file, 'a') as f:
+        with log_file.open('a') as f:
             f.write(json.dumps(asdict(record)) + '\n')
 
         logger.info(f"Usage recorded: {total_tokens} tokens, ${cost:.4f}")
 
-    def trigger_circuit_breaker(self, duration_minutes: int = 30):
+    def trigger_circuit_breaker(self, duration_minutes: int = 30) -> None:
         """Trigger circuit breaker to prevent further requests."""
         self.circuit_open = True
         self.circuit_open_until = datetime.now() + timedelta(minutes=duration_minutes)
@@ -260,14 +260,14 @@ class CreditProtectionManager:
 
         # Write circuit breaker file
         breaker_file = self.storage_path / "circuit_breaker.json"
-        with open(breaker_file, 'w') as f:
+        with breaker_file.open('w') as f:
             json.dump({
                 "open": True,
-                "until": self.circuit_open_until.isoformat(),
+                "until": self.circuit_open_until.isoformat() if self.circuit_open_until else None,
                 "reason": "Automatic protection triggered"
             }, f)
 
-    def get_usage_summary(self) -> Dict:
+    def get_usage_summary(self) -> dict[str, Any]:
         """Get comprehensive usage summary."""
         daily = self._get_current_usage("daily")
         hourly = self._get_current_usage("hourly")
@@ -305,13 +305,13 @@ class CreditProtectionManager:
             }
         }
 
-    def reset_hourly_usage(self):
+    def reset_hourly_usage(self) -> None:
         """Reset hourly usage counters."""
         self.hourly_usage = {}
         self._save_usage()
         logger.info("Hourly usage reset")
 
-    def reset_daily_usage(self):
+    def reset_daily_usage(self) -> None:
         """Reset daily usage counters."""
         self.daily_usage = {}
         self._save_usage()
@@ -324,7 +324,7 @@ class ResourceMonitor:
     def __init__(self, quota: UsageQuota):
         self.quota = quota
 
-    def check_resources(self) -> Tuple[bool, str]:
+    def check_resources(self) -> tuple[bool, str]:
         """
         Check if instance resources are within limits.
 
@@ -332,7 +332,7 @@ class ResourceMonitor:
             (healthy, message)
         """
         try:
-            import psutil
+            import psutil # type: ignore
 
             # Check CPU
             cpu_percent = psutil.cpu_percent(interval=1)

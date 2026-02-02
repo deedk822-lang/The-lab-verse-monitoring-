@@ -107,7 +107,8 @@ jobs:
             --findings analysis-results/ \
             --output artifacts/proposals/proposals.json \
             --reasoning-model deepseek-r1:1.5b \
-            --coding-model qwen2.5-coder:1.5b
+            --coding-model qwen2.5-coder:1.5b \
+            --limit 10
 
           python -m pr_fix_agent.orchestrator \
             --mode coding \

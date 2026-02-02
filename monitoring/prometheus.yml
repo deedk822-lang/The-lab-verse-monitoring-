@@ -42,6 +42,18 @@ scrape_configs:
     metrics_path: '/metrics'
 
   # -------------------------------------------------------------------------
+  # PR Fix Agent Application
+  # -------------------------------------------------------------------------
+  - job_name: 'pr-fix-agent'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['api:8000']
+        labels:
+          service: 'pr-fix-agent'
+          env: 'production'
+    metrics_path: '/metrics'
+
+  # -------------------------------------------------------------------------
   # PostgreSQL Database (if postgres_exporter is used)
   # -------------------------------------------------------------------------
   # - job_name: 'postgres'

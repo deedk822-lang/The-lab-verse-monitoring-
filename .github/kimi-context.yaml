@@ -101,13 +101,13 @@ environment:
 
 workflow_guidelines:
   implementation_steps:
-    1. "Read existing code to understand patterns"
-    2. "Implement following project conventions"
-    3. "Add comprehensive tests"
-    4. "Run: pytest tests/ -v"
-    5. "Format: black ."
-    6. "Lint: flake8 ."
-    7. "Commit with descriptive message"
+    - "Read existing code to understand patterns"
+    - "Implement following project conventions"
+    - "Add comprehensive tests"
+    - "Run: pytest tests/ -v"
+    - "Format: black ."
+    - "Lint: flake8 ."
+    - "Commit with descriptive message"
   
   commit_message_format:
     - "Use conventional commits (feat:, fix:, docs:)"

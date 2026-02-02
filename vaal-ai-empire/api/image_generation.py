@@ -8,6 +8,7 @@ import logging
 import requests
 import base64
 from typing import Dict, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 import io
@@ -18,6 +19,7 @@ class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
+        self.session = requests.Session()
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +60,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -69,8 +71,12 @@ class ImageGenerator:
         except Exception:
             return False
 
+    def close(self):
+        """Close the requests session."""
+        self.session.close()
+
     def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto") -> Dict:
+                 provider: str = "auto", skip_enhance: bool = False) -> Dict:
         """
         Generate image from text prompt
 
@@ -78,12 +84,13 @@ class ImageGenerator:
             prompt: Text description of image
             style: Image style (professional, creative, realistic, artistic)
             provider: Provider to use (auto, stability, replicate, huggingface, local)
+            skip_enhance: Whether to skip prompt enhancement (useful for fallbacks)
 
         Returns:
             Dict with image_url, provider, cost_usd
         """
         # Enhance prompt with style
-        enhanced_prompt = self._enhance_prompt(prompt, style)
+        enhanced_prompt = prompt if skip_enhance else self._enhance_prompt(prompt, style)
 
         # Select provider
         if provider == "auto":
@@ -137,7 +144,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -193,7 +200,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -219,7 +226,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -249,7 +256,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,
@@ -288,7 +295,7 @@ class ImageGenerator:
             if self.providers[provider]:
                 try:
                     logger.info(f"Trying fallback provider: {provider}")
-                    return self.generate(prompt, provider=provider)
+                    return self.generate(prompt, provider=provider, skip_enhance=True)
                 except Exception as e:
                     logger.warning(f"Provider {provider} failed: {e}")
                     continue
@@ -338,23 +345,32 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """Generate multiple images in parallel"""
+        if not prompts:
+            return []
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        results = [None] * len(prompts)
 
-            try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
-                    "image_url": self._create_placeholder(prompt),
-                    "provider": "error",
-                    "cost_usd": 0.0,
-                    "error": str(e)
-                })
+        with ThreadPoolExecutor(max_workers=min(len(prompts), 5)) as executor:
+            future_to_index = {
+                executor.submit(self.generate, prompt, style=style): i
+                for i, prompt in enumerate(prompts)
+            }
+
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                prompt = prompts[index]
+                try:
+                    results[index] = future.result()
+                    logger.info(f"✅ Finished image {index+1}/{len(prompts)}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to generate image {index+1}: {e}")
+                    results[index] = {
+                        "image_url": self._create_placeholder(prompt),
+                        "provider": "error",
+                        "cost_usd": 0.0,
+                        "error": str(e)
+                    }
 
         return results
 

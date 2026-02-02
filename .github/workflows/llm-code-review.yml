@@ -16,7 +16,8 @@ jobs:
 
   collect-findings:
     name: Collect Code Review Findings
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     outputs:
       findings_file: ${{ steps.collect.outputs.findings_file }}
 
@@ -61,7 +62,8 @@ jobs:
 
   process-and-test:
     name: Process Findings and Test
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     needs: [collect-findings]
     outputs:
       tests_passed: ${{ steps.test.outputs.tests_passed }}
@@ -170,7 +172,8 @@ jobs:
 
   create-pr:
     name: Create Pull Request
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     needs: [process-and-test]
     if: needs.process-and-test.outputs.tests_passed == 'true'
 
@@ -226,7 +229,8 @@ jobs:
 
   create-draft-pr:
     name: Create Draft PR (Tests Failed)
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     needs: [process-and-test]
     if: needs.process-and-test.outputs.tests_passed == 'false'
 
@@ -283,7 +287,8 @@ jobs:
 
   report-summary:
     name: Report Summary
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     needs: [process-and-test, create-pr, create-draft-pr]
     if: always()
 

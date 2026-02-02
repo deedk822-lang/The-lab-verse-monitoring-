@@ -13,7 +13,8 @@ on:
 
 jobs:
   validate-json:
-    runs-on: ubuntu-22.04
+    # Reverting to ubuntu-latest to resolve transient acquisition issues
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code

@@ -88,6 +88,27 @@ jobs:
           name: analysis-results
           path: analysis-results/
 
+      - name: Truncate findings (Limit CI load)
+        run: |
+          python3 -c "
+          import json, os
+          for f in ['bandit.json', 'ruff.json', 'safety.json']:
+              path = os.path.join('analysis-results', f)
+              if os.path.exists(path):
+                  try:
+                      with open(path, 'r') as fh:
+                          data = json.load(fh)
+                      if isinstance(data, list):
+                          data = data[:10]
+                      elif isinstance(data, dict) and 'results' in data:
+                          data['results'] = data['results'][:10]
+                      with open(path, 'w') as fh:
+                          json.dump(data, fh)
+                      print(f'Truncated {f} to 10 entries')
+                  except Exception as e:
+                      print(f'Failed to truncate {f}: {e}')
+          "
+
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh

@@ -204,7 +204,7 @@ class OllamaAgent:
         self,
         prompt: str,
         temperature: float = 0.2,
-        timeout: int = 120,
+        timeout: int = 300,
         trace_id: Optional[str] = None
     ) -> str:
         """Query with full observability and tracing"""

@@ -172,7 +172,9 @@ Snippet: {finding.code_snippet}
         return fixes
 
     def _create_coding_prompt(self, proposal: FixProposal, code: str) -> str:
-        return f"Fix the following Python code:\n```python\n{code}\n```\nReason: {proposal.fix_approach}\nFinding: {proposal.finding.issue}"
+        # Truncate code to prevent context overflow (max 4000 chars)
+        truncated_code = code[:4000] + "\n[... truncated for context ...]" if len(code) > 4000 else code
+        return f"Fix the following Python code:\n```python\n{truncated_code}\n```\nReason: {proposal.fix_approach}\nFinding: {proposal.finding.issue}"
 
     def _apply_and_test(self, fixes: List[CodeFix], repo_path: Path) -> TestResult:
         """Apply fixes and run tests"""

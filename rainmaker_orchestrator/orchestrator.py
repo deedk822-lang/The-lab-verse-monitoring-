@@ -168,20 +168,78 @@ class RainmakerOrchestrator:
         }
 
     async def _run_self_healing(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Internal handler for self-healing coding tasks."""
-        # Implementation of self-healing logic
-        return {"status": "self_healing_complete"}
+        """
+        Run a recursive self-healing loop to generate, write, and execute code until it succeeds or retries are exhausted.
+
+        Expects `task` to contain:
+        - "output_filename" (str): path where generated code will be written.
+        - "context" (str): prompt/context provided to the operator judge for code generation.
+
+        On each attempt the method:
+        - Requests code from the "operator" judge using the current context.
+        - Cleans and parses a JSON payload returned by the judge; the JSON must contain a "code" field with the source to write.
+        - Writes the code to `output_filename` and executes it via the FileSystemAgent.
+        - If execution returns status "success", returns a payload with that stdout.
+        - If execution fails or parsing/errors occur, appends the error information to the context and retries (up to three attempts).
+
+        Returns:
+        - A dict with {"status": "success", "output": <stdout>} when execution succeeds.
+        - A dict with {"status": "failed", "message": "Max retries exceeded for self-healing"} if all retries fail.
+        """
+        filename: str = task["output_filename"]
+        max_retries: int = 3
+        current_context: str = task["context"]
+
+        for attempt in range(max_retries):
+            try:
+                model_res: Dict[str, Any] = await self._call_judge(
+                    "operator",
+                    current_context,
+                )
+                content: str = model_res["choices"][0]["message"]["content"]
+
+                # Clean JSON markdown if present
+                clean_json: str = re.sub(
+                    r"^```json\s*|\s*```$",
+                    "",
+                    content.strip(),
+                    flags=re.MULTILINE,
+                )
+                parsed: Dict[str, Any] = json.loads(clean_json)
+
+                # Write and test
+                self.fs.write_file(filename, parsed["code"])
+                exec_result: Dict[str, Any] = self.fs.execute_script(filename)
+
+                if exec_result["status"] == "success":
+                    logger.info(f"Self-healing succeeded on attempt {attempt + 1}")
+                    return {"status": "success", "output": exec_result["stdout"]}
+
+                # Feedback loop
+                stderr: str = exec_result.get("stderr", "Unknown error")
+                current_context += f"\n\nAttempt {attempt + 1} - Execution Error: {stderr}"
+                logger.warning(f"Self-healing attempt {attempt + 1} failed: {stderr}")
+
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parse error on attempt {attempt + 1}: {str(e)}")
+                current_context += f"\n\nAttempt {attempt + 1} - JSON Parse Error: {str(e)}"
+            except Exception as e:
+                logger.error(f"Self-healing error on attempt {attempt + 1}: {str(e)}")
+                current_context += f"\n\nAttempt {attempt + 1} - Error: {str(e)}"
+
+        logger.error("Max retries exceeded for self-healing")
+        return {"status": "failed", "message": "Max retries exceeded for self-healing"}
 
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
         Direct entry point for executing specific task types through the Authority Engine.
-        
+
         Parameters:
             task (Dict[str, Any]): Task configuration dictionary.
                 - If "type" == "authority_task": the full 4-Judge flow is triggered.
                 - If "type" == "coding_task" and contains "output_filename": the payload is processed by the self-healing coding flow.
                 - Other keys are passed through to the selected handler as needed.
-        
+
         Returns:
             Dict[str, Any]: The handler's result on success, or an error payload with
             {"status": "error", "message": <explanatory string>} when the task type is unsupported.

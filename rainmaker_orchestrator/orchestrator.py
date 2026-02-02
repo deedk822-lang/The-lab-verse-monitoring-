@@ -90,12 +90,12 @@ class RainmakerOrchestrator:
 
         # Priority: Z.ai (GLM) -> Mistral (Role-specific)
         if zai_key:
-            api_key: str = zai_key
-            api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
-            model: str = "glm-4.7"
+            api_key = zai_key
+            api_base = str(self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4")
+            model = "glm-4.7"
         else:
-            api_key = mistral_key
-            api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
+            api_key = str(mistral_key)
+            api_base = str(self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1")
             model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
 
         headers: Dict[str, str] = {
@@ -157,12 +157,13 @@ class RainmakerOrchestrator:
             )
 
             logger.info("Authority Flow completed successfully")
-            return {
+            result: Dict[str, Any] = {
                 "status": "success",
-                "audit": audit_res["choices"][0]["message"]["content"],
-                "strategy": vision_res["choices"][0]["message"]["content"],
-                "implementation": op_res["choices"][0]["message"]["content"],
+                "audit": str(audit_res["choices"][0]["message"]["content"]),
+                "strategy": str(vision_res["choices"][0]["message"]["content"]),
+                "implementation": str(op_res["choices"][0]["message"]["content"]),
             }
+            return result
         except Exception as e:
             logger.error(f"Authority Flow error: {str(e)}")
             return {"status": "error", "message": str(e)}

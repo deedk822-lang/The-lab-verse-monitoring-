@@ -65,6 +65,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "tenacity>=8.2.3",
     "orjson>=3.9.12",
+
+    # LLM Support
+    "transformers>=4.40.0",
+    "torch>=2.2.0",
 ]
 
 [project.optional-dependencies]

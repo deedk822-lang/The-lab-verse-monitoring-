@@ -16,7 +16,7 @@ jobs:
 
   collect-findings:
     name: Collect Code Review Findings
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       findings_file: ${{ steps.collect.outputs.findings_file }}
 
@@ -61,7 +61,7 @@ jobs:
 
   process-and-test:
     name: Process Findings and Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [collect-findings]
     outputs:
       tests_passed: ${{ steps.test.outputs.tests_passed }}
@@ -170,7 +170,7 @@ jobs:
 
   create-pr:
     name: Create Pull Request
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [process-and-test]
     if: needs.process-and-test.outputs.tests_passed == 'true'
 
@@ -226,7 +226,7 @@ jobs:
 
   create-draft-pr:
     name: Create Draft PR (Tests Failed)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [process-and-test]
     if: needs.process-and-test.outputs.tests_passed == 'false'
 
@@ -283,7 +283,7 @@ jobs:
 
   report-summary:
     name: Report Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [process-and-test, create-pr, create-draft-pr]
     if: always()
 

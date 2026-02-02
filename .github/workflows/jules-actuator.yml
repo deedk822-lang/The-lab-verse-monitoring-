@@ -18,7 +18,7 @@ jobs:
   execute-merge:
     runs-on: ubuntu-latest
     # Only run for jules/** branches
-    if: startsWith(github.event.pull_request.head.ref, 'jules/')
+    if: github.event.pull_request && startsWith(github.event.pull_request.head.ref, 'jules/')
     
     steps:
       - uses: actions/checkout@v4

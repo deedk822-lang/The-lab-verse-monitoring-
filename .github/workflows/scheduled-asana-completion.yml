@@ -86,7 +86,7 @@ jobs:
 
   notify:
     needs: run-completion
-    if: always() && (github.event.inputs.send_notifications == 'true' || github.event_name == 'schedule')
+    if: always() && ((github.event.inputs && github.event.inputs.send_notifications == 'true') || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack Notification

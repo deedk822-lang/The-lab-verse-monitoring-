@@ -434,8 +434,8 @@ jobs:
 
           # Set environment variables
           export ASANA_PAT="${{ secrets.ASANA_PAT }}"
-          export REPORT_PERIOD="${{ github.event.inputs.report_period || '30' }}"
-          export INCLUDE_CHARTS="${{ github.event.inputs.include_charts || 'true' }}"
+          export REPORT_PERIOD="${{ (github.event.inputs && github.event.inputs.report_period) || '30' }}"
+          export INCLUDE_CHARTS="${{ (github.event.inputs && github.event.inputs.include_charts) || 'true' }}"
           
           python analytics_generator.py
 
@@ -452,7 +452,7 @@ jobs:
           retention-days: 90
 
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'schedule' || github.event.inputs.include_charts == 'true'
+        if: github.event_name == 'schedule' || (github.event.inputs && github.event.inputs.include_charts == 'true')
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -461,7 +461,7 @@ jobs:
           destination_dir: reports/${{ github.run_number }}
 
       - name: Update Latest Dashboard
-        if: github.event_name == 'schedule' || github.event.inputs.include_charts == 'true'
+        if: github.event_name == 'schedule' || (github.event.inputs && github.event.inputs.include_charts == 'true')
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -474,7 +474,7 @@ jobs:
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           ## 📋 Asana Analytics Report Generated
           
-          **Analysis Period:** ${{ github.event.inputs.report_period || '30' }} days
+          **Analysis Period:** ${{ (github.event.inputs && github.event.inputs.report_period) || '30' }} days
           **Generated:** $(date -u)
           
           ### Key Metrics

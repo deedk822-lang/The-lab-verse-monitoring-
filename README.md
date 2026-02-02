@@ -53,6 +53,8 @@ git checkout security-hardening-llm-upgrade-222347293222010539
 bash scripts/setup-alibaba-cloud-protection.sh
 ```
 
+For a concise **Alibaba Cloud ECS Deployment Guide**, see [ECS_DEPLOYMENT.md](./ECS_DEPLOYMENT.md).
+
 The script will:
 1. ✅ Install system dependencies
 2. ✅ Create Python virtual environment

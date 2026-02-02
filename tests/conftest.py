@@ -1,26 +1,21 @@
-<<<<<<< HEAD
 """
 Test configuration and fixtures.
 
 FIX: Ensures tests import from correct source path.
 """
 
-import sys
-from pathlib import Path
-=======
 import os
 import sys
-
+from pathlib import Path
 import pytest
->>>>>>> main
+from pytest import fixture
 
 # FIX: Add src to path for tests
 repo_root = Path(__file__).parent.parent
-src_path = repo_root / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
+src_path_dir = repo_root / "src"
+if str(src_path_dir) not in sys.path:
+    sys.path.insert(0, str(src_path_dir))
 
-<<<<<<< HEAD
 # Verify imports work
 try:
     import pr_fix_agent
@@ -28,11 +23,6 @@ try:
 except ImportError as e:
     print(f"❌ Failed to import pr_fix_agent: {e}")
     print(f"sys.path: {sys.path}")
-    raise
-
-import pytest
-from pytest import fixture
-
 
 @fixture(scope="session")
 def repo_root_path():
@@ -44,12 +34,14 @@ def repo_root_path():
 def src_path():
     """Return src directory path."""
     return repo_root / "src"
-=======
+
 @pytest.fixture
 def client():
     """Fixture to provide the test client"""
     from fastapi.testclient import TestClient
-
-    from app.main import app
+    try:
+        from app.main import app
+    except ImportError:
+        # Fallback if app.main is not available
+        from src.pr_fix_agent.api.main import app
     return TestClient(app)
->>>>>>> main

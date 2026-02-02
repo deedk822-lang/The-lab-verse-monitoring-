@@ -13,7 +13,6 @@ on:
 
 jobs:
   validate-json:
-    # Reverting to ubuntu-latest to resolve transient acquisition issues
     runs-on: ubuntu-latest
     
     steps:

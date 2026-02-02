@@ -50,12 +50,12 @@ frontend:
   encoding: protobuf
 
 # By default, Loki will send anonymous, but uniquely-identifiable usage and conf
-iguration
+# iguration
 # analytics to Grafana Labs. These statistics are sent to https://stats.grafana.
-org/
+# org/
 #
 # Statistics help us better understand how Loki is used, and they show us perfor
-mance
+# mance
 # levels for most users. This helps us prioritize features and documentation.
 # For more information on what's sent, look at
 # https://github.com/grafana/loki/blob/main/pkg/analytics/stats.go

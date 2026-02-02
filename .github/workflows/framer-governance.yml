@@ -104,9 +104,9 @@ jobs:
               ])
               .addHeading('Dashboard Impact', 3)
               .addRaw(`
-- **SAST Findings**: ${findings.errors + findings.warnings} (was 0)
-- **Critical Issues**: ${findings.errors}
-- **Security Score**: ${findings.errors === 0 ? '✅ Pass' : '❌ Fail'}
+                - **SAST Findings**: ${findings.errors + findings.warnings} (was 0)
+                - **Critical Issues**: ${findings.errors}
+                - **Security Score**: ${findings.errors === 0 ? '✅ Pass' : '❌ Fail'}
               `)
               .write();
 

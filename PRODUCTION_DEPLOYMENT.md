@@ -179,6 +179,8 @@ kubectl logs -f deployment/vaal-app -n vaal-ai-empire
 
 ### **Option 3: Alibaba Cloud (Credit Protection)**
 
+For a concise, one-command setup on ECS, refer to the [ECS Deployment Guide](./ECS_DEPLOYMENT.md).
+
 ```bash
 # 1. Run automated setup
 bash scripts/setup-alibaba-cloud-protection.sh

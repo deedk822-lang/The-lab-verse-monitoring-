@@ -11,6 +11,13 @@ class Counter:
     name: str
 
     def add(self, amount: int, attributes: Dict[str, str] | None = None) -> None:
+        """
+        Accepts an increment value and optional attributes for a counter but performs no operation.
+        
+        Parameters:
+            amount (int): The amount to add to the counter (ignored).
+            attributes (Dict[str, str] | None): Optional key/value attributes associated with the increment (ignored).
+        """
         _ = amount
         _ = attributes
 

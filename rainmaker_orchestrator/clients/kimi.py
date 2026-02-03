@@ -53,7 +53,8 @@ class KimiClient:
                 logger.error("Kimi API returned empty content")
                 return None
 
-            return response.choices[0].message.content
+            content: str = response.choices[0].message.content
+            return content
         except APIError as e:
             logger.exception(f"API error during Kimi API call: {e!r}")
             return None

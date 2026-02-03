@@ -143,6 +143,12 @@ Snippet: {finding.code_snippet}
                 logger.warning("file_not_found", file=str(file_path))
                 continue
             original_code = file_path.read_text()
+
+            # Safety check: skip extremely large files to prevent context window overflow and excessive latency
+            if len(original_code) > 4000:
+                logger.warning("file_too_large_skipping", file=str(file_path), size=len(original_code))
+                continue
+
             prompt = self._create_coding_prompt(proposal, original_code)
             try:
                 fixed_code = self.coding_agent.query(prompt, temperature=0.2)

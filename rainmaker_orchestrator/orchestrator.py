@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import httpx
 import openlit
@@ -65,7 +65,7 @@ class RainmakerOrchestrator:
         await self.client.aclose()
         logger.info("Orchestrator HTTP client closed")
 
-    @track(name="judge_call")
+    @track(name="judge_call")  # type: ignore
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         """
         Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
@@ -119,12 +119,13 @@ class RainmakerOrchestrator:
             response: httpx.Response = await self.client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             logger.info(f"Judge call successful: {judge_role}")
-            return response.json()
+            result: Dict[str, Any] = cast(Dict[str, Any], response.json())
+            return result
         except httpx.HTTPError as e:
             logger.error(f"Judge API error ({judge_role}): {str(e)}")
             raise
 
-    @track(name="authority_flow")
+    @track(name="authority_flow")  # type: ignore
     async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.

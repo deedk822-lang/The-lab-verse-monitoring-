@@ -136,7 +136,7 @@ packages = ["src/pr_fix_agent"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-pythonpath = ["src"]  # Critical: Tells pytest where to find modules
+pythonpath = ["src", "."]  # Critical: Tells pytest where to find modules
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]

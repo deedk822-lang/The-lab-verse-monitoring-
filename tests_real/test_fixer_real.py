@@ -29,7 +29,9 @@ def agent():
 @pytest.fixture
 def fixer(agent, temp_repo):
     """Create fixer instance"""
-    return PRErrorFixer(agent, str(temp_repo))
+    from pr_fix_agent.security import SecurityValidator
+    validator = SecurityValidator(str(temp_repo))
+    return PRErrorFixer(agent, str(temp_repo), validator)
 
 # ============================================================================
 # REAL TESTS

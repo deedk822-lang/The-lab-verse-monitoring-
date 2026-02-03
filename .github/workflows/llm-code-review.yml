@@ -141,7 +141,7 @@ jobs:
         id: test
         run: |
           set +e
-
+          export PYTHONPATH=$PYTHONPATH:.
           mkdir -p artifacts/test-results
           pytest tests/ -v \
             --json-report \
@@ -226,6 +226,7 @@ jobs:
           cp -r artifacts/fixed-code/* src/
 
       - name: Create Pull Request
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -282,6 +283,7 @@ jobs:
           cp -r artifacts/fixed-code/* src/ || echo "No fixed code to apply"
 
       - name: Create Draft Pull Request
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

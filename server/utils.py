@@ -5,6 +5,9 @@ from pathlib import Path
 
 
 def resolve_local_model(default: str = "llama2:7b") -> str:
+ codex/add-mypy-configuration-and-server-components
+    """Read `model.json` next to this file; return the configured model name."""
+
     """
     Resolve the model name from a local `model.json`, falling back to the provided default.
     
@@ -16,6 +19,7 @@ def resolve_local_model(default: str = "llama2:7b") -> str:
     Returns:
         str: The configured model name, or `default` if none is available.
     """
+ codex/implement-real-ollama-integration
     cfg_path = Path(__file__).parent / "model.json"
     if cfg_path.is_file():
         try:
@@ -26,4 +30,8 @@ def resolve_local_model(default: str = "llama2:7b") -> str:
                     return str(model)
         except (json.JSONDecodeError, OSError, TypeError, ValueError):
             pass
+ codex/add-mypy-configuration-and-server-components
     return default
+
+    return default
+ codex/implement-real-ollama-integration

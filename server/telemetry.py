@@ -11,6 +11,8 @@ class Counter:
     name: str
 
     def add(self, amount: int, attributes: Dict[str, str] | None = None) -> None:
+ codex/add-mypy-configuration-and-server-components
+
         """
         Accepts an increment value and optional attributes for a counter but performs no operation.
         
@@ -18,8 +20,13 @@ class Counter:
             amount (int): The amount to add to the counter (ignored).
             attributes (Dict[str, str] | None): Optional key/value attributes associated with the increment (ignored).
         """
+ codex/implement-real-ollama-integration
         _ = amount
         _ = attributes
 
 
+ codex/add-mypy-configuration-and-server-components
 msg_sent_counter = Counter("agent_response")
+
+msg_sent_counter = Counter("agent_response")
+ codex/implement-real-ollama-integration

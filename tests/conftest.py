@@ -7,6 +7,7 @@ Ensures tests import from correct source path.
 import os
 import sys
 from pathlib import Path
+
 import pytest
 from pytest import fixture
 
@@ -34,6 +35,21 @@ def repo_root_path():
 def src_path():
     """Return src directory path."""
     return repo_root / "src"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_env():
+    """Set required environment variables for tests."""
+    os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
+    os.environ.setdefault("JWT_SECRET", "test-secret")
+    os.environ.setdefault(
+        "OIDC_DISCOVERY",
+        "https://example.com/.well-known/openid-configuration",
+    )
+    os.environ.setdefault("KIMI_API_KEY", "")
+
+    yield
+
 
 @pytest.fixture
 def client():

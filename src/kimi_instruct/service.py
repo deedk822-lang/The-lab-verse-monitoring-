@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict, field
 from enum import Enum
@@ -23,11 +23,12 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from prometheus_client import Counter, Histogram, Gauge, generate_latest
+    from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     print("Warning: prometheus_client not installed, metrics disabled")
     PROMETHEUS_AVAILABLE = False
+    CONTENT_TYPE_LATEST = 'text/plain; version=0.0.4; charset=utf-8'
     # Mock classes for when prometheus is not available
     class Counter:
         def __init__(self, *args, **kwargs): pass
@@ -37,12 +38,15 @@ except ImportError:
     class Histogram:
         def __init__(self, *args, **kwargs): pass
         def observe(self, *args, **kwargs): pass
+        def time(self): return self
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
     
     class Gauge:
         def __init__(self, *args, **kwargs): pass
         def set(self, *args, **kwargs): pass
     
-    def generate_latest(): return "# Prometheus not available"
+    def generate_latest(): return b"# Prometheus not available"
 
 try:
     from aiohttp_cors import setup as cors_setup, ResourceOptions
@@ -69,6 +73,7 @@ class TaskStatus(Enum):
     FAILED = "failed"
     REQUIRES_APPROVAL = "requires_approval"
     CANCELLED = "cancelled"
+    BLOCKED = "blocked"
 
 class Priority(Enum):
     LOW = "low"
@@ -107,6 +112,8 @@ class Task:
     metadata: Dict[str, Any] = field(default_factory=dict)
     error_message: Optional[str] = None
     approval_reason: Optional[str] = None
+    due_date: Optional[datetime] = None
+    human_approval_required: bool = False
 
     def to_dict(self):
         return {
@@ -115,8 +122,36 @@ class Task:
             'updated_at': self.updated_at.isoformat(),
             'status': self.status.value,
             'priority': self.priority.value,
-            'task_type': self.task_type.value
+            'task_type': self.task_type.value,
+            'due_date': self.due_date.isoformat() if self.due_date else None
         }
+
+# Compatibility functions for tests
+def default_serializer(o):
+    if isinstance(o, (datetime, date)):
+        return o.isoformat()
+    if isinstance(o, Enum):
+        return o.value
+    raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
+
+async def handle_status(request):
+    """Compatibility handler for tests"""
+    service = request.app.get('service')
+    if not service:
+        # Fallback for tests that don't setup the app correctly
+        return web.json_response({"status": "error", "message": "Service not initialized"}, status=500)
+    return await service._handle_status(request)
+
+async def handle_create_task(request):
+    """Compatibility handler for tests"""
+    service = request.app.get('service')
+    if not service:
+        return web.json_response({"error": "Service not initialized"}, status=500)
+    return await service._handle_create_task(request)
+
+async def handle_health(request):
+    """Compatibility handler for tests"""
+    return web.json_response({"status": "healthy"})
 
 @dataclass
 class ProjectMetrics:
@@ -488,6 +523,7 @@ class KimiInstructService:
     
     def __init__(self):
         self.app = web.Application()
+        self.app['service'] = self
         self.tasks: Dict[str, Task] = {}
         self.config = self._load_config()
         self.ai_engine = AIEngine(self.config)
@@ -659,13 +695,13 @@ class KimiInstructService:
                                if t.status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]]),
             "recent_tasks": [t.to_dict() for t in list(self.tasks.values())[-5:]],
             "system_health": "operational"
-        })
+        }, dumps=lambda x: json.dumps(x, default=default_serializer))
 
     async def _handle_metrics(self, request):
         """Prometheus metrics endpoint"""
         if not PROMETHEUS_AVAILABLE:
             return web.Response(text="# Prometheus not available", content_type='text/plain')
-        return web.Response(text=generate_latest(), content_type='text/plain')
+        return web.Response(text=generate_latest().decode('utf-8'), content_type=CONTENT_TYPE_LATEST)
 
     async def _handle_dashboard(self, request):
         """Simple dashboard redirect"""
@@ -758,8 +794,9 @@ class KimiInstructService:
             
             return web.json_response({
                 "task": task.to_dict(),
-                "message": "Task created successfully"
-            })
+                "message": "Task created successfully",
+                "task_id": task_id
+            }, status=201)
             
         except Exception as e:
             logger.error(f"Task creation failed: {e}")
@@ -973,6 +1010,9 @@ class KimiInstructService:
         finally:
             await self.ai_engine.close_session()
             await runner.cleanup()
+
+# Compatibility alias for tests
+KimiService = KimiInstructService
 
 async def main():
     """Main entry point"""

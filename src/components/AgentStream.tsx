@@ -11,6 +11,7 @@ interface LinearUpdate {
 interface AgentThought {
   type: 'agent_thought' | 'connected' | 'linear_action' | 'error' | 'heartbeat';
   agent?: string;
+  event_id?: string;
   timestamp: string;
   thought?: string;
   confidence?: number;
@@ -150,7 +151,7 @@ export default function AgentStream() {
 
         {thoughts.map((thought, idx) => (
           <div
-            key={`${thought.timestamp}-${idx}`}
+            key={thought.event_id ?? `${thought.timestamp}-${idx}`}
             className="group relative transition-all duration-300"
           >
             {thought.type === 'agent_thought' && (

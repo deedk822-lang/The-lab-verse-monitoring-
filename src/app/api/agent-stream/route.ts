@@ -17,6 +17,8 @@ const emitEvent = (
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 };
 
+const createEventId = () => crypto.randomUUID();
+
 const tryParseJson = (value: string): Record<string, unknown> | null => {
   try {
     return JSON.parse(value) as Record<string, unknown>;
@@ -34,6 +36,7 @@ export async function GET(req: NextRequest) {
         emitEvent(controller, encoder, {
           type: 'error',
           message: 'Missing KIMI_API_KEY',
+          event_id: createEventId(),
         });
         controller.close();
         return;
@@ -41,12 +44,14 @@ export async function GET(req: NextRequest) {
 
       emitEvent(controller, encoder, {
         type: 'connected',
+        event_id: createEventId(),
         timestamp: new Date().toISOString(),
       });
 
       const heartbeat = setInterval(() => {
         emitEvent(controller, encoder, {
           type: 'heartbeat',
+          event_id: createEventId(),
           timestamp: new Date().toISOString(),
         });
       }, 15000);
@@ -85,6 +90,7 @@ export async function GET(req: NextRequest) {
             emitEvent(controller, encoder, {
               type: 'agent_thought',
               agent: 'kimi-k2-0711',
+              event_id: createEventId(),
               timestamp: new Date().toISOString(),
               ...maybeParsed,
             });
@@ -92,6 +98,7 @@ export async function GET(req: NextRequest) {
             if (maybeParsed.linear_update) {
               emitEvent(controller, encoder, {
                 type: 'linear_action',
+                event_id: createEventId(),
                 timestamp: new Date().toISOString(),
                 linear_update: maybeParsed.linear_update,
               });
@@ -105,6 +112,7 @@ export async function GET(req: NextRequest) {
         emitEvent(controller, encoder, {
           type: 'error',
           message,
+          event_id: createEventId(),
         });
       } finally {
         clearInterval(heartbeat);

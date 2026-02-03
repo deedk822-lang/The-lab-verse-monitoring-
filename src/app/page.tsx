@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { BarChart, LineChart, Pie } from '@/components/charts';
 import { AlertBox } from '@/components/AlertBox';
 import { StatCard } from '@/components/StatCard';
+import AgentStream from '@/components/AgentStream';
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(null);
@@ -68,6 +69,12 @@ export default function Dashboard() {
           trend={1}
           status="warning"
         />
+      </div>
+
+      {/* Live Agent Stream */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">Kimi K2.5 Live Agent Stream</h2>
+        <AgentStream />
       </div>
 
       {/* Alerts */}

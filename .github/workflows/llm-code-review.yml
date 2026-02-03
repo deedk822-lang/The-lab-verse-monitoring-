@@ -92,10 +92,30 @@ jobs:
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 10
-          # Use smaller models for standard runners
-          ollama pull deepseek-r1:1.5b
-          ollama pull qwen2.5-coder:1.5b
+
+          echo "Waiting for Ollama to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags > /dev/null; then
+              echo "Ollama is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+          # Use smaller models for standard runners with retry mechanism
+          echo "Pulling models..."
+          for model in "deepseek-r1:1.5b" "qwen2.5-coder:1.5b"; do
+            echo "Pulling $model..."
+            for i in {1..3}; do
+              if ollama pull "$model"; then
+                echo "Successfully pulled $model"
+                break
+              fi
+              echo "Failed to pull $model, retry $i/3..."
+              sleep 5
+            done
+          done
 
       - name: Run orchestrator (reasoning + coding)
         run: |

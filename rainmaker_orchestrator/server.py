@@ -16,8 +16,10 @@ app: FastAPI = FastAPI(
 )
 
 
+from typing import Any, Dict
+
 @app.get("/health")
-async def health() -> dict:
+async def health() -> Dict[str, Any]:
     """
     Provide a legacy-compatibility health response for the server.
     

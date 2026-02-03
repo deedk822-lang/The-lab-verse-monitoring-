@@ -152,7 +152,7 @@ export class TheLapVerseCore {
     return { ...champion, winRateDelta: 0.07 };
   }
 
-  private async evolveChampion(champion: any): Promise<void> {
+  private async evolveChampion(_champion: any): Promise<void> {
     await this.flags.setRollout('self-compete-evolution', 5);
   }
 
@@ -166,7 +166,7 @@ export class TheLapVerseCore {
   }
 
   // Stubs – replace with real calls
-  private async callNewsAI(content: string): Promise<any> { return { sentiment: Math.random(), confidence: Math.random() }; }
-  private async callShareAPI(platform: string, news: any): Promise<any> { return { postId: randomUUID(), platform }; }
+  private async callNewsAI(_content: string): Promise<any> { return { sentiment: Math.random(), confidence: Math.random() }; }
+  private async callShareAPI(platform: string, _news: any): Promise<any> { return { postId: randomUUID(), platform }; }
   private calcAmplification(news: any, shares: PromiseSettledResult<any>[]): number { return Math.min(100, (news.confidence * 50) + shares.filter(s => s.status === 'fulfilled').length * 10); }
 }

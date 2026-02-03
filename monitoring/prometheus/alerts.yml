@@ -1,0 +1,213 @@
+groups:
+  - name: pr_fix_agent_alerts
+    interval: 30s
+    rules:
+      # API Health Alerts
+      - alert: APIDown
+        expr: up{job="pr-fix-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "PR Fix Agent API is down"
+          description: "The PR Fix Agent API has been down for more than 1 minute."
+          runbook_url: "https://docs.pr-fix-agent.com/runbooks/api-down"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="pr-fix-agent",status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="pr-fix-agent"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="pr-fix-agent",status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="pr-fix-agent"}[5m]))
+          ) > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      # Performance Alerts
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job="pr-fix-agent"}[5m])
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API response time"
+          description: "P95 response time is {{ $value }}s (threshold: 1.0s)"
+
+      - alert: CriticalResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job="pr-fix-agent"}[5m])
+          ) > 5.0
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical API response time"
+          description: "P95 response time is {{ $value }}s (threshold: 5.0s)"
+
+      # LLM Alerts
+      - alert: LLMHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(llm_call_duration_seconds_bucket{job="pr-fix-agent"}[5m])
+          ) > 120
+        for: 10m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "High LLM call latency"
+          description: "P95 LLM latency is {{ $value }}s for model {{ $labels.model }}"
+
+      - alert: LLMHighFailureRate
+        expr: |
+          (
+            sum(rate(llm_calls_total{job="pr-fix-agent",status="error"}[5m]))
+            /
+            sum(rate(llm_calls_total{job="pr-fix-agent"}[5m]))
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "High LLM failure rate"
+          description: "LLM failure rate is {{ $value | humanizePercentage }}"
+
+      # Cost Alerts
+      - alert: HighLLMCost
+        expr: |
+          increase(llm_cost_usd_total{job="pr-fix-agent"}[1h]) > 10
+        labels:
+          severity: warning
+          component: cost
+        annotations:
+          summary: "High LLM cost detected"
+          description: "LLM cost in last hour: ${{ $value }}"
+
+      - alert: CriticalLLMCost
+        expr: |
+          increase(llm_cost_usd_total{job="pr-fix-agent"}[1h]) > 50
+        labels:
+          severity: critical
+          component: cost
+        annotations:
+          summary: "Critical LLM cost detected"
+          description: "LLM cost in last hour: ${{ $value }}. Immediate action required!"
+
+      - alert: DailyBudgetExceeded
+        expr: |
+          increase(llm_cost_usd_total{job="pr-fix-agent"}[24h]) > 100
+        labels:
+          severity: critical
+          component: cost
+        annotations:
+          summary: "Daily budget exceeded"
+          description: "Total cost in last 24h: ${{ $value }} (budget: $100)"
+
+      # Resource Alerts
+      - alert: HighCPUUsage
+        expr: cpu_usage_percent{job="pr-fix-agent"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: CriticalCPUUsage
+        expr: cpu_usage_percent{job="pr-fix-agent"} > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: resources
+        annotations:
+          summary: "Critical CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: memory_usage_bytes{job="pr-fix-agent"} > 4e9
+        for: 5m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanize1024 }}B"
+
+      # Traffic Alerts
+      - alert: UnusualTrafficSpike
+        expr: |
+          rate(http_requests_total{job="pr-fix-agent"}[5m])
+          >
+          (
+            avg_over_time(rate(http_requests_total{job="pr-fix-agent"}[5m])[1h:5m]) * 3
+          )
+        for: 5m
+        labels:
+          severity: warning
+          component: traffic
+        annotations:
+          summary: "Unusual traffic spike detected"
+          description: "Request rate is 3x higher than normal"
+
+      # No Traffic Alerts
+      - alert: NoTraffic
+        expr: |
+          rate(http_requests_total{job="pr-fix-agent"}[5m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: traffic
+        annotations:
+          summary: "No traffic detected"
+          description: "No requests received in the last 10 minutes"
+
+      # Database Alerts (placeholder - add when DB metrics available)
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database_connections_active / database_connections_max > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of connections in use"
+
+      # Redis Alerts (placeholder)
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis using {{ $value | humanizePercentage }} of max memory"

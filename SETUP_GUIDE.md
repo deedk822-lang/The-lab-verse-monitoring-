@@ -80,8 +80,6 @@ python -c "from pr_fix_agent.security import SecurityValidator; print('Works!')"
 
 # Run tests
 pytest tests/ -v
-<<<<<<< HEAD
-=======
 ```
 
 **Add to shell profile for persistence:**
@@ -117,7 +115,6 @@ from security import SecurityValidator
 
 # This requires manual path manipulation
 # Not the Python conventional way
->>>>>>> main
 ```
 
 ---
@@ -136,11 +133,7 @@ pytest tests/ -v
 pytest tests/test_security.py -v
 
 # With coverage
-<<<<<<< HEAD
 pytest tests/ --cov=src/pr_fix_agent --cov-report=html
-=======
-pytest tests/ --cov=src --cov-report=html
->>>>>>> main
 ```
 
 ---
@@ -169,20 +162,15 @@ Edit files in `src/pr_fix_agent/`, tests in `tests/`
 ### 3. Test Changes
 
 ```bash
-<<<<<<< HEAD
-=======
 # Run affected tests
 pytest tests/test_security.py -v
 
->>>>>>> main
 # Run all tests
 pytest tests/ -v
 ```
 
 ---
 
-<<<<<<< HEAD
-=======
 ## 🔍 Why This Is Conventional
 
 ### Python Packaging Standards
@@ -194,7 +182,6 @@ pytest tests/ -v
 
 ---
 
->>>>>>> main
 ## 📚 Additional Commands
 
 ### Format Code

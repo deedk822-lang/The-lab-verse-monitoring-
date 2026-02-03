@@ -3,15 +3,9 @@ CORRECTED Test File - Uses Actual Package Name
 Issue Fixed: Package name is pr_fix_agent, not src
 """
 
-<<<<<<< HEAD
 import pytest
 from unittest.mock import Mock
 from pathlib import Path
-=======
-from unittest.mock import Mock
-
-import pytest
->>>>>>> main
 
 # ✅ CORRECT: Import from pr_fix_agent (the actual package name)
 from pr_fix_agent.analyzer import PRErrorAnalyzer

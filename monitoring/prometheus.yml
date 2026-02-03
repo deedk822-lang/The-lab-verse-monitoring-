@@ -18,7 +18,7 @@ alerting:
 
 # Load rules once and periodically evaluate them
 rule_files:
-  # - "alerts/*.yml"
+  - "alerts/*.yml"
 
 # Scrape configurations
 scrape_configs:
@@ -76,3 +76,11 @@ scrape_configs:
   #     - targets: ['dcgm-exporter:9400']
   #       labels:
   #         service: 'gpu-metrics'
+
+  # -------------------------------------------------------------------------
+  # PR Fix Agent
+  # -------------------------------------------------------------------------
+  - job_name: 'pr-fix-agent'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/metrics'

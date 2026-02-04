@@ -5,9 +5,7 @@ Observability module for PR Fix Agent.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import structlog
 
@@ -42,7 +40,7 @@ class LLMCost:
     cost_usd: float
     timestamp: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
 
@@ -71,7 +69,7 @@ class CostTracker:
 
     def __init__(self, budget_usd: float = 10.0):
         self.budget_usd = budget_usd
-        self.costs: list[LLMCost] = []
+        self.costs: List[LLMCost] = []
         self.total_spent = 0.0
 
     def track(
@@ -108,7 +106,12 @@ class CostTracker:
 
         if self.total_spent > self.budget_usd:
             raise BudgetExceededError(
-                f"Budget exceeded: ${self.total_spent:.4f} > ${self.budget_usd:.4f}"
+                f"Budget exceeded: ${self.total_spent:.4f} > ${self.budget_usd:.4f}",
+                model=model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=cost_usd,
             )
 
         return cost
@@ -123,10 +126,3 @@ class CostTracker:
             "total_tokens": sum(c.total_tokens for c in self.costs),
             "costs": [asdict(c) for c in self.costs]
         }
-
-
-__all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
-]

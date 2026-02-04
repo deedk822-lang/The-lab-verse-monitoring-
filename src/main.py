@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.v1.endpoints import autoglm
 from .core.config import settings
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """

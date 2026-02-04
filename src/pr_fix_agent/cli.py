@@ -12,10 +12,9 @@ import structlog
 
 logger = structlog.get_logger()
 
-
-def health_check() -> int:
+def check_health() -> int:
     """
-    Perform health check
+    Perform system health check
 
     Returns:
         0 if healthy, 1 otherwise
@@ -67,64 +66,6 @@ def health_check() -> int:
     print("\n" + "=" * 50)
     print("✅ All health checks passed!")
     return 0
-
-
-def run_orchestrator(args) -> int:
-    """Run orchestration mode"""
-    from pr_fix_agent.orchestrator import main as orchestrator_main
-
-    # Convert args to orchestrator format
-    sys.argv = [
-        'orchestrator',
-        '--mode', args.mode
-    ]
-
-    if args.findings:
-        sys.argv.extend(['--findings', args.findings])
-
-    if args.proposals:
-        sys.argv.extend(['--proposals', args.proposals])
-
-    if args.test_results:
-        sys.argv.extend(['--test-results', args.test_results])
-
-    if args.output:
-        sys.argv.extend(['--output', args.output])
-
-    if args.apply:
-        sys.argv.append('--apply')
-
-    return orchestrator_main()
-
-
-def run_production(args) -> int:
-    """Run production fix mode"""
-    from pr_fix_agent.production import main as production_main
-
-    # Validate repo path early
-    repo_path = Path(args.repo_path).resolve()
-
-    if not repo_path.exists():
-        print(f"❌ Error: Repository path does not exist: {repo_path}")
-        return 2
-
-    if not repo_path.is_dir():
-        print(f"❌ Error: Repository path is not a directory: {repo_path}")
-        return 2
-
-    print(f"✅ Using repository: {repo_path}")
-
-    # Convert args to production format
-    sys.argv = [
-        'production',
-        '--repo-path', str(repo_path),
-        '--model', args.model
-    ]
-
-    if args.log_file:
-        sys.argv.extend(['--log-file', args.log_file])
-
-    return production_main()
 
 
 def main():
@@ -237,7 +178,7 @@ def main():
 
     try:
         if args.command == 'health-check':
-            return health_check()
+            return check_health()
 
         elif args.command == 'orchestrate':
             return run_orchestrator(args)

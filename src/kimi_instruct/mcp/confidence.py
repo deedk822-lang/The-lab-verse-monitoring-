@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Dict
 
-
 class ConfidenceEstimator:
     threshold = 0.78
 
@@ -24,3 +23,21 @@ class ConfidenceEstimator:
             if "risk" in context:
                 heuristic -= context["risk"] * 0.3
             return max(0.0, min(1.0, heuristic))
+
+# Example usage
+if __name__ == "__main__":
+    from transformers import AutoTokenizer, AutoModelForCausalLM
+
+    tokenizer = AutoTokenizer.from_pretrained("tongyi/tongyi-deepresearch-30b")
+    model = AutoModelForCausalLM.from_pretrained("tongyi/tongyi-deepresearch-30b")
+
+    class OpenRouterService:
+        async def _call_openrouter(self, model_name, prompt):
+            # Simulate a call to the Open Router API
+            return "{'score': 0.85}"
+
+    estimator = ConfidenceEstimator(OpenRouterService())
+    plan = {"steps": [{"instruction": "Do something", "action": "execute"}]}
+    context = {"risk": 1.2}
+    confidence_score = estimator.score_plan(plan, context)
+    print(f"Confidence Score: {confidence_score}")

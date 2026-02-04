@@ -77,7 +77,7 @@ async def generate_with_glm(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"GLM generation failed: {str(e)}", exc_info=True)
+        logger.error(f"GLM generation failed: {e!s}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -107,7 +107,7 @@ async def autoglm_security_analysis(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"AutoGLM security analysis failed: {str(e)}", exc_info=True)
+        logger.error(f"AutoGLM security analysis failed: {e!s}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -153,7 +153,7 @@ async def autoglm_secure_content(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"AutoGLM secure content generation failed: {str(e)}", exc_info=True)
+        logger.error(f"AutoGLM secure content generation failed: {e!s}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -191,8 +191,8 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
                     "response": test_response[:20] + "..."
                 }
         except Exception as e:
+            logger.error(f"GLM health check failed: {e!s}")
             health_status["services"]["glm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"GLM health check failed: {str(e)}", exc_info=True)
 
     # Test AutoGLM if configured and user has access
     if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
@@ -201,7 +201,7 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
                 # Just test initialization - don't run full analysis for health check
                 health_status["services"]["autoglm"] = {"status": "operational"}
         except Exception as e:
+            logger.error(f"AutoGLM health check failed: {e!s}")
             health_status["services"]["autoglm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"AutoGLM health check failed: {str(e)}", exc_info=True)
 
     return health_status

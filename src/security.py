@@ -6,7 +6,6 @@ Proper library structure for reusable components
 import re
 from pathlib import Path
 
-
 class SecurityError(Exception):
     """Security validation error"""
     pass
@@ -114,10 +113,9 @@ class SecurityValidator:
             raise SecurityError(f"Input too long: {len(user_input)} > {max_length}")
 
         # Remove null bytes
-        if '\x00' in user_input:
-            raise SecurityError("Null byte in input")
+        sanitized_input = re.sub(r'\x00', '', user_input)
 
-        return user_input.strip()
+        return sanitized_input.strip()
 
 
 class InputValidator:

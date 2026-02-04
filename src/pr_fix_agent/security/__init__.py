@@ -1,12 +1,8 @@
-"""
-Security module for PR Fix Agent.
-"""
-
 import json
 import re
 import threading
 import time
-from pathlib import Path
+import shlex
 
 class SecurityError(Exception):
     """Security validation error"""
@@ -49,7 +45,7 @@ class SecurityValidator:
 
     def validate_file_extension(self, filename: str) -> bool:
         """Check if file extension is allowed."""
-        allowed = ['.py', '.txt', '.md', '.yml', '.yaml', '.json', '.toml', '.cfg', '.ini']
+        allowed = ['.py', '.txt', '.md', '.yml', '.yaml', '.json', '.toml', '.ini']
         return any(filename.endswith(ext) for ext in allowed)
 
     def sanitize_input(self, user_input: str, max_length: int = 1000) -> str:
@@ -60,7 +56,7 @@ class SecurityValidator:
         if '\x00' in user_input:
             raise SecurityError("Null byte in input")
 
-        return user_input.strip()
+        return shlex.quote(user_input.strip())
 
 
 class InputValidator:
@@ -122,6 +118,4 @@ class RateLimiter:
 __all__ = [
     'SecurityError',
     'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
 ]

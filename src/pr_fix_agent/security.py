@@ -1,14 +1,12 @@
 """
 Security Module with Module-Level Imports
-FIXED: All imports at top of file
 """
 
-import json  # ✅ FIX: Module-level, not local
+import json  # ✅ FIX: Import at top of file
+from pathlib import Path
 import re
 import threading
-import time  # ✅ FIX: Module-level, not local
-from pathlib import Path
-
+import time  # ✅ FIX: Import at top of file
 
 class SecurityError(Exception):
     """Security validation error"""
@@ -107,10 +105,9 @@ class SecurityValidator:
             raise SecurityError(f"Input too long: {len(user_input)} > {max_length}")
 
         # Remove null bytes
-        if '\x00' in user_input:
-            raise SecurityError("Null byte in input")
+        sanitized_input = user_input.replace('\x00', '').strip()
 
-        return user_input.strip()
+        return sanitized_input
 
 
 class InputValidator:

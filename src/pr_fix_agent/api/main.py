@@ -1,3 +1,28 @@
+import structlog
+
+def configure_logging(settings):
+    if settings.log_level == "DEBUG":
+        level = structlog.DEBUG
+    elif settings.log_level == "INFO":
+        level = structlog.INFO
+    else:
+        level = structlog.ERROR
+
+    # Setup logger with a secure handler
+    loggers = (
+        ("pr_fix_agent", {"level": level}),
+        ("uvicorn", {"level": level}),  # Log requests from uvicorn
+    )
+
+    for name, kwargs in loggers:
+        logger = structlog.get_logger(name)
+        logger.addHandler(
+            structlog.handlers.RotatingFileHandler(settings.log_file),
+            formatter=structlog.stdlib.StdlibFormatter(),
+            maxBytes=10485760,
+            backupCount=3,
+        )
+    logger.info("application_started", version=settings.version, environment=settings.environment)
 """
 Main FastAPI Application for PR Fix Agent.
 """

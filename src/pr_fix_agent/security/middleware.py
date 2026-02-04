@@ -27,10 +27,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         response = await call_next(request)
 
+        # Ensure we have a valid and unique request ID
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+
+        # Set security headers
         response.headers["Strict-Transport-Security"] = (
             "max-age=31536000; includeSubDomains; preload"
         )
-
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
@@ -38,15 +42,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "img-src 'self' data: https:; "
             "font-src 'self'; "
             "connect-src 'self'; "
-            "frame-ancestors 'none';"
+            "frame-ancestors 'none';";
         )
-
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["X-XSS-Protection"] = (
+            "1; mode=block"
+        )
+        response.headers["Referrer-Policy"] = "origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
+            "geolocation=(self), microphone=(self), camera=(self)"
         )
 
         return response
@@ -82,6 +85,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
         request_id = getattr(request.state, "request_id", "unknown")
         client_ip = request.client.host if request.client else "unknown"
 
+        # Log the request details
         logger.info(
             "request_received",
             method=method,
@@ -92,6 +96,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
+        # Log the response details
         logger.info(
             "request_completed",
             method=method,

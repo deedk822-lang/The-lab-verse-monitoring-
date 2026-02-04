@@ -1,9 +1,12 @@
+import functools
+# ✅ FIX: Re-enable propagation to allow log messages to propagate up the chain
+self.logger.propagate = True
+# ✅ FIX: Write each log event as a separate JSON line (append-only)
+self.logger.info(json.dumps(event))
 from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
-from functools import lru_cache
 from pathlib import Path
 
 from pr_fix_agent.core.config import Settings, get_settings
@@ -27,8 +30,8 @@ class AuditLogger:
         self.logger = logging.getLogger("audit")
         self.logger.setLevel(logging.INFO)
 
-        # ✅ FIX: Disable propagation to prevent root logger interference
-        self.logger.propagate = False
+        # ✅ FIX: Re-enable propagation to allow log messages to propagate up the chain
+        self.logger.propagate = True
 
         # ✅ FIX: Check for existing handlers to prevent duplicates
         existing_handler = None
@@ -91,7 +94,7 @@ class AuditLogger:
             "metadata": metadata or {},
         }
 
-        # Write as single JSON line (append-only, immutable)
+        # Write as single JSON line (append-only)
         self.logger.info(json.dumps(event))
 
     def __del__(self):

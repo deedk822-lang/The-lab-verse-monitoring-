@@ -8,6 +8,7 @@ import logging
 import requests
 import base64
 from typing import Dict, List, Optional
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 import io
@@ -18,6 +19,8 @@ class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
+        # Initialize session before detecting providers as detection may use the session
+        self.session = requests.Session()
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +61,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -70,7 +73,7 @@ class ImageGenerator:
             return False
 
     def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto") -> Dict:
+                 provider: str = "auto", skip_enhance: bool = False) -> Dict:
         """
         Generate image from text prompt
 
@@ -78,12 +81,13 @@ class ImageGenerator:
             prompt: Text description of image
             style: Image style (professional, creative, realistic, artistic)
             provider: Provider to use (auto, stability, replicate, huggingface, local)
+            skip_enhance: If True, skip prompt enhancement (used during fallbacks)
 
         Returns:
             Dict with image_url, provider, cost_usd
         """
-        # Enhance prompt with style
-        enhanced_prompt = self._enhance_prompt(prompt, style)
+        # Enhance prompt with style unless skipped
+        enhanced_prompt = prompt if skip_enhance else self._enhance_prompt(prompt, style)
 
         # Select provider
         if provider == "auto":
@@ -137,7 +141,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -193,7 +197,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -219,7 +223,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -249,7 +253,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,
@@ -288,7 +292,8 @@ class ImageGenerator:
             if self.providers[provider]:
                 try:
                     logger.info(f"Trying fallback provider: {provider}")
-                    return self.generate(prompt, provider=provider)
+                    # Use skip_enhance=True to avoid multiple prompt enhancements
+                    return self.generate(prompt, provider=provider, skip_enhance=True)
                 except Exception as e:
                     logger.warning(f"Provider {provider} failed: {e}")
                     continue
@@ -338,23 +343,39 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """
+        Generate multiple images in parallel using ThreadPoolExecutor.
+        This significantly reduces total time when generating multiple images.
+        """
+        if not prompts:
+            return []
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        logger.info(f"⚡ Bolt: Generating {len(prompts)} images in parallel...")
 
+        # Max workers capped at 10 or number of prompts
+        max_workers = min(len(prompts), 10)
+
+        def _generate_single(idx, prompt):
             try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
+                logger.info(f"Generating image {idx+1}/{len(prompts)}: {prompt[:50]}...")
+                return idx, self.generate(prompt, style=style)
             except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
+                logger.error(f"Failed to generate image {idx+1}: {e}")
+                return idx, {
                     "image_url": self._create_placeholder(prompt),
                     "provider": "error",
                     "cost_usd": 0.0,
                     "error": str(e)
-                })
+                }
+
+        results = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Map prompts to workers with their original index to maintain order
+            futures = [executor.submit(_generate_single, i, prompt) for i, prompt in enumerate(prompts)]
+            # futures are yielded in submission order, ensuring the results list maintains alignment with input prompts
+            for future in futures:
+                _, result = future.result()
+                results.append(result)
 
         return results
 

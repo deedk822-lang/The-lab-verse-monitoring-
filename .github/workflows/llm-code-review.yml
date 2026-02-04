@@ -206,8 +206,9 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
+        continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           commit-message: "🤖 Auto-fix: Code review findings"
           title: "🤖 Auto-fix: Code review findings ✅"
           body-path: pr-body.md
@@ -262,8 +263,9 @@ jobs:
 
       - name: Create Draft Pull Request
         uses: peter-evans/create-pull-request@v7
+        continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           commit-message: "🤖 Auto-fix: Code review findings (TESTS FAILED)"
           title: "🤖 [DRAFT] Auto-fix: Code review findings ❌ Tests Failed"
           body-path: pr-body.md

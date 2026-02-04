@@ -12,7 +12,10 @@ import sys
 
 import structlog
 
-from pr_fix_agent.ollama_agent import CostTracker, OllamaAgent
+try:
+    from .ollama_agent import CostTracker, OllamaAgent
+except ImportError:
+    from pr_fix_agent.ollama_agent import CostTracker, OllamaAgent
 
 logger = structlog.get_logger()
 

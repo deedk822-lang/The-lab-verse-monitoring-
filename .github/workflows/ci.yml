@@ -76,7 +76,7 @@ jobs:
             --cov-report=html:htmlcov \
             --cov-report=term-missing \
             --cov-fail-under=25 \
-            tests/
+            tests/ # TEMPORARY: Lowered to 25% for legacy modules
 
           # FIX: Explicitly check exit code
           TEST_EXIT_CODE=$?

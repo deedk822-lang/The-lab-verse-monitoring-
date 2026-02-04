@@ -100,7 +100,7 @@ export class AlertManager {
     this.setCooldown(cooldownKey);
 
     // Send to channels
-    const promises = channels.map(channel => {
+    const promises = channels.map((channel) => {
       switch (channel) {
         case AlertChannel.EMAIL:
           return this.sendEmailAlert(alertObj);
@@ -156,12 +156,16 @@ export class AlertManager {
           <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p style="margin: 0; color: #333;">${alert.message}</p>
           </div>
-          ${Object.keys(alert.metadata).length > 0 ? `
+          ${
+            Object.keys(alert.metadata).length > 0
+              ? `
             <h3 style="color: #333;">Additional Details:</h3>
             <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
 ${JSON.stringify(alert.metadata, null, 2)}
             </pre>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
 
@@ -173,7 +177,6 @@ ${JSON.stringify(alert.metadata, null, 2)}
       });
 
       logger.debug('Email alert sent', { id: alert.id });
-
     } catch (error) {
       logger.error('Failed to send email alert', { error: error.message, alert });
     }
@@ -196,30 +199,32 @@ ${JSON.stringify(alert.metadata, null, 2)}
       };
 
       const payload = {
-        attachments: [{
-          color: colorMap[alert.severity],
-          title: alert.title,
-          text: alert.message,
-          fields: [
-            {
-              title: 'Severity',
-              value: alert.severity.toUpperCase(),
-              short: true
-            },
-            {
-              title: 'Time',
-              value: alert.timestamp,
-              short: true
-            },
-            ...Object.entries(alert.metadata).map(([key, value]) => ({
-              title: key,
-              value: typeof value === 'object' ? JSON.stringify(value) : String(value),
-              short: false
-            }))
-          ],
-          footer: 'Lab Verse Monitoring',
-          ts: Math.floor(Date.now() / 1000)
-        }]
+        attachments: [
+          {
+            color: colorMap[alert.severity],
+            title: alert.title,
+            text: alert.message,
+            fields: [
+              {
+                title: 'Severity',
+                value: alert.severity.toUpperCase(),
+                short: true
+              },
+              {
+                title: 'Time',
+                value: alert.timestamp,
+                short: true
+              },
+              ...Object.entries(alert.metadata).map(([key, value]) => ({
+                title: key,
+                value: typeof value === 'object' ? JSON.stringify(value) : String(value),
+                short: false
+              }))
+            ],
+            footer: 'Lab Verse Monitoring',
+            ts: Math.floor(Date.now() / 1000)
+          }
+        ]
       };
 
       const response = await fetch(this.config.slack.webhookUrl, {
@@ -233,7 +238,6 @@ ${JSON.stringify(alert.metadata, null, 2)}
       }
 
       logger.debug('Slack alert sent', { id: alert.id });
-
     } catch (error) {
       logger.error('Failed to send Slack alert', { error: error.message, alert });
     }
@@ -259,7 +263,6 @@ ${JSON.stringify(alert.metadata, null, 2)}
       }
 
       logger.debug('Webhook alert sent', { id: alert.id });
-
     } catch (error) {
       logger.error('Failed to send webhook alert', { error: error.message, alert });
     }
@@ -333,12 +336,12 @@ ${JSON.stringify(alert.metadata, null, 2)}
     let history = [...this.alertHistory];
 
     if (filters.severity) {
-      history = history.filter(a => a.severity === filters.severity);
+      history = history.filter((a) => a.severity === filters.severity);
     }
 
     if (filters.since) {
       const sinceTime = new Date(filters.since).getTime();
-      history = history.filter(a => new Date(a.timestamp).getTime() >= sinceTime);
+      history = history.filter((a) => new Date(a.timestamp).getTime() >= sinceTime);
     }
 
     if (filters.limit) {
@@ -351,11 +354,10 @@ ${JSON.stringify(alert.metadata, null, 2)}
   /**
    * Get alert statistics
    */
-  getStats(period = 3600000) { // Default 1 hour
+  getStats(period = 3600000) {
+    // Default 1 hour
     const since = Date.now() - period;
-    const recentAlerts = this.alertHistory.filter(
-      a => new Date(a.timestamp).getTime() >= since
-    );
+    const recentAlerts = this.alertHistory.filter((a) => new Date(a.timestamp).getTime() >= since);
 
     const stats = {
       total: recentAlerts.length,
@@ -369,10 +371,10 @@ ${JSON.stringify(alert.metadata, null, 2)}
       period: `${period / 1000}s`
     };
 
-    recentAlerts.forEach(alert => {
+    recentAlerts.forEach((alert) => {
       stats.bySeverity[alert.severity]++;
 
-      alert.channels.forEach(channel => {
+      alert.channels.forEach((channel) => {
         stats.byChannel[channel] = (stats.byChannel[channel] || 0) + 1;
       });
     });

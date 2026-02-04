@@ -24,13 +24,13 @@ const logger = winston.createLogger({
       )
     }),
     // Write all logs with level 'error' and below to error.log
-    new winston.transports.File({ 
-      filename: path.join(config.logging.dir, 'error.log'), 
-      level: 'error' 
+    new winston.transports.File({
+      filename: path.join(config.logging.dir, 'error.log'),
+      level: 'error'
     }),
     // Write all logs to combined.log
-    new winston.transports.File({ 
-      filename: path.join(config.logging.dir, 'combined.log') 
+    new winston.transports.File({
+      filename: path.join(config.logging.dir, 'combined.log')
     })
   ]
 });

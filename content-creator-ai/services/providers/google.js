@@ -18,15 +18,15 @@ class GoogleProvider {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
-        model: options.model || config.providers.google.models.text 
+      const model = this.genAI.getGenerativeModel({
+        model: options.model || config.providers.google.models.text
       });
 
       const generationConfig = {
         temperature: options.temperature || 0.7,
         topK: options.topK || 40,
         topP: options.topP || 0.95,
-        maxOutputTokens: options.maxTokens || 2048,
+        maxOutputTokens: options.maxTokens || 2048
       };
 
       const result = await model.generateContent({
@@ -40,7 +40,12 @@ class GoogleProvider {
       // Track costs
       const inputTokens = prompt.split(/\s+/).length * 1.3; // Rough estimate
       const outputTokens = text.split(/\s+/).length * 1.3;
-      const cost = costTracker.calculateTokenCost('google', generationConfig.model || config.providers.google.models.text, inputTokens, outputTokens);
+      const cost = costTracker.calculateTokenCost(
+        'google',
+        generationConfig.model || config.providers.google.models.text,
+        inputTokens,
+        outputTokens
+      );
 
       logger.info(`Google Gemini text generated: ${text.length} chars, cost: $${cost.toFixed(4)}`);
 
@@ -61,11 +66,6 @@ class GoogleProvider {
     }
 
     try {
-      // Use Gemini with Google Search grounding
-      const model = this.genAI.getGenerativeModel({ 
-        model: config.providers.google.models.text 
-      });
-
       const searchPrompt = `Research the following topic and provide detailed, accurate information with sources:\n\n${query}\n\nProvide a comprehensive summary with key facts, statistics, and recent developments.`;
 
       const result = await this.generateText(searchPrompt, options);
@@ -115,7 +115,7 @@ class GoogleProvider {
     // Note: Imagen API requires vertex AI setup. This is a placeholder for the implementation.
     // In production, you'd use Vertex AI SDK or REST API
     logger.warn('Imagen image generation requires Vertex AI setup - using placeholder');
-    
+
     return {
       imageUrl: 'https://placeholder.com/800x600', // Placeholder
       prompt,
@@ -127,9 +127,9 @@ class GoogleProvider {
   async generateVideo(prompt, options = {}) {
     // Note: Veo API requires vertex AI setup. This is a placeholder.
     logger.warn('Veo video generation requires Vertex AI setup - using placeholder');
-    
+
     const duration = options.duration || 10;
-    
+
     return {
       videoUrl: 'https://placeholder.com/video.mp4', // Placeholder
       prompt,
@@ -145,8 +145,8 @@ class GoogleProvider {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
-        model: config.providers.google.models.vision 
+      const model = this.genAI.getGenerativeModel({
+        model: config.providers.google.models.vision
       });
 
       // Fetch image data
@@ -191,7 +191,7 @@ class GoogleProvider {
     try {
       // A simple non-costly operation to check API key validity and connectivity
       const model = this.genAI.getGenerativeModel({ model: config.providers.google.models.text });
-      await model.countTokens("test");
+      await model.countTokens('test');
       return { healthy: true, message: 'Google provider is responding' };
     } catch (error) {
       logger.error('Google provider health check failed:', error);

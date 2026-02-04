@@ -13,9 +13,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const GATEWAY_URL = process.env.GATEWAY_URL || process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000';
+const GATEWAY_URL =
+  process.env.GATEWAY_URL || process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
 const GATEWAY_KEY = process.env.GATEWAY_KEY || process.env.SOCIALPILOT_ACCESS_TOKEN;
 
 if (!GATEWAY_KEY) {
@@ -95,7 +96,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GATEWAY_KEY}`
+        Authorization: `Bearer ${GATEWAY_KEY}`
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(30000)
@@ -109,7 +110,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const text = json.choices?.[0]?.message?.content || JSON.stringify(json);
 
     return { content: [{ type: 'text', text }] };
-
   } catch (error) {
     console.error(`❌ Tool execution failed: ${error.message}`);
     return {

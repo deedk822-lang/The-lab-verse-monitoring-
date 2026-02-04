@@ -50,12 +50,12 @@ export class AgentOrchestrator extends EventEmitter {
         performance: {
           tasksCompleted: 0,
           successRate: 0,
-          averageResponseTime: 0,
+          averageResponseTime: 0
         }
       }
     ];
 
-    defaultAgents.forEach(agent => {
+    defaultAgents.forEach((agent) => {
       this.agents.set(agent.id, agent);
     });
 
@@ -68,7 +68,7 @@ export class AgentOrchestrator extends EventEmitter {
       type,
       prompt,
       status: 'pending',
-      createdAt: new Date(),
+      createdAt: new Date()
     };
 
     this.tasks.set(task.id, task);
@@ -124,7 +124,6 @@ export class AgentOrchestrator extends EventEmitter {
       agent.status = 'idle';
 
       this.emit('taskCompleted', { task, agent, result });
-
     } catch (error) {
       task.error = error instanceof Error ? error.message : 'Unknown error';
       task.status = 'failed';

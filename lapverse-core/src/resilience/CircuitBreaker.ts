@@ -2,10 +2,13 @@ type BreakerOptions = { timeout: number; errorThreshold: number; reset: number }
 
 export class CircuitBreaker<TResult> {
   private failures = 0;
-  private state: 'closed'|'open'|'half-open' = 'closed';
+  private state: 'closed' | 'open' | 'half-open' = 'closed';
   private openedAt = 0;
 
-  constructor(private fn: (...args: any[]) => Promise<TResult>, private opts: BreakerOptions){ }
+  constructor(
+    private fn: (...args: any[]) => Promise<TResult>,
+    private opts: BreakerOptions
+  ) {}
 
   async execute(invocation?: () => Promise<TResult>): Promise<TResult> {
     const now = Date.now();
@@ -35,8 +38,13 @@ export class CircuitBreaker<TResult> {
   private withTimeout<T>(p: Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const to = setTimeout(() => reject(new Error('timeout')), this.opts.timeout);
-      p.then(v => { clearTimeout(to); resolve(v); })
-       .catch(e => { clearTimeout(to); reject(e); });
+      p.then((v) => {
+        clearTimeout(to);
+        resolve(v);
+      }).catch((e) => {
+        clearTimeout(to);
+        reject(e);
+      });
     });
   }
 }

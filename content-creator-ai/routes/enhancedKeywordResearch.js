@@ -1,13 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { EnhancedKeywordResearchController, upload } = require('../controllers/enhancedKeywordResearchController');
+const {
+  EnhancedKeywordResearchController,
+  upload
+} = require('../controllers/enhancedKeywordResearchController');
 
 /**
  * @route   POST /api/keyword-research/deep-search
  * @desc    Process keywords with Cohere clustering + Perplexity deep search
  * @access  Public
  */
-router.post('/deep-search',
+router.post(
+  '/deep-search',
   upload.single('file'),
   EnhancedKeywordResearchController.processWithDeepSearch
 );
@@ -17,8 +21,6 @@ router.post('/deep-search',
  * @desc    Get Perplexity insights for a specific topic
  * @access  Public
  */
-router.post('/topic-insights',
-  EnhancedKeywordResearchController.getTopicInsights
-);
+router.post('/topic-insights', EnhancedKeywordResearchController.getTopicInsights);
 
 module.exports = router;

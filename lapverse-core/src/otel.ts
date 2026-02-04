@@ -15,7 +15,7 @@ Config.load();
 const parseHeaders = (headers: string | undefined): Record<string, string> => {
   if (!headers) return {};
   return Object.fromEntries(
-    headers.split(',').map(pair => {
+    headers.split(',').map((pair) => {
       const [key, ...valueParts] = pair.split('=');
       return [key, valueParts.join('=')];
     })
@@ -24,25 +24,25 @@ const parseHeaders = (headers: string | undefined): Record<string, string> => {
 
 const resourceAttributes = {
   [SemanticResourceAttributes.SERVICE_NAME]: Config.env.OTEL_SERVICE_NAME,
-  ...parseHeaders(Config.env.OTEL_RESOURCE_ATTRIBUTES),
+  ...parseHeaders(Config.env.OTEL_RESOURCE_ATTRIBUTES)
 };
 
 const traceExporter = new OTLPTraceExporter({
   url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
   headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
-  timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+  timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10)
 });
 
 const metricExporter = new OTLPMetricExporter({
-    url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/metrics`,
-    headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
-    timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+  url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/metrics`,
+  headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
+  timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10)
 });
 
 const logExporter = new OTLPLogExporter({
-    url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/logs`,
-    headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
-    timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10),
+  url: `${Config.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/logs`,
+  headers: parseHeaders(Config.env.OTEL_EXPORTER_OTLP_HEADERS),
+  timeoutMillis: parseInt(Config.env.OTEL_EXPORTER_OTLP_TIMEOUT, 10)
 });
 
 const sdk = new NodeSDK({
@@ -51,7 +51,7 @@ const sdk = new NodeSDK({
   metricReader: new PeriodicExportingMetricReader({ exporter: metricExporter }),
   logRecordProcessor: new BatchLogRecordProcessor(logExporter),
   instrumentations: [getNodeAutoInstrumentations()],
-  sampler: new TraceIdRatioBasedSampler(parseFloat(Config.env.OTEL_TRACES_SAMPLER_ARG)),
+  sampler: new TraceIdRatioBasedSampler(parseFloat(Config.env.OTEL_TRACES_SAMPLER_ARG))
 });
 
 sdk.start();

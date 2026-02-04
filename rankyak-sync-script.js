@@ -20,8 +20,10 @@ async function run() {
   if (isPush) {
     console.log('Running from a push event...');
     const eventPayload = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-    const commit = eventPayload.commits.find(c => (c.added || c.modified).some(p => p.startsWith('_posts/')));
-    postPath = (commit.added || commit.modified).find(p => p.startsWith('_posts/'));
+    const commit = eventPayload.commits.find((c) =>
+      (c.added || c.modified).some((p) => p.startsWith('_posts/'))
+    );
+    postPath = (commit.added || commit.modified).find((p) => p.startsWith('_posts/'));
 
     if (!postPath) {
       console.log('No post file found in push commits. Exiting.');
@@ -32,15 +34,17 @@ async function run() {
     const filename = path.basename(postPath, '.md');
     const slugParts = filename.split('-').slice(3);
     slug = slugParts.join('-');
-    title = slugParts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
+    title = slugParts.join(' ').replace(/\b\w/g, (c) => c.toUpperCase());
     tags = []; // Tags are not available from push events in this setup
-
   } else {
     console.log('Running from a workflow_dispatch event...');
     postPath = process.env.INPUT_POST_PATH;
     slug = process.env.INPUT_SLUG;
     title = process.env.INPUT_TITLE;
-    tags = (process.env.INPUT_TAGS || '').split(',').map(s => s.trim()).filter(Boolean);
+    tags = (process.env.INPUT_TAGS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   if (!postPath || !slug) {
@@ -56,7 +60,7 @@ async function run() {
     owner,
     repo,
     path: postPath,
-    ref: process.env.GITHUB_REF_NAME,
+    ref: process.env.GITHUB_REF_NAME
   });
 
   const markdownContent = Buffer.from(file.content, 'base64').toString('utf8');
@@ -72,7 +76,7 @@ async function run() {
   console.log('Sync complete!');
 }
 
-run().catch(error => {
+run().catch((error) => {
   console.error(error);
   process.exit(1);
 });

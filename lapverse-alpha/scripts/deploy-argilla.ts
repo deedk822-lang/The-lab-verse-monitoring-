@@ -13,7 +13,7 @@ async function deployArgilla(): Promise<void> {
 
     // Step 2: Wait for Argilla to be ready
     logger.info('Step 2: Waiting for Argilla to be ready...');
-    await new Promise(resolve => setTimeout(resolve, 30000)); // 30 seconds
+    await new Promise((resolve) => setTimeout(resolve, 30000)); // 30 seconds
 
     // Step 3: Create feedback dataset
     logger.info('Step 3: Creating feedback dataset...');
@@ -51,7 +51,6 @@ async function deployArgilla(): Promise<void> {
     console.log('3. Create model tuning service offerings');
     console.log('4. Monitor annotation quality metrics');
     console.log('5. Export first gold dataset for sale');
-
   } catch (error) {
     logger.error('Argilla deployment failed', { error });
     process.exit(1);

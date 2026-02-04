@@ -259,6 +259,7 @@ Both should return "✅ Connected"
 ```
 
 **Expected output:**
+
 ```
 ✅ Post created successfully
 📝 ID: [POST_ID]
@@ -276,6 +277,7 @@ Both should return "✅ Connected"
 ```
 
 **Expected output:**
+
 ```
 ✅ Distribution started
 🆔 Run ID: run_[TIMESTAMP]_[HASH]
@@ -295,6 +297,7 @@ Both should return "✅ Connected"
 ```
 
 **Expected output:**
+
 ```
 ✅ Latest commit on main:
 📝 Message: [COMMIT_MESSAGE]
@@ -394,6 +397,7 @@ Count the delivery confirmations.
 ```
 
 **Expected output:**
+
 ```
 ✅ Post deleted successfully
 ```
@@ -453,11 +457,11 @@ npx -y @automattic/mcp-wpcom-remote@latest
 
 ### Environment Variables Required
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `GITHUB_TOKEN` | GitHub PAT with repo access | `ghp_xxxxxxxxxxxx` |
-| `WEBHOOK_SECRET` | RankYak webhook secret | `your-secret-key` |
-| `WP_SITE_ID` | WordPress.com site ID | `yoursite.wordpress.com` |
+| Variable         | Description                 | Example                  |
+| ---------------- | --------------------------- | ------------------------ |
+| `GITHUB_TOKEN`   | GitHub PAT with repo access | `ghp_xxxxxxxxxxxx`       |
+| `WEBHOOK_SECRET` | RankYak webhook secret      | `your-secret-key`        |
+| `WP_SITE_ID`     | WordPress.com site ID       | `yoursite.wordpress.com` |
 
 ### MCP Server Endpoints
 
@@ -547,7 +551,7 @@ If any step fails:
 
 **END OF INSTRUCTIONS**
 
-*Prepared for: Manus AI*  
-*Date: 2025-11-11*  
-*Version: 1.0.0-production*  
-*Domain: snout-lard-jumbo-5158.vercel.app*
+_Prepared for: Manus AI_
+_Date: 2025-11-11_
+_Version: 1.0.0-production_
+_Domain: snout-lard-jumbo-5158.vercel.app_

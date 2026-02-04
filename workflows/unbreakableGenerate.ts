@@ -1,8 +1,11 @@
-import { sleep } from "@workflow/core";
-import { generateContent } from "../kimi-computer/src/services/contentGenerator.js";
+import { sleep } from '@workflow/core';
+import { generateContent } from '../kimi-computer/src/services/contentGenerator.js';
 
 // A simple retry function to replace the one from the guide
-async function retry<T>(fn: () => Promise<T>, options: { maxAttempts: number; backoff: string; }): Promise<T> {
+async function retry<T>(
+  fn: () => Promise<T>,
+  options: { maxAttempts: number; backoff: string }
+): Promise<T> {
   let attempts = 0;
   while (attempts < options.maxAttempts) {
     try {
@@ -12,11 +15,11 @@ async function retry<T>(fn: () => Promise<T>, options: { maxAttempts: number; ba
       if (attempts >= options.maxAttempts) {
         throw err;
       }
-      const delay = options.backoff === "exponential" ? 2 ** attempts * 100 : 1000;
-      await new Promise(res => setTimeout(res, delay));
+      const delay = options.backoff === 'exponential' ? 2 ** attempts * 100 : 1000;
+      await new Promise((res) => setTimeout(res, delay));
     }
   }
-  throw new Error("Retry failed");
+  throw new Error('Retry failed');
 }
 
 // Placeholder for a function that processes analytics
@@ -27,12 +30,12 @@ async function processAnalytics(userId: string, result: any) {
 }
 
 export async function handleRequest(prompt: string, userId: string) {
-  "use workflow";
+  'use workflow';
 
-  const result = await retry(
-    () => generateContent(prompt, { provider: 'openai' }),
-    { maxAttempts: 3, backoff: 'exponential' }
-  );
+  const result = await retry(() => generateContent(prompt, { provider: 'openai' }), {
+    maxAttempts: 3,
+    backoff: 'exponential'
+  });
 
   // Zero-cost analytics processing
   await sleep('1 hour');

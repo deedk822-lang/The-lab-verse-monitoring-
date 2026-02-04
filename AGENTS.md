@@ -10,12 +10,12 @@
 
 Humans can control Jules by commenting on Pull Requests:
 
-| Command | Action |
-|---------|--------|
-| `@jules merge` | **Override:** Force merge (Bypasses confidence checks). |
+| Command         | Action                                                      |
+| --------------- | ----------------------------------------------------------- |
+| `@jules merge`  | **Override:** Force merge (Bypasses confidence checks).     |
 | `@jules rebase` | **Heal:** Updates the PR branch with latest `main` changes. |
-| `@jules report` | **Analyze:** Re-runs the confidence assessment. |
-| `@jules pause` | **Emergency:** Blocks all automation on the specific PR. |
+| `@jules report` | **Analyze:** Re-runs the confidence assessment.             |
+| `@jules pause`  | **Emergency:** Blocks all automation on the specific PR.    |
 
 ## ⛔ Immediate Stop Conditions
 
@@ -66,14 +66,14 @@ Jules will **block auto-merge** if:
 
 ### Protected Paths Requiring Manual Review
 
-| Path Pattern | Reason | Required Approver |
-|--------------|--------|-----------------|
-| `^config/` | Configuration changes | @deedk822-lang |
-| `^scripts/setup-` | Setup automation | @deedk822-lang |
-| `docker-compose.*\\.yml$` | Infrastructure | @deedk822-lang |
-| `^\\.github/workflows/` | CI/CD pipeline | @deedk822-lang |
-| `requirements.*\\.txt$` | Python dependencies | @deedk822-lang |
-| `package.*\\.json$` | Node dependencies | @deedk822-lang |
+| Path Pattern              | Reason                | Required Approver |
+| ------------------------- | --------------------- | ----------------- |
+| `^config/`                | Configuration changes | @deedk822-lang    |
+| `^scripts/setup-`         | Setup automation      | @deedk822-lang    |
+| `docker-compose.*\\.yml$` | Infrastructure        | @deedk822-lang    |
+| `^\\.github/workflows/`   | CI/CD pipeline        | @deedk822-lang    |
+| `requirements.*\\.txt$`   | Python dependencies   | @deedk822-lang    |
+| `package.*\\.json$`       | Node dependencies     | @deedk822-lang    |
 
 ### Merge Conflict Resolution Strategy
 
@@ -103,6 +103,7 @@ If auto-merge needs to be halted:
 ### Existing GitHub Actions
 
 Jules respects existing workflows:
+
 - `ci.yml` - Main CI pipeline (build, lint, test)
 - `merge-conflict-check.yml` - Pre-merge validation
 - `validate-json.yml` - Configuration validation
@@ -111,6 +112,7 @@ Jules respects existing workflows:
 ## 📊 Audit Trail
 
 All merge decisions are logged in `.jules/logs/merge-history.json` with:
+
 - Timestamp
 - PR number and branch
 - Confidence score

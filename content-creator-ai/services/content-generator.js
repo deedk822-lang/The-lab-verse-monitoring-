@@ -24,7 +24,7 @@ class ContentGenerator {
     }
 
     const provider = this.providers[preferredProvider];
-    
+
     if (!provider || !provider.isEnabled()) {
       // Fallback to first available provider
       for (const [name, prov] of Object.entries(this.providers)) {
@@ -84,8 +84,19 @@ class ContentGenerator {
   }
 
   async generateTextContent(request) {
-    const { topic, audience, tone, language, length, format, enable_research, provider: preferredProvider, temperature, max_tokens } = request;
-    
+    const {
+      topic,
+      audience,
+      tone,
+      language,
+      length,
+      format,
+      enable_research,
+      provider: preferredProvider,
+      temperature,
+      max_tokens
+    } = request;
+
     const provider = this.selectProvider(preferredProvider);
     let totalCost = 0;
     let research = null;
@@ -100,12 +111,12 @@ class ContentGenerator {
     // Step 2: Generate content
     const contentPrompt = this.buildTextPrompt(topic, audience, tone, language, length, research);
     logger.info('Generating text content...');
-    
+
     const contentResult = await provider.generateText(contentPrompt, {
       temperature: temperature || 0.7,
       maxTokens: this.getLengthTokens(length)
     });
-    
+
     totalCost += contentResult.cost || 0;
 
     // Step 3: Format the content
@@ -131,12 +142,12 @@ class ContentGenerator {
 
   async generateImageContent(request) {
     const { topic, style, aspect_ratio, provider: preferredProvider } = request;
-    
+
     const provider = this.selectProvider(preferredProvider);
 
     // Build image prompt
     const imagePrompt = `Create a ${style} image for: ${topic}. High quality, professional, visually appealing.`;
-    
+
     logger.info('Generating image...');
     const result = await provider.generateImage(imagePrompt, { aspectRatio: aspect_ratio, style });
 
@@ -153,20 +164,23 @@ class ContentGenerator {
 
   async generateVideoContent(request) {
     const { topic, duration, aspect_ratio, provider: preferredProvider } = request;
-    
+
     const provider = this.selectProvider(preferredProvider);
 
     // Build video prompt
     const videoPrompt = `Create an engaging video about: ${topic}. Professional, high-quality visuals.`;
-    
+
     logger.info('Generating video...');
-    
+
     // Check if provider supports video generation
     if (typeof provider.generateVideo !== 'function') {
       throw new Error(`Provider ${preferredProvider} does not support video generation`);
     }
 
-    const result = await provider.generateVideo(videoPrompt, { duration, aspectRatio: aspect_ratio });
+    const result = await provider.generateVideo(videoPrompt, {
+      duration,
+      aspectRatio: aspect_ratio
+    });
 
     return {
       type: 'video',
@@ -181,7 +195,7 @@ class ContentGenerator {
 
   async generateAudioContent(request) {
     const { topic, voice, provider: preferredProvider, enable_research } = request;
-    
+
     const provider = this.selectProvider(preferredProvider);
     let totalCost = 0;
     let script = topic;
@@ -195,7 +209,7 @@ class ContentGenerator {
     }
 
     logger.info('Generating audio...');
-    
+
     // Check if provider supports audio generation
     if (typeof provider.generateAudio !== 'function') {
       throw new Error(`Provider ${preferredProvider} does not support audio generation`);
@@ -215,8 +229,8 @@ class ContentGenerator {
   }
 
   async generateMultimodalContent(request) {
-    const { topic, provider: preferredProvider } = request;
-    
+    const { provider: preferredProvider } = request;
+
     // Generate both text and image content
     logger.info('Generating multimodal content (text + image)...');
 
@@ -242,18 +256,18 @@ class ContentGenerator {
     prompt += `Target audience: ${audience}\n`;
     prompt += `Tone: ${tone}\n`;
     prompt += `Language: ${language}\n\n`;
-    
+
     if (research) {
       prompt += `Research context:\n${research.summary}\n\n`;
     }
-    
+
     prompt += `Requirements:\n`;
     prompt += `- Write in a ${tone} tone suitable for ${audience}\n`;
     prompt += `- Use clear, engaging language\n`;
     prompt += `- Include relevant examples and details\n`;
     prompt += `- Structure the content well with headings and paragraphs\n`;
     prompt += `- Make it informative and valuable\n`;
-    
+
     return prompt;
   }
 

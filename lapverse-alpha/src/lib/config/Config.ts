@@ -11,7 +11,7 @@ const ConfigSchema = z.object({
   BLOCKCHAIN_PRIVATE_KEY: z.string().optional(),
   ALPHA_TOKEN_ADDRESS: z.string().optional(),
   ESCROW_CONTRACT_ADDRESS: z.string().optional(),
-  BASE_URL: z.string().url().default('http://localhost:3000'),
+  BASE_URL: z.string().url().default('http://localhost:3000')
 });
 
 export class ConfigManager {

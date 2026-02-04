@@ -2,7 +2,7 @@
 
 /**
  * CI Test Suite Orchestrator
- * 
+ *
  * Runs Jest (JavaScript/TypeScript) and pytest (Python) tests with:
  * - Professional error handling
  * - Graceful degradation for missing dependencies
@@ -19,7 +19,7 @@ import { createInterface } from 'readline';
 function runCommand(command, args, opts = {}) {
   return new Promise((resolve) => {
     console.log(`\n[runner] Executing: ${command} ${args.join(' ')}`);
-    
+
     const child = spawn(command, args, {
       stdio: ['inherit', 'pipe', 'pipe'],
       shell: process.platform === 'win32',
@@ -50,8 +50,8 @@ function runCommand(command, args, opts = {}) {
 
     child.on('error', (err) => {
       console.error(`[runner] Failed to start "${command}":`, err.message);
-      resolve({ 
-        code: null, 
+      resolve({
+        code: null,
         error: err,
         stdout,
         stderr
@@ -59,8 +59,8 @@ function runCommand(command, args, opts = {}) {
     });
 
     child.on('close', (code) => {
-      resolve({ 
-        code, 
+      resolve({
+        code,
         error: null,
         stdout,
         stderr
@@ -95,18 +95,22 @@ async function runJest() {
 
   if (code !== 0) {
     console.error(`\n[runner] ❌ Jest tests failed with exit code ${code}`);
-    
+
     // Parse Jest output for specific failure details
     const failedTests = stdout.match(/FAIL\s+(.+)/g) || [];
     if (failedTests.length > 0) {
       console.error('\n[runner] Failed test files:');
-      failedTests.slice(0, 5).forEach(f => console.error('  ' + f));
+      failedTests.slice(0, 5).forEach((f) => console.error('  ' + f));
       if (failedTests.length > 5) {
         console.error(`  ... and ${failedTests.length - 5} more`);
       }
     }
-    
-    return { ok: false, reason: 'jest-tests-failed', details: `${failedTests.length} test file(s) failed` };
+
+    return {
+      ok: false,
+      reason: 'jest-tests-failed',
+      details: `${failedTests.length} test file(s) failed`
+    };
   }
 
   console.log('\n[runner] ✅ Jest tests completed successfully');
@@ -121,11 +125,7 @@ async function runPytest() {
   console.log('🐍 Python Test Suite (pytest)');
   console.log('='.repeat(70));
 
-  const { code, error, stdout } = await runCommand('pytest', [
-    '-v',
-    '--color=yes',
-    '--tb=short'
-  ]);
+  const { code, error, stdout } = await runCommand('pytest', ['-v', '--color=yes', '--tb=short']);
 
   // If pytest is not installed or not found, treat as a soft skip
   if (error) {
@@ -145,7 +145,7 @@ async function runPytest() {
   // 3 = internal error
   // 4 = command line usage error
   // 5 = no tests collected
-  
+
   if (code === 5) {
     console.warn('\n[runner] ⚠️  No Python tests collected; treating as success');
     return { ok: true, skipped: true, reason: 'no-python-tests' };
@@ -153,18 +153,22 @@ async function runPytest() {
 
   if (code !== 0) {
     console.error(`\n[runner] ❌ pytest failed with exit code ${code}`);
-    
+
     // Parse pytest output for specific failure details
     const failedTests = stdout.match(/FAILED\s+(.+)\s+-/g) || [];
     if (failedTests.length > 0) {
       console.error('\n[runner] Failed tests:');
-      failedTests.slice(0, 5).forEach(f => console.error('  ' + f));
+      failedTests.slice(0, 5).forEach((f) => console.error('  ' + f));
       if (failedTests.length > 5) {
         console.error(`  ... and ${failedTests.length - 5} more`);
       }
     }
-    
-    return { ok: false, reason: 'pytest-tests-failed', details: `${failedTests.length || 'Some'} test(s) failed` };
+
+    return {
+      ok: false,
+      reason: 'pytest-tests-failed',
+      details: `${failedTests.length || 'Some'} test(s) failed`
+    };
   }
 
   console.log('\n[runner] ✅ Python tests completed successfully');
@@ -178,30 +182,30 @@ function printSummary(results) {
   console.log('\n' + '='.repeat(70));
   console.log('📊 TEST SUITE SUMMARY');
   console.log('='.repeat(70));
-  
+
   let allPassed = true;
   let hasSkipped = false;
-  
+
   for (const [suite, result] of Object.entries(results)) {
     const icon = result.ok ? '✅' : '❌';
     const status = result.ok ? 'PASSED' : 'FAILED';
     const skipped = result.skipped ? ' (skipped)' : '';
-    
+
     console.log(`${icon} ${suite.toUpperCase()}: ${status}${skipped}`);
-    
+
     if (result.details) {
       console.log(`   Details: ${result.details}`);
     }
     if (result.reason) {
       console.log(`   Reason: ${result.reason}`);
     }
-    
+
     if (!result.ok) allPassed = false;
     if (result.skipped) hasSkipped = true;
   }
-  
+
   console.log('='.repeat(70));
-  
+
   if (allPassed) {
     console.log('\n🎉 All test suites completed successfully!');
     if (hasSkipped) {
@@ -211,7 +215,7 @@ function printSummary(results) {
   } else {
     console.log('\n❌ Some test suites failed. See details above.');
   }
-  
+
   console.log('');
 }
 
@@ -223,30 +227,30 @@ async function main() {
   console.log(`📅 ${new Date().toISOString()}`);
   console.log(`🖥️  Node ${process.version}`);
   console.log(`📂 ${process.cwd()}`);
-  
+
   const startTime = Date.now();
-  
+
   // Run all test suites
   const results = {
     jest: await runJest(),
     pytest: await runPytest()
   };
-  
+
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-  
+
   // Print summary
   printSummary(results);
-  
+
   console.log(`⏱️  Total time: ${duration}s\n`);
-  
+
   // Exit with appropriate code
   const failures = Object.entries(results).filter(([, r]) => !r.ok);
-  
+
   if (failures.length > 0) {
     console.error('\n💔 CI tests failed. Fix the issues above and try again.');
     process.exit(1);
   }
-  
+
   console.log('\n💚 CI tests passed! Ready to merge.');
   process.exit(0);
 }

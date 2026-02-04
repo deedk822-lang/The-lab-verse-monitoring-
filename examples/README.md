@@ -53,9 +53,10 @@ This script demonstrates how to use `autogen` and `opik` to create a simple AI a
 
 2.  **Run the script:**
 
-    Execute the script from the root of the repository.
+        Execute the script from the root of the repository.
 
-    ```bash
-    python examples/autogen_opik_weather.py
-    ```
-The script will run, and you will be prompted to configure Opik for telemetry. It will then ask the agent for the weather in New York and print the conversation.
+        ```bash
+        python examples/autogen_opik_weather.py
+        ```
+
+    The script will run, and you will be prompted to configure Opik for telemetry. It will then ask the agent for the weather in New York and print the conversation.

@@ -57,12 +57,12 @@ class OpenAIProvider {
 
   async performResearch(query, options = {}) {
     const researchPrompt = `Research the following topic and provide detailed, accurate information:\n\n${query}\n\nProvide a comprehensive summary with key facts, recent developments, and important considerations.`;
-    
+
     const result = await this.generateText(researchPrompt, {
       ...options,
       maxTokens: 3000
     });
-    
+
     return {
       summary: result.text,
       searchResults: [],
@@ -79,7 +79,7 @@ class OpenAIProvider {
 
     try {
       const size = this.convertAspectRatio(options.aspectRatio || '16:9');
-      
+
       const response = await this.client.images.generate({
         model: 'dall-e-3',
         prompt,
@@ -187,11 +187,11 @@ class OpenAIProvider {
 
   calculateDallE3Cost(size, quality) {
     const pricing = {
-      '1024x1024': { standard: 0.040, hd: 0.080 },
-      '1792x1024': { standard: 0.080, hd: 0.120 },
-      '1024x1792': { standard: 0.080, hd: 0.120 }
+      '1024x1024': { standard: 0.04, hd: 0.08 },
+      '1792x1024': { standard: 0.08, hd: 0.12 },
+      '1024x1792': { standard: 0.08, hd: 0.12 }
     };
-    return pricing[size]?.[quality || 'standard'] || 0.040;
+    return pricing[size]?.[quality || 'standard'] || 0.04;
   }
 
   isEnabled() {

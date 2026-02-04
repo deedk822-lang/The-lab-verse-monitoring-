@@ -3,9 +3,9 @@ import { logger } from '../../monitoring/logger.js';
 export class ConsensusEngine {
   constructor() {
     this.votingStrategies = {
-      'majority': this.majorityVote.bind(this),
-      'weighted': this.weightedVote.bind(this),
-      'unanimous': this.unanimousVote.bind(this),
+      majority: this.majorityVote.bind(this),
+      weighted: this.weightedVote.bind(this),
+      unanimous: this.unanimousVote.bind(this)
     };
   }
 
@@ -13,34 +13,30 @@ export class ConsensusEngine {
    * Analyze consensus from multiple model results
    */
   async analyze(options) {
-    const {
-      results,
-      threshold = 0.66,
-      strategy = 'majority',
-    } = options;
+    const { results, threshold = 0.66, strategy = 'majority' } = options;
 
     // Filter successful results
-    const successful = results
-      .filter(r => r.status === 'fulfilled')
-      .map(r => r.value);
+    const successful = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
 
     if (successful.length === 0) {
       throw new Error('All models failed');
     }
 
     // Extract answers
-    const votes = successful.map(result => ({
+    const votes = successful.map((result) => ({
       model: result.provider,
       answer: this.extractAnswer(result.text),
       confidence: result.confidence || 0.8,
-      reasoning: result.text,
+      reasoning: result.text
     }));
 
     // Apply voting strategy
     const votingFn = this.votingStrategies[strategy];
     const consensus = votingFn(votes, threshold);
 
-    logger.info(`🗳️ Consensus: ${consensus.decision} (${(consensus.confidence * 100).toFixed(1)}% confidence)`);
+    logger.info(
+      `🗳️ Consensus: ${consensus.decision} (${(consensus.confidence * 100).toFixed(1)}% confidence)`
+    );
 
     return {
       decision: consensus.decision,
@@ -49,7 +45,7 @@ export class ConsensusEngine {
       agreement: consensus.agreement,
       strategy,
       totalModels: results.length,
-      successfulModels: successful.length,
+      successfulModels: successful.length
     };
   }
 
@@ -59,7 +55,7 @@ export class ConsensusEngine {
   majorityVote(votes, threshold) {
     const counts = {};
 
-    votes.forEach(vote => {
+    votes.forEach((vote) => {
       counts[vote.answer] = (counts[vote.answer] || 0) + 1;
     });
 
@@ -72,14 +68,14 @@ export class ConsensusEngine {
         decision: null,
         confidence: agreement,
         agreement,
-        reason: 'No consensus reached',
+        reason: 'No consensus reached'
       };
     }
 
     return {
       decision: winner[0],
       confidence: agreement,
-      agreement,
+      agreement
     };
   }
 
@@ -90,7 +86,7 @@ export class ConsensusEngine {
     const weights = {};
     const totalWeight = {};
 
-    votes.forEach(vote => {
+    votes.forEach((vote) => {
       if (!weights[vote.answer]) {
         weights[vote.answer] = 0;
         totalWeight[vote.answer] = 0;
@@ -103,7 +99,7 @@ export class ConsensusEngine {
     const scores = Object.entries(weights).map(([answer, weight]) => ({
       answer,
       score: weight / votes.length,
-      count: totalWeight[answer],
+      count: totalWeight[answer]
     }));
 
     const sorted = scores.sort((a, b) => b.score - a.score);
@@ -114,14 +110,14 @@ export class ConsensusEngine {
         decision: null,
         confidence: winner.score,
         agreement: winner.count / votes.length,
-        reason: 'Weighted consensus not reached',
+        reason: 'Weighted consensus not reached'
       };
     }
 
     return {
       decision: winner.answer,
       confidence: winner.score,
-      agreement: winner.count / votes.length,
+      agreement: winner.count / votes.length
     };
   }
 
@@ -130,14 +126,14 @@ export class ConsensusEngine {
    */
   unanimousVote(votes) {
     const firstAnswer = votes[0].answer;
-    const allAgree = votes.every(v => v.answer === firstAnswer);
+    const allAgree = votes.every((v) => v.answer === firstAnswer);
 
     if (!allAgree) {
       return {
         decision: null,
         confidence: 0,
         agreement: 0,
-        reason: 'Models disagree',
+        reason: 'Models disagree'
       };
     }
 
@@ -146,7 +142,7 @@ export class ConsensusEngine {
     return {
       decision: firstAnswer,
       confidence: avgConfidence,
-      agreement: 1.0,
+      agreement: 1.0
     };
   }
 
@@ -176,15 +172,15 @@ export class ConsensusEngine {
     const patterns = {
       polarized: false,
       nuanced: false,
-      uncertain: false,
+      uncertain: false
     };
 
     // Check for polarization (clear split)
-    const answers = votes.map(v => v.answer);
+    const answers = votes.map((v) => v.answer);
     const unique = [...new Set(answers)];
 
     if (unique.length === 2) {
-      const split = answers.filter(a => a === unique[0]).length / answers.length;
+      const split = answers.filter((a) => a === unique[0]).length / answers.length;
       if (split > 0.4 && split < 0.6) {
         patterns.polarized = true;
       }

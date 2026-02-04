@@ -73,6 +73,7 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
 ### 🎯 MCP Server Integrations
 
 #### Asana
+
 - **Purpose**: Project management and task orchestration
 - **Tools Used**:
   - `asana_list_workspaces` - Get workspaces
@@ -82,6 +83,7 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
   - `asana_typeahead_search` - Search for items
 
 #### Notion
+
 - **Purpose**: Operational command center and documentation
 - **Tools Used**:
   - `search_notion` - Search workspace
@@ -91,6 +93,7 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
   - `query_database` - Retrieve data
 
 #### Airtable
+
 - **Purpose**: Structured data tracking and analytics
 - **Tools Used**:
   - `list_bases` - Get available bases
@@ -100,6 +103,7 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
   - `update_records` - Modify existing data
 
 #### Gmail
+
 - **Purpose**: Email automation and notifications
 - **Tools Used**:
   - `send_email` - Send automated emails
@@ -107,6 +111,7 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
   - `search_emails` - Find messages
 
 #### Hugging Face
+
 - **Purpose**: AI model discovery and deployment
 - **Tools Used**:
   - `model_search` - Find AI models
@@ -125,28 +130,33 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
 ### Quick Start
 
 1. **Clone the repository**
+
    ```bash
    cd ~/The-lab-verse-monitoring-
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Configure environment**
+
    ```bash
    cp .env.mcp .env.mcp.local
    # Edit .env.mcp.local with your actual values
    ```
 
 4. **Run setup wizard**
+
    ```bash
    ./launch-mcp-system.sh
    # Select option 3: Setup Wizard
    ```
 
 5. **Verify setup**
+
    ```bash
    ./launch-mcp-system.sh
    # Select option 4: Run System Verification
@@ -163,11 +173,13 @@ This system integrates **Model Context Protocol (MCP)** servers to create a full
 If the setup wizard doesn't work, manually configure `.env.mcp`:
 
 1. **Get Asana Workspace ID**
+
    ```bash
    manus-mcp-cli tool call asana_list_workspaces --server asana --input '{}'
    ```
 
 2. **Create Asana Projects**
+
    ```bash
    # Content Pipeline
    manus-mcp-cli tool call asana_create_project --server asana --input '{
@@ -175,21 +187,21 @@ If the setup wizard doesn't work, manually configure `.env.mcp`:
      "name": "Lab-Verse: Content Pipeline",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # SEO Recovery
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",
      "name": "Lab-Verse: SEO Recovery",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # Crisis Response
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",
      "name": "Lab-Verse: Crisis Response",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # Client Onboarding
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",
@@ -199,6 +211,7 @@ If the setup wizard doesn't work, manually configure `.env.mcp`:
    ```
 
 3. **Get Airtable Base ID**
+
    ```bash
    manus-mcp-cli tool call list_bases --server airtable --input '{}'
    ```
@@ -240,34 +253,34 @@ await orchestrator.initialize();
 
 // Handle SEO ranking drop
 await orchestrator.handleSEORankingDrop(
-  'african trade policy',  // keyword
-  3,                        // previous position
-  8,                        // current position
+  'african trade policy', // keyword
+  3, // previous position
+  8, // current position
   'https://example.com/article'
 );
 
 // Amplify high-performing content
 await orchestrator.amplifyHighPerformingContent(
-  'Breaking Trade News',    // title
+  'Breaking Trade News', // title
   'https://example.com/news', // url
-  0.18,                     // click rate (18%)
-  250                       // total clicks
+  0.18, // click rate (18%)
+  250 // total clicks
 );
 
 // Handle crisis event
 await orchestrator.handleCrisisEvent(
   'Trade embargo announced', // description
-  85,                        // urgency score
+  85, // urgency score
   ['South Africa', 'Nigeria'] // affected regions
 );
 
 // Onboard B2B client
 await orchestrator.onboardB2BClient(
-  'client@company.com',     // email
-  'Acme Corp',              // name
-  'Data Intelligence',      // product
-  5000,                     // amount
-  'TXN123456'              // transaction ID
+  'client@company.com', // email
+  'Acme Corp', // name
+  'Data Intelligence', // product
+  5000, // amount
+  'TXN123456' // transaction ID
 );
 
 // Generate weekly report
@@ -281,12 +294,14 @@ await orchestrator.generateWeeklyReport();
 **Trigger**: RankYak detects ranking drop > 5 positions
 
 **Steps**:
+
 1. Log event in Airtable `SEO Rankings` table
 2. Create urgent task in Asana `SEO Recovery` project
 3. Update Notion `System Metrics` database
 4. Send email alert to stakeholders
 
 **Expected Outcome**:
+
 - Task created with 2-day deadline
 - Team notified within 1 minute
 - Dashboard updated in real-time
@@ -296,12 +311,14 @@ await orchestrator.generateWeeklyReport();
 **Trigger**: MailChimp reports CTR > 15%
 
 **Steps**:
+
 1. Store metrics in Airtable `Content Performance` table
 2. Create amplification task in Asana `Content Pipeline` project
 3. Log in Notion `Content Performance` database
 4. Send team notification
 
 **Expected Outcome**:
+
 - Content queued for social amplification
 - Similar content creation task generated
 - Performance tracked for analysis
@@ -311,12 +328,14 @@ await orchestrator.generateWeeklyReport();
 **Trigger**: Tax Collector detects GDELT urgency score > 75
 
 **Steps**:
+
 1. Create crisis page in Notion `Crisis Events` database
 2. Generate urgent task in Asana `Crisis Response` project
 3. Store in Airtable `Crisis Events` table
 4. Send immediate alert to all stakeholders
 
 **Expected Outcome**:
+
 - Crisis validated within 30 minutes
 - Content generated within 2 hours
 - Published to WordPress within 4 hours
@@ -326,12 +345,14 @@ await orchestrator.generateWeeklyReport();
 **Trigger**: PayPal payment received webhook
 
 **Steps**:
+
 1. Create client record in Airtable `B2B Clients` table
 2. Build client page in Notion `Clients` database
 3. Generate 5 onboarding tasks in Asana
 4. Send welcome email with next steps
 
 **Expected Outcome**:
+
 - Client onboarded within 24 hours
 - First report delivered within 48 hours
 - Onboarding call scheduled
@@ -341,6 +362,7 @@ await orchestrator.generateWeeklyReport();
 **Trigger**: Scheduled (Monday 9 AM)
 
 **Steps**:
+
 1. Aggregate metrics from Airtable
 2. Calculate KPIs (revenue, ROAS, CTR)
 3. Create report in Notion
@@ -348,6 +370,7 @@ await orchestrator.generateWeeklyReport();
 5. Create follow-up task in Asana
 
 **Expected Outcome**:
+
 - Comprehensive weekly report
 - Actionable insights identified
 - Next week's strategy planned
@@ -424,18 +447,21 @@ NODE_ENV=development node src/mcp-orchestrator.js
 ## Roadmap
 
 ### Phase 1 (Current)
+
 - ✅ Core MCP integrations
 - ✅ 5 automated workflows
 - ✅ Setup wizard
 - ✅ Documentation
 
 ### Phase 2 (Next)
+
 - ⏳ Hugging Face model integration
 - ⏳ Image generation pipeline
 - ⏳ Advanced analytics dashboard
 - ⏳ Webhook receivers
 
 ### Phase 3 (Future)
+
 - 📋 Machine learning predictions
 - 📋 Natural language task creation
 - 📋 Voice-activated workflows

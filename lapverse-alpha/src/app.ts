@@ -33,10 +33,13 @@ export class App {
           route: req.route?.path || req.path,
           status_code: res.statusCode
         });
-        metrics.httpRequestDuration.observe({
+        metrics.httpRequestDuration.observe(
+          {
             method: req.method,
             route: req.route?.path || req.path
-        }, duration);
+          },
+          duration
+        );
       });
 
       next();
@@ -64,10 +67,12 @@ export class App {
   }
 
   private setupErrorHandling(): void {
-    this.app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      logger.error('Unhandled error', { error: err.message, stack: err.stack });
-      res.status(500).json({ error: 'Internal server error' });
-    });
+    this.app.use(
+      (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        logger.error('Unhandled error', { error: err.message, stack: err.stack });
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    );
   }
 
   async start(): Promise<void> {

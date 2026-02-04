@@ -13,6 +13,7 @@ This file defines the baseline costs and limits for AI providers to prevent unex
 ### Usage:
 
 The price-gate workflow automatically validates that:
+
 - No provider costs exceed baseline
 - Monthly budget stays within limits
 - Daily token usage is monitored

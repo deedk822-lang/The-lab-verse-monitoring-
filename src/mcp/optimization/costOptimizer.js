@@ -18,7 +18,7 @@ export class CostOptimizer {
       cost,
       tokens,
       timestamp,
-      date: new Date(timestamp).toISOString(),
+      date: new Date(timestamp).toISOString()
     };
 
     this.costs.push(record);
@@ -41,15 +41,15 @@ export class CostOptimizer {
    */
   calculateCost(provider, usage) {
     const pricing = {
-      'openai': { input: 0.03, output: 0.06 },
-      'anthropic': { input: 0.015, output: 0.075 },
-      'gemini': { input: 0.00125, output: 0.005 },
-      'mistral': { input: 0.002, output: 0.006 },
-      'groq': { input: 0.0005, output: 0.0008 },
-      'deepseek': { input: 0.0001, output: 0.0002 },
-      'perplexity': { input: 0.001, output: 0.005 },
-      'moonshot': { input: 0.0002, output: 0.0004 },
-      'glm': { input: 0.0001, output: 0.0003 },
+      openai: { input: 0.03, output: 0.06 },
+      anthropic: { input: 0.015, output: 0.075 },
+      gemini: { input: 0.00125, output: 0.005 },
+      mistral: { input: 0.002, output: 0.006 },
+      groq: { input: 0.0005, output: 0.0008 },
+      deepseek: { input: 0.0001, output: 0.0002 },
+      perplexity: { input: 0.001, output: 0.005 },
+      moonshot: { input: 0.0002, output: 0.0004 },
+      glm: { input: 0.0001, output: 0.0003 }
     };
 
     const rates = pricing[provider];
@@ -69,7 +69,7 @@ export class CostOptimizer {
       limit,
       period,
       spent: 0,
-      lastReset: Date.now(),
+      lastReset: Date.now()
     });
 
     logger.info(`💰 Budget set: ${provider} = $${limit}/${period}`);
@@ -103,7 +103,9 @@ export class CostOptimizer {
     }
 
     if (percentage >= 100) {
-      logger.error(`🚨 CRITICAL: ${provider} exceeded budget! ($${budget.spent.toFixed(2)}/$${budget.limit})`);
+      logger.error(
+        `🚨 CRITICAL: ${provider} exceeded budget! ($${budget.spent.toFixed(2)}/$${budget.limit})`
+      );
       throw new Error(`Budget exceeded for ${provider}`);
     }
   }
@@ -114,23 +116,23 @@ export class CostOptimizer {
   async getSummary(period = 'day') {
     const now = Date.now();
     const periodMs = {
-      'hour': 3600000,
-      'day': 86400000,
-      'week': 604800000,
-      'month': 2592000000,
+      hour: 3600000,
+      day: 86400000,
+      week: 604800000,
+      month: 2592000000
     }[period];
 
-    const recentCosts = this.costs.filter(c => now - c.timestamp < periodMs);
+    const recentCosts = this.costs.filter((c) => now - c.timestamp < periodMs);
 
     const byProvider = {};
     let total = 0;
 
-    recentCosts.forEach(record => {
+    recentCosts.forEach((record) => {
       if (!byProvider[record.provider]) {
         byProvider[record.provider] = {
           cost: 0,
           calls: 0,
-          tokens: 0,
+          tokens: 0
         };
       }
 
@@ -146,7 +148,7 @@ export class CostOptimizer {
       total,
       byProvider,
       callCount: recentCosts.length,
-      avgCostPerCall: recentCosts.length > 0 ? total / recentCosts.length : 0,
+      avgCostPerCall: recentCosts.length > 0 ? total / recentCosts.length : 0
     };
   }
 
@@ -161,7 +163,7 @@ export class CostOptimizer {
       nextHour: hourly.total,
       nextDay: hourly.total * 24,
       nextWeek: daily.total * 7,
-      nextMonth: daily.total * 30,
+      nextMonth: daily.total * 30
     };
   }
 
@@ -182,7 +184,7 @@ export class CostOptimizer {
           type: 'cost-reduction',
           provider,
           message: `Consider using cheaper alternatives for simple tasks. Current avg: $${avgCost.toFixed(4)}/call`,
-          savings: (avgCost - 0.001) * stats.calls,
+          savings: (avgCost - 0.001) * stats.calls
         });
       }
 
@@ -192,7 +194,7 @@ export class CostOptimizer {
           type: 'caching',
           provider,
           message: `Enable caching to reduce costs. Potential savings: $${(stats.cost * 0.3).toFixed(2)}`,
-          savings: stats.cost * 0.3,
+          savings: stats.cost * 0.3
         });
       }
     }

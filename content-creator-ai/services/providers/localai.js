@@ -1,7 +1,6 @@
 const axios = require('axios');
 const config = require('../../config/config');
 const logger = require('../../utils/logger');
-const costTracker = require('../../utils/cost-tracker');
 
 class LocalAIProvider {
   constructor() {
@@ -11,26 +10,32 @@ class LocalAIProvider {
 
   async generateText(prompt, options = {}) {
     if (!this.enabled) {
-      throw new Error('LocalAI provider not enabled. Please set LOCALAI_ENABLED=true and configure LOCALAI_URL.');
+      throw new Error(
+        'LocalAI provider not enabled. Please set LOCALAI_ENABLED=true and configure LOCALAI_URL.'
+      );
     }
 
     try {
       // LocalAI supports OpenAI-compatible API
-      const response = await axios.post(`${this.baseUrl}/v1/chat/completions`, {
-        model: options.model || config.providers.localai.models.text,
-        messages: [
-          { role: 'system', content: 'You are a helpful AI assistant for content creation.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 2048,
-        stream: false
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${this.baseUrl}/v1/chat/completions`,
+        {
+          model: options.model || config.providers.localai.models.text,
+          messages: [
+            { role: 'system', content: 'You are a helpful AI assistant for content creation.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 2048,
+          stream: false
         },
-        timeout: 60000
-      });
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
 
       const text = response.data.choices[0].message.content;
       const usage = response.data.usage || {};
@@ -50,16 +55,18 @@ class LocalAIProvider {
       };
     } catch (error) {
       logger.error('LocalAI text generation error:', error.message);
-      throw new Error(`LocalAI error: ${error.message}. Make sure LocalAI is running at ${this.baseUrl}`);
+      throw new Error(
+        `LocalAI error: ${error.message}. Make sure LocalAI is running at ${this.baseUrl}`
+      );
     }
   }
 
   async performResearch(query, options = {}) {
     // LocalAI doesn't have built-in search, so we use the LLM's knowledge
     const researchPrompt = `Research and provide detailed information about: ${query}\n\nProvide a comprehensive summary with key facts and important details.`;
-    
+
     const result = await this.generateText(researchPrompt, options);
-    
+
     return {
       summary: result.text,
       searchResults: [],
@@ -76,14 +83,18 @@ class LocalAIProvider {
 
     try {
       // LocalAI supports Stable Diffusion and other image models
-      const response = await axios.post(`${this.baseUrl}/v1/images/generations`, {
-        prompt,
-        model: options.model || 'stablediffusion',
-        size: this.convertAspectRatio(options.aspectRatio || '16:9'),
-        n: 1
-      }, {
-        timeout: 120000 // Image generation can take longer
-      });
+      const response = await axios.post(
+        `${this.baseUrl}/v1/images/generations`,
+        {
+          prompt,
+          model: options.model || 'stablediffusion',
+          size: this.convertAspectRatio(options.aspectRatio || '16:9'),
+          n: 1
+        },
+        {
+          timeout: 120000 // Image generation can take longer
+        }
+      );
 
       const imageUrl = response.data.data[0].url;
 
@@ -108,14 +119,18 @@ class LocalAIProvider {
 
     try {
       // LocalAI supports TTS with models like Piper
-      const response = await axios.post(`${this.baseUrl}/tts`, {
-        input: text,
-        model: config.providers.localai.models.tts || 'piper',
-        voice: options.voice || 'default'
-      }, {
-        responseType: 'arraybuffer',
-        timeout: 60000
-      });
+      const response = await axios.post(
+        `${this.baseUrl}/tts`,
+        {
+          input: text,
+          model: config.providers.localai.models.tts || 'piper',
+          voice: options.voice || 'default'
+        },
+        {
+          responseType: 'arraybuffer',
+          timeout: 60000
+        }
+      );
 
       // In a real implementation, you'd save this to a file or cloud storage
       const audioBuffer = Buffer.from(response.data);

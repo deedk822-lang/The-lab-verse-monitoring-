@@ -95,6 +95,7 @@ similar = service.find_similar(document_id=0, top_k=5)
 ```
 
 **Key Methods:**
+
 - `embed_texts(texts)` - Generate embeddings
 - `build_index(documents)` - Build search index
 - `search(query, top_k)` - Semantic search
@@ -130,6 +131,7 @@ print(response['documents'])  # Source documents
 ```
 
 **Key Methods:**
+
 - `index_documents(documents)` - Index knowledge base
 - `rerank_documents(query, docs)` - Rerank results
 - `generate_response(query)` - RAG with citations
@@ -159,6 +161,7 @@ viz_data = service.visualize_clusters(documents)
 ```
 
 **Key Methods:**
+
 - `cluster_documents(docs, n_clusters)` - Cluster documents
 - `visualize_clusters(docs)` - 2D visualization data
 
@@ -217,7 +220,7 @@ Your JSON documents should have this structure:
     "id": 1,
     "text": "Main content here",
     "title": "Document Title",
-    "metadata": {"author": "John", "date": "2024-01-01"}
+    "metadata": { "author": "John", "date": "2024-01-01" }
   },
   {
     "id": 2,
@@ -228,9 +231,11 @@ Your JSON documents should have this structure:
 ```
 
 **Required fields:**
+
 - `text` (or specify with `--text-field`)
 
 **Optional fields:**
+
 - `title` - Document title
 - `id` - Unique identifier
 - Any other metadata you want to preserve
@@ -368,6 +373,7 @@ pytest tests/test_semantic_search_rag.py --cov=services/semantic_search_rag
 ```
 
 **Test Coverage:**
+
 - ✅ Semantic search (10 tests)
 - ✅ RAG service (8 tests)
 - ✅ Content clustering (6 tests)
@@ -378,13 +384,13 @@ pytest tests/test_semantic_search_rag.py --cov=services/semantic_search_rag
 
 ### Benchmarks
 
-| Operation | Documents | Time | Memory |
-|-----------|-----------|------|--------|
-| Index building | 1,000 | ~5s | ~100MB |
-| Index building | 10,000 | ~30s | ~500MB |
-| Search (Annoy) | 10,000 | <10ms | Minimal |
-| RAG response | 10,000 | ~2s | Minimal |
-| Clustering | 1,000 | ~10s | ~200MB |
+| Operation      | Documents | Time  | Memory  |
+| -------------- | --------- | ----- | ------- |
+| Index building | 1,000     | ~5s   | ~100MB  |
+| Index building | 10,000    | ~30s  | ~500MB  |
+| Search (Annoy) | 10,000    | <10ms | Minimal |
+| RAG response   | 10,000    | ~2s   | Minimal |
+| Clustering     | 1,000     | ~10s  | ~200MB  |
 
 ### Optimization Tips
 
@@ -457,6 +463,7 @@ for cluster_id in result['cluster_keywords'].keys():
 ### "COHERE_API_KEY must be set"
 
 **Solution**: Services work in mock mode without keys for testing:
+
 ```python
 # Works without API key
 service = SemanticSearchService()
@@ -466,6 +473,7 @@ service.available  # False (mock mode)
 ### Slow Search Performance
 
 **Solutions**:
+
 1. Use Annoy backend: `backend="annoy"`
 2. Reduce embedding dimensions (not recommended)
 3. Limit search results: `top_k=10` instead of 100
@@ -474,6 +482,7 @@ service.available  # False (mock mode)
 ### Out of Memory
 
 **Solutions**:
+
 1. Process documents in batches
 2. Use smaller embedding batches (default: 90)
 3. Clear embeddings after indexing if not needed
@@ -482,6 +491,7 @@ service.available  # False (mock mode)
 ### Annoy Installation Issues
 
 **Solution**: Annoy is optional:
+
 ```bash
 # If Annoy fails to install
 # System will automatically fall back to brute force search
@@ -633,4 +643,4 @@ filtered = [r for r in results if r.get('category') == 'tutorial']
 
 **Built with ❤️ by Vaal AI Empire**
 
-*Intelligent search for intelligent content* 🚀
+_Intelligent search for intelligent content_ 🚀

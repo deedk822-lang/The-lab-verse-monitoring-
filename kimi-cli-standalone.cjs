@@ -5,8 +5,8 @@
  * Standalone version without external dependencies
  */
 
+/* eslint-disable no-console */
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
 const http = require('http');
 
@@ -53,10 +53,6 @@ const printError = (message) => {
 
 const printWarning = (message) => {
   console.log(`${colors.yellow}⚠ ${message}${colors.reset}`);
-};
-
-const printInfo = (message) => {
-  console.log(`${colors.blue}ℹ ${message}${colors.reset}`);
 };
 
 const printData = (label, value) => {

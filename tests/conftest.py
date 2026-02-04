@@ -5,12 +5,8 @@ Ensures tests import from correct source path.
 """
 
 import sys
-from pathlib import Path
- codex/add-initial-configuration-and-server-files
-
-
 import os
- codex/add-mypy-configuration-and-server-components
+from pathlib import Path
 import pytest
 from pytest import fixture
 
@@ -39,10 +35,7 @@ def src_path():
     """Return src directory path."""
     return repo_root / "src"
 
- codex/add-initial-configuration-and-server-files
 
-
- codex/add-mypy-configuration-and-server-components
 @pytest.fixture(scope="session", autouse=True)
 def configure_env():
     """Set required environment variables for tests."""
@@ -56,10 +49,7 @@ def configure_env():
 
     yield
 
- codex/add-initial-configuration-and-server-files
 
-
- codex/add-mypy-configuration-and-server-components
 @pytest.fixture
 def client():
     """Fixture to provide the test client"""

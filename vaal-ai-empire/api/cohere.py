@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 import os
 from typing import Dict, List, Optional
@@ -86,9 +87,11 @@ class CohereAPI:
             raise e
 
     def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
-        """Generate email sequence for MailChimp"""
-        sequence = []
-        for day in range(1, days + 1):
+        """
+        Generate email sequence for MailChimp.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate emails concurrently.
+        """
+        def _generate_single_day(day):
             prompt = f"Write day {day} of a {days}-day email sequence for a {business_type} in South Africa. Include subject line."
             result = self.generate_content(prompt, max_tokens=300)
 
@@ -96,9 +99,17 @@ class CohereAPI:
             subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
             body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
 
-            sequence.append({
+            return {
                 "day": day,
                 "subject": subject,
                 "body": body
-            })
+            }
+
+        sequence = [None] * days
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(days, 5)) as executor:
+            future_to_day = {executor.submit(_generate_single_day, d): d for d in range(1, days + 1)}
+            for future in concurrent.futures.as_completed(future_to_day):
+                day = future_to_day[future]
+                sequence[day-1] = future.result()
+
         return sequence

@@ -52,6 +52,8 @@ async def test_stream_agent_response_ollama_error(monkeypatch):
     assert exc.value.status_code == 502
     assert "connection failed" in exc.value.detail
 
+
+@pytest.mark.asyncio
 async def test_stream_agent_response_error(monkeypatch):
     def bad_generate(*_args, **_kwargs):
         """

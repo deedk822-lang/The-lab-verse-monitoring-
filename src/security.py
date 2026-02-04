@@ -43,7 +43,7 @@ class SecurityValidator:
 
         # Resolve the path
         try:
-            target_path = (self.repo_path / user_path).resolve()
+            target_path = self.repo_path / Path(user_path).resolve()
         except Exception as e:
             raise SecurityError(f"Invalid path: {user_path}") from e
 
@@ -118,7 +118,6 @@ class SecurityValidator:
             raise SecurityError("Null byte in input")
 
         return user_input.strip()
-
 
 class InputValidator:
     """Additional input validation utilities"""

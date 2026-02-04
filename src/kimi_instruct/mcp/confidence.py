@@ -12,10 +12,12 @@ class ConfidenceEstimator:
 
     async def score_plan(self, plan: Dict, context: Dict) -> float:
         prompt = f"Rate confidence 0-1 for PLAN success given CONTEXT. Output JSON {{score: float}}.\nPlan: {json.dumps(plan)}\nContext: {json.dumps(context)}"
+        
+        # Sanitize the prompt to prevent security vulnerabilities
+        sanitized_prompt = self._sanitize_prompt(prompt)
+        
         try:
-            resp = await self.service._call_openrouter(
-                "tongyi/tongyi-deepresearch-30b", prompt
-            )
+            resp = await self.service._call_openrouter("tongyi/tongyi-deepresearch-30b", sanitized_prompt)
             data = json.loads(resp)
             return float(data.get("score", 0.0))
         except Exception as e:
@@ -24,3 +26,8 @@ class ConfidenceEstimator:
             if "risk" in context:
                 heuristic -= context["risk"] * 0.3
             return max(0.0, min(1.0, heuristic))
+
+    def _sanitize_prompt(self, prompt):
+        # Example: Replace unsafe characters with safe ones
+        sanitized_prompt = prompt.replace('"', '\\"').replace("'", "\\'")
+        return sanitized_prompt

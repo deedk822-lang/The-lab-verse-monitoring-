@@ -6,7 +6,7 @@ PROVIDES: Single pr-fix-agent command with subcommands
 
 import argparse
 import sys
-from pathlib import Path
+import subprocess
 
 import structlog
 
@@ -47,14 +47,13 @@ def health_check() -> int:
 
     # Check 3: Required tools
     print("\n3. Checking required tools...")
-    import shutil
-    tools = {
+    required_tools = {
         "pytest": "pytest",
         "git": "git"
     }
 
     all_found = True
-    for name, cmd in tools.items():
+    for name, cmd in required_tools.items():
         if shutil.which(cmd):
             print(f"   ✅ {name} found")
         else:

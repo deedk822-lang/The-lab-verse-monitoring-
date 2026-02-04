@@ -1,0 +1,29 @@
+from .embodied.sandbox_runner import SandboxRunner
+from .ethics.multiobj_reward import MultiObjReward
+from .ethics.policy_gate import PolicyGate
+from .mcp.mcp_core import MCPCore
+
+
+class RecursiveUSAA:
+    def __init__(self, base_service):
+        self.base = base_service
+        self.mcp = MCPCore(base_service)
+        self.sandbox = SandboxRunner(base_service)
+        self.gate = PolicyGate(base_service)
+        self.reward = MultiObjReward(base_service)
+
+    async def run_recursive(self, goal: str, ctx: dict) -> dict:
+        plan = await self.base.run_usaa_goal(goal, ctx)
+        refined, _ = await self.mcp.validate_and_refine(goal, plan, ctx)
+        sandbox = await self.sandbox.run_plan(refined, dry_run=ctx.get("dry_run", True))
+        metrics = {
+            "success": all(s.get("status") == "ok" for s in sandbox),
+            "risk": 0.1,
+        }
+        ok, viol = self.gate.check(metrics)
+        if not ok:
+            return {"status": "halted", "violations": viol, "cost": 0.0}
+        reward = self.reward.score(metrics)
+        if ctx.get("dry_run_only"):
+            return {"status": "sandbox_ok", "reward": reward, "cost": 0.0}
+        return await self.base.run_usaa_goal(goal, {**ctx, "refined_plan": refined})

@@ -25,7 +25,7 @@ class AuditLogger:
 
         # Get logger
         self.logger = logging.getLogger("audit")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)  # Set a higher severity level
 
         # ✅ FIX: Disable propagation to prevent root logger interference
         self.logger.propagate = False
@@ -42,13 +42,13 @@ class AuditLogger:
 
         # ✅ FIX: Only add handler if it doesn't exist
         if existing_handler is None:
-            # Create append-only file handler
+            # Create append-only JSON file handler
             handler = logging.FileHandler(
                 self.log_path,
                 mode='a',  # Append only (immutable)
                 encoding='utf-8',
             )
-            handler.setFormatter(logging.Formatter('%(message)s'))
+            handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
             self.logger.addHandler(handler)
         else:

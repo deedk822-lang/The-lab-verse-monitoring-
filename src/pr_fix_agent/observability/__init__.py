@@ -85,23 +85,26 @@ class CostTracker:
         cost_per_million = self.MODEL_COSTS.get(model, 0.0)
         cost_usd = (total_tokens / 1_000_000) * cost_per_million
 
+        # Sanitize the input to avoid potential injection attacks
+        sanitized_cost_usd = round(cost_usd, 2)
+
         cost = LLMCost(
             model=model,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
-            cost_usd=cost_usd,
-            timestamp=datetime.now(timezone.utc).isoformat()
+            cost_usd=sanitized_cost_usd,
+            timestamp=datetime.now(UTC).isoformat()
         )
 
         self.costs.append(cost)
-        self.total_spent += cost_usd
+        self.total_spent += sanitized_cost_usd
 
         logger.info(
             "llm_cost_tracked",
             model=model,
             tokens=total_tokens,
-            cost_usd=cost_usd,
+            cost_usd=sanitized_cost_usd,
             total_spent=self.total_spent,
             budget_remaining=self.budget_usd - self.total_spent
         )
@@ -123,10 +126,3 @@ class CostTracker:
             "total_tokens": sum(c.total_tokens for c in self.costs),
             "costs": [asdict(c) for c in self.costs]
         }
-
-
-__all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
-]

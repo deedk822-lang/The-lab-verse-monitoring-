@@ -16,13 +16,13 @@ from src.anomaly_detection.enhanced_alerting import (
     EnhancedAlertingSystem,
 )
 
-from src.anomaly_detection.explainability import (
-    AdvancedExplainabilityEngine,
+# Configure logging with more detailed settings
+logging.basicConfig(
+    level=logging.INFO,
+    filename="app.log",
+    filemode="w",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # --- Application Setup ---
 app = FastAPI(
@@ -38,37 +38,31 @@ cloud_detector = MultiCloudAnomalyDetector(
     cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
 )
 alerting_system = EnhancedAlertingSystem()
-explainer = None
-
 
 # --- Lifecycle Events ---
 @app.on_event("startup")
 async def startup_event():
     """Actions to take on application startup."""
-    global explainer
     logger.info("Anomaly Detection Service is starting up.")
-    if not os.environ.get("PYTEST_RUNNING"):
+    try:
         background_data = np.random.rand(10, 10, 1)
         explainer = AdvancedExplainabilityEngine(
             model=lstm_model, training_data=background_data
         )
         logger.info("Explainability engine initialized.")
-    else:
-        logger.warning("Explainability engine not initialized in test environment.")
-
+    except Exception as e:
+        logger.error(f"Error initializing explainability engine: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Actions to take on application shutdown."""
     logger.info("Anomaly Detection Service is shutting down.")
 
-
 # --- API Endpoints ---
 @app.get("/health", summary="Health Check", tags=["Infrastructure"])
 async def health_check():
     """Health check endpoint to ensure the service is running."""
     return {"status": "ok"}
-
 
 @app.post(
     "/detect/timeseries",
@@ -86,7 +80,6 @@ async def detect_timeseries_anomalies(data: dict):
     except Exception as e:
         logger.error(f"Error in timeseries detection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post(
     "/detect/multi-cloud",
@@ -107,14 +100,12 @@ async def detect_multi_cloud_anomalies(data: dict):
         logger.error(f"Error in multi-cloud detection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/explain", summary="Explain a detected anomaly", tags=["Explainability"])
 async def explain_anomaly(data: dict):
     """Provide a detailed explanation for an anomalous data point."""
     if explainer is None:
-        raise HTTPException(
-            status_code=503, detail="Explainability engine is not available."
-        )
+        logger.warning("Explainability engine is not available.")
+        return {"error": "Explainability engine is not available."}
     try:
         sample = np.array(data["sample"])
         context = data.get("context")
@@ -123,7 +114,6 @@ async def explain_anomaly(data: dict):
     except Exception as e:
         logger.error(f"Error in explanation endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post(
     "/alert", summary="Trigger an enhanced alert for an anomaly", tags=["Alerting"]

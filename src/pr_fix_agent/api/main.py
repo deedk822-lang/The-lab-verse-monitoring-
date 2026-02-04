@@ -22,7 +22,6 @@ from pr_fix_agent.db.session import close_db
 logger = structlog.get_logger()
 settings = get_settings()
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging(settings)

@@ -1,18 +1,12 @@
-"""
-Model Selection logic
-Issue Fixed: #21: Budget-aware model selection
-"""
-
 from dataclasses import dataclass
 from typing import List, Optional
-
 
 @dataclass
 class ModelSpec:
     """Model specification"""
     name: str
     provider: str  # ollama, openai, anthropic
-    cost_per_million_tokens: float
+    cost_per_million_tokens: float  # 1-10
     quality_score: int  # 1-10
     speed_score: int  # 1-10
     context_window: int
@@ -115,7 +109,7 @@ class ModelSelector:
         # Filter by budget
         affordable = [
             m for m in candidates
-            if m.cost_per_million_tokens <= budget_remaining or m.cost_per_million_tokens == 0.0
+            if isinstance(m.cost_per_million_tokens, float) and (m.cost_per_million_tokens <= budget_remaining or m.cost_per_million_tokens == 0.0)
         ]
 
         if not affordable:

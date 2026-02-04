@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import socket
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -80,7 +80,7 @@ class SSRFBlocker:
         except Exception as e:
             return False, f"Error validating URL: {e}"
 
-    def validate_request(self, request: Union[httpx.Request, requests.PreparedRequest]) -> None:
+    def validate_request(self, request: httpx.Request | requests.PreparedRequest) -> None:
         """
         Validate request before sending.
 

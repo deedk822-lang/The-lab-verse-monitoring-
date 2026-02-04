@@ -1,8 +1,7 @@
 import argparse
+from datetime import datetime
 import json
 import os
-from datetime import datetime
-from typing import Dict, List, Optional
 
 import cohere
 import numpy as np
@@ -19,8 +18,8 @@ class EnhancedKeywordResearchService:
 
     def __init__(
         self,
-        cohere_key: Optional[str] = None,
-        perplexity_key: Optional[str] = None,
+        cohere_key: str | None = None,
+        perplexity_key: str | None = None,
         cohere_model: str = "command-r-plus-08-2024",
         perplexity_model: str = "llama-3.1-sonar-large-128k-online"
     ):
@@ -63,7 +62,7 @@ class EnhancedKeywordResearchService:
 
         return df
 
-    def embed_keywords(self, keywords: List[str]) -> np.ndarray:
+    def embed_keywords(self, keywords: list[str]) -> np.ndarray:
         """Generate embeddings using Cohere."""
         response = self.co.embed(
             texts=keywords,
@@ -77,7 +76,7 @@ class EnhancedKeywordResearchService:
         kmeans = KMeans(n_clusters=num_topics, random_state=42, n_init="auto")
         return kmeans.fit_predict(embeddings)
 
-    def generate_topic_name(self, keywords: List[str]) -> str:
+    def generate_topic_name(self, keywords: list[str]) -> str:
         """Generate topic name using Cohere."""
         prompt = f"""Generate a concise, SEO-friendly topic name (3-5 words) that represents these keywords.
 Provide ONLY the topic name, nothing else.
@@ -95,7 +94,7 @@ Keywords: {', '.join(keywords[:20])}"""
             print(f"Error generating topic name: {e}")
             return f"Topic: {keywords[0][:30]}"
 
-    def deep_search_topic(self, topic_name: str, keywords: List[str], search_volume: int) -> Dict:
+    def deep_search_topic(self, topic_name: str, keywords: list[str], search_volume: int) -> dict:
         """
         Use Perplexity to perform deep search on a topic cluster.
 
@@ -218,9 +217,9 @@ Focus on actionable insights for content creation. Search volume: {search_volume
     def generate_content_brief(
         self,
         topic_name: str,
-        keywords: List[str],
-        perplexity_insights: Dict
-    ) -> Dict:
+        keywords: list[str],
+        perplexity_insights: dict
+    ) -> dict:
         """
         Generate a detailed content brief using Cohere based on Perplexity insights.
         """
@@ -284,7 +283,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
         num_topics: int = 4,
         enable_deep_search: bool = True,
         deep_search_top_n: int = 3
-    ) -> Dict:
+    ) -> dict:
         """
         Complete pipeline: keyword clustering + Perplexity deep search.
 
@@ -341,7 +340,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
         if enable_deep_search:
             print(f"\n🔍 Performing Perplexity deep search on top {deep_search_top_n} topics...")
 
-            for idx, row in topic_summary.head(deep_search_top_n).iterrows():
+            for _idx, row in topic_summary.head(deep_search_top_n).iterrows():
                 topic_id = row['topic_id']
                 topic_name = row['topic_name']
                 keywords = topic_keywords[topic_id]
@@ -393,7 +392,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
 
     def export_results(
         self,
-        results: Dict,
+        results: dict,
         output_dir: str = "keyword_research_output"
     ):
         """

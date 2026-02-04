@@ -4,7 +4,6 @@ Proper library structure for error parsing and analysis
 """
 
 import re
-from typing import Dict, List
 
 
 class PRErrorAnalyzer:
@@ -37,7 +36,7 @@ class PRErrorAnalyzer:
             r"DeprecationWarning: (.+)",
         ]
 
-    def parse_github_actions_log(self, log_content: str) -> Dict[str, List[str]]:
+    def parse_github_actions_log(self, log_content: str) -> dict[str, list[str]]:
         """
         Parse GitHub Actions log to extract errors and warnings
 
@@ -70,7 +69,7 @@ class PRErrorAnalyzer:
             "warnings": warnings
         }
 
-    def analyze_error(self, error: str) -> Dict[str, str]:
+    def analyze_error(self, error: str) -> dict[str, str]:
         """
         Analyze specific error using AI agent
 
@@ -183,7 +182,7 @@ Be concise and specific."""
                 return line.strip()
         return "No fix suggested"
 
-    def get_error_context(self, log_content: str, error_line: str, context_lines: int = 3) -> List[str]:
+    def get_error_context(self, log_content: str, error_line: str, context_lines: int = 3) -> list[str]:
         """
         Get context lines around an error
 
@@ -225,7 +224,7 @@ class ErrorStatistics:
         # Count by severity
         self.severity_counts[severity] = self.severity_counts.get(severity, 0) + 1
 
-    def get_most_common_errors(self, top_n: int = 5) -> List[tuple]:
+    def get_most_common_errors(self, top_n: int = 5) -> list[tuple]:
         """Get most common errors"""
         sorted_errors = sorted(
             self.error_counts.items(),
@@ -234,7 +233,7 @@ class ErrorStatistics:
         )
         return sorted_errors[:top_n]
 
-    def get_summary(self) -> Dict:
+    def get_summary(self) -> dict:
         """Get summary statistics"""
         return {
             "total_errors": sum(self.error_counts.values()),

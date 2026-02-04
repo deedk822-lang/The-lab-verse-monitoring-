@@ -3,10 +3,11 @@ Security module for PR Fix Agent.
 """
 
 import json
+from pathlib import Path
 import re
 import threading
 import time
-from pathlib import Path
+
 
 class SecurityError(Exception):
     """Security validation error"""
@@ -84,10 +85,7 @@ class InputValidator:
             r'eval\s*\(',
             r'exec\s*\(',
         ]
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-        return True
+        return all(not re.search(pattern, data) for pattern in dangerous_patterns)
 
     @staticmethod
     def validate_url(url: str) -> bool:
@@ -120,8 +118,8 @@ class RateLimiter:
 
 
 __all__ = [
-    'SecurityError',
-    'SecurityValidator',
     'InputValidator',
     'RateLimiter',
+    'SecurityError',
+    'SecurityValidator',
 ]

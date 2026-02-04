@@ -4,13 +4,13 @@ REAL Benchmarking System - Actually Measures Performance
 Tests different models and tracks metrics over time
 """
 
-import json
-import statistics
-import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+import statistics
+import sys
+import time
 
 import requests
 
@@ -59,7 +59,7 @@ class OllamaBenchmarker:
         self.ollama_url = ollama_url
         self.api_url = f"{ollama_url}/api/generate"
 
-    def query_timed(self, model: str, prompt: str, temperature: float = 0.2) -> Tuple[str, float, int]:
+    def query_timed(self, model: str, prompt: str, temperature: float = 0.2) -> tuple[str, float, int]:
         """Query with timing and token counting"""
         start_time = time.time()
 
@@ -100,7 +100,7 @@ class OllamaBenchmarker:
         except:
             return 0.0
 
-    def evaluate_code_quality(self, code: str, expected_elements: List[str]) -> float:
+    def evaluate_code_quality(self, code: str, expected_elements: list[str]) -> float:
         """Evaluate generated code quality"""
         if not code or code.startswith("Error:"):
             return 0.0
@@ -115,7 +115,6 @@ class OllamaBenchmarker:
         has_function = "def " in code
         has_class = "class " in code
         has_docstring = '"""' in code or "'''" in code
-        has_typing = ":" in code and "->" in code
 
         structure_score = sum([has_function or has_class, has_docstring]) / 2
         score += structure_score * 0.3
@@ -126,7 +125,7 @@ class OllamaBenchmarker:
 
         return min(score, 1.0)
 
-    def run_code_generation_test(self, model: str, test_name: str, prompt: str, expected: List[str]) -> BenchmarkMetrics:
+    def run_code_generation_test(self, model: str, test_name: str, prompt: str, expected: list[str]) -> BenchmarkMetrics:
         """Run a single code generation test"""
         mem_before = self.get_memory_usage()
 
@@ -179,7 +178,7 @@ class OllamaBenchmarker:
             timestamp=datetime.utcnow().isoformat()
         )
 
-    def run_benchmark_suite(self, model: str) -> List[BenchmarkMetrics]:
+    def run_benchmark_suite(self, model: str) -> list[BenchmarkMetrics]:
         """Run complete benchmark suite"""
         print(f"\n{'='*70}")
         print(f"Benchmarking: {model}")
@@ -274,7 +273,7 @@ class OllamaBenchmarker:
 
         return metrics
 
-    def calculate_performance(self, metrics: List[BenchmarkMetrics]) -> ModelPerformance:
+    def calculate_performance(self, metrics: list[BenchmarkMetrics]) -> ModelPerformance:
         """Calculate aggregate performance"""
         if not metrics:
             return ModelPerformance(
@@ -332,7 +331,7 @@ class OllamaBenchmarker:
         print(f"Grade: {grade}")
         print(f"{'='*70}")
 
-    def compare_models(self, models: List[str]) -> Dict:
+    def compare_models(self, models: list[str]) -> dict:
         """Compare multiple models"""
         print(f"\n{'='*70}")
         print(f"COMPARING {len(models)} MODELS")
@@ -357,7 +356,7 @@ class OllamaBenchmarker:
 
         return results
 
-    def print_comparison_table(self, results: Dict):
+    def print_comparison_table(self, results: dict):
         """Print comparison table"""
         print(f"\n{'='*70}")
         print("COMPARISON TABLE")
@@ -391,7 +390,7 @@ class ProgressTracker:
         self.db_path = Path(db_path)
         self.db = self._load_db()
 
-    def _load_db(self) -> Dict:
+    def _load_db(self) -> dict:
         """Load history database"""
         if self.db_path.exists():
             with open(self.db_path) as f:
@@ -408,7 +407,7 @@ class ProgressTracker:
         self.db["benchmarks"].append(perf.to_dict())
         self._save_db()
 
-    def get_history(self, model: str) -> List[ModelPerformance]:
+    def get_history(self, model: str) -> list[ModelPerformance]:
         """Get history for model"""
         history = []
         for b in self.db["benchmarks"]:
@@ -531,4 +530,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

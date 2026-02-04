@@ -1,8 +1,8 @@
 # File: scripts/scheduled_completion.py
+from datetime import datetime
 import json
 import os
 import sys
-from datetime import datetime
 
 import asana
 from dateutil.parser import parse

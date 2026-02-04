@@ -7,7 +7,6 @@ import argparse
 import logging
 import os
 import sys
-from typing import Optional
 
 from bs4 import BeautifulSoup
 
@@ -61,7 +60,7 @@ class AyrshareTool:
         if not self.api_key:
             logger.warning("AYRSHARE_API_KEY not set - social posting disabled")
 
-    def post_to_socials(self, text: str, image_url: Optional[str] = None) -> str:
+    def post_to_socials(self, text: str, image_url: str | None = None) -> str:
         if not self.api_key:
             return "SKIPPED: Ayrshare API key not configured"
 
@@ -90,7 +89,7 @@ class AyrshareTool:
                  return f"ERROR: Ayrshare responded with status '{result.get('status')}' - {result.get('message', 'No message')}"
         except requests.exceptions.RequestException as e:
             logger.error(f"Ayrshare request failed: {e}")
-            return f"ERROR: {str(e)}"
+            return f"ERROR: {e!s}"
 
 class MailChimpTool:
     def __init__(self):
@@ -153,7 +152,7 @@ class MailChimpTool:
             return f"ERROR: {e.text}"
         except Exception as e:
             logger.error(f"An unexpected MailChimp error occurred: {e}")
-            return f"ERROR: {str(e)}"
+            return f"ERROR: {e!s}"
 
 
 class WordPressTool:
@@ -165,7 +164,7 @@ class WordPressTool:
         if not all([self.site_url, self.username, self.app_password]):
             logger.warning("WordPress credentials incomplete - publishing disabled")
 
-    def publish_article(self, title: str, content: str, tags: list = None) -> str:
+    def publish_article(self, title: str, content: str, tags: list | None = None) -> str:
         if not all([self.site_url, self.username, self.app_password]):
             return "SKIPPED: WordPress not configured"
 
@@ -199,7 +198,7 @@ class WordPressTool:
 
 
 # === Content Parsing ===
-def parse_html_content(filepath: str) -> (Optional[str], Optional[str], Optional[str]):
+def parse_html_content(filepath: str) -> (str | None, str | None, str | None):
     try:
         with open(filepath, encoding='utf-8') as f:
             html = f.read()

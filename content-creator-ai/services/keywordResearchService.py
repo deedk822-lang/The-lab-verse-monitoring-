@@ -1,5 +1,4 @@
 import os
-from typing import Dict, List, Optional
 
 import cohere
 import numpy as np
@@ -13,7 +12,7 @@ class KeywordResearchService:
     Implements the Cohere cookbook for fueling generative content with keyword research.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "command-a-03-2025"):
+    def __init__(self, api_key: str | None = None, model: str = "command-a-03-2025"):
         """
         Initialize the Keyword Research Service.
 
@@ -52,7 +51,7 @@ class KeywordResearchService:
 
         return df
 
-    def embed_keywords(self, keywords: List[str]) -> np.ndarray:
+    def embed_keywords(self, keywords: list[str]) -> np.ndarray:
         """
         Generate embeddings for keywords using Cohere Embed.
 
@@ -83,7 +82,7 @@ class KeywordResearchService:
         kmeans = KMeans(n_clusters=num_topics, random_state=42, n_init="auto")
         return kmeans.fit_predict(embeddings)
 
-    def generate_topic_name(self, keywords: List[str]) -> str:
+    def generate_topic_name(self, keywords: list[str]) -> str:
         """
         Generate a concise topic name for a cluster of keywords.
 
@@ -108,7 +107,7 @@ Keywords: {', '.join(keywords[:15])}"""  # Limit to 15 keywords to avoid token l
             print(f"Error generating topic name: {e}")
             return f"Topic - {keywords[0][:30]}"
 
-    def process_keywords_from_csv(self, filepath: str, num_topics: int = 4) -> Dict:
+    def process_keywords_from_csv(self, filepath: str, num_topics: int = 4) -> dict:
         """
         Complete keyword research pipeline from CSV file.
 
@@ -157,7 +156,7 @@ Keywords: {', '.join(keywords[:15])}"""  # Limit to 15 keywords to avoid token l
             'topic_names': topic_names
         }
 
-    def generate_content_ideas(self, topic_summary: pd.DataFrame) -> List[Dict]:
+    def generate_content_ideas(self, topic_summary: pd.DataFrame) -> list[dict]:
         """
         Generate content ideas based on topic analysis.
 
@@ -193,7 +192,7 @@ Format: Return only a JSON array of objects with title, description, and format 
 
         return content_ideas
 
-    def export_results(self, results: Dict, output_path: str = "keyword_analysis.csv"):
+    def export_results(self, results: dict, output_path: str = "keyword_analysis.csv"):
         """
         Export results to CSV file.
 

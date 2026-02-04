@@ -3,9 +3,10 @@ REAL Security Tests for PR Fix Agent
 These tests actually validate security, not stubs
 """
 
+import contextlib
+from pathlib import Path
 import shutil
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -294,10 +295,8 @@ class TestSecurityPerformance:
 
         start = time.time()
         # On Linux, this is just a deep relative path, not necessarily an error
-        try:
+        with contextlib.suppress(SecurityError):
             validator.validate_path(deep_path)
-        except SecurityError:
-            pass
         elapsed = time.time() - start
 
         # Should complete in under 1 second
@@ -326,10 +325,8 @@ class TestSecurityPerformance:
         attack_input = "a" * 100 + "!" * 100
 
         start = time.time()
-        try:
+        with contextlib.suppress(SecurityError):
             validator.validate_module_name(attack_input)
-        except SecurityError:
-            pass
         elapsed = time.time() - start
 
         # Should complete quickly, not timeout

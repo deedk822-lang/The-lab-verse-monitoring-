@@ -4,11 +4,10 @@ PR Error-Fixing Agent using Ollama
 Production-ready version with proper library structure
 """
 
+from pathlib import Path
 import re
 import subprocess
 import sys
-from pathlib import Path
-from typing import Dict, Optional
 
 import requests
 
@@ -54,7 +53,7 @@ class PRErrorFixer:
         self.repo_path = Path(repo_path)
         self.security = SecurityValidator(self.repo_path)
 
-    def fix_missing_file_error(self, error: str) -> Optional[str]:
+    def fix_missing_file_error(self, error: str) -> str | None:
         """Fix errors related to missing files"""
         # Extract filename from error
         file_match = re.search(r"['\"](.*?)['\"].*not found", error, re.IGNORECASE)
@@ -93,7 +92,7 @@ Include only the essential code structure. Format your response as pure code wit
 
         return str(file_path)
 
-    def fix_submodule_error(self, error: str) -> Optional[str]:
+    def fix_submodule_error(self, error: str) -> str | None:
         """Fix git submodule errors"""
         if "No url found for submodule" in error:
             submodule_match = re.search(r"submodule path '(.+?)'", error)
@@ -128,7 +127,7 @@ Include only the essential code structure. Format your response as pure code wit
 
         return None
 
-    def fix_missing_dependency(self, error: str) -> Optional[str]:
+    def fix_missing_dependency(self, error: str) -> str | None:
         """Add missing dependencies to requirements files"""
         module_match = re.search(r"No module named ['\"](.*?)['\"]", error)
         if not module_match:
@@ -178,7 +177,7 @@ class PRFixAgent:
         self.fixer = PRErrorFixer(self.ollama, repo_path)
         self.repo_path = Path(repo_path)
 
-    def process_github_actions_log(self, log_file: str) -> Dict:
+    def process_github_actions_log(self, log_file: str) -> dict:
         """Process a GitHub Actions log file and fix errors"""
         with open(log_file) as f:
             log_content = f.read()
@@ -223,7 +222,7 @@ class PRFixAgent:
 
         return results
 
-    def generate_fix_report(self, results: Dict) -> str:
+    def generate_fix_report(self, results: dict) -> str:
         """Generate a markdown report of the fixes"""
         report = f"""# PR Error Fix Report
 

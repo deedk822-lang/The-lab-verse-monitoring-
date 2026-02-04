@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class KimiApiClient:
-    def __init__(self, api_key: str = None, base_url: str = "https://api.moonshot.cn/v1"):
+    def __init__(self, api_key: str | None = None, base_url: str = "https://api.moonshot.cn/v1"):
         self.api_key = api_key or os.getenv("KIMI_API_KEY")
         if not self.api_key:
             raise ValueError("KIMI_API_KEY not found in environment variables.")

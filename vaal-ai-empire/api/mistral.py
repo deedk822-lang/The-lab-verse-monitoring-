@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ class MistralAPI:
         except ImportError:
             raise ImportError("Ollama not installed. Please install it with 'pip install ollama'")
 
-    def query_local(self, prompt: str, model: str = "mistral:latest") -> Dict:
+    def query_local(self, prompt: str, model: str = "mistral:latest") -> dict:
         """Query local Mistral via Ollama"""
         try:
             response = self.ollama.chat(

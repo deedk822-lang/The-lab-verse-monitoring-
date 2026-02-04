@@ -4,12 +4,11 @@
 __version__ = "0.1.0"
 
 __all__ = [
+    "ConfigManager",
     "RainmakerOrchestrator",
     "SelfHealingAgent",
-    "ConfigManager",
 ]
 
-from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
 from rainmaker_orchestrator.agents.healer import SelfHealingAgent
 from rainmaker_orchestrator.config import ConfigManager
- main
+from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator

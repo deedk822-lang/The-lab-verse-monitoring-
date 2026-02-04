@@ -4,13 +4,16 @@ Security Middleware - S4: Comprehensive Security Headers
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 import uuid
-from typing import Callable
 
-from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 import structlog
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from fastapi import Request, Response
 
 logger = structlog.get_logger()
 

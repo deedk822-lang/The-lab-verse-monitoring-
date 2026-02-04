@@ -1,7 +1,6 @@
 import concurrent.futures
 import logging
 import os
-from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class CohereAPI:
         self.model = "command-r-plus"
         self.usage_log = []
 
-    def generate_content(self, prompt: str, max_tokens: int = 500, system_message: Optional[str] = None) -> Dict:
+    def generate_content(self, prompt: str, max_tokens: int = 500, system_message: str | None = None) -> dict:
         """Generate content and track usage using v2 API"""
         try:
             # ✅ FIX: Build messages array for v2 API
@@ -66,10 +65,9 @@ class CohereAPI:
             # Extract token usage if available
             input_tokens = 0
             output_tokens = 0
-            if hasattr(response, 'usage'):
-                if hasattr(response.usage, 'tokens'):
-                    input_tokens = response.usage.tokens.input_tokens or 0
-                    output_tokens = response.usage.tokens.output_tokens or 0
+            if hasattr(response, 'usage') and hasattr(response.usage, 'tokens'):
+                input_tokens = response.usage.tokens.input_tokens or 0
+                output_tokens = response.usage.tokens.output_tokens or 0
 
             usage = {
                 "input_tokens": input_tokens,
@@ -86,7 +84,7 @@ class CohereAPI:
             logger.error(f"Cohere API error: {e}")
             raise e
 
-    def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
+    def generate_email_sequence(self, business_type: str, days: int = 7) -> list[dict]:
         """
         Generate email sequence for MailChimp.
         ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate emails concurrently.

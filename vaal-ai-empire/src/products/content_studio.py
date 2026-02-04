@@ -1,6 +1,6 @@
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 
 from huggingface_hub import InferenceClient
@@ -70,7 +70,7 @@ class ContentStudio:
 
         except Exception as e:
             logger.error(f"   ❌ Text Generation Failed: {e}")
-            caption = f"Error generating text: {str(e)}"
+            caption = f"Error generating text: {e!s}"
 
         # --- STEP 2: IMAGE GENERATION (FLUX) ---
         image_path_str = "None"

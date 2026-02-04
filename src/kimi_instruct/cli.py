@@ -5,10 +5,10 @@ Command-line interface for managing Kimi tasks and project status
 
 import argparse
 import asyncio
-import json
-import sys
 from datetime import datetime
+import json
 from pathlib import Path
+import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

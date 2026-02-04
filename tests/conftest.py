@@ -4,9 +4,10 @@ Test configuration and fixtures.
 Ensures tests import from correct source path.
 """
 
-import sys
 import os
 from pathlib import Path
+import sys
+
 import pytest
 from pytest import fixture
 
@@ -54,5 +55,6 @@ def configure_env():
 def client():
     """Fixture to provide the test client"""
     from fastapi.testclient import TestClient
+
     from app.main import app
     return TestClient(app)

@@ -2,15 +2,25 @@
 """
 Advanced explainability using SHAP, LIME, and custom explanations
 """
-import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
+
+try:
+    import shap
+except ImportError:
+    shap = None
+try:
+    import lime
+    import lime.lime_tabular
+except ImportError:
+    lime = None
+from torch import nn
 
 
 # Wrapper model for SHAP DeepExplainer
@@ -28,7 +38,7 @@ class AdvancedExplainabilityEngine:
     """Comprehensive explainability for ML anomaly detection"""
 
     def __init__(
-        self, model, training_data: np.ndarray, feature_names: List[str] = None
+        self, model, training_data: np.ndarray, feature_names: list[str] | None = None
     ):
         self.model = model
         self.training_data = training_data
@@ -81,8 +91,8 @@ class AdvancedExplainabilityEngine:
     def explain_anomaly_comprehensive(
         self,
         anomalous_sample: np.ndarray,
-        context_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         comprehensive_explanation = {
             "timestamp": pd.Timestamp.now().isoformat(),
             "sample_data": anomalous_sample.tolist(),
@@ -116,7 +126,7 @@ class AdvancedExplainabilityEngine:
         )
         return comprehensive_explanation
 
-    def explain_with_shap(self, anomalous_sample: np.ndarray) -> Dict[str, Any]:
+    def explain_with_shap(self, anomalous_sample: np.ndarray) -> dict[str, Any]:
         if not self.shap_explainer:
             return {"error": "SHAP explainer not available"}
         sample_tensor = torch.from_numpy(anomalous_sample.reshape(1, -1, 1)).float()
@@ -130,7 +140,7 @@ class AdvancedExplainabilityEngine:
             "feature_importance": feature_importance,
         }
 
-    def explain_with_lime(self, anomalous_sample: np.ndarray) -> Dict[str, Any]:
+    def explain_with_lime(self, anomalous_sample: np.ndarray) -> dict[str, Any]:
         if not self.lime_explainer:
             return {"error": "LIME explainer not available"}
         lime_sample = anomalous_sample.flatten()
@@ -157,13 +167,13 @@ class AdvancedExplainabilityEngine:
     def explain_with_rules(
         self,
         anomalous_sample: np.ndarray,
-        context_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return self.custom_explainer.explain(anomalous_sample, context_data)
 
     def generate_consensus_explanation(
-        self, explanations: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, explanations: dict[str, Any]
+    ) -> dict[str, Any]:
         return {
             "agreement_score": 0.7,
             "consensus_features": [],
@@ -171,13 +181,13 @@ class AdvancedExplainabilityEngine:
         }
 
     def generate_visualizations(
-        self, anomalous_sample: np.ndarray, explanation: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, anomalous_sample: np.ndarray, explanation: dict[str, Any]
+    ) -> dict[str, Any]:
         return {}
 
     def _calculate_shap_importance(
         self, shap_values: np.ndarray
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         feature_importance = []
         abs_sum = np.sum(np.abs(shap_values))
         for i, shap_val in enumerate(shap_values):
@@ -193,14 +203,14 @@ class AdvancedExplainabilityEngine:
 
 
 class RuleBasedExplainer:
-    def __init__(self, feature_names: List[str]):
+    def __init__(self, feature_names: list[str]):
         self.feature_names = feature_names
 
     def explain(
         self,
         anomalous_sample: np.ndarray,
-        context_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return {"method": "rule_based", "explanations": []}
 
 
@@ -209,17 +219,17 @@ class ExplainedAnomalyResult:
     metric_name: str
     timestamp: datetime
     value: float
-    expected_range: Tuple[float, float]
+    expected_range: tuple[float, float]
     severity: str
     confidence: float
     model_used: str
-    explanations: Dict[str, Any]
-    consensus_explanation: Dict[str, Any]
-    visualizations: Dict[str, Any]
-    root_cause_analysis: Dict[str, Any]
-    business_impact: Dict[str, Any]
-    recommended_actions: List[Dict[str, Any]]
-    automated_actions_possible: List[str]
+    explanations: dict[str, Any]
+    consensus_explanation: dict[str, Any]
+    visualizations: dict[str, Any]
+    root_cause_analysis: dict[str, Any]
+    business_impact: dict[str, Any]
+    recommended_actions: list[dict[str, Any]]
+    automated_actions_possible: list[str]
     human_intervention_required: bool
     explanation_confidence: float
     explanation_completeness: float

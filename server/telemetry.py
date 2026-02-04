@@ -5,6 +5,7 @@ for the unit tests.
 
 from dataclasses import dataclass
 
+
 @dataclass
 class Counter:
     """

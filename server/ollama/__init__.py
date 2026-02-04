@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator
+from typing import TYPE_CHECKING, Any, Dict
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
-def generate(*_args: Any, **_kwargs: Any) -> Iterator[Dict[str, Any]]:
+def generate(*_args: Any, **_kwargs: Any) -> Iterator[dict[str, Any]]:
     """Return a dummy token stream for tests."""
     yield {"response": "dummy"}

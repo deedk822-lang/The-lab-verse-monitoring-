@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+from datetime import datetime
 import os
 import re
 import subprocess
 import tempfile
 import time
-from datetime import datetime
 
 import openai
 

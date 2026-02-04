@@ -1,11 +1,18 @@
-from prometheus_client import Counter, Histogram, Gauge, Info, generate_latest
-from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, multiprocess
-from prometheus_client import make_asgi_app
-from fastapi import Request, Response
+import os
+import time
+
+from fastapi import Request
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    make_asgi_app,
+    multiprocess,
+)
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import time
-import os
 
 # Create registry for multiprocess mode (if using gunicorn/uvicorn workers)
 registry = CollectorRegistry()

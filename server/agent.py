@@ -6,11 +6,11 @@ SDK in a thread-pool to avoid blocking the event-loop.
 import asyncio
 import logging
 import time
-from typing import Any, Dict, Iterable
+from typing import Any
 
-import ollama
 from fastapi import HTTPException, status
 
+import ollama
 from server.telemetry import msg_sent_counter
 from server.utils import resolve_local_model
 
@@ -27,7 +27,7 @@ log.info("Using Ollama model – %s", MODEL_NAME)
 # ------------------------------------------------------------------
 # Synchronous helper that runs in a thread-pool
 # ------------------------------------------------------------------
-def _ollama_stream_sync(prompt: str) -> Dict[str, Any]:
+def _ollama_stream_sync(prompt: str) -> dict[str, Any]:
     """
     Synchronous helper that drives ollama.generate and collects
     the streamed tokens.
@@ -65,7 +65,7 @@ def _ollama_stream_sync(prompt: str) -> Dict[str, Any]:
 async def stream_agent_response(
     query: str,
     session_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Public, async wrapper that streams an Ollama response back
     to the calling component.

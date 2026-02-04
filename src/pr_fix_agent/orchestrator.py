@@ -4,12 +4,11 @@ Issue Fixed: Complete LLM-powered code review pipeline
 """
 
 import argparse
+from dataclasses import asdict, dataclass
 import json
+from pathlib import Path
 import subprocess
 import sys
-from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import List, Optional
 
 import structlog
 
@@ -32,7 +31,7 @@ class CodeReviewFinding:
     category: str  # security, correctness, style
     issue: str
     suggestion: str
-    code_snippet: Optional[str] = None
+    code_snippet: str | None = None
 
 
 @dataclass
@@ -41,9 +40,9 @@ class FixProposal:
     finding: CodeReviewFinding
     root_cause: str
     fix_approach: str
-    expected_changes: List[str]
+    expected_changes: list[str]
     risk_level: str  # low, medium, high
-    test_requirements: List[str]
+    test_requirements: list[str]
 
 
 @dataclass
@@ -65,7 +64,7 @@ class TestResult:
     failed_tests: int
     exit_code: int
     output: str
-    failures: List[str]
+    failures: list[str]
 
 
 # ============================================================================
@@ -81,7 +80,7 @@ class CodeReviewOrchestrator:
         self,
         reasoning_model: str = "deepseek-r1:1.5b",
         coding_model: str = "qwen2.5-coder:1.5b",
-        cost_tracker: Optional[CostTracker] = None
+        cost_tracker: CostTracker | None = None
     ):
         self.cost_tracker = cost_tracker or CostTracker(budget_usd=10.0)
 
@@ -102,7 +101,7 @@ class CodeReviewOrchestrator:
             coding_model=coding_model
         )
 
-    def _generate_fix_proposals(self, findings: List[CodeReviewFinding]) -> List[FixProposal]:
+    def _generate_fix_proposals(self, findings: list[CodeReviewFinding]) -> list[FixProposal]:
         """Use reasoning model to analyze findings and propose fixes"""
         proposals = []
         for finding in findings:
@@ -134,7 +133,7 @@ Snippet: {finding.code_snippet}
             test_requirements=["Verify with existing tests"]
         )
 
-    def _implement_fixes(self, proposals: List[FixProposal], repo_path: Path) -> List[CodeFix]:
+    def _implement_fixes(self, proposals: list[FixProposal], repo_path: Path) -> list[CodeFix]:
         """Use coding model to implement fixes"""
         fixes = []
         for proposal in proposals:
@@ -174,7 +173,7 @@ Snippet: {finding.code_snippet}
     def _create_coding_prompt(self, proposal: FixProposal, code: str) -> str:
         return f"Fix the following Python code:\n```python\n{code}\n```\nReason: {proposal.fix_approach}\nFinding: {proposal.finding.issue}"
 
-    def _apply_and_test(self, fixes: List[CodeFix], repo_path: Path) -> TestResult:
+    def _apply_and_test(self, fixes: list[CodeFix], repo_path: Path) -> TestResult:
         """Apply fixes and run tests"""
         for fix in fixes:
             Path(fix.file_path).write_text(fix.fixed_code)
@@ -211,7 +210,7 @@ Snippet: {finding.code_snippet}
             logger.error("test_execution_failed", error=str(e))
             return TestResult(False, 0, 0, 0, 1, str(e), [str(e)])
 
-    def generate_pr_body(self, proposals: List[FixProposal], fixes: List[CodeFix], test_result: Optional[TestResult]) -> str:
+    def generate_pr_body(self, proposals: list[FixProposal], fixes: list[CodeFix], test_result: TestResult | None) -> str:
         body = "# 🤖 Automated Code Review Fixes\n\n"
 
         if test_result:

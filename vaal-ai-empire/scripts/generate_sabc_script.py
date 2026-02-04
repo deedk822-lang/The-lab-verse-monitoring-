@@ -1,6 +1,6 @@
+from argparse import ArgumentParser
 import os
 import sys
-from argparse import ArgumentParser
 
 # Adjust path to import KimiAPI
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

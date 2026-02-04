@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Dict
 
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -19,7 +18,7 @@ class KimiAPI:
         self.model = os.getenv("KIMI_MODEL", "Qwen/Qwen-72B-Instruct")
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    def generate_content(self, prompt: str, system_prompt: str = "You are Kimi Linear, an expert AI assistant.") -> Dict:
+    def generate_content(self, prompt: str, system_prompt: str = "You are Kimi Linear, an expert AI assistant.") -> dict:
         """
         Generates content using the Kimi model served by vLLM.
         """

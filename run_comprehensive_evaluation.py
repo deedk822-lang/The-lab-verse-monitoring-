@@ -5,12 +5,12 @@ Runs complete evaluation, benchmarking, and improvement pipeline
 PRODUCTION-READY: No shell=True, proper argument lists
 """
 
+from datetime import datetime
 import json
+from pathlib import Path
 import shlex
 import subprocess
 import sys
-from datetime import datetime
-from pathlib import Path
 
 
 def run_command(cmd, description):
@@ -21,10 +21,7 @@ def run_command(cmd, description):
 
     try:
         # Security: Convert string to argument list, never use shell=True
-        if isinstance(cmd, str):
-            cmd_list = shlex.split(cmd)
-        else:
-            cmd_list = cmd
+        cmd_list = shlex.split(cmd) if isinstance(cmd, str) else cmd
 
         result = subprocess.run(
             cmd_list,
@@ -63,11 +60,7 @@ def check_prerequisites():
     checks_passed = True
 
     # Check Python
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ required")
-        checks_passed = False
-    else:
-        print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}")
+    print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}")
 
     # Check pytest
     result = subprocess.run(["pytest", "--version"], capture_output=True)

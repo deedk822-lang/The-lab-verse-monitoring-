@@ -21,10 +21,10 @@ agent:
 automation:
   # Minimum confidence score (0-100) required for auto-merge
   min_confidence_score: 85
-  
+
   # Maximum number of files changed before human review is forced
   max_file_churn: 15
-  
+
   # Automatically attempt to rebase branches that are behind main
   auto_rebase: true
 

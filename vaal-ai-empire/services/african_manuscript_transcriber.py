@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class AfricanManuscriptTranscriber:
         # return self.validate_transcription(transcribed_text, language)
         pass
 
-    def batch_transcribe(self, image_paths: List[str], language: str = "zulu") -> List[str]:
+    def batch_transcribe(self, image_paths: list[str], language: str = "zulu") -> list[str]:
         """
         Transcribes a batch of documents for efficiency.
         """

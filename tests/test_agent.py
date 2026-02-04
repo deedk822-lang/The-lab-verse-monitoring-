@@ -1,5 +1,5 @@
-import pytest
 from fastapi import HTTPException
+import pytest
 
 from server.agent import stream_agent_response
 
@@ -26,7 +26,7 @@ async def test_stream_agent_response_success(monkeypatch):
 def mock_ollama(monkeypatch):
     """
     Provides a pytest monkeypatch that replaces `ollama.generate` with a simple tokenized responder.
-    
+
     Patches `ollama.generate` so that when called with a `prompt` keyword argument it returns a list of dictionaries of the form `{"response": word}` for each word in the prompt. Intended for use as an autouse test fixture to simulate streamable model output.
     """
     def fake_generate(*args, **kwargs):
@@ -61,7 +61,7 @@ async def test_stream_agent_response_error(monkeypatch):
     def bad_generate(*_args, **_kwargs):
         """
         Helper used in tests that always raises a RuntimeError with the message "boom".
-        
+
         Raises:
             RuntimeError: Raised unconditionally with message "boom".
         """

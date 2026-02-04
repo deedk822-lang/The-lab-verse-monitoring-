@@ -16,10 +16,10 @@ from vaal_ai_empire.credit_protection.manager import (
 )
 
 __all__ = [
+    "TIER_QUOTAS",
     "CreditProtectionManager",
     "ProviderType",
     "ResourceMonitor",
-    "TIER_QUOTAS",
     "TierLevel",
     "UsageQuota",
     "UsageRecord",

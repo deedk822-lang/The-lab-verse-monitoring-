@@ -4,11 +4,10 @@ VAAL AI Empire - Credit Protection Manager
 Real working implementation for Alibaba Cloud free tier protection
 """
 
+from datetime import datetime, timedelta
 import json
 import logging
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Tuple
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -79,7 +78,7 @@ class CreditManager:
 
         logger.info(f"CreditManager initialized: tier={tier}, data_dir={data_dir}")
 
-    def _load_usage(self, filepath: Path) -> Dict:
+    def _load_usage(self, filepath: Path) -> dict:
         """Load usage data from file"""
         if filepath.exists():
             try:
@@ -95,7 +94,7 @@ class CreditManager:
             "last_updated": datetime.now().isoformat()
         }
 
-    def _save_usage(self, filepath: Path, data: Dict):
+    def _save_usage(self, filepath: Path, data: dict):
         """Save usage data to file"""
         data["last_updated"] = datetime.now().isoformat()
         try:
@@ -121,7 +120,7 @@ class CreditManager:
         except Exception as e:
             logger.error(f"Error logging request: {e}")
 
-    def check_circuit_breaker(self) -> Tuple[bool, str]:
+    def check_circuit_breaker(self) -> tuple[bool, str]:
         """Check if circuit breaker is active"""
         if not self.circuit_file.exists():
             return False, ""
@@ -173,7 +172,7 @@ class CreditManager:
         rate = pricing.get(model.lower(), 0.00001)
         return tokens * rate
 
-    def can_make_request(self, estimated_tokens: int, model: str = "kimi") -> Tuple[bool, str, Dict]:
+    def can_make_request(self, estimated_tokens: int, model: str = "kimi") -> tuple[bool, str, dict]:
         """
         Check if request can be made within all limits
         Returns: (allowed: bool, reason: str, usage_info: dict)
@@ -272,7 +271,7 @@ class CreditManager:
         elif daily_pct >= 75:
             logger.warning(f"⚠️ WARNING: Daily usage at {daily_pct:.1f}%")
 
-    def get_usage_summary(self) -> Dict:
+    def get_usage_summary(self) -> dict:
         """Get current usage summary"""
         daily_usage = self._load_usage(self.daily_file)
         hourly_usage = self._load_usage(self.hourly_file)
@@ -348,7 +347,7 @@ if __name__ == "__main__":
 
     # Test 4: Simulate hitting daily limit
     print("\n=== Test 4: Simulate approaching limit ===")
-    for i in range(45):  # Simulate 45 more requests
+    for _i in range(45):  # Simulate 45 more requests
         manager.record_usage(500, "kimi")
 
     summary = manager.get_usage_summary()

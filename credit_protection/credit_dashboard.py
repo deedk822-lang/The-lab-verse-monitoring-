@@ -4,8 +4,8 @@ VAAL AI Empire - Credit Protection Dashboard
 Real-time monitoring dashboard for credit usage
 """
 
-import sys
 from datetime import datetime
+import sys
 
 from credit_manager import CreditManager
 

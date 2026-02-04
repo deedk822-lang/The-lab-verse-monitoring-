@@ -5,12 +5,12 @@ Actually analyzes code and generates actionable improvements
 """
 
 import ast
-import json
-import re
 from dataclasses import dataclass
 from datetime import datetime
+import json
 from pathlib import Path
-from typing import Dict, List
+import re
+import sys
 
 import requests
 
@@ -35,7 +35,7 @@ class Improvement:
     category: str
     title: str
     description: str
-    affected_files: List[str]
+    affected_files: list[str]
     impact_score: float  # 0-1
     effort_score: float  # 0-1 (lower is easier)
     implementation: str
@@ -44,7 +44,7 @@ class Improvement:
 class StaticAnalyzer:
     """Real static code analysis"""
 
-    def analyze_python_file(self, file_path: Path) -> List[CodeIssue]:
+    def analyze_python_file(self, file_path: Path) -> list[CodeIssue]:
         """Analyze Python file for issues"""
         issues = []
 
@@ -77,7 +77,7 @@ class StaticAnalyzer:
 
         return issues
 
-    def _check_security(self, content: str, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_security(self, content: str, lines: list[str], file_path: Path) -> list[CodeIssue]:
         """Check for security issues"""
         issues = []
 
@@ -131,7 +131,7 @@ class StaticAnalyzer:
 
         return issues
 
-    def _check_performance(self, tree: ast.AST, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_performance(self, tree: ast.AST, lines: list[str], file_path: Path) -> list[CodeIssue]:
         """Check for performance issues"""
         issues = []
 
@@ -175,7 +175,7 @@ class StaticAnalyzer:
 
         return issues
 
-    def _check_code_quality(self, tree: ast.AST, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_code_quality(self, tree: ast.AST, lines: list[str], file_path: Path) -> list[CodeIssue]:
         """Check code quality issues"""
         issues = []
 
@@ -331,7 +331,7 @@ class ContinuousImprover:
         self.analyzer = StaticAnalyzer()
         self.generator = ImprovementGenerator(ollama_url)
 
-    def analyze_codebase(self) -> List[CodeIssue]:
+    def analyze_codebase(self) -> list[CodeIssue]:
         """Analyze entire codebase"""
         print("\n🔍 Analyzing codebase...")
 
@@ -350,7 +350,7 @@ class ContinuousImprover:
 
         return issues
 
-    def generate_improvements(self, issues: List[CodeIssue], max_improvements: int = 10) -> List[Improvement]:
+    def generate_improvements(self, issues: list[CodeIssue], max_improvements: int = 10) -> list[Improvement]:
         """Generate improvement suggestions"""
         print(f"\n💡 Generating improvements for top {max_improvements} issues...")
 
@@ -366,7 +366,7 @@ class ContinuousImprover:
 
         return improvements
 
-    def prioritize_improvements(self, improvements: List[Improvement]) -> List[Improvement]:
+    def prioritize_improvements(self, improvements: list[Improvement]) -> list[Improvement]:
         """Prioritize improvements by impact/effort ratio"""
         def priority_score(imp: Improvement) -> float:
             # Higher impact, lower effort = higher score
@@ -374,7 +374,7 @@ class ContinuousImprover:
 
         return sorted(improvements, key=priority_score, reverse=True)
 
-    def generate_report(self, issues: List[CodeIssue], improvements: List[Improvement]) -> str:
+    def generate_report(self, issues: list[CodeIssue], improvements: list[Improvement]) -> str:
         """Generate improvement report"""
         report = f"""# Code Improvement Report
 Generated: {datetime.utcnow().isoformat()}
@@ -421,7 +421,7 @@ Generated: {datetime.utcnow().isoformat()}
 
         return report
 
-    def run_improvement_cycle(self) -> Dict:
+    def run_improvement_cycle(self) -> dict:
         """Run complete improvement cycle"""
         print("\n" + "="*70)
         print("CONTINUOUS IMPROVEMENT CYCLE")
@@ -516,4 +516,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

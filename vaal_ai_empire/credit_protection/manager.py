@@ -3,14 +3,14 @@ Credit Protection Manager for Alibaba Cloud + Kimi CLI + HuggingFace
 Prevents runaway costs on free tier instances with multi-layer safeguards.
 """
 
-import json
-import logging
-import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+import json
+import logging
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ class CreditProtectionManager:
 
         # Circuit breaker state
         self.circuit_open = False
-        self.circuit_open_until: Optional[datetime] = None
+        self.circuit_open_until: datetime | None = None
 
         # Load existing usage data
         self._load_usage()
@@ -222,7 +222,7 @@ class CreditProtectionManager:
         cost: float,
         duration_ms: int,
         status: str = "success",
-        metadata: Optional[dict] = None
+        metadata: dict | None = None
     ) -> None:
         """Record actual usage."""
         total_tokens = request_tokens + response_tokens
@@ -426,7 +426,7 @@ def get_credit_manager(tier: str = "free") -> CreditProtectionManager:
 
 
 # Global instance
-_global_manager: Optional[CreditProtectionManager] = None
+_global_manager: CreditProtectionManager | None = None
 
 
 def get_manager() -> CreditProtectionManager:

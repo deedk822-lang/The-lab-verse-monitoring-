@@ -7,8 +7,8 @@ import logging
 import re
 import threading
 import time
-import unicodedata
 from typing import Any
+import unicodedata
 
 logger = logging.getLogger(__name__)
 

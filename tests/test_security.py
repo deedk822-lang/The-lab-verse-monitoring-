@@ -9,8 +9,8 @@ import json
 import os
 from unittest.mock import AsyncMock, Mock, patch
 
-import pytest
 from fastapi.testclient import TestClient
+import pytest
 
 from app.main import app
 from vaal_ai_empire.api.sanitizers import (
@@ -294,7 +294,7 @@ class TestRateLimiting:
         key = "test_client"
 
         # Should allow first 5 requests
-        for i in range(5):
+        for _i in range(5):
             assert await limiter.is_allowed(key)
 
     @pytest.mark.asyncio
@@ -305,7 +305,7 @@ class TestRateLimiting:
         key = "test_client"
 
         # Fill the bucket
-        for i in range(5):
+        for _i in range(5):
             await limiter.is_allowed(key)
 
         # 6th request should be blocked

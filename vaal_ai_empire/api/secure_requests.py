@@ -6,7 +6,6 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
-from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -43,9 +42,9 @@ class SSRFBlocker:
     def __init__(
         self,
         allow_private_ips: bool = False,
-        allowed_domains: Optional[set[str]] = None,
-        blocked_domains: Optional[set[str]] = None,
-        allowed_schemes: Optional[set[str]] = None
+        allowed_domains: set[str] | None = None,
+        blocked_domains: set[str] | None = None,
+        allowed_schemes: set[str] | None = None
     ) -> None:
         self.allow_private_ips = allow_private_ips
         self.allowed_domains = allowed_domains
@@ -71,7 +70,7 @@ class SSRFBlocker:
         except Exception:
             return False
 
-    def validate_url(self, url: str) -> tuple[bool, Optional[str]]:
+    def validate_url(self, url: str) -> tuple[bool, str | None]:
         """
         Comprehensive URL validation.
 
@@ -173,7 +172,7 @@ def is_safe_url(url: str) -> bool:
 
 def create_ssrf_safe_session(
     timeout: float = 30.0,
-    allowed_domains: Optional[set[str]] = None
+    allowed_domains: set[str] | None = None
 ) -> httpx.Client:
     """
     Create a synchronous SSRF-safe session.

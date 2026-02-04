@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
 
@@ -18,14 +17,14 @@ class ConfigManager:
             except ImportError:
                 logger.warning("python-dotenv not available, using environment variables only")
 
-    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
-        value: Optional[str] = os.getenv(key, default)
+    def get(self, key: str, default: str | None = None) -> str | None:
+        value: str | None = os.getenv(key, default)
         if key.upper().endswith("_KEY") or key.upper().endswith("_TOKEN"):
             logger.debug("Accessing credential key: %s", key)
         return value
 
     def get_int(self, key: str, default: int = 0) -> int:
-        value: Optional[str] = self.get(key)
+        value: str | None = self.get(key)
         if value is None:
             return default
         try:

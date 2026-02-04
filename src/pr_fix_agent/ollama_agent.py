@@ -4,15 +4,15 @@ FIXES: Multiple conflicting OllamaAgent implementations
 CONSOLIDATES: ollama_agent.py and observability.py versions
 """
 
+from dataclasses import asdict, dataclass
+from datetime import datetime
 import os
 import threading
 import time
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import requests
 import structlog
+
 from pr_fix_agent.security.secure_requests import create_ssrf_safe_requests_session
 
 logger = structlog.get_logger()
@@ -63,7 +63,7 @@ class CostTracker:
     def __init__(self, budget_usd: float = 10.0):
         self.budget_usd = budget_usd
         self.total_cost = 0.0
-        self.costs: List[LLMCost] = []
+        self.costs: list[LLMCost] = []
         self._lock = threading.Lock()
 
     def record_usage(
@@ -115,7 +115,7 @@ class CostTracker:
 
         return cost
 
-    def get_report(self) -> Dict[str, Any]:
+    def get_report(self) -> dict[str, Any]:
         """Generate usage report"""
         with self._lock:
             if not self.costs:
@@ -128,7 +128,7 @@ class CostTracker:
 
             total_tokens = sum(c.total_tokens for c in self.costs)
 
-            by_model: Dict[str, Dict[str, Any]] = {}
+            by_model: dict[str, dict[str, Any]] = {}
             for cost in self.costs:
                 if cost.model not in by_model:
                     by_model[cost.model] = {
@@ -179,7 +179,7 @@ class OllamaAgent:
         self,
         model: str = "codellama",
         base_url: str = "http://localhost:11434",
-        cost_tracker: Optional[CostTracker] = None
+        cost_tracker: CostTracker | None = None
     ):
         self.model = model
         self.base_url = base_url
@@ -205,7 +205,7 @@ class OllamaAgent:
         prompt: str,
         temperature: float = 0.2,
         timeout: int = 120,
-        trace_id: Optional[str] = None
+        trace_id: str | None = None
     ) -> str:
         """Query with full observability and tracing"""
         start_time = time.time()
@@ -288,8 +288,8 @@ class MockOllamaAgent:
 
     def __init__(self, model: str = "test"):
         self.model = model
-        self.queries: List[str] = []
-        self.responses: Dict[str, str] = {}
+        self.queries: list[str] = []
+        self.responses: dict[str, str] = {}
 
     def query(self, prompt: str, **kwargs) -> str:
         self.queries.append(prompt)

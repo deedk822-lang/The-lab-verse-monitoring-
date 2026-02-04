@@ -10,11 +10,11 @@ Part of Vaal AI Empire - Intelligence Division
 Run: Daily at 6 AM SAST via GitHub Actions
 """
 
+from datetime import datetime
 import json
 import os
-import sys
-from datetime import datetime
 from pathlib import Path
+import sys
 
 # Add vaal-ai-empire to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -39,12 +39,11 @@ def check_environment():
     for var, description in required_vars.items():
         if not os.getenv(var):
             missing.append(f"  ❌ {var} ({description})")
+        # Mask sensitive values in output
+        elif var in ['KAGGLE_KEY', 'JIRA_API_TOKEN', 'OSS_ACCESS_KEY_SECRET']:
+            print(f"  ✅ {var} (configured)")
         else:
-            # Mask sensitive values in output
-            if var in ['KAGGLE_KEY', 'JIRA_API_TOKEN', 'OSS_ACCESS_KEY_SECRET']:
-                print(f"  ✅ {var} (configured)")
-            else:
-                print(f"  ✅ {var}: {os.getenv(var)}")
+            print(f"  ✅ {var}: {os.getenv(var)}")
 
     if missing:
         print("\n⚠️  Missing required environment variables:")
@@ -133,16 +132,14 @@ def analyze_dataset_value(dataset):
             insights.append(f"Moderate popularity ({dataset.downloadCount:,} downloads)")
 
     # Check vote count
-    if hasattr(dataset, 'voteCount') and dataset.voteCount:
-        if dataset.voteCount > 100:
-            score += 2
-            insights.append(f"Well-received ({dataset.voteCount} votes)")
+    if hasattr(dataset, 'voteCount') and dataset.voteCount and dataset.voteCount > 100:
+        score += 2
+        insights.append(f"Well-received ({dataset.voteCount} votes)")
 
     # Check size
-    if hasattr(dataset, 'size') and dataset.size:
-        if dataset.size > 1000000:  # > 1MB
-            score += 1
-            insights.append("Substantial data volume")
+    if hasattr(dataset, 'size') and dataset.size and dataset.size > 1000000:  # > 1MB
+        score += 1
+        insights.append("Substantial data volume")
 
     return {
         'dataset_ref': dataset.ref,

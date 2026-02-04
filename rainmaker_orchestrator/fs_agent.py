@@ -1,5 +1,6 @@
 import subprocess
-from typing import Dict, Any
+from typing import Any
+
 
 class FileSystemAgent:
     """Agent for interacting with the file system and executing scripts."""
@@ -12,7 +13,7 @@ class FileSystemAgent:
         with open(filename, 'w') as f:
             f.write(content)
 
-    def execute_script(self, filename: str) -> Dict[str, Any]:
+    def execute_script(self, filename: str) -> dict[str, Any]:
         """Execute a Python script and return the result."""
         try:
             result = subprocess.run(['python3', filename], capture_output=True, text=True)

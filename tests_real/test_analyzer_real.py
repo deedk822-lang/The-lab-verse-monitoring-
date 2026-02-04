@@ -183,7 +183,7 @@ Error: Failed to execute command
         """Test: Calls agent with correct prompt"""
         error = "Error: File not found"
 
-        result = analyzer.analyze_error(error)
+        analyzer.analyze_error(error)
 
         # Verify agent was called
         mock_agent.query.assert_called_once()

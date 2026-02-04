@@ -3,10 +3,9 @@ Semantic Search and RAG Service for Vaal AI Empire
 Combines Cohere embeddings with vector search for intelligent content discovery
 """
 
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
-from typing import Dict, List, Optional
 
 import cohere
 import numpy as np
@@ -22,7 +21,7 @@ class SemanticSearchService:
 
     def __init__(
         self,
-        cohere_key: Optional[str] = None,
+        cohere_key: str | None = None,
         backend: str = "annoy",  # "annoy" or "elasticsearch"
         embedding_model: str = "embed-v4.0"
     ):
@@ -51,7 +50,7 @@ class SemanticSearchService:
 
     def embed_texts(
         self,
-        texts: List[str],
+        texts: list[str],
         input_type: str = "search_document"
     ) -> np.ndarray:
         """
@@ -81,7 +80,7 @@ class SemanticSearchService:
 
     def build_index(
         self,
-        documents: List[Dict],
+        documents: list[dict],
         text_field: str = "text"
     ):
         """
@@ -130,7 +129,7 @@ class SemanticSearchService:
         query: str,
         top_k: int = 10,
         include_distances: bool = True
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Search for documents similar to query
 
@@ -160,7 +159,7 @@ class SemanticSearchService:
         query_embedding: np.ndarray,
         top_k: int,
         include_distances: bool
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Search using Annoy index"""
         try:
             indices, distances = self.search_index.get_nns_by_vector(
@@ -170,7 +169,7 @@ class SemanticSearchService:
             )
 
             results = []
-            for idx, dist in zip(indices, distances):
+            for idx, dist in zip(indices, distances, strict=False):
                 result = self.documents[idx].copy()
                 if include_distances:
                     result['similarity_score'] = 1 - (dist**2 / 2)  # Convert to 0-1 similarity
@@ -187,7 +186,7 @@ class SemanticSearchService:
         query_embedding: np.ndarray,
         top_k: int,
         include_distances: bool
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Fallback brute force search using cosine similarity"""
         # Compute cosine similarity
         similarities = np.dot(self.embeddings, query_embedding) / (
@@ -210,7 +209,7 @@ class SemanticSearchService:
         self,
         document_id: int,
         top_k: int = 10
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Find documents similar to an existing document
 
@@ -232,7 +231,7 @@ class SemanticSearchService:
             )
 
             results = []
-            for idx, dist in zip(indices[1:], distances[1:]):  # Skip first (itself)
+            for idx, dist in zip(indices[1:], distances[1:], strict=False):  # Skip first (itself)
                 result = self.documents[idx].copy()
                 result['similarity_score'] = 1 - (dist**2 / 2)
                 result['distance'] = dist
@@ -252,7 +251,7 @@ class RAGService:
 
     def __init__(
         self,
-        cohere_key: Optional[str] = None,
+        cohere_key: str | None = None,
         chat_model: str = "command-a-03-2025",
         rerank_model: str = "rerank-english-v3.0"
     ):
@@ -277,17 +276,17 @@ class RAGService:
         # Initialize semantic search
         self.search_service = SemanticSearchService(cohere_key=cohere_key)
 
-    def index_documents(self, documents: List[Dict], text_field: str = "text"):
+    def index_documents(self, documents: list[dict], text_field: str = "text"):
         """Build search index from documents"""
         self.search_service.build_index(documents, text_field)
 
     def rerank_documents(
         self,
         query: str,
-        documents: List[Dict],
+        documents: list[dict],
         top_n: int = 10,
         text_field: str = "text"
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Rerank documents using Cohere's rerank model
 
@@ -335,7 +334,7 @@ class RAGService:
         top_k: int = 10,
         use_rerank: bool = True,
         rerank_top_n: int = 5
-    ) -> Dict:
+    ) -> dict:
         """
         Generate a grounded response using RAG
 
@@ -432,7 +431,7 @@ class RAGService:
         query: str,
         top_k: int = 50,
         rerank_top_n: int = 10
-    ) -> Dict:
+    ) -> dict:
         """
         Perform hybrid search (semantic + keyword) with RAG
 
@@ -454,7 +453,7 @@ class ContentClusteringService:
     Useful for organizing large content libraries
     """
 
-    def __init__(self, cohere_key: Optional[str] = None):
+    def __init__(self, cohere_key: str | None = None):
         """Initialize clustering service"""
         self.search_service = SemanticSearchService(cohere_key=cohere_key)
         self.clusters = None
@@ -462,10 +461,10 @@ class ContentClusteringService:
 
     def cluster_documents(
         self,
-        documents: List[Dict],
+        documents: list[dict],
         n_clusters: int = 8,
         text_field: str = "text"
-    ) -> Dict:
+    ) -> dict:
         """
         Cluster documents into topics
 
@@ -516,11 +515,11 @@ class ContentClusteringService:
 
     def _extract_cluster_keywords(
         self,
-        documents: List[Dict],
+        documents: list[dict],
         clusters: np.ndarray,
         text_field: str,
         top_n: int = 10
-    ) -> Dict[int, List[str]]:
+    ) -> dict[int, list[str]]:
         """Extract top keywords for each cluster"""
         from sklearn.feature_extraction.text import CountVectorizer
 
@@ -559,9 +558,9 @@ class ContentClusteringService:
 
     def visualize_clusters(
         self,
-        documents: List[Dict],
+        documents: list[dict],
         text_field: str = "text"
-    ) -> Dict:
+    ) -> dict:
         """
         Prepare data for cluster visualization using UMAP
 

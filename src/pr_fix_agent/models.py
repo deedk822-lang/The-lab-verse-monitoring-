@@ -4,7 +4,6 @@ Issue Fixed: #21: Budget-aware model selection
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass
@@ -97,7 +96,7 @@ class ModelSelector:
         budget_remaining: float = 0.0,
         prefer_free: bool = True,
         min_quality: int = 7
-    ) -> Optional[ModelSpec]:
+    ) -> ModelSpec | None:
         """
         Select best model for task
 
@@ -143,7 +142,7 @@ class ModelSelector:
 
         return sorted_models[0] if sorted_models else None
 
-    def get_fallback_chain(self, task: str) -> List[ModelSpec]:
+    def get_fallback_chain(self, task: str) -> list[ModelSpec]:
         """
         Get fallback chain for task
 

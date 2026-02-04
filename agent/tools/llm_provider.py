@@ -3,14 +3,14 @@ Multi-provider LLM abstraction layer with proper HuggingFace token handling.
 Fixed: HuggingFace now properly uses HF_TOKEN for authentication.
 """
 
+from abc import ABC, abstractmethod
 import asyncio
+from dataclasses import dataclass
+from enum import Enum
 import logging
 import os
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from vaal_ai_empire.api.sanitizers import sanitize_prompt
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
@@ -35,22 +35,22 @@ class LLMResponse:
     text: str
     model: str
     provider: str
-    tokens_used: Optional[int] = None
-    cost: Optional[float] = None
-    latency_ms: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
+    tokens_used: int | None = None
+    cost: float | None = None
+    latency_ms: float | None = None
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass
 class LLMConfig:
     """Base LLM configuration."""
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
+    api_key: str | None = None
+    base_url: str | None = None
     timeout: float = 60.0
     max_retries: int = 3
     retry_delay: float = 1.0
     # HuggingFace specific
-    model_path: Optional[str] = None
+    model_path: str | None = None
     device: str = "cpu"
     use_auth_token: bool = True  # Whether to use HF_TOKEN
 
@@ -77,7 +77,7 @@ class LLMProvider(ABC):
     @abstractmethod
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
         **kwargs
@@ -113,7 +113,7 @@ class LLMProvider(ABC):
 class HuggingFaceProvider(LLMProvider):
     """
     HuggingFace local model provider with proper token authentication.
-    
+
     Critical: Uses HF_TOKEN (api_key) for:
     - Downloading models from HuggingFace Hub
     - Accessing gated/private models
@@ -159,7 +159,7 @@ class HuggingFaceProvider(LLMProvider):
     def _ensure_model_loaded(self, model_name: str):
         """
         Lazy load model with proper HuggingFace token authentication.
-        
+
         The token is used for:
         - snapshot_download() to fetch model files
         - AutoTokenizer.from_pretrained() for tokenizer download
@@ -314,7 +314,7 @@ class HuggingFaceProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
         **kwargs
@@ -366,7 +366,7 @@ class OpenAIProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
         task: TaskType = TaskType.CHAT,
@@ -416,7 +416,7 @@ class OpenAIProvider(LLMProvider):
             latency_ms=latency
         )
 
-    def _calculate_cost(self, model: str, usage: Dict) -> Optional[float]:
+    def _calculate_cost(self, model: str, usage: dict) -> float | None:
         """Calculate approximate cost for OpenAI models."""
         pricing = {
             "gpt-4o": (0.005, 0.015),
@@ -441,14 +441,14 @@ class LLMProviderFactory:
     def create(provider_type: str, config: LLMConfig) -> LLMProvider:
         """
         Create provider instance with proper configuration.
-        
+
         Args:
             provider_type: Type of provider (huggingface, openai)
             config: LLM configuration with all required parameters
-            
+
         Returns:
             Configured LLM provider instance
-            
+
         Raises:
             ValueError: If provider_type is unknown
             RuntimeError: If provider cannot be initialized
@@ -474,7 +474,7 @@ class LLMProviderFactory:
 
 
 # Global provider instance
-_global_provider: Optional[LLMProvider] = None
+_global_provider: LLMProvider | None = None
 
 
 def set_global_provider(provider: LLMProvider):
@@ -496,22 +496,22 @@ def get_global_provider() -> LLMProvider:
 def initialize_from_env() -> LLMProvider:
     """
     Initialize provider from environment variables.
-    
+
     Environment Variables:
         LLM_PROVIDER: Provider type (huggingface, openai)
-        
+
         For HuggingFace:
             HF_TOKEN: HuggingFace API token (REQUIRED for most models)
             HF_MODEL_PATH: Model cache directory (optional)
             HF_DEVICE: Device to use (cpu, cuda) (optional)
-        
+
         For OpenAI:
             OPENAI_API_KEY: OpenAI API key (REQUIRED)
             OPENAI_BASE_URL: OpenAI base URL (optional)
-    
+
     Returns:
         Configured provider instance
-        
+
     Raises:
         RuntimeError: If required environment variables are missing
     """

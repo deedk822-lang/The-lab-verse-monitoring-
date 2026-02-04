@@ -3,8 +3,8 @@ Core Security and Validation Components
 Proper library structure for reusable components
 """
 
-import re
 from pathlib import Path
+import re
 
 
 class SecurityError(Exception):
@@ -144,11 +144,7 @@ class InputValidator:
             r'exec\s*\(',
         ]
 
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-
-        return True
+        return all(not re.search(pattern, data) for pattern in dangerous_patterns)
 
     @staticmethod
     def validate_url(url: str) -> bool:

@@ -1,8 +1,7 @@
+from datetime import UTC, datetime
 import os
-from datetime import datetime, timezone
-from typing import Dict, List
+import sys
 
-import requests
 from hubspot import HubSpot
 from hubspot.crm.contacts import (
     Filter,
@@ -12,6 +11,7 @@ from hubspot.crm.contacts import (
 )
 from hubspot.crm.objects import BatchReadInputSimplePublicObjectId
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
+import requests
 
 
 # ========================
@@ -32,7 +32,7 @@ client = HubSpot(access_token=HUBSPOT_TOKEN)
 # ========================
 # AUDITS (GitHub Only - Proxycurl Defunct)
 # ========================
-def audit_github(handle: str) -> Dict[str, str]:
+def audit_github(handle: str) -> dict[str, str]:
     headers = {
         "Authorization": f"token {KIMI_GITHUB_KEY}",
         "Accept": "application/vnd.github.v3+json", # Using v3 for consistency
@@ -69,7 +69,7 @@ def audit_github(handle: str) -> Dict[str, str]:
         events = events_resp.json()
 
         # Improved activity calculation with multiple signals
-        cutoff_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        cutoff_date = datetime(2024, 1, 1, tzinfo=UTC)
         activity_score = 0
         repos_contributed_to = set()
 
@@ -130,7 +130,7 @@ def audit_github(handle: str) -> Dict[str, str]:
 # ========================
 # CARD BUILDER (GitHub Only)
 # ========================
-def build_card(gh: Dict[str, str], name: str, login: str) -> str:
+def build_card(gh: dict[str, str], name: str, login: str) -> str:
     overall = gh["status"]
     icon_map = {"VERIFIED_BUILDER": "🟢", "NUANCED_POTENTIAL": "⚠️", "GHOST_DEVELOPER": "🔴", "ERROR": "❌", "NO_GITHUB": "❓"}
     icon = icon_map.get(overall, "❓")
@@ -148,7 +148,7 @@ def build_card(gh: Dict[str, str], name: str, login: str) -> str:
 # ========================
 # HUBSPOT LOOP
 # ========================
-def fetch_pending() -> List[Dict[str, str]]:
+def fetch_pending() -> list[dict[str, str]]:
     search = PublicObjectSearchRequest(
         filter_groups=[FilterGroup(filters=[
             Filter(property_name="audit_status", operator="EQ", value="Pending"),
@@ -217,7 +217,7 @@ def post_card_and_update(contact_id: str, card: str) -> None:
 
     note = SimplePublicObjectInputForCreate(
         properties={
-            "hs_timestamp": datetime.now(timezone.utc).isoformat(),
+            "hs_timestamp": datetime.now(UTC).isoformat(),
             "hs_note_body": card,
         },
         associations=[{
@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
     if not candidates:
         print("No pending candidates found.")
-        exit(0)
+        sys.exit(0)
 
     print(f"Found {len(candidates)} candidate(s) to audit...\n")
 

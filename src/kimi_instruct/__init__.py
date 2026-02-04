@@ -20,4 +20,4 @@ __description__ = "Hybrid AI Project Manager for monitoring infrastructure"
 
 from .core import KimiInstruct, ProjectContext, Task, TaskPriority, TaskStatus
 
-__all__ = ["KimiInstruct", "Task", "TaskPriority", "TaskStatus", "ProjectContext"]
+__all__ = ["KimiInstruct", "ProjectContext", "Task", "TaskPriority", "TaskStatus"]

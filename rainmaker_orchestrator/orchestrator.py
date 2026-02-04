@@ -14,7 +14,7 @@ from rainmaker_orchestrator.config import ConfigManager
 logger: logging.Logger = logging.getLogger("orchestrator")
 
 # 4-Judge Model Mapping (Role-Specific Models)
-JUDGE_MODELS: Dict[str, str] = {
+JUDGE_MODELS: dict[str, str] = {
     "visionary": "command-r-plus",
     "operator": "codestral-2501",
     "auditor": "pixtral-12b-2409",
@@ -65,8 +65,8 @@ class RainmakerOrchestrator:
         await self.client.aclose()
         logger.info("Orchestrator HTTP client closed")
 
-    @track(name="judge_call")
-    async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
+    @track(name="judge_call")  # type: ignore[misc]
+    async def _call_judge(self, judge_role: str, context: str) -> dict[str, Any]:
         """
         Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
         
@@ -75,7 +75,7 @@ class RainmakerOrchestrator:
             context (str): User-facing prompt or context to include in the chat completion request.
         
         Returns:
-            response (Dict[str, Any]): Parsed JSON response returned by the judge API.
+            response (dict[str, Any]): Parsed JSON response returned by the judge API.
         
         Raises:
             ValueError: If neither ZAI_API_KEY nor MISTRAL_API_KEY is configured.
@@ -89,20 +89,26 @@ class RainmakerOrchestrator:
             raise ValueError("Missing required API credentials")
 
         # Priority: Z.ai (GLM) -> Mistral (Role-specific)
+        api_key: str
+        api_base: str
+        model: str
         if zai_key:
-            api_key: str = zai_key
-            api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
-            model: str = "glm-4.7"
-        else:
+            api_key = zai_key
+            api_base = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
+            model = "glm-4.7"
+        elif mistral_key:
             api_key = mistral_key
             api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
             model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
+        else:
+            # Should not happen due to check above but satisfy mypy
+            raise ValueError("Missing API credentials")
 
-        headers: Dict[str, str] = {
+        headers: dict[str, str] = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": [
                 {
@@ -124,34 +130,34 @@ class RainmakerOrchestrator:
             logger.error(f"Judge API error ({judge_role}): {str(e)}")
             raise
 
-    @track(name="authority_flow")
-    async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
+    @track(name="authority_flow")  # type: ignore[misc]
+    async def run_authority_flow(self, lead_data: dict[str, Any]) -> dict[str, Any]:
         """
         Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.
         
         Parameters:
-            lead_data (Dict[str, Any]): Input lead information used as the basis for auditing, strategy creation, and implementation generation.
+            lead_data (dict[str, Any]): Input lead information used as the basis for auditing, strategy creation, and implementation generation.
         
         Returns:
-            result (Dict[str, Any]): On success, a dict with "status" set to "success" and keys "audit", "strategy", and "implementation" containing each judge's content; on error, a dict with "status" set to "error" and a "message" describing the failure.
+            result (dict[str, Any]): On success, a dict with "status" set to "success" and keys "audit", "strategy", and "implementation" containing each judge's content; on error, a dict with "status" set to "error" and a "message" describing the failure.
         """
         logger.info("⚖️ Initiating Authority Flow...")
 
         try:
             # 1. Audit
-            audit_res: Dict[str, Any] = await self._call_judge(
+            audit_res: dict[str, Any] = await self._call_judge(
                 "auditor",
                 f"Analyze this request for compliance and risk: {json.dumps(lead_data)}",
             )
 
             # 2. Vision
-            vision_res: Dict[str, Any] = await self._call_judge(
+            vision_res: dict[str, Any] = await self._call_judge(
                 "visionary",
                 f"Create a strategic execution plan: {json.dumps(lead_data)}",
             )
 
             # 3. Operation
-            op_res: Dict[str, Any] = await self._call_judge(
+            op_res: dict[str, Any] = await self._call_judge(
                 "operator",
                 f"Generate implementation based on strategy: {json.dumps(vision_res)}",
             )
@@ -167,18 +173,18 @@ class RainmakerOrchestrator:
             logger.error(f"Authority Flow error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-    async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Dispatches a task to the appropriate handler based on its "type" field.
         
         Parameters:
-            task (Dict[str, Any]): Task payload containing at minimum a "type" key.
+            task (dict[str, Any]): Task payload containing at minimum a "type" key.
                 - If "type" == "authority_task": the payload is forwarded to the authority flow.
                 - If "type" == "coding_task" and contains "output_filename": the payload is processed by the self-healing coding flow.
                 - Other keys are passed through to the selected handler as needed.
         
         Returns:
-            Dict[str, Any]: The handler's result on success, or an error payload with
+            dict[str, Any]: The handler's result on success, or an error payload with
             {"status": "error", "message": <explanatory string>} when the task type is unsupported.
         """
         task_type: str = task.get("type", "unknown")
@@ -191,7 +197,7 @@ class RainmakerOrchestrator:
         logger.warning(f"Unsupported task type: {task_type}")
         return {"status": "error", "message": f"Task type '{task_type}' not supported"}
 
-    async def _run_self_healing(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_self_healing(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Run a recursive self-healing loop to generate, write, and execute code until it succeeds or retries are exhausted.
         
@@ -216,7 +222,7 @@ class RainmakerOrchestrator:
 
         for attempt in range(max_retries):
             try:
-                model_res: Dict[str, Any] = await self._call_judge(
+                model_res: dict[str, Any] = await self._call_judge(
                     "operator",
                     current_context,
                 )
@@ -229,11 +235,11 @@ class RainmakerOrchestrator:
                     content.strip(),
                     flags=re.MULTILINE,
                 )
-                parsed: Dict[str, Any] = json.loads(clean_json)
+                parsed: dict[str, Any] = json.loads(clean_json)
 
                 # Write and test
                 self.fs.write_file(filename, parsed["code"])
-                exec_result: Dict[str, Any] = self.fs.execute_script(filename)
+                exec_result: dict[str, Any] = self.fs.execute_script(filename)
 
                 if exec_result["status"] == "success":
                     logger.info(f"Self-healing succeeded on attempt {attempt + 1}")

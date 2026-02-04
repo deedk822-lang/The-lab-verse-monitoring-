@@ -5,8 +5,8 @@ Intercepts all LLM requests and enforces quota limits.
 
 import logging
 import time
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -153,7 +153,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
         ]
         return any(request.url.path.startswith(path) for path in llm_paths)
 
-    async def _estimate_request_cost(self, request: Request) -> tuple:
+    async def _estimate_request_cost(self, request: Request) -> tuple[int, float]:
         """Estimate request token count and cost."""
         try:
             body = await request.body()
@@ -165,7 +165,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
             logger.error(f"Error estimating cost: {e}")
             return 4000, 0.05
 
-    async def _extract_actual_usage(self, response: Response, estimated_tokens: int, estimated_cost: float) -> tuple:
+    async def _extract_actual_usage(self, response: Response, estimated_tokens: int, estimated_cost: float) -> tuple[int, float]:
         """Extract actual usage from response."""
         if "X-Tokens-Used" in response.headers:
             try:

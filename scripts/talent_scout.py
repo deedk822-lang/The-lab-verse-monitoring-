@@ -1,7 +1,7 @@
 import os
 import time  # For potential rate limit handling
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any
 
 import requests
 from hubspot import HubSpot
@@ -25,7 +25,7 @@ HUBSPOT_CLIENT = HubSpot(access_token=HUBSPOT_TOKEN) if HUBSPOT_TOKEN else None
 # ========================
 # CORE: Enhanced GitHub Audit
 # ========================
-def audit_github(handle: str) -> Optional[Dict]:
+def audit_github(handle: str) -> dict[str, Any] | None:
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json" # Using v3 for consistency

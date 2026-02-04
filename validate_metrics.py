@@ -8,7 +8,7 @@ Validates data integrity and alert configurations
 import os
 import sys
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 import requests
 
@@ -25,7 +25,7 @@ class GrafanaValidator:
             print('⚠️  Grafana credentials not configured. Skipping validation.')
             sys.exit(0)
 
-    def query(self, query: str, time_param: Optional[str] = None) -> Optional[Dict]:
+    def query(self, query: str, time_param: Optional[str] = None) -> Optional[dict]:
         """Execute PromQL query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query'
 
@@ -47,7 +47,7 @@ class GrafanaValidator:
             print(f'❌ Query failed: {e}')
             return None
 
-    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> Optional[Dict]:
+    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> Optional[dict]:
         """Execute range query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query_range'
 

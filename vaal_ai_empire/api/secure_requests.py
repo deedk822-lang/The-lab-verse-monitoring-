@@ -6,7 +6,7 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
-from typing import Optional, Set, Tuple
+from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -43,10 +43,10 @@ class SSRFBlocker:
     def __init__(
         self,
         allow_private_ips: bool = False,
-        allowed_domains: Optional[Set[str]] = None,
-        blocked_domains: Optional[Set[str]] = None,
-        allowed_schemes: Optional[Set[str]] = None
-    ):
+        allowed_domains: Optional[set[str]] = None,
+        blocked_domains: Optional[set[str]] = None,
+        allowed_schemes: Optional[set[str]] = None
+    ) -> None:
         self.allow_private_ips = allow_private_ips
         self.allowed_domains = allowed_domains
         self.blocked_domains = blocked_domains
@@ -66,12 +66,12 @@ class SSRFBlocker:
             if url in ('169.254.169.254', 'metadata.google.internal', 'instance-data'):
                 return True
             parsed = urlparse(url)
-            hostname = parsed.hostname or url.split('/')[0].split(':')[0]
+            hostname = parsed.hostname or url.split('/', 1)[0].split(':', 1)[0]
             return hostname in ('169.254.169.254', 'metadata.google.internal', 'instance-data')
-        except:
+        except Exception:
             return False
 
-    def validate_url(self, url: str) -> Tuple[bool, Optional[str]]:
+    def validate_url(self, url: str) -> tuple[bool, Optional[str]]:
         """
         Comprehensive URL validation.
 
@@ -124,10 +124,10 @@ class SSRFBlocker:
 def is_safe_url(url: str) -> bool:
     """
     Check if URL is safe to request (not private/localhost).
-    
+
     Args:
         url: URL to check
-        
+
     Returns:
         True if safe, False otherwise
     """
@@ -173,7 +173,7 @@ def is_safe_url(url: str) -> bool:
 
 def create_ssrf_safe_session(
     timeout: float = 30.0,
-    allowed_domains: Optional[Set[str]] = None
+    allowed_domains: Optional[set[str]] = None
 ) -> httpx.Client:
     """
     Create a synchronous SSRF-safe session.
@@ -209,12 +209,12 @@ def create_ssrf_safe_async_session(
 ) -> httpx.AsyncClient:
     """
     Create SSRF-safe async HTTP client.
-    
+
     Args:
         timeout: Request timeout in seconds
         follow_redirects: Whether to follow redirects
         max_redirects: Maximum number of redirects
-        
+
     Returns:
         Configured async HTTP client
     """

@@ -17,7 +17,7 @@ app: FastAPI = FastAPI(
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, str]:
     """
     Provide a legacy-compatibility health response for the server.
     

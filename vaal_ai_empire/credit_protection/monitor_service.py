@@ -10,7 +10,7 @@ import smtplib
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Optional
+from typing import Any
 
 import httpx
 
@@ -42,7 +42,7 @@ class AlertService:
         subject: str,
         message: str,
         level: str = "warning"
-    ):
+    ) -> None:
         """Send alert via configured channels."""
         if self.email_enabled:
             await self._send_email_alert(subject, message)
@@ -50,7 +50,7 @@ class AlertService:
         if self.webhook_enabled:
             await self._send_webhook_alert(subject, message, level)
 
-    async def _send_email_alert(self, subject: str, message: str):
+    async def _send_email_alert(self, subject: str, message: str) -> None:
         """Send email alert."""
         if not all([self.email_to, self.email_from, self.smtp_user, self.smtp_password]):
             logger.warning("Email alerts not fully configured")
@@ -89,7 +89,7 @@ class AlertService:
         except Exception as e:
             logger.error(f"Failed to send email alert: {e}")
 
-    async def _send_webhook_alert(self, subject: str, message: str, level: str):
+    async def _send_webhook_alert(self, subject: str, message: str, level: str) -> None:
         """Send webhook alert (Slack/Discord/Custom)."""
         if not self.webhook_url:
             logger.warning("Webhook URL not configured")
@@ -149,7 +149,7 @@ class CreditMonitorService:
         self.warning_sent = False
         self.critical_sent = False
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the monitoring service."""
         self.running = True
         logger.info("Credit monitoring service started")
@@ -162,12 +162,12 @@ class CreditMonitorService:
             return_exceptions=True
         )
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the monitoring service."""
         self.running = False
         logger.info("Credit monitoring service stopped")
 
-    async def _hourly_reset_task(self):
+    async def _hourly_reset_task(self) -> None:
         """Task to reset hourly usage counters."""
         while self.running:
             try:
@@ -189,7 +189,7 @@ class CreditMonitorService:
                 logger.error(f"Error in hourly reset task: {e}")
                 await asyncio.sleep(60)
 
-    async def _daily_reset_task(self):
+    async def _daily_reset_task(self) -> None:
         """Task to reset daily usage counters."""
         while self.running:
             try:
@@ -222,7 +222,7 @@ class CreditMonitorService:
                 logger.error(f"Error in daily reset task: {e}")
                 await asyncio.sleep(60)
 
-    async def _usage_monitor_task(self):
+    async def _usage_monitor_task(self) -> None:
         """Task to monitor usage and send alerts."""
         while self.running:
             try:
@@ -266,7 +266,7 @@ class CreditMonitorService:
                 logger.error(f"Error in usage monitor task: {e}")
                 await asyncio.sleep(60)
 
-    async def _send_warning_alert(self, usage: dict):
+    async def _send_warning_alert(self, usage: dict[str, Any]) -> None:
         """Send warning alert when usage reaches threshold."""
         daily = usage['daily']
 
@@ -297,7 +297,7 @@ Please monitor your usage to avoid hitting daily limits.
         log_msg = f"Usage warning sent: {daily['usage_percent']['requests']:.1f}% of daily limit"
         logger.warning(log_msg)
 
-    async def _send_critical_alert(self, usage: dict):
+    async def _send_critical_alert(self, usage: dict[str, Any]) -> None:
         """Send critical alert when usage nears limit."""
         daily = usage['daily']
 
@@ -336,7 +336,7 @@ Consider:
 
 
 # Global service instance
-_monitor_service: Optional[CreditMonitorService] = None
+_monitor_service: CreditMonitorService | None = None
 
 
 def get_monitor_service() -> CreditMonitorService:
@@ -349,7 +349,7 @@ def get_monitor_service() -> CreditMonitorService:
     return _monitor_service
 
 
-async def start_monitor_service():
+async def start_monitor_service() -> None:
     """Start the credit monitoring service."""
     service = get_monitor_service()
     await service.start()

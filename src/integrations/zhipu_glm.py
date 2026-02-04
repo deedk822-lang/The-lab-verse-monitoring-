@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 import aiohttp
 from pydantic import BaseModel, Field
@@ -69,13 +69,13 @@ class GLMIntegration:
         sanitized = re.sub(r'[{}[\]"\\]', '', user_input)[:1000]  # Length limit
         return f"<user_input>{sanitized}</user_input>"
 
-    async def generate_text(self, prompt: str, options: Optional[Dict] = None, sanitize: bool = True) -> str:
+    async def generate_text(self, prompt: str, options: dict[str, Any] | None = None, sanitize: bool = True) -> str:
         """
         Generate text from the configured GLM model using the provided prompt.
         
         Parameters:
             prompt (str): The user prompt to send to the model.
-            options (Optional[Dict]): Optional generation parameters. Supported keys:
+            options (dict[str, Any] | None): Optional generation parameters. Supported keys:
                 - "temperature" (float): Sampling temperature (default 0.7).
                 - "max_tokens" (int): Requested max tokens; effective value is capped at 4096 (default 1024).
             sanitize (bool): If True, sanitize the prompt to mitigate prompt-injection risks before sending.
@@ -118,16 +118,16 @@ class GLMIntegration:
             self.logger.error(f"Error generating text with GLM: {str(e)}")
             raise
 
-    async def generate_structured_content(self, content_type: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_structured_content(self, content_type: str, context: dict[str, Any]) -> dict[str, Any]:
         """
         Generate a JSON-structured piece of content of the given type using the integration's model.
         
         Parameters:
             content_type (str): The type/category of content to generate (e.g., "article", "summary").
-            context (Dict[str, Any]): Contextual data used to inform the generated content; it will be serialized to JSON and included in the prompt.
+            context (dict[str, Any]): Contextual data used to inform the generated content; it will be serialized to JSON and included in the prompt.
         
         Returns:
-            Dict[str, Any]: The parsed JSON object with keys `title`, `content`, `tags`, and `metadata` when parsing succeeds; if the model response cannot be parsed as JSON, returns `{"content": <raw_response>}`.
+            dict[str, Any]: The parsed JSON object with keys `title`, `content`, `tags`, and `metadata` when parsing succeeds; if the model response cannot be parsed as JSON, returns `{"content": <raw_response>}`.
         """
         # Context is serialized to JSON for the prompt
         context_json = json.dumps(context, indent=2)
@@ -154,7 +154,7 @@ class GLMIntegration:
             self.logger.warning("Failed to parse GLM response as JSON, returning raw text")
             return {"content": response}
 
-    async def analyze_content_security(self, content: str) -> Dict[str, Any]:
+    async def analyze_content_security(self, content: str) -> dict[str, Any]:
         """
         Assess provided text for security vulnerabilities, compliance issues, risk factors, and remediation recommendations.
         

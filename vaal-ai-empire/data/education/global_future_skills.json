@@ -5,7 +5,11 @@
     "ai_literacy": ["How computers learn", "Voice assistants"]
   },
   "grade_10": {
-    "advanced_computing": ["Python data analysis", "Web development (React/Node)", "Cybersecurity hygiene"],
+    "advanced_computing": [
+      "Python data analysis",
+      "Web development (React/Node)",
+      "Cybersecurity hygiene"
+    ],
     "economic_sovereignty": ["Crypto wallets", "Stock market simulation", "Business plan creation"],
     "ai_engineering": ["Prompt engineering", "Basic LLM concepts"]
   }

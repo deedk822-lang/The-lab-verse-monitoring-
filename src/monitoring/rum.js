@@ -136,7 +136,7 @@ export function initializeRUM() {
   });
 
   // Track user interactions
-  ['click', 'submit', 'change'].forEach(eventType => {
+  ['click', 'submit', 'change'].forEach((eventType) => {
     document.addEventListener(eventType, (event) => {
       trackInteraction(eventType, event.target.tagName);
     });

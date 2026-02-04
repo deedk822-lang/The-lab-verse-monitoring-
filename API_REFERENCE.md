@@ -34,12 +34,14 @@ class RainmakerOrchestrator:
 #### Methods
 
 **`__init__(config_file: str = ".env")`**
+
 - Initializes the orchestrator with configuration
 - Parameters:
   - `config_file`: Path to environment configuration file
 - Raises: None (logs warnings for missing config)
 
 **`execute_directive(directive: str) -> DirectiveResult`**
+
 - Executes a single natural language directive
 - Parameters:
   - `directive`: Natural language command string
@@ -47,6 +49,7 @@ class RainmakerOrchestrator:
 - Raises: None (errors captured in result)
 
 **`batch_execute(directives: List[str]) -> List[DirectiveResult]`**
+
 - Executes multiple directives concurrently
 - Parameters:
   - `directives`: List of directive strings
@@ -54,6 +57,7 @@ class RainmakerOrchestrator:
 - Raises: None
 
 **`close()`**
+
 - Cleanup and close connections
 - Parameters: None
 - Returns: None
@@ -133,6 +137,7 @@ class DirectiveParser:
 #### Methods
 
 **`parse(directive: str) -> tuple[ToolType, str]`**
+
 - Parses directive into tool type and prompt
 - Parameters:
   - `directive`: Natural language directive
@@ -167,6 +172,7 @@ class ToolExecutor:
 #### Methods
 
 **`execute(tool: ToolType, prompt: str) -> DirectiveResult`**
+
 - Executes prompt on specified tool
 - Parameters:
   - `tool`: ToolType enum value
@@ -189,6 +195,7 @@ class ConfigManager:
 #### Methods
 
 **`get(key: str, default: str = '') -> str`**
+
 - Retrieves configuration value
 - Parameters:
   - `key`: Configuration key
@@ -196,6 +203,7 @@ class ConfigManager:
 - Returns: Configuration value
 
 **`validate() -> List[str]`**
+
 - Validates required configuration
 - Returns: List of missing keys
 
@@ -219,15 +227,15 @@ class ToolType(Enum):
 
 ### Tool Capabilities
 
-| Tool | Capabilities | Use Cases |
-|------|-------------|-----------|
-| **Kimi Linear** | 1M context, strategic analysis | Project history, roadmaps, technical debt |
-| **Gemini Pro** | Vision, audio, multilingual | Image analysis, translation, multimodal tasks |
-| **Grok** | Real-time web data | News search, trending topics, current events |
-| **Cohere** | Classification, ranking | Lead filtering, semantic search, sentiment |
-| **Perplexity** | Research, citations | Patent search, legal research, fact-checking |
-| **Atlas TV** | Ad generation | TV commercials, broadcast content |
-| **Linear** | Project management | Task creation, issue tracking, roadmaps |
+| Tool            | Capabilities                   | Use Cases                                     |
+| --------------- | ------------------------------ | --------------------------------------------- |
+| **Kimi Linear** | 1M context, strategic analysis | Project history, roadmaps, technical debt     |
+| **Gemini Pro**  | Vision, audio, multilingual    | Image analysis, translation, multimodal tasks |
+| **Grok**        | Real-time web data             | News search, trending topics, current events  |
+| **Cohere**      | Classification, ranking        | Lead filtering, semantic search, sentiment    |
+| **Perplexity**  | Research, citations            | Patent search, legal research, fact-checking  |
+| **Atlas TV**    | Ad generation                  | TV commercials, broadcast content             |
+| **Linear**      | Project management             | Task creation, issue tracking, roadmaps       |
 
 ---
 
@@ -406,6 +414,7 @@ docker-compose up orchestrator
 Execute a single directive.
 
 **Request:**
+
 ```json
 {
   "directive": "Analyze project history",
@@ -414,6 +423,7 @@ Execute a single directive.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -428,6 +438,7 @@ Execute a single directive.
 ```
 
 **cURL Example:**
+
 ```bash
 curl -X POST http://localhost:8080/directive \
   -H "Content-Type: application/json" \
@@ -439,16 +450,15 @@ curl -X POST http://localhost:8080/directive \
 Execute multiple directives concurrently.
 
 **Request:**
+
 ```json
 {
-  "directives": [
-    "grok Latest AI news",
-    "linear Create task: Update docs"
-  ]
+  "directives": ["grok Latest AI news", "linear Create task: Update docs"]
 }
 ```
 
 **Response:**
+
 ```json
 {
   "results": [
@@ -474,6 +484,7 @@ Execute multiple directives concurrently.
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -490,6 +501,7 @@ Health check endpoint.
 List available tools.
 
 **Response:**
+
 ```json
 {
   "tools": [
@@ -512,11 +524,13 @@ List available tools.
 
 ```json
 {
-  "choices": [{
-    "text": "Analysis results...",
-    "finish_reason": "stop",
-    "logprobs": null
-  }],
+  "choices": [
+    {
+      "text": "Analysis results...",
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
   "usage": {
     "prompt_tokens": 150,
     "completion_tokens": 850,
@@ -548,13 +562,15 @@ List available tools.
 
 ```json
 {
-  "choices": [{
-    "message": {
-      "role": "assistant",
-      "content": "Search results..."
-    },
-    "finish_reason": "stop"
-  }],
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Search results..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
   "usage": {
     "prompt_tokens": 100,
     "completion_tokens": 300
@@ -646,14 +662,14 @@ result = await orchestrator.execute_with_retry("Analyze data")
 
 ### Per-Tool Limits
 
-| Tool | Requests/Min | Requests/Hour | Tokens/Min |
-|------|--------------|---------------|------------|
-| Kimi Linear | 60 | 1000 | 100K |
-| Gemini Pro | 60 | 1500 | 32K |
-| Grok | 50 | 500 | 16K |
-| Cohere | 100 | 5000 | 40K |
-| Perplexity | 20 | 200 | 10K |
-| Linear | 100 | 5000 | N/A |
+| Tool        | Requests/Min | Requests/Hour | Tokens/Min |
+| ----------- | ------------ | ------------- | ---------- |
+| Kimi Linear | 60           | 1000          | 100K       |
+| Gemini Pro  | 60           | 1500          | 32K        |
+| Grok        | 50           | 500           | 16K        |
+| Cohere      | 100          | 5000          | 40K        |
+| Perplexity  | 20           | 200           | 10K        |
+| Linear      | 100          | 5000          | N/A        |
 
 ### Rate Limit Headers
 

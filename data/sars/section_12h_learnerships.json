@@ -1,9 +1,6 @@
 {
   "title": "SARS Section 12H Learnership Allowances",
-  "official_sources": [
-    "SARS Legal Note IN-20",
-    "SARS Learnership Guide"
-  ],
+  "official_sources": ["SARS Legal Note IN-20", "SARS Learnership Guide"],
   "allowances": {
     "annual_allowance": {
       "nqf_1_to_6": {

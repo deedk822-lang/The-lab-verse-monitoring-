@@ -1,4 +1,5 @@
 # G20 Blog Post Creation & Distribution Workflow (VERIFIED)
+
 ## ✅ Fact-Checked Content Pipeline - November 2025
 
 **Target Topic:** G20 Opportunities for South Africa (2025 Summit)  
@@ -12,6 +13,7 @@
 ## 🚨 CRITICAL: Content Integrity Requirements
 
 ### Before Execution
+
 - ✅ All content must reference official G20 sources
 - ✅ Financial projections use conservative IMF estimates
 - ✅ Case studies verified through official reports
@@ -38,37 +40,38 @@ Research (Verified Sources) → Content Creation → Fact-Check Gate → Publish
 ### Step 1.1: Use Official G20 Sources ONLY
 
 **✅ VERIFIED SOURCES:**
+
 ```javascript
 const officialSources = [
   {
-    source: "G20.org Official Website",
-    url: "https://www.g20.org/",
-    focus: "Official summit information, member commitments"
+    source: 'G20.org Official Website',
+    url: 'https://www.g20.org/',
+    focus: 'Official summit information, member commitments'
   },
   {
-    source: "G20 Africa Engagement Framework",
-    url: "https://www.g20.org/africa-partnership",
-    focus: "Real Africa-focused initiatives"
+    source: 'G20 Africa Engagement Framework',
+    url: 'https://www.g20.org/africa-partnership',
+    focus: 'Real Africa-focused initiatives'
   },
   {
-    source: "Compact with Africa (CwA)",
-    url: "https://www.compactwithafrica.org/",
-    focus: "€15.5B investment commitment, infrastructure"
+    source: 'Compact with Africa (CwA)',
+    url: 'https://www.compactwithafrica.org/',
+    focus: '€15.5B investment commitment, infrastructure'
   },
   {
-    source: "IMF Regional Economic Outlook",
-    url: "https://www.imf.org/en/Publications/REO",
-    focus: "Conservative growth projections, verified statistics"
+    source: 'IMF Regional Economic Outlook',
+    url: 'https://www.imf.org/en/Publications/REO',
+    focus: 'Conservative growth projections, verified statistics'
   },
   {
-    source: "AfCFTA Official Portal",
-    url: "https://au-afcfta.org/",
-    focus: "Operational trade area (since 2021)"
+    source: 'AfCFTA Official Portal',
+    url: 'https://au-afcfta.org/',
+    focus: 'Operational trade area (since 2021)'
   },
   {
-    source: "PAPSS Payment System",
-    url: "https://papss.com/",
-    focus: "Real cross-border payment system ($100M+ processed)"
+    source: 'PAPSS Payment System',
+    url: 'https://papss.com/',
+    focus: 'Real cross-border payment system ($100M+ processed)'
   }
 ];
 ```
@@ -182,47 +185,47 @@ Requirement: Every claim must be sourceable.
 const contentQualityGate = {
   checks: [
     {
-      item: "Summit location and dates verified",
-      requirement: "Johannesburg, Nov 22-23, 2025",
-      source: "G20.org"
+      item: 'Summit location and dates verified',
+      requirement: 'Johannesburg, Nov 22-23, 2025',
+      source: 'G20.org'
     },
     {
-      item: "No fictional frameworks mentioned",
-      requirement: "Zero references to non-existent protocols",
+      item: 'No fictional frameworks mentioned',
+      requirement: 'Zero references to non-existent protocols',
       verified: true
     },
     {
-      item: "Financial projections conservative",
-      requirement: "$450B by 2035 (not inflated figures)",
-      source: "IMF data"
+      item: 'Financial projections conservative',
+      requirement: '$450B by 2035 (not inflated figures)',
+      source: 'IMF data'
     },
     {
-      item: "Payment systems accurate",
-      requirement: "PAPSS mentioned, mBridge excluded",
+      item: 'Payment systems accurate',
+      requirement: 'PAPSS mentioned, mBridge excluded',
       verified: true
     },
     {
-      item: "AfCFTA status correct",
-      requirement: "Operational since 2021, available NOW",
-      source: "AU-AfCFTA.org"
+      item: 'AfCFTA status correct',
+      requirement: 'Operational since 2021, available NOW',
+      source: 'AU-AfCFTA.org'
     },
     {
-      item: "Case studies verified",
-      requirement: "Kenya 38%, PAPSS $100M+ with sources",
+      item: 'Case studies verified',
+      requirement: 'Kenya 38%, PAPSS $100M+ with sources',
       verified: true
     },
     {
-      item: "Official links included",
-      requirement: "All major sources linked",
+      item: 'Official links included',
+      requirement: 'All major sources linked',
       verified: true
     },
     {
-      item: "Conservative language used",
+      item: 'Conservative language used',
       requirement: "'Potential', 'estimated', avoid guarantees",
       verified: true
     }
   ],
-  approvalRequired: "ALL checks must pass before publishing"
+  approvalRequired: 'ALL checks must pass before publishing'
 };
 ```
 
@@ -230,12 +233,12 @@ const contentQualityGate = {
 
 ```javascript
 const verifiedBlogPost = {
-  title: "G20 2025 Johannesburg Summit: 5 Verified Opportunities for South African Businesses",
-  subtitle: "Fact-Checked Analysis of Real G20 Initiatives and How SA Can Benefit",
-  
+  title: 'G20 2025 Johannesburg Summit: 5 Verified Opportunities for South African Businesses',
+  subtitle: 'Fact-Checked Analysis of Real G20 Initiatives and How SA Can Benefit',
+
   sections: [
     {
-      heading: "Summit Overview",
+      heading: 'Summit Overview',
       content: `The G20 summit will take place in Johannesburg on November 22-23, 2025, with South Africa holding the G20 Presidency. This presents concrete opportunities for South African businesses to engage with official G20 initiatives.
       
       Source: [G20 Official Website](https://www.g20.org/)
@@ -243,7 +246,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "1. Africa Engagement Framework: Real Partnership Opportunities",
+      heading: '1. Africa Engagement Framework: Real Partnership Opportunities',
       content: `The G20 Africa Engagement Framework is an official initiative focusing on infrastructure development, digital economy growth, and trade facilitation. South African businesses can access:
       
       • Technical assistance programs
@@ -258,7 +261,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "2. Compact with Africa: €15.5 Billion Investment Opportunity",
+      heading: '2. Compact with Africa: €15.5 Billion Investment Opportunity',
       content: `The Compact with Africa (CwA) initiative represents a verified €15.5 billion commitment for infrastructure and private sector development across African nations, including South Africa.
       
       **Verified Investment Areas:**
@@ -274,7 +277,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "3. AfCFTA Integration: Operational Trade Benefits Available NOW",
+      heading: '3. AfCFTA Integration: Operational Trade Benefits Available NOW',
       content: `The African Continental Free Trade Area (AfCFTA) is operational and available for South African businesses to register immediately. Since January 2021, AfCFTA has provided:
       
       **Immediate Benefits:**
@@ -296,7 +299,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "4. PAPSS Payment System: Reduce Cross-Border Transaction Costs by 80%",
+      heading: '4. PAPSS Payment System: Reduce Cross-Border Transaction Costs by 80%',
       content: `The Pan-African Payment and Settlement System (PAPSS) is a real, operational payment infrastructure that has processed over $100 million in its first year of operation.
       
       **Verified Performance Data:**
@@ -316,7 +319,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "5. Conservative Economic Projections: What SA Can Realistically Expect",
+      heading: '5. Conservative Economic Projections: What SA Can Realistically Expect',
       content: `Based on IMF Regional Economic Outlook data and historical G20 member growth patterns, South Africa can expect:
       
       **Realistic Projections by 2035:**
@@ -336,7 +339,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "Actionable Steps for South African Businesses",
+      heading: 'Actionable Steps for South African Businesses',
       content: `**Immediate Actions:**
       
       1. **Register for AfCFTA** (Available NOW)
@@ -363,7 +366,7 @@ const verifiedBlogPost = {
       verified: true
     },
     {
-      heading: "Official Resources & Verification Links",
+      heading: 'Official Resources & Verification Links',
       content: `**G20 Official Resources:**
       • [G20 Official Website](https://www.g20.org/)
       • [G20 Africa Partnership](https://www.g20.org/africa-partnership)
@@ -389,15 +392,16 @@ const verifiedBlogPost = {
       verified: true
     }
   ],
-  
+
   metadata: {
-    author: "Lab Verse AI Judges - Content Integrity Team",
-    publishDate: "2025-11-29",
-    lastVerified: "2025-11-29",
-    categories: ["G20", "South Africa", "Verified Analysis", "International Trade"],
-    tags: ["#G20Johannesburg2025", "#SouthAfrica", "#FactChecked", "#AfCFTA", "#PAPSS"],
-    verificationStatus: "All claims verified against official sources",
-    disclaimer: "This analysis uses conservative projections and verified data only. Actual results may vary based on policy implementation and global economic conditions."
+    author: 'Lab Verse AI Judges - Content Integrity Team',
+    publishDate: '2025-11-29',
+    lastVerified: '2025-11-29',
+    categories: ['G20', 'South Africa', 'Verified Analysis', 'International Trade'],
+    tags: ['#G20Johannesburg2025', '#SouthAfrica', '#FactChecked', '#AfCFTA', '#PAPSS'],
+    verificationStatus: 'All claims verified against official sources',
+    disclaimer:
+      'This analysis uses conservative projections and verified data only. Actual results may vary based on policy implementation and global economic conditions.'
   }
 };
 ```
@@ -409,6 +413,7 @@ const verifiedBlogPost = {
 ### Platform-Specific Posts with Verified Claims
 
 **Twitter/X (280 chars):**
+
 ```
 🇿🇦 G20 2025 Johannesburg Summit (Nov 22-23)
 
@@ -423,6 +428,7 @@ Verified opportunities for SA businesses:
 ```
 
 **LinkedIn (Professional):**
+
 ```
 🌍 G20 2025 Johannesburg Summit: Verified Opportunities for South African Businesses
 
@@ -451,6 +457,7 @@ Every claim in our analysis is verified against official sources. No speculation
 ```
 
 **Facebook:**
+
 ```
 🇿🇦 Fact-Checked: What the G20 Johannesburg Summit Really Means for SA Businesses
 
@@ -486,6 +493,7 @@ Every single claim in our analysis can be traced to an official source. Because 
 ```
 
 **Instagram Carousel (5 Slides):**
+
 ```
 Slide 1 (Cover):
 🇿🇦 G20 2025 Johannesburg
@@ -543,6 +551,7 @@ Slide 5 (Action):
 ### Pre-Distribution Checklist
 
 **❗ MANDATORY VERIFICATION:**
+
 ```bash
 # Before scheduling ANY posts, confirm:
 
@@ -577,26 +586,26 @@ manus-mcp-cli tool call sp_create_post --server socialpilot --input '{
 ```javascript
 const postSummitProtocol = {
   timeline: {
-    "Nov 23, 2025": "Monitor official G20 communiqué",
-    "Nov 24-30, 2025": "Update content with actual summit outcomes",
-    "Dec 1-7, 2025": "Revise projections based on real commitments",
-    "Weekly": "Check official sources for new announcements",
-    "Monthly": "Update IMF data if revised",
-    "Quarterly": "Full content audit and verification"
+    'Nov 23, 2025': 'Monitor official G20 communiqué',
+    'Nov 24-30, 2025': 'Update content with actual summit outcomes',
+    'Dec 1-7, 2025': 'Revise projections based on real commitments',
+    Weekly: 'Check official sources for new announcements',
+    Monthly: 'Update IMF data if revised',
+    Quarterly: 'Full content audit and verification'
   },
-  
+
   updateTriggers: [
-    "New G20 official announcements",
-    "Revised IMF/World Bank projections",
-    "AfCFTA membership or policy changes",
-    "PAPSS performance data updates",
-    "CwA investment allocations announced"
+    'New G20 official announcements',
+    'Revised IMF/World Bank projections',
+    'AfCFTA membership or policy changes',
+    'PAPSS performance data updates',
+    'CwA investment allocations announced'
   ],
-  
+
   correctionPolicy: {
-    minor: "Update content within 24 hours",
-    major: "Immediate correction + notification to all platforms",
-    verification: "Always cite source of new information"
+    minor: 'Update content within 24 hours',
+    major: 'Immediate correction + notification to all platforms',
+    verification: 'Always cite source of new information'
   }
 };
 ```
@@ -608,6 +617,7 @@ const postSummitProtocol = {
 ### Content Performance Targets
 
 **Conservative Goals:**
+
 - Blog Views: 3,000-5,000 in first week
 - Social Reach: 10,000-15,000 across platforms
 - Engagement Rate: 2-3% (realistic)
@@ -615,6 +625,7 @@ const postSummitProtocol = {
 - Trust Score: 95%+ accuracy rating
 
 **Quality Metrics:**
+
 - Fact-check Pass Rate: 100%
 - Source Citation Rate: Every major claim
 - Correction Rate: <1% (due to pre-publishing verification)
@@ -647,11 +658,13 @@ const postSummitProtocol = {
 ## 📞 **Support & Verification**
 
 **Content Integrity Team:**
+
 - Email: content-verification@lab-verse.ai
 - Fact-Check Requests: factcheck@lab-verse.ai
 - Emergency Corrections: urgent-corrections@lab-verse.ai
 
 **Verification Sources:**
+
 - G20 Official: https://www.g20.org/
 - IMF Data: https://www.imf.org/
 - AfCFTA: https://au-afcfta.org/

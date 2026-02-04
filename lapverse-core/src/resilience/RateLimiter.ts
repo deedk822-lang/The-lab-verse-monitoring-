@@ -4,7 +4,7 @@ type Bucket = { count: number; resetAt: number };
 
 export class RateLimiter {
   private buckets = new Map<string, Bucket>();
-  constructor(private options: RateLimiterOptions){}
+  constructor(private options: RateLimiterOptions) {}
 
   tryConsume(key: string): boolean {
     const now = Date.now();
@@ -27,5 +27,7 @@ export class RateLimiter {
     return Math.max(0, this.options.limit - bucket.count);
   }
 
-  getLimit(): number { return this.options.limit; }
+  getLimit(): number {
+    return this.options.limit;
+  }
 }

@@ -6,10 +6,10 @@ const config = {
     env: process.env.NODE_ENV || 'development',
     apiKey: process.env.API_KEY || 'default-api-key-change-me'
   },
-  
+
   providers: {
     default: process.env.DEFAULT_PROVIDER || 'google',
-    
+
     openai: {
       apiKey: process.env.OPENAI_API_KEY,
       enabled: !!process.env.OPENAI_API_KEY,
@@ -19,7 +19,7 @@ const config = {
         tts: 'tts-1'
       }
     },
-    
+
     google: {
       apiKey: process.env.GOOGLE_API_KEY,
       enabled: !!process.env.GOOGLE_API_KEY,
@@ -32,7 +32,7 @@ const config = {
         veo: 'veo-3.1'
       }
     },
-    
+
     localai: {
       url: process.env.LOCALAI_URL || 'http://localhost:8080',
       enabled: process.env.LOCALAI_ENABLED === 'true',
@@ -42,7 +42,7 @@ const config = {
         tts: 'piper'
       }
     },
-    
+
     zai: {
       apiKey: process.env.ZAI_API_KEY,
       enabled: !!process.env.ZAI_API_KEY,
@@ -50,7 +50,7 @@ const config = {
       model: process.env.ZAI_MODEL || 'glm-4.6',
       maxTokens: 200000
     },
-    
+
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY,
       enabled: !!process.env.ANTHROPIC_API_KEY,
@@ -58,7 +58,7 @@ const config = {
         text: 'claude-3-opus-20240229'
       }
     },
-    
+
     perplexity: {
       apiKey: process.env.PERPLEXITY_API_KEY,
       enabled: !!process.env.PERPLEXITY_API_KEY,
@@ -67,18 +67,18 @@ const config = {
       }
     }
   },
-  
+
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
     enabled: process.env.REDIS_ENABLED === 'true',
     ttl: 3600 // 1 hour default cache
   },
-  
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
   },
-  
+
   costs: {
     trackCosts: process.env.TRACK_COSTS === 'true',
     pricing: {
@@ -90,7 +90,7 @@ const config = {
       google: {
         'gemini-1.5-pro': { input: 0.00125, output: 0.005 }, // per 1K tokens
         'imagen-3.0': { perImage: 0.04 },
-        'veo-3.1': { perSecond: 0.10 }
+        'veo-3.1': { perSecond: 0.1 }
       },
       zai: {
         'glm-4.6': { input: 0.0005, output: 0.0015 } // per 1K tokens (estimated)
@@ -100,7 +100,7 @@ const config = {
       }
     }
   },
-  
+
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     dir: 'logs'

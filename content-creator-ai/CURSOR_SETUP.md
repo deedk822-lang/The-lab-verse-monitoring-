@@ -28,6 +28,7 @@ cp .env.example .env
 ```
 
 Add at least one API key to `.env`:
+
 ```env
 # Choose your provider:
 GOOGLE_API_KEY=your-google-api-key
@@ -50,6 +51,7 @@ npm start
 ```
 
 You should see:
+
 ```
 🚀 Content Creator AI Server Started
 Server running on: http://localhost:3000
@@ -58,6 +60,7 @@ Server running on: http://localhost:3000
 ### Step 6: Open in Browser
 
 Click the link in the terminal or manually open:
+
 - **Web UI**: http://localhost:3000
 - **Health Check**: http://localhost:3000/api/health
 - **Test Endpoint**: http://localhost:3000/api/test
@@ -75,6 +78,7 @@ This uses `nodemon` to restart the server when you edit files.
 ## Testing in Cursor
 
 ### Option 1: Use the Browser UI
+
 1. Open http://localhost:3000
 2. Fill in the form
 3. Click "Generate Content"
@@ -82,6 +86,7 @@ This uses `nodemon` to restart the server when you edit files.
 ### Option 2: Use Cursor's Terminal
 
 Test the API with curl:
+
 ```bash
 # Test endpoint (no API key needed)
 curl http://localhost:3000/api/test
@@ -132,6 +137,7 @@ local-ai run llama-3.2-1b-instruct
 ```
 
 Then update `.env`:
+
 ```env
 LOCALAI_ENABLED=true
 LOCALAI_URL=http://localhost:8080
@@ -148,6 +154,7 @@ docker run -d -p 6379:6379 --name redis redis:alpine
 ```
 
 Update `.env`:
+
 ```env
 REDIS_ENABLED=true
 REDIS_URL=redis://localhost:6379
@@ -190,9 +197,11 @@ curl -H "X-API-Key: my-secure-api-key-123" http://localhost:3000/api/stats
 ### Stop the Server
 
 In the terminal where the server is running:
+
 - Press `Ctrl+C`
 
 Or kill the process:
+
 ```bash
 # Find the process
 lsof -i :3000
@@ -286,6 +295,7 @@ pm2 start server.js
 ### 1. Use Cursor's AI Features
 
 Ask Cursor AI to:
+
 - Explain any code in the project
 - Help debug issues
 - Suggest improvements
@@ -294,6 +304,7 @@ Ask Cursor AI to:
 ### 2. Multi-Terminal Workflow
 
 Open multiple terminals in Cursor:
+
 - Terminal 1: Run the server (`npm start`)
 - Terminal 2: Run tests (`node test.js`)
 - Terminal 3: Test API calls with curl
@@ -302,6 +313,7 @@ Open multiple terminals in Cursor:
 ### 3. Quick Commands
 
 Add to your Cursor command palette:
+
 - "Run Server": `npm start`
 - "Run Tests": `node test.js`
 - "View Logs": `tail -f logs/combined.log`
@@ -309,6 +321,7 @@ Add to your Cursor command palette:
 ### 4. File Watching
 
 Cursor will auto-detect file changes. The server will auto-reload if you use:
+
 ```bash
 npm run dev
 ```

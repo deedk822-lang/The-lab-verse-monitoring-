@@ -1,11 +1,7 @@
 {
   "dashboard": {
     "title": "AI Provider Monitoring (OpenTelemetry)",
-    "tags": [
-      "ai",
-      "opentelemetry",
-      "monitoring"
-    ],
+    "tags": ["ai", "opentelemetry", "monitoring"],
     "timezone": "browser",
     "panels": [
       {

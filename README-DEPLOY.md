@@ -8,14 +8,14 @@ curl http://localhost:3000/health
 
 ## API Endpoints:
 
-- `POST /api/video/generate`      (JWT, Joi validated)
-- `POST /api/text-to-speech`      (JWT, returns MP3)
-- `POST /api/alerts/slack`        (public, queues alert)
+- `POST /api/video/generate` (JWT, Joi validated)
+- `POST /api/text-to-speech` (JWT, returns MP3)
+- `POST /api/alerts/slack` (public, queues alert)
 
 ## Metrics:
 
-- `GET /health`   (Health check)
-- `GET /metrics`  (Prometheus format)
+- `GET /health` (Health check)
+- `GET /metrics` (Prometheus format)
 
 ## Quick Test:
 

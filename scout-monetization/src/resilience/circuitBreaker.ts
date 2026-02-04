@@ -15,21 +15,35 @@ declare module 'fastify' {
 }
 
 const circuitBreakerPlugin = async (fastify: FastifyInstance) => {
-  const create = <T>(action: Action<T>, options?: CircuitBreaker.Options): CircuitBreaker<any[], T> => {
+  const create = <T>(
+    action: Action<T>,
+    options?: CircuitBreaker.Options
+  ): CircuitBreaker<any[], T> => {
     const defaultOptions: CircuitBreaker.Options = {
       timeout: 3000, // If the action takes longer than 3 seconds, trigger a failure
       errorThresholdPercentage: 50, // If 50% of requests fail, trip the circuit
       resetTimeout: 30000, // After 30 seconds, try again.
-      ...options,
+      ...options
     };
 
     const breaker = new CircuitBreaker(action, defaultOptions);
 
     // Log events for observability
-    breaker.on('open', () => console.warn(`[CircuitBreaker] Circuit opened for ${action.name || 'anonymous action'}.`));
-    breaker.on('close', () => console.log(`[CircuitBreaker] Circuit closed for ${action.name || 'anonymous action'}.`));
-    breaker.on('halfOpen', () => console.log(`[CircuitBreaker] Circuit half-open for ${action.name || 'anonymous action'}.`));
-    breaker.on('fallback', (result) => console.log(`[CircuitBreaker] Fallback executed for ${action.name || 'anonymous action'}. Result:`, result));
+    breaker.on('open', () =>
+      console.warn(`[CircuitBreaker] Circuit opened for ${action.name || 'anonymous action'}.`)
+    );
+    breaker.on('close', () =>
+      console.log(`[CircuitBreaker] Circuit closed for ${action.name || 'anonymous action'}.`)
+    );
+    breaker.on('halfOpen', () =>
+      console.log(`[CircuitBreaker] Circuit half-open for ${action.name || 'anonymous action'}.`)
+    );
+    breaker.on('fallback', (result) =>
+      console.log(
+        `[CircuitBreaker] Fallback executed for ${action.name || 'anonymous action'}. Result:`,
+        result
+      )
+    );
 
     return breaker;
   };

@@ -93,7 +93,13 @@
   "chaos_engineering": {
     "enabled": true,
     "intensity_levels": [0.1, 0.2, 0.3],
-    "scenarios": ["network_latency", "packet_loss", "model_corruption", "data_poisoning", "resource_starvation"],
+    "scenarios": [
+      "network_latency",
+      "packet_loss",
+      "model_corruption",
+      "data_poisoning",
+      "resource_starvation"
+    ],
     "safety_checks": true,
     "automatic_rollback": true
   },

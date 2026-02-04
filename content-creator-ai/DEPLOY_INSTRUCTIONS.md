@@ -11,6 +11,7 @@ All 33+ files have been created and the app is production-ready.
 ## 📦 What You Have
 
 ### Core Application Files (33 files)
+
 ```
 content-creator-ai/
 ├── server.js                    # Main server entry point
@@ -123,17 +124,20 @@ content-creator-ai/
 **Steps:**
 
 1. **Navigate to the project**:
+
    ```bash
    cd /workspace/content-creator-ai
    ```
 
 2. **Edit `.env` file** with your API keys:
+
    ```bash
    nano .env
    # Add your keys, then save
    ```
 
 3. **Start with Docker Compose**:
+
    ```bash
    docker-compose up -d
    ```
@@ -148,6 +152,7 @@ content-creator-ai/
    - Or http://your-server-ip:3000
 
 5. **View logs**:
+
    ```bash
    docker-compose logs -f
    ```
@@ -168,6 +173,7 @@ content-creator-ai/
 **Steps:**
 
 1. **Push to GitHub** (from Cursor/local):
+
    ```bash
    cd /workspace/content-creator-ai
    git init
@@ -178,34 +184,40 @@ content-creator-ai/
    ```
 
 2. **SSH to your server**:
+
    ```bash
    ssh user@your-server-ip
    ```
 
 3. **Install Node.js**:
+
    ```bash
    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
    sudo apt-get install -y nodejs
    ```
 
 4. **Clone your repo**:
+
    ```bash
    git clone https://github.com/yourusername/your-repo.git
    cd your-repo
    ```
 
 5. **Install dependencies**:
+
    ```bash
    npm install --production
    ```
 
 6. **Configure environment**:
+
    ```bash
    nano .env
    # Add your API keys
    ```
 
 7. **Install PM2** (process manager):
+
    ```bash
    sudo npm install -g pm2
    pm2 start server.js --name content-creator
@@ -226,22 +238,26 @@ content-creator-ai/
 **Steps:**
 
 1. **Install Heroku CLI**:
+
    ```bash
    npm install -g heroku
    ```
 
 2. **Login**:
+
    ```bash
    heroku login
    ```
 
 3. **Create app** (from project directory):
+
    ```bash
    cd /workspace/content-creator-ai
    heroku create your-app-name
    ```
 
 4. **Set environment variables**:
+
    ```bash
    heroku config:set GOOGLE_API_KEY=your-key
    heroku config:set API_KEY=your-api-key
@@ -249,6 +265,7 @@ content-creator-ai/
    ```
 
 5. **Deploy**:
+
    ```bash
    git init
    git add .
@@ -269,6 +286,7 @@ content-creator-ai/
 **Location**: `/workspace/content-creator-ai/.env`
 
 **Required**:
+
 ```env
 # Add at least ONE provider API key:
 GOOGLE_API_KEY=your-google-api-key-here
@@ -285,6 +303,7 @@ DEFAULT_PROVIDER=google
 ```
 
 **Optional** (for better performance):
+
 ```env
 # Redis caching
 REDIS_ENABLED=true
@@ -298,18 +317,21 @@ LOCALAI_URL=http://localhost:8080
 ### 2. Get API Keys
 
 **Google AI Studio** (Free tier available):
+
 - Visit: https://makersuite.google.com/app/apikey
 - Sign in with Google
 - Create API key
 - Copy to `.env`
 
 **OpenAI**:
+
 - Visit: https://platform.openai.com/api-keys
 - Create account / Sign in
 - Create API key
 - Copy to `.env`
 
 **Z.AI GLM-4.6**:
+
 - Visit: https://bigmodel.cn/
 - Sign up (Chinese platform)
 - Get API key
@@ -329,22 +351,24 @@ Open http://localhost:3000 and test!
 
 ## 📋 Quick Deploy Comparison
 
-| Platform | Difficulty | Cost | Best For |
-|----------|-----------|------|----------|
-| **Replit** | ⭐ Easy | Free/Paid | Quick demos, prototypes |
-| **Docker** | ⭐⭐ Medium | Free (self-host) | Self-hosting, control |
-| **Heroku** | ⭐⭐ Medium | $5-7/month | Simple cloud hosting |
-| **VPS** | ⭐⭐⭐ Hard | $5+/month | Full control, production |
+| Platform   | Difficulty  | Cost             | Best For                 |
+| ---------- | ----------- | ---------------- | ------------------------ |
+| **Replit** | ⭐ Easy     | Free/Paid        | Quick demos, prototypes  |
+| **Docker** | ⭐⭐ Medium | Free (self-host) | Self-hosting, control    |
+| **Heroku** | ⭐⭐ Medium | $5-7/month       | Simple cloud hosting     |
+| **VPS**    | ⭐⭐⭐ Hard | $5+/month        | Full control, production |
 
 ---
 
 ## 🎯 Recommended Path
 
 **For Quick Testing:**
+
 1. ✅ Test locally first: `npm start`
 2. ✅ Deploy to Replit (easiest)
 
 **For Production:**
+
 1. ✅ Test locally
 2. ✅ Push to GitHub
 3. ✅ Deploy to VPS with Docker
@@ -355,11 +379,13 @@ Open http://localhost:3000 and test!
 ## 📦 Getting the Files Out of Cursor
 
 ### Option 1: Use Cursor's File Explorer
+
 1. In Cursor, right-click the `content-creator-ai` folder
 2. Select "Reveal in File Explorer" or "Open in Finder"
 3. Copy the entire folder to your desired location
 
 ### Option 2: Download as Archive
+
 1. Use the terminal in Cursor:
    ```bash
    cd /workspace
@@ -368,6 +394,7 @@ Open http://localhost:3000 and test!
 2. Download the `.tar.gz` file from Cursor
 
 ### Option 3: Push to GitHub
+
 ```bash
 cd /workspace/content-creator-ai
 git init
@@ -405,12 +432,14 @@ After deploying:
    - `DEPLOYMENT.md` - Detailed deployment guides
 
 2. **Test locally first**:
+
    ```bash
    npm start
    curl http://localhost:3000/api/test
    ```
 
 3. **Check logs**:
+
    ```bash
    tail -f logs/combined.log
    ```
@@ -427,6 +456,7 @@ After deploying:
 Your complete AI content creation platform is ready to deploy!
 
 **Next Steps**:
+
 1. Choose your deployment method
 2. Configure `.env` with your API keys
 3. Deploy!

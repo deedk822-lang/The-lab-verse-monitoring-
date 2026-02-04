@@ -72,7 +72,7 @@ export class ArgillaClient {
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -116,7 +116,7 @@ export class ArgillaClient {
         anonymizedRecord,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -166,7 +166,7 @@ export class ArgillaClient {
         anonymizedRecord,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -189,7 +189,10 @@ export class ArgillaClient {
     const anonymized = { ...record };
 
     // Remove emails, IPs, and other PII
-    anonymized.prompt = record.prompt.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]');
+    anonymized.prompt = record.prompt.replace(
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      '[EMAIL]'
+    );
     anonymized.prompt = anonymized.prompt.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP]');
 
     return anonymized;
@@ -197,14 +200,11 @@ export class ArgillaClient {
 
   async getAnnotations(datasetId: string): Promise<AnnotationResult[]> {
     try {
-      const response = await axios.get(
-        `${this.baseURL}/api/datasets/${datasetId}/records`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`
-          }
+      const response = await axios.get(`${this.baseURL}/api/datasets/${datasetId}/records`, {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`
         }
-      );
+      });
 
       return response.data.map((record: any) => ({
         overall: record.responses.overall?.value || 0,
@@ -224,7 +224,7 @@ export class ArgillaClient {
         `${this.baseURL}/api/datasets/${datasetId}/export?format=${format}`,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            Authorization: `Bearer ${this.apiKey}`
           }
         }
       );

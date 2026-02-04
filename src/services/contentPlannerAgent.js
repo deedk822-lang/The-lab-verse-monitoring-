@@ -1,7 +1,5 @@
 // src/services/contentPlannerAgent.js
 import { mcpRequest } from './mcpService.js';
-import { githubService } from './githubService.js';
-import { wpService } from './wpService.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -17,19 +15,22 @@ export class ContentPlannerAgent {
    */
   static async handle(payload, context = {}) {
     try {
-      logger.info('🧠 Content Planner Agent started', { topic: payload.topic, intent: payload.intent });
-      
+      logger.info('🧠 Content Planner Agent started', {
+        topic: payload.topic,
+        intent: payload.intent
+      });
+
       // Step 1: Analyze the request and create comprehensive plan
       const contentPlan = await this.createContentPlan(payload);
       logger.info('📋 Content plan created', { planId: contentPlan.id });
-      
+
       // Step 2: Estimate costs and check budget
       const costEstimate = await this.estimateCosts(contentPlan);
       logger.info('💰 Cost estimate', { total: costEstimate.total, currency: 'USD' });
-      
+
       // Step 3: Initiate parallel handoffs for content generation
       const handoffs = await this.initiateHandoffs(contentPlan, context);
-      
+
       // Step 4: Prepare response with handoff instructions
       const result = {
         status: 'initiated',
@@ -41,30 +42,29 @@ export class ContentPlannerAgent {
           'Then proceed to github-commit-agent',
           'Finally publish to WordPress and social media'
         ],
-        meta {
+        meta: {
           requestId: context.requestId || `plan_${Date.now()}`,
           timestamp: new Date().toISOString(),
           source: 'rankyak-webhook'
         }
       };
-      
-      logger.info('✅ Content planning completed successfully', { 
+
+      logger.info('✅ Content planning completed successfully', {
         planId: contentPlan.id,
-        handoffs: handoffs.length 
+        handoffs: handoffs.length
       });
-      
+
       return result;
-      
     } catch (error) {
-      logger.error('❌ Content planning failed', { 
-        error: error.message, 
+      logger.error('❌ Content planning failed', {
+        error: error.message,
         stack: error.stack,
-        payload 
+        payload
       });
-      
+
       // Fallback to emergency notification
       await this.handleFailure(payload, error);
-      
+
       throw error;
     }
   }
@@ -75,11 +75,17 @@ export class ContentPlannerAgent {
    * @returns {Object} Content plan with all necessary details
    */
   static async createContentPlan(payload) {
-    const { topic, keywords = [], audience = 'tech professionals', tone = 'professional', intent } = payload;
-    
+    const {
+      topic,
+      keywords = [],
+      audience = 'tech professionals',
+      tone = 'professional',
+      intent
+    } = payload;
+
     // Generate slug from topic
     const slug = this.generateSlug(topic);
-    
+
     // Create structured outline using MCP
     const outline = await mcpRequest({
       agent: 'writer',
@@ -93,7 +99,7 @@ export class ContentPlannerAgent {
       },
       provider: payload.provider || 'zai'
     });
-    
+
     // Generate image requirements
     const imageRequirements = await mcpRequest({
       agent: 'creative',
@@ -106,7 +112,7 @@ export class ContentPlannerAgent {
       },
       provider: payload.provider || 'gemini'
     });
-    
+
     return {
       id: `plan_${Date.now()}`,
       topic,
@@ -139,23 +145,27 @@ export class ContentPlannerAgent {
       emailCampaign: 0,
       total: 0
     };
-    
+
     // AI text generation costs (based on tokens)
     costs.aiGeneration = 0.02 * contentPlan.outline.sections.length;
-    
+
     // Image generation costs (Bria API)
     costs.imageGeneration = 0.15 * contentPlan.imageRequirements.prompts.length;
-    
+
     // Social media posting costs (Ayrshare)
-    costs.socialPosting = 0.01 * contentPlan.channels.filter(c => ['twitter', 'linkedin', 'facebook', 'instagram'].includes(c)).length;
-    
+    costs.socialPosting =
+      0.01 *
+      contentPlan.channels.filter((c) =>
+        ['twitter', 'linkedin', 'facebook', 'instagram'].includes(c)
+      ).length;
+
     // Email campaign costs (Mailchimp)
     if (contentPlan.channels.includes('email')) {
       costs.emailCampaign = 0.05;
     }
-    
+
     costs.total = Object.values(costs).reduce((sum, val) => sum + val, 0);
-    
+
     return costs;
   }
 
@@ -168,7 +178,7 @@ export class ContentPlannerAgent {
   static async initiateHandoffs(contentPlan, context) {
     const handoffs = [];
     const requestId = context.requestId || `req_${Date.now()}`;
-    
+
     // Handoff 1: Writer agent for text generation
     handoffs.push({
       agent: 'writer-agent',
@@ -182,7 +192,7 @@ export class ContentPlannerAgent {
       },
       handoffType: 'parallel'
     });
-    
+
     // Handoff 2: Bria agent for image generation
     handoffs.push({
       agent: 'bria-agent',
@@ -194,12 +204,12 @@ export class ContentPlannerAgent {
       },
       handoffType: 'parallel'
     });
-    
-    logger.info('🔄 Initiating parallel handoffs', { 
+
+    logger.info('🔄 Initiating parallel handoffs', {
       count: handoffs.length,
-      requestId 
+      requestId
     });
-    
+
     return handoffs;
   }
 
@@ -211,33 +221,33 @@ export class ContentPlannerAgent {
    */
   static async handleHandoffCompletion(context, results) {
     try {
-      logger.info('✅ Parallel handoffs completed', { 
+      logger.info('✅ Parallel handoffs completed', {
         requestId: context.requestId,
-        resultCount: results.length 
+        resultCount: results.length
       });
-      
+
       // Extract results from writer and bria agents
-      const writerResult = results.find(r => r.agent === 'writer-agent');
-      const briaResult = results.find(r => r.agent === 'bria-agent');
-      
+      const writerResult = results.find((r) => r.agent === 'writer-agent');
+      const briaResult = results.find((r) => r.agent === 'bria-agent');
+
       if (!writerResult || !briaResult) {
         throw new Error('Missing required handoff results');
       }
-      
+
       // Prepare GitHub commit
       const githubHandoff = await this.prepareGitHubCommit(
         context.contentPlan,
         writerResult.output,
         briaResult.output
       );
-      
+
       // Prepare WordPress publish
       const wpHandoff = await this.prepareWordPressPublish(
         context.contentPlan,
         writerResult.output,
         briaResult.output
       );
-      
+
       return {
         status: 'ready_for_publishing',
         githubHandoff,
@@ -248,16 +258,15 @@ export class ContentPlannerAgent {
             context: githubHandoff
           },
           {
-            agent: 'wp-publisher-agent', 
+            agent: 'wp-publisher-agent',
             context: wpHandoff
           }
         ]
       };
-      
     } catch (error) {
-      logger.error('❌ Handoff completion failed', { 
+      logger.error('❌ Handoff completion failed', {
         error: error.message,
-        stack: error.stack 
+        stack: error.stack
       });
       throw error;
     }
@@ -287,9 +296,9 @@ export class ContentPlannerAgent {
         image_cost: briaOutput.cost
       }
     };
-    
+
     const content = `# ${contentPlan.topic}\n\n${writerOutput.article}\n\n`;
-    
+
     return {
       path: `content/posts/${contentPlan.slug}.md`,
       content,
@@ -315,7 +324,7 @@ export class ContentPlannerAgent {
       featured_media: briaOutput.wpMediaId,
       categories: ['AI', 'Monitoring', 'Automation'],
       tags: contentPlan.keywords,
-      meta {
+      meta: {
         github_url: '', // Will be filled after GitHub commit
         bria_attribution: briaOutput.attributionToken,
         source: 'rankyak-webhook'

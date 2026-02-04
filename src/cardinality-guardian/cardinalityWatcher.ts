@@ -49,7 +49,9 @@ export class CardinalityWatcher {
       // Hard limit breached → drop + delete
       if (meta.count > this.max) {
         this.store.delete(key);
-        this.sendDropAlert(metric, labels, meta.count).catch(() => {/* ignore */});
+        this.sendDropAlert(metric, labels, meta.count).catch(() => {
+          /* ignore */
+        });
         return false;
       }
 
@@ -57,7 +59,9 @@ export class CardinalityWatcher {
       const warnThresh = Math.floor(this.max * this.warnRatio);
       if (meta.count >= warnThresh && now - meta.lastAlert >= this.cooldownMs) {
         meta.lastAlert = now;
-        this.sendWarnAlert(metric, meta.count).catch(() => {/* ignore */});
+        this.sendWarnAlert(metric, meta.count).catch(() => {
+          /* ignore */
+        });
       }
       return true;
     } finally {
@@ -89,7 +93,7 @@ export class CardinalityWatcher {
       await this.locks.get(key)!;
     }
     let resolve: () => void;
-    const p = new Promise<void>(r => (resolve = r));
+    const p = new Promise<void>((r) => (resolve = r));
     this.locks.set(key, p);
     this.resolvers.set(key, resolve!);
   }
@@ -109,7 +113,11 @@ export class CardinalityWatcher {
     await this.postWebhook(text);
   }
 
-  private async sendDropAlert(metric: string, labels: Record<string, string>, count: number): Promise<void> {
+  private async sendDropAlert(
+    metric: string,
+    labels: Record<string, string>,
+    count: number
+  ): Promise<void> {
     const text = `❌ Dropped metric ${metric} – cardinality ${count} exceeded hard limit ${this.max}`;
     console.warn(`[CardinalityWatcher] ${text}`);
     await this.postWebhook(text);
@@ -124,7 +132,7 @@ export class CardinalityWatcher {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
-        signal: controller.signal,
+        signal: controller.signal
       });
     } finally {
       clearTimeout(t);

@@ -28,18 +28,18 @@ class SEOGenerator {
   generateTitle(topic, content) {
     // Extract first heading or create from topic
     const headingMatch = content.match(/^#\s+(.+)$/m) || content.match(/^(.+)\n/);
-    
+
     if (headingMatch) {
       return headingMatch[1].trim().substring(0, 60);
     }
 
     // Create title from topic
     const words = topic.split(' ');
-    const title = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const title = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return title.substring(0, 60);
   }
 
-  generateMetaDescription(content, topic) {
+  generateMetaDescription(content, _topic) {
     // Extract first paragraph or sentence
     const text = content.replace(/[#*_`]/g, '').trim();
     const firstParagraph = text.split('\n\n')[0];
@@ -58,14 +58,15 @@ class SEOGenerator {
     const keywords = [...providedKeywords];
 
     // Extract additional keywords from content
-    const words = content.toLowerCase()
+    const words = content
+      .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .split(/\s+/)
-      .filter(w => w.length > 4);
+      .filter((w) => w.length > 4);
 
     // Count word frequency
     const wordFreq = {};
-    words.forEach(word => {
+    words.forEach((word) => {
       wordFreq[word] = (wordFreq[word] || 0) + 1;
     });
 
@@ -80,7 +81,7 @@ class SEOGenerator {
     return allKeywords.slice(0, 15);
   }
 
-  generateOGTags(title, description, topic) {
+  generateOGTags(title, description, _topic) {
     return {
       'og:title': title,
       'og:description': description,
@@ -92,35 +93,35 @@ class SEOGenerator {
     };
   }
 
-  generateStructuredData(title, content, topic) {
+  generateStructuredData(title, content, _topic) {
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200); // Average reading speed
 
     return {
       '@context': 'https://schema.org',
       '@type': 'Article',
-      'headline': title,
-      'description': this.generateMetaDescription(content, topic),
-      'wordCount': wordCount,
-      'timeRequired': `PT${readingTime}M`,
-      'author': {
+      headline: title,
+      description: this.generateMetaDescription(content, _topic),
+      wordCount: wordCount,
+      timeRequired: `PT${readingTime}M`,
+      author: {
         '@type': 'Organization',
-        'name': 'Content Creator AI'
+        name: 'Content Creator AI'
       },
-      'publisher': {
+      publisher: {
         '@type': 'Organization',
-        'name': 'Content Creator AI'
+        name: 'Content Creator AI'
       },
-      'datePublished': new Date().toISOString(),
-      'dateModified': new Date().toISOString()
+      datePublished: new Date().toISOString(),
+      dateModified: new Date().toISOString()
     };
   }
 
   calculateReadabilityScore(content) {
     // Simple Flesch Reading Ease approximation
     const text = content.replace(/[^a-zA-Z0-9\s.]/g, '');
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    const words = text.split(/\s+/).filter((w) => w.length > 0);
     const syllables = words.reduce((sum, word) => sum + this.countSyllables(word), 0);
 
     if (sentences.length === 0 || words.length === 0) {
@@ -130,7 +131,7 @@ class SEOGenerator {
     const avgSentenceLength = words.length / sentences.length;
     const avgSyllablesPerWord = syllables / words.length;
 
-    const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord);
+    const score = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
     const clampedScore = Math.max(0, Math.min(100, score));
 
     let level;
@@ -151,11 +152,11 @@ class SEOGenerator {
   countSyllables(word) {
     word = word.toLowerCase();
     if (word.length <= 3) return 1;
-    
+
     word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
     word = word.replace(/^y/, '');
     const matches = word.match(/[aeiouy]{1,2}/g);
-    
+
     return matches ? matches.length : 1;
   }
 }

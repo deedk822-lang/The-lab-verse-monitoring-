@@ -13,6 +13,7 @@
 ### 1. **Vercel API Endpoints** (Serverless Functions)
 
 #### `/api/webhook.js`
+
 - **Purpose:** RankYak → GitHub → Unito (→ Asana) bridge
 - **Features:**
   - Webhook signature verification
@@ -22,6 +23,7 @@
   - Automatic content syncing
 
 #### `/api/inngest.js` ✨ **NEW**
+
 - **Purpose:** 28-platform content distribution pipeline
 - **Features:**
   - Parallel distribution to 28 platforms
@@ -31,6 +33,7 @@
   - Comprehensive error handling
 
 #### `/api/mcp_server.js`
+
 - **Purpose:** MCP server proxy for Windsurf
 - **Features:**
   - WordPress.com MCP integration
@@ -38,6 +41,7 @@
   - JSON response handling
 
 #### `/api/wp.js`
+
 - **Purpose:** WordPress.com direct API integration
 - **Features:**
   - Media upload support
@@ -50,71 +54,83 @@
 ## 🌐 28-Platform Distribution Support
 
 ### Social Media (7)
+
 ✅ Twitter/X  
 ✅ LinkedIn  
 ✅ Facebook  
 ✅ Instagram  
 ✅ Reddit  
 ✅ Pinterest  
-✅ Tumblr  
+✅ Tumblr
 
 ### Developer Platforms (3)
+
 ✅ Medium  
 ✅ Dev.to  
-✅ Hashnode  
+✅ Hashnode
 
 ### Messaging (4)
+
 ✅ Telegram  
 ✅ WhatsApp Business  
 ✅ Slack  
-✅ Discord  
+✅ Discord
 
 ### Email Marketing (2)
+
 ✅ Mailchimp  
-✅ SendGrid  
+✅ SendGrid
 
 ### Content Platforms (3)
+
 ✅ WordPress  
 ✅ Ghost  
-✅ Substack  
+✅ Substack
 
 ### Video (2)
+
 ✅ YouTube Community  
-✅ TikTok  
+✅ TikTok
 
 ### Professional (2)
+
 ✅ GitHub  
-✅ Notion  
+✅ Notion
 
 ### News (1)
-✅ Hacker News  
+
+✅ Hacker News
 
 ### Other (4)
+
 ✅ Mastodon  
 ✅ Bluesky  
 ✅ Threads  
-✅ Quora  
+✅ Quora
 
 ---
 
 ## 🔧 Configuration Files
 
 ### `vercel.json`
+
 ✅ Configured for serverless functions  
 ✅ API routes properly mapped  
 ✅ 30-second function timeout  
-✅ Production environment set  
+✅ Production environment set
 
 ### `package.json`
+
 ✅ All dependencies included  
 ✅ Node 18+ engine specified  
 ✅ ESM module type set  
-✅ Scripts for testing  
+✅ Scripts for testing
 
 ### `.env.example`
+
 ✅ All required environment variables documented  
 ✅ Secure defaults provided  
-✅ Optional services listed  
+✅ Optional services listed
 
 ---
 
@@ -123,6 +139,7 @@
 **Location:** `/workspace/manus-instructions.md`
 
 **Contents:**
+
 - ✅ Complete Windsurf installation guide (Debian/Ubuntu)
 - ✅ MCP server configuration (3 servers)
 - ✅ OAuth authentication steps
@@ -142,13 +159,14 @@
 ✅ **Rate Limiting:** Express rate limiter configured  
 ✅ **CORS Protection:** Helmet security headers  
 ✅ **OAuth Flows:** Secure token management  
-✅ **Timing-Safe Comparison:** Crypto constant-time checks  
+✅ **Timing-Safe Comparison:** Crypto constant-time checks
 
 ---
 
 ## 🧪 Testing
 
 ### Local Testing
+
 ```bash
 # Test webhook endpoint
 curl -X POST https://snout-lard-jumbo-5158.vercel.app/api/webhook \
@@ -163,6 +181,7 @@ curl -X POST https://snout-lard-jumbo-5158.vercel.app/api/inngest \
 ```
 
 ### Windsurf Testing
+
 Follow Phase 7 in `manus-instructions.md`
 
 ---
@@ -170,12 +189,14 @@ Follow Phase 7 in `manus-instructions.md`
 ## 📊 Performance Metrics
 
 **Endpoint Response Times:**
+
 - `/api/webhook` - ~200-500ms (GitHub API dependent)
 - `/api/inngest` - ~500-1000ms (28 parallel requests)
 - `/api/mcp_server` - ~100-300ms (command proxy)
 - `/api/wp` - ~300-800ms (WordPress.com API)
 
 **Pipeline Execution:**
+
 - Full 28-platform distribution: ~30 seconds
 - WordPress post creation: ~1-2 seconds
 - GitHub commit/PR: ~2-3 seconds
@@ -186,18 +207,21 @@ Follow Phase 7 in `manus-instructions.md`
 ## 🔄 MCP Server Integration
 
 ### 1. GitHub MCP
+
 - **Type:** Docker container
 - **Image:** `ghcr.io/github/github-mcp-server`
 - **Capabilities:** repos, pull_requests, actions, issues
 - **Auth:** GitHub Personal Access Token
 
 ### 2. WordPress.com MCP
+
 - **Type:** npm package
 - **Package:** `@automattic/mcp-wpcom-remote@latest`
 - **Capabilities:** post management, OAuth
 - **Auth:** WordPress.com OAuth flow
 
 ### 3. RankYak Bridge MCP
+
 - **Type:** HTTP proxy
 - **Package:** `http-mcp-server`
 - **Endpoint:** `https://snout-lard-jumbo-5158.vercel.app/api/inngest`
@@ -208,6 +232,7 @@ Follow Phase 7 in `manus-instructions.md`
 ## 🚀 Deployment Commands
 
 ### Deploy to Vercel
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -226,6 +251,7 @@ vercel env add WP_SITE_ID
 ```
 
 ### Verify Deployment
+
 ```bash
 # Check API endpoints
 curl https://snout-lard-jumbo-5158.vercel.app/api/inngest
@@ -280,21 +306,25 @@ curl https://snout-lard-jumbo-5158.vercel.app/api/webhook
 ## 🔍 Monitoring & Debugging
 
 ### Vercel Logs
+
 ```bash
 vercel logs --follow
 ```
 
 ### Inngest Dashboard
+
 ```
 https://app.inngest.com/function/rankyak-publish/runs/[RUN_ID]
 ```
 
 ### GitHub Actions
+
 ```
 https://github.com/[OWNER]/[REPO]/actions
 ```
 
 ### Windsurf Logs
+
 ```bash
 tail -f /tmp/windsurf.log
 ```
@@ -312,7 +342,7 @@ To confirm 100% functionality, verify:
 ✅ MCP config JSON is valid  
 ✅ Manus instructions are complete  
 ✅ Dependencies are installed  
-✅ Environment variables are documented  
+✅ Environment variables are documented
 
 ---
 
@@ -341,16 +371,19 @@ To confirm 100% functionality, verify:
 ## 📞 Support & Maintenance
 
 **Configuration Issues:**
+
 - Check `.env.example` for required variables
 - Verify Vercel environment variables are set
 - Confirm MCP config JSON is valid
 
 **API Errors:**
+
 - Check Vercel function logs
 - Verify webhook signatures
 - Confirm API credentials are valid
 
 **MCP Connection Issues:**
+
 - Restart Windsurf
 - Reinstall npm packages
 - Pull latest Docker images

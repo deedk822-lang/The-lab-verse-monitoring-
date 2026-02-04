@@ -1,3 +1,5 @@
+/* global io */
+/* eslint-disable no-console */
 // Initialize Socket.IO
 const socket = io();
 
@@ -24,13 +26,13 @@ temperatureSlider.addEventListener('input', (e) => {
 // Toggle options based on media type
 mediaTypeSelect.addEventListener('change', (e) => {
   const mediaType = e.target.value;
-  
+
   if (mediaType === 'text' || mediaType === 'multimodal') {
     textOptions.style.display = 'block';
   } else {
     textOptions.style.display = 'none';
   }
-  
+
   if (mediaType === 'image' || mediaType === 'video' || mediaType === 'multimodal') {
     mediaOptions.style.display = 'block';
   } else {
@@ -47,18 +49,18 @@ socket.on('progress', (data) => {
 function updateProgress(data) {
   const { status, message } = data;
   progressMessage.textContent = message;
-  
+
   const progressMap = {
-    'started': 20,
-    'content_done': 60,
-    'seo_done': 80,
-    'completed': 100,
-    'error': 100
+    started: 20,
+    content_done: 60,
+    seo_done: 80,
+    completed: 100,
+    error: 100
   };
-  
+
   const progress = progressMap[status] || 0;
   progressBar.style.width = `${progress}%`;
-  
+
   if (status === 'error') {
     progressBar.classList.remove('bg-success');
     progressBar.classList.add('bg-danger');
@@ -71,7 +73,7 @@ function updateProgress(data) {
 // Form submission
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   // Show progress
   progressContainer.style.display = 'block';
   idleMessage.style.display = 'none';
@@ -79,18 +81,22 @@ form.addEventListener('submit', async (e) => {
   progressBar.style.width = '10%';
   progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-info';
   progressMessage.textContent = 'Starting content generation...';
-  
+
   // Disable submit button
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-  
+
   // Collect form data
   const formData = new FormData(form);
   const data = {};
-  
+
   formData.forEach((value, key) => {
-    if (key === 'enable_research' || key === 'include_seo' || 
-        key === 'include_social' || key === 'thinking_mode') {
+    if (
+      key === 'enable_research' ||
+      key === 'include_seo' ||
+      key === 'include_social' ||
+      key === 'thinking_mode'
+    ) {
       data[key] = true;
     } else if (key === 'temperature') {
       data[key] = parseFloat(value);
@@ -98,14 +104,14 @@ form.addEventListener('submit', async (e) => {
       data[key] = value;
     }
   });
-  
+
   // Add unchecked checkboxes as false
-  ['enable_research', 'include_seo', 'include_social', 'thinking_mode'].forEach(field => {
+  ['enable_research', 'include_seo', 'include_social', 'thinking_mode'].forEach((field) => {
     if (!data[field]) data[field] = false;
   });
-  
+
   console.log('Submitting data:', data);
-  
+
   try {
     const response = await fetch('/api/content', {
       method: 'POST',
@@ -115,9 +121,9 @@ form.addEventListener('submit', async (e) => {
       },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       displayResults(result);
       progressMessage.textContent = 'Content generated successfully!';
@@ -129,7 +135,7 @@ form.addEventListener('submit', async (e) => {
     progressBar.classList.remove('bg-info');
     progressBar.classList.add('bg-danger');
     progressMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error.message}`;
-    
+
     alert('Error generating content: ' + error.message);
   } finally {
     // Re-enable submit button
@@ -140,9 +146,9 @@ form.addEventListener('submit', async (e) => {
 
 function displayResults(result) {
   resultsContainer.style.display = 'block';
-  
+
   let html = '';
-  
+
   // Metadata section
   html += '<div class="result-section">';
   html += '<h4><i class="fas fa-info-circle"></i> Request Information</h4>';
@@ -156,13 +162,13 @@ function displayResults(result) {
   }
   html += '</div>';
   html += '</div>';
-  
+
   // Content section
   if (result.content.type === 'text') {
     html += '<div class="result-section">';
     html += '<h4><i class="fas fa-file-alt"></i> Generated Content</h4>';
     html += '<div class="content-preview">';
-    
+
     if (result.content.format === 'html') {
       html += result.content.content;
     } else if (result.content.format === 'markdown') {
@@ -171,7 +177,7 @@ function displayResults(result) {
     } else {
       html += `<pre>${escapeHtml(result.content.content)}</pre>`;
     }
-    
+
     html += '</div>';
     html += '</div>';
   } else if (result.content.type === 'image') {
@@ -201,7 +207,7 @@ function displayResults(result) {
     html += '</div>';
     html += '</div>';
   }
-  
+
   // SEO section
   if (result.seo) {
     html += '<div class="result-section">';
@@ -212,12 +218,12 @@ function displayResults(result) {
     html += `<p><strong>Readability:</strong> ${result.seo.readabilityScore.score}/100 (${result.seo.readabilityScore.level})</p>`;
     html += '</div>';
   }
-  
+
   // Social media section
   if (result.social) {
     html += '<div class="result-section">';
     html += '<h4><i class="fas fa-share-alt"></i> Social Media Posts</h4>';
-    
+
     if (result.social.twitter) {
       html += '<div class="social-post">';
       html += '<div class="social-post-header"><i class="fab fa-twitter"></i> Twitter</div>';
@@ -225,24 +231,24 @@ function displayResults(result) {
       html += `<small class="text-muted">${result.social.twitter.length} characters</small>`;
       html += '</div>';
     }
-    
+
     if (result.social.linkedin) {
       html += '<div class="social-post">';
       html += '<div class="social-post-header"><i class="fab fa-linkedin"></i> LinkedIn</div>';
       html += `<p>${result.social.linkedin.text}</p>`;
       html += '</div>';
     }
-    
+
     if (result.social.facebook) {
       html += '<div class="social-post">';
       html += '<div class="social-post-header"><i class="fab fa-facebook"></i> Facebook</div>';
       html += `<p>${result.social.facebook.text}</p>`;
       html += '</div>';
     }
-    
+
     html += '</div>';
   }
-  
+
   resultsContent.innerHTML = html;
   resultsContainer.scrollIntoView({ behavior: 'smooth' });
 }

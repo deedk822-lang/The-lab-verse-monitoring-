@@ -17,6 +17,7 @@ The `package.json` file became corrupted due to **unresolved merge conflicts** f
 #### `.github/workflows/validate-json.yml`
 
 Runs on every PR and push to validate:
+
 - ✅ JSON syntax is valid
 - ✅ No merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 - ✅ No duplicate keys in package.json
@@ -24,6 +25,7 @@ Runs on every PR and push to validate:
 - ✅ All required fields present
 
 **Triggers:**
+
 - Every pull request
 - Every push to main/protected branches
 - Any change to `.json` files
@@ -31,6 +33,7 @@ Runs on every PR and push to validate:
 #### `.github/workflows/merge-conflict-check.yml`
 
 Runs on all PRs to:
+
 - ✅ Detect merge conflict markers
 - ✅ Validate JSON in all files
 - ✅ Check for duplicate keys
@@ -43,17 +46,20 @@ Runs on all PRs to:
 #### `.husky/pre-commit`
 
 Runs **before every commit** to:
+
 - ✅ Validate package.json syntax
 - ✅ Check for merge conflicts
 - ✅ Validate all staged JSON files
 - ✅ Prevent bad commits from being created
 
 **Installation:**
+
 ```bash
 npm install  # Automatically installs hooks via postinstall
 ```
 
 **Manual installation:**
+
 ```bash
 npm run prepare  # Sets up husky
 ```
@@ -72,6 +78,7 @@ chmod +x scripts/validate-json.sh
 ```
 
 **Checks:**
+
 - ✅ All JSON files have valid syntax
 - ✅ No merge conflict markers
 - ✅ No duplicate keys
@@ -95,6 +102,7 @@ cat package.json
 ```
 
 Look for conflict markers:
+
 ```json
 <<<<<<< HEAD
   "version": "1.0.0",
@@ -106,16 +114,19 @@ Look for conflict markers:
 ### Step 3: Resolve Manually
 
 **Option A: Keep incoming changes**
+
 ```bash
 git checkout --theirs package.json
 ```
 
 **Option B: Keep current changes**
+
 ```bash
 git checkout --ours package.json
 ```
 
 **Option C: Manual merge**
+
 1. Open `package.json` in your editor
 2. Remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 3. Choose which version of each conflicting section to keep
@@ -149,6 +160,7 @@ git push
 ### 1. **Single Source of Truth**
 
 ✅ **DO:**
+
 ```bash
 # Update base branch first
 git checkout main
@@ -167,6 +179,7 @@ git push origin feature/my-feature
 ```
 
 ❌ **DON'T:**
+
 ```bash
 # Creating multiple branches from same base without syncing
 git checkout -b feature-1
@@ -198,11 +211,13 @@ git rebase main
 ### 3. **Small, Focused PRs**
 
 ✅ **DO:**
+
 - One feature per PR
 - Merge quickly (don't let PRs sit)
 - Rebase on main before merging
 
 ❌ **DON'T:**
+
 - Create 10 PRs all modifying package.json
 - Let PRs sit unmerged for days
 - Ignore merge conflicts
@@ -212,11 +227,13 @@ git rebase main
 ### 4. **Use the Validation Tools**
 
 **Before committing:**
+
 ```bash
 ./scripts/validate-json.sh
 ```
 
 **Before creating PR:**
+
 ```bash
 npm run build  # Ensure builds succeed
 npm run lint   # Ensure linting passes
@@ -224,6 +241,7 @@ npm test       # Ensure tests pass
 ```
 
 **After merging:**
+
 ```bash
 # Verify CI passes
 # Check GitHub Actions tab
@@ -238,6 +256,7 @@ npm test       # Ensure tests pass
 **Cause:** Invalid JSON in package.json
 
 **Fix:**
+
 ```bash
 # Validate the file
 node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))"
@@ -261,6 +280,7 @@ cat package.json
 **Cause:** Two branches modified the same lines
 
 **Fix:**
+
 ```bash
 # Option 1: Use theirs (incoming changes)
 git checkout --theirs package.json
@@ -283,6 +303,7 @@ git commit
 **Cause:** Merge conflict created duplicate entries
 
 **Fix:**
+
 ```bash
 # Find duplicates
 cat package.json | grep '"name"'
@@ -377,6 +398,7 @@ git push origin --delete feature/new-feature
 ## ✅ Current Status
 
 ### Fixed Issues
+
 - ✅ package.json is now valid JSON
 - ✅ CI/CD pipeline will pass
 - ✅ GitHub Actions validate on every PR
@@ -384,12 +406,14 @@ git push origin --delete feature/new-feature
 - ✅ Manual validation script available
 
 ### Prevention Systems Active
+
 - ✅ **2 GitHub Actions** (validate-json, merge-conflict-check)
 - ✅ **1 Git hook** (pre-commit)
 - ✅ **1 Validation script** (validate-json.sh)
 - ✅ **Updated documentation** (this guide)
 
 ### Next PR Will Be Safe
+
 - ✅ Automatic validation before merge
 - ✅ CI catches issues immediately
 - ✅ Can't commit invalid JSON
@@ -401,13 +425,15 @@ git push origin --delete feature/new-feature
 
 **Problem**: Multiple PRs modified `package.json` in parallel, causing merge conflicts that weren't properly resolved.
 
-**Solution**: 
+**Solution**:
+
 1. Fixed the corrupted file
 2. Added 4 layers of validation
 3. Updated workflow practices
 4. Documented prevention strategies
 
 **Result**: This problem **cannot happen again** because:
+
 - Git hooks block invalid commits locally
 - GitHub Actions block invalid PRs remotely
 - Validation runs automatically on every change

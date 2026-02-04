@@ -45,10 +45,14 @@ class EnhancedKeywordResearchController {
         pythonOptions: ['-u'],
         scriptPath: path.join(__dirname, '../services'),
         args: [
-          '--csv-path', filePath,
-          '--num-topics', numTopics,
-          '--enable-deep-search', enableDeepSearch,
-          '--deep-search-top-n', deepSearchTopN
+          '--csv-path',
+          filePath,
+          '--num-topics',
+          numTopics,
+          '--enable-deep-search',
+          enableDeepSearch,
+          '--deep-search-top-n',
+          deepSearchTopN
         ]
       };
 
@@ -67,7 +71,7 @@ class EnhancedKeywordResearchController {
 
         if (!results || results.length === 0) {
           return res.status(500).json({
-            error: 'Keyword processing returned no results',
+            error: 'Keyword processing returned no results'
           });
         }
         const result = results[0];

@@ -27,6 +27,7 @@ def process_file(filename):
 ```
 
 **Security Issues:**
+
 - ❌ Hardcoded credentials
 - ❌ SQL injection vulnerability
 - ❌ No input validation
@@ -52,26 +53,26 @@ if not DB_PASSWORD:
 def get_user(user_id: int) -> Optional[dict]:
     """
     Get user by ID with input validation and SQL injection prevention.
-    
+
     Args:
         user_id: User ID (must be positive integer)
-        
+
     Returns:
         User data dictionary or None if not found
-        
+
     Raises:
         ValueError: If user_id is invalid
     """
     # Input validation
     if not isinstance(user_id, int):
         raise ValueError("user_id must be an integer")
-    
+
     if user_id < 0:
         raise ValueError("user_id must be positive")
-    
+
     # Use parameterized query to prevent SQL injection
     query = "SELECT * FROM users WHERE id = ?"
-    
+
     try:
         result = db.execute(query, (user_id,))
         return result.fetchone()
@@ -84,13 +85,13 @@ def get_user(user_id: int) -> Optional[dict]:
 def process_file(filename: str) -> str:
     """
     Process file with input validation and error handling.
-    
+
     Args:
         filename: Path to file to process
-        
+
     Returns:
         File contents as string
-        
+
     Raises:
         ValueError: If filename is invalid
         FileNotFoundError: If file doesn't exist
@@ -99,21 +100,21 @@ def process_file(filename: str) -> str:
     # Input validation
     if not filename:
         raise ValueError("filename cannot be empty")
-    
+
     if not isinstance(filename, str):
         raise ValueError("filename must be a string")
-    
+
     # Prevent directory traversal attacks
     if ".." in filename or filename.startswith("/"):
         raise ValueError("Invalid filename: directory traversal detected")
-    
+
     # Validate file exists and is readable
     if not os.path.exists(filename):
         raise FileNotFoundError(f"File not found: {filename}")
-    
+
     if not os.path.isfile(filename):
         raise ValueError(f"Path is not a file: {filename}")
-    
+
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             return f.read()
@@ -126,6 +127,7 @@ def process_file(filename: str) -> str:
 ```
 
 **Security Improvements:**
+
 - ✅ Credentials from environment variables
 - ✅ Parameterized SQL queries
 - ✅ Type hints and validation
@@ -146,7 +148,7 @@ services:
     environment:
       POSTGRES_PASSWORD: mysecretpassword
       POSTGRES_USER: admin
-  
+
   app:
     image: myapp:latest
     environment:
@@ -154,6 +156,7 @@ services:
 ```
 
 **Security Issues:**
+
 - ❌ Using `latest` tag (unpredictable)
 - ❌ Hardcoded passwords
 - ❌ No resource limits
@@ -191,17 +194,17 @@ services:
         memory: 256M
         cpus: '0.25'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
-  
+
   app:
     image: myapp:1.2.3
     environment:
       API_KEY: ${API_KEY}
-    user: "1000:1000"
+    user: '1000:1000'
     read_only: true
     tmpfs:
       - /tmp
@@ -214,7 +217,7 @@ services:
         memory: 256M
         cpus: '0.25'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -225,6 +228,7 @@ services:
 ```
 
 **Security Improvements:**
+
 - ✅ Specific image versions
 - ✅ Environment variable secrets
 - ✅ Non-root users
@@ -253,6 +257,7 @@ CMD ["python", "app.py"]
 ```
 
 **Security Issues:**
+
 - ❌ Using `latest` tag
 - ❌ Running as root
 - ❌ No multi-stage build
@@ -307,6 +312,7 @@ CMD ["python", "app.py"]
 ```
 
 **Security Improvements:**
+
 - ✅ Specific Python version
 - ✅ Multi-stage build
 - ✅ Non-root user
@@ -342,26 +348,31 @@ The GitHub Actions workflows will automatically harden files on every PR:
 ## Security Principles Applied
 
 ### 🔐 Secrets Management
+
 - Remove hardcoded credentials
 - Use environment variables
 - Suggest secret management tools
 
 ### ✅ Input Validation
+
 - Validate all user inputs
 - Sanitize data before use
 - Implement whitelist validation
 
 ### 🛡️ Secure Defaults
+
 - Fail securely by default
 - Principle of least privilege
 - Disable unnecessary features
 
 ### 🚨 Error Handling
+
 - Don't expose sensitive info in errors
 - Log errors securely
 - Implement proper exception handling
 
 ### 🔒 Defense in Depth
+
 - Multiple layers of security
 - Network isolation
 - Resource limits
@@ -378,4 +389,3 @@ The GitHub Actions workflows will automatically harden files on every PR:
 ---
 
 **Powered by:** [Moonshot AI (Kimi)](https://www.moonshot.cn/)
-

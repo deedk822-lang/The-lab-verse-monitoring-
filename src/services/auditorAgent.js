@@ -33,7 +33,6 @@ export class AuditorAgent {
           analysis: analysis,
           action: 'payment_processing_initiated'
         };
-
       } catch (error) {
         logger.error('❌ Auditor visual verification failed', error);
         return { status: 'failed_verification', reason: 'unreadable_evidence' };

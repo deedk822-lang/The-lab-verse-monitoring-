@@ -3,29 +3,34 @@
 ## Get Running in 5 Minutes
 
 ### Step 1: Clone & Setup
+
 ```bash
 git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
 cd The-lab-verse-monitoring-
 ```
 
 ### Step 2: Configure Environment
+
 ```bash
 cp config/.env.example .env
 # Edit .env and add your API keys
 ```
 
 ### Step 3: Deploy
+
 ```bash
 chmod +x scripts/deploy-everything.sh
 ./scripts/deploy-everything.sh
 ```
 
 ### Step 4: Run Tax Agent
+
 ```bash
 python3 src/agents/tax-collector-humanitarian.py
 ```
 
 ### Step 5: Monitor Results
+
 ```bash
 # View detections
 cat tax_agent_detections.json
@@ -56,6 +61,7 @@ tail -f logs/tax-agent.log
 ## Automation (After Setup)
 
 Add to crontab for automatic execution:
+
 ```bash
 # Run every 6 hours
 0 */6 * * * cd /path/to/repo && python3 src/agents/tax-collector-humanitarian.py
@@ -67,6 +73,7 @@ Import `src/monitoring/grafana-dashboard.json` to:
 https://dimakatsomoleli.grafana.net
 
 Track:
+
 - Stories detected
 - Revenue generated
 - Interventions funded
@@ -75,14 +82,17 @@ Track:
 ## Troubleshooting
 
 **No stories detected?**
+
 - GDELT might have no matching events in last 24h
 - Try adjusting keywords in tax-collector-humanitarian.py
 
 **Revenue not tracking?**
+
 - Check .env has all API keys
 - Verify revenue_attribution.json is writable
 
 **Judges rejecting everything?**
+
 - This is simulated for testing
 - Real integration requires Mistral API calls
 

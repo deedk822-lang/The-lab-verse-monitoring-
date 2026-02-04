@@ -1,5 +1,5 @@
 const GLMIntegration = require('../integrations/zhipu-glm');
-const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901');
+// const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901'); // Temporarily disabled due to registry 404
 const OpenApi = require('@alicloud/openapi-client');
 const Util = require('@alicloud/tea-util');
 
@@ -17,7 +17,8 @@ class AutoGLM {
       regionId: process.env.ALIBABA_CLOUD_REGION_ID || 'cn-hangzhou'
     });
 
-    return new AccessAnalyzer(config);
+    // return new AccessAnalyzer(config);
+    return null;
   }
 
   /**
@@ -65,6 +66,10 @@ class AutoGLM {
   }
 
   async getAlibabaSecurityFindings() {
+    if (!this.accessAnalyzerClient) {
+      console.warn('Access Analyzer client not initialized (registry 404). Returning empty findings.');
+      return [];
+    }
     try {
       const runtime = new Util.RuntimeOptions({});
       const response = await this.accessAnalyzerClient.listAnalyzersWithOptions({}, runtime);

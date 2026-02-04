@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import openlit
@@ -65,7 +65,7 @@ class RainmakerOrchestrator:
         await self.client.aclose()
         logger.info("Orchestrator HTTP client closed")
 
-    @track(name="judge_call")  # type: ignore[misc]
+    @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> dict[str, Any]:
         """
         Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
@@ -125,12 +125,15 @@ class RainmakerOrchestrator:
             response: httpx.Response = await self.client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             logger.info(f"Judge call successful: {judge_role}")
-            return response.json()
+            res_data = response.json()
+            if not isinstance(res_data, dict):
+                raise ValueError(f"Judge API returned {type(res_data)} instead of dict")
+            return cast(dict[str, Any], res_data)
         except httpx.HTTPError as e:
             logger.error(f"Judge API error ({judge_role}): {e!s}")
             raise
 
-    @track(name="authority_flow")  # type: ignore[misc]
+    @track(name="authority_flow")  # type: ignore[untyped-decorator]
     async def run_authority_flow(self, lead_data: dict[str, Any]) -> dict[str, Any]:
         """
         Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.
@@ -190,7 +193,7 @@ class RainmakerOrchestrator:
         task_type: str = task.get("type", "unknown")
 
         if task_type == "authority_task":
-            return await self.run_authority_flow(task)
+            return cast(dict[str, Any], await self.run_authority_flow(task))
         if task_type == "coding_task" and task.get("output_filename"):
             return await self._run_self_healing(task)
 
@@ -243,7 +246,7 @@ class RainmakerOrchestrator:
 
                 if exec_result["status"] == "success":
                     logger.info(f"Self-healing succeeded on attempt {attempt + 1}")
-                    return {"status": "success", "output": exec_result["stdout"]}
+                    return cast(dict[str, Any], {"status": "success", "output": exec_result["stdout"]})
 
                 # Feedback loop
                 stderr: str = exec_result.get("stderr", "Unknown error")

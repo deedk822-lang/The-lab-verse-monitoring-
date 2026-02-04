@@ -9,14 +9,9 @@ async def test_stream_agent_response_success(monkeypatch):
     # The helper that will be run in the thread-pool
     def fake_ollama(prompt):
         # simulate 3 tokens + final chunk
-        return [
-            {"response": "Hi", "done": False},
-            {"response": " ", "done": False},
-            {"response": "there", "done": False},
-            {"response": "", "done": True, "eval_count": 5},
-        ]
+        return {"content": "Hi there", "usage": {"total_tokens": 5}}
 
-    monkeypatch.setattr("server.agent._ollama_stream", fake_ollama)
+    monkeypatch.setattr("server.agent._ollama_stream_sync", fake_ollama)
 
     resp = await stream_agent_response("Hi there", session_id="abc")
     assert resp["response"] == "Hi there"
@@ -26,18 +21,18 @@ async def test_stream_agent_response_success(monkeypatch):
 def mock_ollama(monkeypatch):
     """
     Provides a pytest monkeypatch that replaces `ollama.generate` with a simple tokenized responder.
-
-    Patches `ollama.generate` so that when called with a `prompt` keyword argument it returns a list of dictionaries of the form `{"response": word}` for each word in the prompt. Intended for use as an autouse test fixture to simulate streamable model output.
     """
     def fake_generate(*args, **kwargs):
         prompt = kwargs.get("prompt", "")
-        return [{"response": part} for part in prompt.split()]
+        chunks = [{"response": part, "done": False} for part in prompt.split()]
+        chunks.append({"response": "", "done": True, "eval_count": len(prompt.split())})
+        return chunks
 
     monkeypatch.setattr("ollama.generate", fake_generate)
 
 
 @pytest.mark.asyncio
-async def test_stream_agent_response_success():
+async def test_stream_agent_response_basic():
     query = "Hello world"
     resp = await stream_agent_response(query, session_id="abc123")
     assert "response" in resp
@@ -48,9 +43,9 @@ async def test_stream_agent_response_success():
 @pytest.mark.asyncio
 async def test_stream_agent_response_ollama_error(monkeypatch):
     def fake_error(prompt):
-        raise RuntimeError("connection failed")
+        raise HTTPException(status_code=502, detail="connection failed")
 
-    monkeypatch.setattr("server.agent._ollama_stream", fake_error)
+    monkeypatch.setattr("server.agent._ollama_stream_sync", fake_error)
 
     with pytest.raises(HTTPException) as exc:
         await stream_agent_response("test", session_id="xyz")

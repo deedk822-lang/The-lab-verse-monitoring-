@@ -115,7 +115,7 @@ EOF
 # Create the AutoGLM orchestrator
 cat > src/orchestrators/autoglm.js << 'EOF'
 const GLMIntegration = require('../integrations/zhipu-glm');
-const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901');
+// const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901');
 const OpenApi = require('@alicloud/openapi-client');
 const Util = require('@alicloud/tea-util');
 
@@ -133,7 +133,8 @@ class AutoGLM {
       regionId: process.env.ALIBABA_CLOUD_REGION_ID || 'cn-hangzhou'
     });
 
-    return new AccessAnalyzer(config);
+    // return new AccessAnalyzer(config);
+    return null;
   }
 
   /**
@@ -181,6 +182,10 @@ class AutoGLM {
   }
 
   async getAlibabaSecurityFindings() {
+    if (!this.accessAnalyzerClient) {
+      console.warn('Access Analyzer client not initialized (registry 404). Returning empty findings.');
+      return [];
+    }
     try {
       const runtime = new Util.RuntimeOptions({});
       const response = await this.accessAnalyzerClient.listAnalyzersWithOptions({}, runtime);
@@ -677,7 +682,7 @@ cat > package.json << 'EOF'
     "@alicloud/tea-util": "^1.4.5",
     "@alicloud/openapi-client": "^0.4.8",
     "@alicloud/credentials": "^2.3.0",
-    "@alicloud/accessanalyzer20200901": "^1.0.10",
+    "@alicloud/pop-core": "^1.7.12",
     "@alicloud/ecs20140526": "^3.0.3",
     "@alicloud/ram20150501": "^3.0.6",
     "@opentelemetry/api": "^1.7.0",
@@ -1006,7 +1011,7 @@ EOF
 
 # Create the run_security_scan.js script
 cat > scripts/run_security_scan.js << 'EOF'
-const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901');
+// const { AccessAnalyzer } = require('@alicloud/accessanalyzer20200901');
 const { Credential } = require('@alicloud/credentials');
 const OpenApi = require('@alicloud/openapi-client');
 const Util = require('@alicloud/tea-util');
@@ -1022,10 +1027,15 @@ class AlibabaCloudSecurityScanner {
       regionId: process.env.ALIBABA_CLOUD_REGION_ID || 'cn-hangzhou'
     });
 
-    this.client = new AccessAnalyzer(config);
+    // this.client = new AccessAnalyzer(config);
+    this.client = null;
   }
 
   async listAnalyzers() {
+    if (!this.client) {
+      console.warn('Access Analyzer client not initialized (registry 404).');
+      return [];
+    }
     try {
       const runtime = new Util.RuntimeOptions({});
       const response = await this.client.listAnalyzersWithOptions({}, runtime);
@@ -1037,6 +1047,7 @@ class AlibabaCloudSecurityScanner {
   }
 
   async listFindings(analyzerName) {
+    if (!this.client) return [];
     try {
       const request = {
         analyzerName: analyzerName,

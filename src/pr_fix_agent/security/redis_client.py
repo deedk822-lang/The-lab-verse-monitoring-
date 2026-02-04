@@ -1,3 +1,6 @@
+# Update redis_url in Settings
+settings = get_settings()
+settings.redis_url = f"redis://password:6379/{settings.redis_db}"
 from __future__ import annotations
 
 import asyncio

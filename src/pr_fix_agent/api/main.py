@@ -29,10 +29,12 @@ async def lifespan(app: FastAPI):
     initialize_metrics()
     initialize_tracing(settings)
     logger.info("application_started", version=settings.version, environment=settings.environment)
-    yield
-    await close_redis()
-    await close_db()
-    logger.info("application_stopped")
+    try:
+        yield
+    finally:
+        await close_redis()
+        await close_db()
+        logger.info("application_stopped")
 
 
 app = FastAPI(

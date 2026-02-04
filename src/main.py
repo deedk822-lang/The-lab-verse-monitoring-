@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.exceptions import HTTPException
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from .api.v1.endpoints import autoglm
 from .core.config import settings
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,7 +22,6 @@ async def lifespan(app: FastAPI):
     yield
     print("Shutting down Rainmaker Orchestrator")
     # Cleanup resources here
-
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -86,3 +87,14 @@ async def health_check():
         "version": settings.VERSION,
         "timestamp": time.time()
     }
+
+@app.exception_handler(Exception)
+async def all_exceptions_handler(request, exc):
+    # Log the exception for debugging
+    app.logger.error(f"Exception in {request.method} request to {request.url}: {exc}")
+    
+    # Return a generic error response
+    return JSONResponse(
+        status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An unexpected error occurred"},
+    )

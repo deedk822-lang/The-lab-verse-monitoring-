@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 from datetime import datetime
 from functools import lru_cache
@@ -43,6 +44,9 @@ class AuditLogger:
         # ✅ FIX: Only add handler if it doesn't exist
         if existing_handler is None:
             # Create append-only file handler
+            hash_actor_id = hashlib.sha256(actor_id.encode()).hexdigest()
+            hash_resource = hashlib.sha256(resource.encode()).hexdigest()
+
             handler = logging.FileHandler(
                 self.log_path,
                 mode='a',  # Append only (immutable)
@@ -82,9 +86,9 @@ class AuditLogger:
         event = {
             "timestamp": datetime.utcnow().isoformat(),
             "event_type": event_type,
-            "actor_id": actor_id,
+            "actor_id": hash_actor_id,  # Hashed actor ID
             "actor_ip": actor_ip,
-            "resource": resource,
+            "resource": hash_resource,  # Hashed resource name
             "action": action,
             "result": result,
             "request_id": request_id,

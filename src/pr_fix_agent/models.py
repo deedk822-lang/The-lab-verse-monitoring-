@@ -4,8 +4,7 @@ Issue Fixed: #21: Budget-aware model selection
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
-
+from typing import Optional
 
 @dataclass
 class ModelSpec:
@@ -17,7 +16,6 @@ class ModelSpec:
     speed_score: int  # 1-10
     context_window: int
     specialization: str  # reasoning, coding, general
-
 
 class ModelSelector:
     """
@@ -110,7 +108,10 @@ class ModelSelector:
         Returns:
             Best model matching criteria, or None
         """
-        candidates = self.MODELS.get(task, [])
+        if task not in self.MODELS:
+            raise ValueError(f"Invalid task: {task}")
+
+        candidates = self.MODELS[task]
 
         # Filter by budget
         affordable = [

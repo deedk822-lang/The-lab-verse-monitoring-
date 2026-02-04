@@ -1,7 +1,3 @@
-"""
-Observability module for PR Fix Agent.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -45,6 +41,14 @@ class LLMCost:
     def to_dict(self) -> dict:
         return asdict(self)
 
+    def get_sensitive_data_info(self):
+        """Return sensitive data information"""
+        return {
+            "model": self.model,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "total_tokens": self.total_tokens
+        }
 
 class BudgetExceededError(Exception):
     """Raised when LLM usage exceeds budget"""
@@ -115,18 +119,13 @@ class CostTracker:
 
     def get_summary(self) -> Dict[str, Any]:
         """Get cost summary"""
+        sensitive_data_info = self.get_sensitive_data_info()
         return {
             "total_spent_usd": self.total_spent,
             "budget_usd": self.budget_usd,
             "remaining_usd": self.budget_usd - self.total_spent,
             "calls": len(self.costs),
             "total_tokens": sum(c.total_tokens for c in self.costs),
-            "costs": [asdict(c) for c in self.costs]
+            "costs": [asdict(c) for c in self.costs],
+            **sensitive_data_info
         }
-
-
-__all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
-]

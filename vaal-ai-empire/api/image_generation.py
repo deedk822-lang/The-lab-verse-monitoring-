@@ -7,6 +7,7 @@ import os
 import logging
 import requests
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,7 @@ class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
+        self.session = requests.Session()
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +60,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -137,7 +139,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -193,7 +195,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -219,7 +221,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -249,7 +251,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,
@@ -338,23 +340,27 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """Generate multiple images in parallel"""
+        logger.info(f"Generating {len(prompts)} images in parallel...")
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        with ThreadPoolExecutor(max_workers=min(len(prompts), 10)) as executor:
+            futures = [
+                executor.submit(self.generate, prompt, style=style)
+                for prompt in prompts
+            ]
 
-            try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
-                    "image_url": self._create_placeholder(prompt),
-                    "provider": "error",
-                    "cost_usd": 0.0,
-                    "error": str(e)
-                })
+            results = []
+            for i, future in enumerate(futures):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    logger.error(f"Catastrophic failure in image {i+1}: {e}")
+                    results.append({
+                        "image_url": self._create_placeholder(prompts[i]),
+                        "provider": "error",
+                        "cost_usd": 0.0,
+                        "error": str(e)
+                    })
 
         return results
 

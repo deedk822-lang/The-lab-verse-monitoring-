@@ -1,0 +1,360 @@
+name: Harvest 1950 Gazettes (Apartheid Legislative Cascade)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gazette_archaeologist.py'
+      - '.github/workflows/harvest-1950.yml'
+
+  workflow_dispatch:
+    inputs:
+      target_year:
+        description: 'Year to harvest (default: 1950)'
+        required: false
+        default: '1950'
+      max_workers:
+        description: 'Concurrent workers (default: 3)'
+        required: false
+        default: '3'
+      dry_run:
+        description: 'Dry run mode (no uploads)'
+        required: false
+        default: 'false'
+
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly Sunday 2AM UTC
+
+jobs:
+  # Pre-flight health checks
+  health-check:
+    runs-on: ubuntu-latest
+    environment: production
+
+    outputs:
+      database_ok: ${{ steps.check.outputs.database }}
+      storage_ok: ${{ steps.check.outputs.storage }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install psycopg2-binary requests oss2
+
+      - name: Health check
+        id: check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+          ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
+          BUCKET_NAME: meta-historian-gazettes
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+
+          output_path = os.environ['GITHUB_OUTPUT']
+          database_ok = False
+          storage_ok = False
+
+          try:
+              conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+              with conn.cursor() as cur:
+                  cur.execute('SELECT 1')
+              database_ok = True
+              print('database=ok')
+          except Exception as exc:
+              print(f'Database check failed: {exc}')
+          finally:
+              if 'conn' in locals():
+                  conn.close()
+
+          try:
+              import oss2
+              auth = oss2.Auth(
+                  os.getenv('ALIBABA_ACCESS_KEY_ID'),
+                  os.getenv('ALIBABA_ACCESS_KEY_SECRET')
+              )
+              bucket = oss2.Bucket(
+                  auth,
+                  os.getenv('ALIBABA_ENDPOINT'),
+                  os.getenv('BUCKET_NAME')
+              )
+              bucket.get_bucket_info()
+              storage_ok = True
+              print('storage=ok')
+          except Exception as exc:
+              print(f'Storage check failed: {exc}')
+
+          with open(output_path, 'a', encoding='utf-8') as handle:
+              handle.write(f"database={'ok' if database_ok else 'failed'}\n")
+              handle.write(f"storage={'ok' if storage_ok else 'failed'}\n")
+
+          if not (database_ok and storage_ok):
+              raise SystemExit(1)
+          PY
+
+  # Main harvest job
+  harvest:
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: needs.health-check.outputs.database_ok == 'ok' && needs.health-check.outputs.storage_ok == 'ok'
+    environment: production
+    timeout-minutes: 180  # 3 hours max
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      STORAGE_PROVIDER: alibaba
+      ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+      ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+      ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
+      BUCKET_NAME: meta-historian-gazettes
+      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
+      MAX_WORKERS: ${{ github.event.inputs.max_workers || '3' }}
+      RATE_LIMIT: '2.0'
+      MAX_RETRIES: '3'
+      DB_POOL_MIN: '2'
+      DB_POOL_MAX: '10'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            psycopg2-binary \
+            pdfplumber \
+            requests \
+            oss2 \
+            python-dateutil \
+            boto3
+
+      - name: Verify installation
+        run: |
+          python -c "import psycopg2; import pdfplumber; import oss2; print('All imports OK')"
+
+      - name: Run Harvester
+        id: harvest
+        run: |
+          echo "🚀 Starting harvest for year $TARGET_YEAR"
+          echo "Configuration: $MAX_WORKERS workers, ${RATE_LIMIT}s rate limit"
+
+          python gazette_archaeologist.py
+
+          echo "harvest_status=success" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Extract metrics
+        if: always()
+        run: |
+          if [ -f "harvester_$TARGET_YEAR.log" ]; then
+            echo "📊 Harvest Metrics:"
+            grep -E "(Discovered|Stored|✅ Harvest complete)" "harvester_$TARGET_YEAR.log" | tail -20
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harvest-logs-${{ env.TARGET_YEAR }}-${{ github.run_number }}
+          path: |
+            harvester_*.log
+          retention-days: 30
+
+      - name: Check for failures
+        if: always()
+        run: |
+          if [ -f "harvester_$TARGET_YEAR.log" ]; then
+            ERRORS=$(grep -c "ERROR" "harvester_$TARGET_YEAR.log" || echo "0")
+            FAILURES=$(grep -c "💥" "harvester_$TARGET_YEAR.log" || echo "0")
+
+            echo "Errors: $ERRORS, Failures: $FAILURES"
+
+            if [ "$ERRORS" -gt 10 ] || [ "$FAILURES" -gt 5 ]; then
+              echo "⚠️  High error rate detected"
+              exit 1
+            fi
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Gazette Harvest Failed: ${process.env.TARGET_YEAR}`,
+              body: `Harvest job failed for year ${process.env.TARGET_YEAR}\n\n` +
+                    `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
+                    `Please check the logs for details.`,
+              labels: ['automated', 'harvest-failure']
+            })
+
+  # Post-harvest analysis
+  analyze:
+    runs-on: ubuntu-latest
+    needs: harvest
+    if: always() && needs.harvest.result != 'cancelled'
+    environment: production
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install psycopg2-binary
+
+      - name: Generate report
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+
+          conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+          cur = conn.cursor()
+
+          year = int(os.getenv('TARGET_YEAR'))
+
+          # Get manifest stats
+          cur.execute('''
+              SELECT
+                  status,
+                  COUNT(*) as count,
+                  SUM(acts_extracted) as total_acts
+              FROM ingestion_manifest
+              WHERE year = %s
+              GROUP BY status
+              ORDER BY status
+          ''', (year,))
+
+          print('📊 Harvest Statistics for', year)
+          print('=' * 50)
+          for row in cur.fetchall():
+              print(f'{row[0]:12} | Count: {row[1]:4} | Acts: {row[2] or 0:4}')
+
+          # Get acts stats
+          cur.execute('''
+              SELECT
+                  COUNT(*) as total_acts,
+                  COUNT(DISTINCT era) as eras,
+                  AVG(confidence_probability) as avg_confidence
+              FROM statutes
+              WHERE EXTRACT(YEAR FROM assent_date) = %s
+          ''', (year,))
+
+          stats = cur.fetchone()
+          print('\n📜 Acts Statistics')
+          print('=' * 50)
+          print(f'Total Acts:        {stats[0]}')
+          print(f'Eras:              {stats[1]}')
+          print(f'Avg Confidence:    {stats[2]:.3f}')
+
+          conn.close()
+          PY
+
+      - name: Check data quality
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+
+          conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+          cur = conn.cursor()
+
+          year = int(os.getenv('TARGET_YEAR'))
+
+          # Find low confidence acts
+          cur.execute('''
+              SELECT act_number, confidence_probability, verification_status
+              FROM statutes
+              WHERE EXTRACT(YEAR FROM assent_date) = %s
+              AND confidence_probability < 0.7
+              ORDER BY confidence_probability
+              LIMIT 10
+          ''', (year,))
+
+          low_conf = cur.fetchall()
+
+          if low_conf:
+              print('⚠️  Low Confidence Acts (require review):')
+              for act in low_conf:
+                  print(f'  {act[0]:25} | Confidence: {act[1]:.3f} | Status: {act[2]}')
+          else:
+              print('✅ All acts have acceptable confidence levels')
+
+          conn.close()
+          PY
+
+  # Separate workflow for retry failed gazettes
+  retry-failures:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      STORAGE_PROVIDER: alibaba
+      ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+      ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+      ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
+      BUCKET_NAME: meta-historian-gazettes
+      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Retry failed gazettes
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+
+          conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+          cur = conn.cursor()
+
+          # Reset failed gazettes with low retry count
+          cur.execute('''
+              UPDATE ingestion_manifest
+              SET status = 'pending', error_text = NULL
+              WHERE status = 'failed'
+              AND retry_count < 3
+              AND year = %s
+              RETURNING gazette_id
+          ''', (int(os.getenv('TARGET_YEAR')),))
+
+          reset_count = cur.rowcount
+          conn.commit()
+          conn.close()
+
+          print(f'Reset {reset_count} failed gazettes for retry')
+          PY

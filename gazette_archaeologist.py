@@ -3,7 +3,11 @@
 gazette_archaeologist.py
 Meta-Historian: Production Gazette Harvester for South African Government Gazettes
 Target: 1950 (Apartheid Legislative Cascade)
+ codex/implement-database-connection-pooling-739ujd
+Deployment: GitHub Actions + S3-compatible storage + PostgreSQL
+
 Deployment: GitHub Actions + Alibaba Cloud OSS + PostgreSQL
+ codex/add-improvements-to-meta-historian-agent
 
 Improvements:
 - Connection pooling for database
@@ -16,7 +20,11 @@ Improvements:
 - Progress tracking
 """
 
+ codex/implement-database-connection-pooling-739ujd
+import argparse
+
 import importlib.util
+ codex/add-improvements-to-meta-historian-agent
 import json
 import hashlib
 import logging
@@ -28,10 +36,17 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime
+ codex/implement-database-connection-pooling-739ujd
+from typing import Any, Dict, List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import boto3
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+ codex/add-improvements-to-meta-historian-agent
 import pdfplumber
 import psycopg2
 from psycopg2 import pool
@@ -41,6 +56,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 
+ codex/implement-database-connection-pooling-739ujd
+
 ALIBABA_OSS_AVAILABLE = importlib.util.find_spec("oss2") is not None
 if ALIBABA_OSS_AVAILABLE:
     import oss2
@@ -48,6 +65,7 @@ else:
     logging.warning("oss2 not available, falling back to boto3")
 
 # ------------ Configuration ------------
+ codex/add-improvements-to-meta-historian-agent
 CONFIG = {
     "target_year": int(os.getenv("TARGET_YEAR", "1950")),
     "base_url": "https://gazettes.africa/gazettes/za",
@@ -55,6 +73,17 @@ CONFIG = {
     # Connection pooling
     "db_pool_min": int(os.getenv("DB_POOL_MIN", "2")),
     "db_pool_max": int(os.getenv("DB_POOL_MAX", "10")),
+ codex/implement-database-connection-pooling-739ujd
+    # Storage
+    "bucket_name": os.getenv("BUCKET_NAME", "meta-historian-gazettes"),
+    "s3_endpoint": os.getenv("S3_ENDPOINT"),
+    "s3_access_key": os.getenv("S3_ACCESS_KEY_ID"),
+    "s3_secret_key": os.getenv("S3_SECRET_ACCESS_KEY"),
+    "s3_region": os.getenv("AWS_REGION", "us-east-1"),
+    # Rate limiting and concurrency
+    "rate_limit_seconds": float(os.getenv("RATE_LIMIT", "2.0")),
+    "max_workers": int(os.getenv("MAX_WORKERS", "3")),
+
     # Storage: 'alibaba' or 'aws'
     "storage_provider": os.getenv("STORAGE_PROVIDER", "alibaba"),
     "bucket_name": os.getenv("BUCKET_NAME", "meta-historian-gazettes"),
@@ -70,12 +99,16 @@ CONFIG = {
     # Rate limiting and concurrency
     "rate_limit_seconds": float(os.getenv("RATE_LIMIT", "2.0")),
     "max_workers": int(os.getenv("MAX_WORKERS", "3")),  # Concurrent downloads
+ codex/add-improvements-to-meta-historian-agent
     "max_retries": int(os.getenv("MAX_RETRIES", "3")),
     # Processing limits
     "max_full_text_chars": 50000,
     "max_gazette_number": 200,  # Safety limit per year
     "consecutive_404_threshold": 15,
+ codex/implement-database-connection-pooling-739ujd
+
     "batch_size": 10,  # Batch inserts
+ codex/add-improvements-to-meta-historian-agent
     # Timeouts
     "request_timeout": 30,
     "connection_timeout": 10,
@@ -85,13 +118,25 @@ CONFIG = {
     "min_section_count": 1,
 }
 
+ codex/implement-database-connection-pooling-739ujd
+logger = logging.getLogger("gazette_archaeologist")
+
+
+# ------------ Logging ------------
+def setup_logging(target_year: int) -> None:
+
 # ------------ Logging ------------
 def setup_logging():
+ codex/add-improvements-to-meta-historian-agent
     """Configure structured logging"""
     log_format = "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
 
     # File handler
+ codex/implement-database-connection-pooling-739ujd
+    file_handler = logging.FileHandler(f"harvester_{target_year}.log")
+
     file_handler = logging.FileHandler(f"harvester_{CONFIG['target_year']}.log")
+ codex/add-improvements-to-meta-historian-agent
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter(log_format))
 
@@ -111,10 +156,13 @@ def setup_logging():
     logging.getLogger("pdfplumber").setLevel(logging.WARNING)
 
 
+ codex/implement-database-connection-pooling-739ujd
+
 setup_logging()
 logger = logging.getLogger("gazette_archaeologist")
 
 
+ codex/add-improvements-to-meta-historian-agent
 # ------------ Metrics Tracking ------------
 @dataclass
 class HarvestMetrics:
@@ -215,6 +263,15 @@ class ParsedAct:
 
     def to_db_record(self) -> Dict[str, Any]:
         """Convert to database insertion format matching the statutes schema"""
+ codex/implement-database-connection-pooling-739ujd
+        source_metadata = {
+            "source_gazette_id": self.source_gazette_id,
+            "source_url": self.source_url,
+            "pdf_oss_key": self.pdf_oss_key,
+            "pdf_sha256": self.pdf_sha256,
+        }
+
+ codex/add-improvements-to-meta-historian-agent
         return {
             "act_number": self.act_number,
             "short_title": self.short_title[:255],
@@ -232,6 +289,10 @@ class ParsedAct:
             "anchor_type": "legislative",
             "source_gazette_id": self.source_gazette_id,
             "source_url": self.source_url,
+ codex/implement-database-connection-pooling-739ujd
+            "source_metadata": Json(source_metadata),
+
+ codex/add-improvements-to-meta-historian-agent
             "semantic_embedding": None,
             "triggered_by_events": None,
             "triggered_by_studies": None,
@@ -305,19 +366,39 @@ class GazetteArchaeologist:
     - Metrics tracking
     """
 
+ codex/implement-database-connection-pooling-739ujd
+    def __init__(self, year: int, max_workers: int, dry_run: bool):
+        self.metrics = HarvestMetrics()
+        self.session = self._create_session()
+        self.storage = None
+        self.db_pool = None
+        self.year = year
+        self.dry_run = dry_run
+
+        if not self.dry_run:
+            self.storage = self._init_storage()
+            self.db_pool = self._init_db_pool()
+            self._ensure_tables()
+
+
     def __init__(self):
         self.metrics = HarvestMetrics()
         self.session = self._create_session()
         self.storage = self._init_storage()
         self.db_pool = self._init_db_pool()
         self._ensure_tables()
+ codex/add-improvements-to-meta-historian-agent
         self._lock = threading.Lock()
 
         # Rate limiting
         self._last_request_time = 0
         self._rate_limiter_lock = threading.Lock()
 
+ codex/implement-database-connection-pooling-739ujd
+        logger.info("Gazette Archaeologist initialized (dry_run=%s)", self.dry_run)
+
         logger.info("Gazette Archaeologist initialized")
+ codex/add-improvements-to-meta-historian-agent
 
     def _create_session(self) -> requests.Session:
         """Create requests session with retry logic"""
@@ -344,6 +425,11 @@ class GazetteArchaeologist:
 
         return session
 
+ codex/implement-database-connection-pooling-739ujd
+    def _init_storage(self) -> Dict[str, Any]:
+        """Initialize S3-compatible storage"""
+        kwargs = {"region_name": CONFIG["s3_region"]}
+
     def _init_storage(self):
         """Initialize Alibaba Cloud OSS or AWS S3"""
         provider = CONFIG["storage_provider"]
@@ -368,24 +454,39 @@ class GazetteArchaeologist:
         import boto3
 
         kwargs = {"region_name": os.getenv("AWS_REGION", "us-east-1")}
+ codex/add-improvements-to-meta-historian-agent
 
         if CONFIG["s3_endpoint"]:
             kwargs["endpoint_url"] = CONFIG["s3_endpoint"]
 
+ codex/implement-database-connection-pooling-739ujd
+        if CONFIG["s3_access_key"]:
+            kwargs["aws_access_key_id"] = CONFIG["s3_access_key"]
+            kwargs["aws_secret_access_key"] = CONFIG["s3_secret_key"]
+
         if CONFIG["aws_access_key"]:
             kwargs["aws_access_key_id"] = CONFIG["aws_access_key"]
             kwargs["aws_secret_access_key"] = CONFIG["aws_secret_key"]
+ codex/add-improvements-to-meta-historian-agent
 
         client = boto3.client("s3", **kwargs)
 
         # Test connection
         try:
             client.head_bucket(Bucket=CONFIG["bucket_name"])
+ codex/implement-database-connection-pooling-739ujd
+            logger.info("Connected to S3: %s", CONFIG["bucket_name"])
+        except Exception as exc:
+            raise ConnectionError(f"Failed to connect to S3: {exc}") from exc
+
+        return {"client": client}
+
             logger.info(f"Connected to S3: {CONFIG['bucket_name']}")
         except Exception as exc:
             raise ConnectionError(f"Failed to connect to S3: {exc}") from exc
 
         return {"type": "s3", "client": client}
+ codex/add-improvements-to-meta-historian-agent
 
     def _init_db_pool(self) -> pool.ThreadedConnectionPool:
         """Initialize PostgreSQL connection pool with health check"""
@@ -432,6 +533,11 @@ class GazetteArchaeologist:
     @contextmanager
     def _get_db_connection(self):
         """Context manager for database connections from pool"""
+ codex/implement-database-connection-pooling-739ujd
+        if not self.db_pool:
+            raise RuntimeError("Database pool not initialized")
+
+ codex/add-improvements-to-meta-historian-agent
         conn = None
         try:
             conn = self.db_pool.getconn()
@@ -445,11 +551,18 @@ class GazetteArchaeologist:
             if conn:
                 self.db_pool.putconn(conn)
 
+ codex/implement-database-connection-pooling-739ujd
+    def _ensure_tables(self) -> None:
+        """Ensure ingestion_manifest and statutes tables exist"""
+        with self._get_db_connection() as conn:
+            with conn.cursor() as cur:
+
     def _ensure_tables(self):
         """Ensure ingestion_manifest and statutes tables exist"""
         with self._get_db_connection() as conn:
             with conn.cursor() as cur:
                 # Ingestion tracking for idempotency
+ codex/add-improvements-to-meta-historian-agent
                 cur.execute(
                     """
                     CREATE TABLE IF NOT EXISTS ingestion_manifest (
@@ -473,7 +586,19 @@ class GazetteArchaeologist:
                 """
                 )
 
+ codex/implement-database-connection-pooling-739ujd
+                cur.execute(
+                    """
+                    ALTER TABLE ingestion_manifest
+                        ADD COLUMN IF NOT EXISTS year INTEGER,
+                        ADD COLUMN IF NOT EXISTS retry_count INTEGER DEFAULT 0,
+                        ADD COLUMN IF NOT EXISTS acts_extracted INTEGER DEFAULT 0;
+                """
+                )
+
+
                 # Ensure statutes table has required fields
+ codex/add-improvements-to-meta-historian-agent
                 cur.execute(
                     """
                     DO $$
@@ -498,6 +623,10 @@ class GazetteArchaeologist:
                                 anchor_type VARCHAR(20),
                                 source_gazette_id VARCHAR(100),
                                 source_url TEXT,
+ codex/implement-database-connection-pooling-739ujd
+                                source_metadata JSONB,
+
+ codex/add-improvements-to-meta-historian-agent
                                 submitted_by VARCHAR(100),
                                 verification_status VARCHAR(20),
                                 transaction_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -516,9 +645,24 @@ class GazetteArchaeologist:
                 """
                 )
 
+ codex/implement-database-connection-pooling-739ujd
+                cur.execute(
+                    """
+                    ALTER TABLE statutes
+                        ADD COLUMN IF NOT EXISTS confidence_probability DECIMAL(4,3),
+                        ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20),
+                        ADD COLUMN IF NOT EXISTS source_metadata JSONB;
+                """
+                )
+
+                conn.commit()
+
+    def _rate_limit(self) -> None:
+
                 conn.commit()
 
     def _rate_limit(self):
+ codex/add-improvements-to-meta-historian-agent
         """Thread-safe rate limiting"""
         with self._rate_limiter_lock:
             elapsed = time.time() - self._last_request_time
@@ -528,6 +672,11 @@ class GazetteArchaeologist:
 
     def _manifest_exists(self, gazette_id: str) -> bool:
         """Check if gazette already processed successfully"""
+ codex/implement-database-connection-pooling-739ujd
+        if self.dry_run:
+            return False
+
+ codex/add-improvements-to-meta-historian-agent
         with self._get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -547,8 +696,15 @@ class GazetteArchaeologist:
         status: str,
         error: Optional[str] = None,
         acts_count: int = 0,
+ codex/implement-database-connection-pooling-739ujd
+    ) -> None:
+        """Upsert manifest record"""
+        if self.dry_run:
+            return
+
     ):
         """Upsert manifest record"""
+ codex/add-improvements-to-meta-historian-agent
         with self._get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -571,6 +727,18 @@ class GazetteArchaeologist:
 
                 conn.commit()
 
+ codex/implement-database-connection-pooling-739ujd
+    def harvest_year(self) -> None:
+        """Main entry: Harvest all gazettes for target year with concurrent processing"""
+        year = self.year
+
+        logger.info("🚀 Starting archaeological excavation of year %s", year)
+        logger.info(
+            "Configuration: %s workers, %ss rate limit, dry_run=%s",
+            CONFIG["max_workers"],
+            CONFIG["rate_limit_seconds"],
+            self.dry_run,
+
     def harvest_year(self, year: Optional[int] = None):
         """
         Main entry: Harvest all gazettes for target year with concurrent processing
@@ -583,6 +751,7 @@ class GazetteArchaeologist:
             "Configuration: %s workers, %ss rate limit",
             CONFIG["max_workers"],
             CONFIG["rate_limit_seconds"],
+ codex/add-improvements-to-meta-historian-agent
         )
 
         # Health checks
@@ -619,10 +788,43 @@ class GazetteArchaeologist:
 
         # Save metrics
         self._save_metrics(year, summary)
+ codex/implement-database-connection-pooling-739ujd
+        self._write_metrics_file(year, summary)
+
+ codex/add-improvements-to-meta-historian-agent
 
     def _health_check(self) -> bool:
         """Verify all systems operational before starting"""
         logger.info("Running health checks...")
+
+ codex/implement-database-connection-pooling-739ujd
+        checks = {"database": True, "storage": True, "network": False}
+
+        if not self.dry_run:
+            checks["database"] = False
+            checks["storage"] = False
+
+        # Database check
+        if not self.dry_run:
+            try:
+                with self._get_db_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT COUNT(*) FROM ingestion_manifest")
+                        count = cur.fetchone()[0]
+                        logger.info("✓ Database: %s manifests in database", count)
+                        checks["database"] = True
+            except Exception as exc:
+                logger.error("✗ Database check failed: %s", exc)
+
+        # Storage check
+        if not self.dry_run:
+            try:
+                client = self.storage["client"]
+                client.head_bucket(Bucket=CONFIG["bucket_name"])
+                logger.info("✓ Storage: Connected to %s", CONFIG["bucket_name"])
+                checks["storage"] = True
+            except Exception as exc:
+                logger.error("✗ Storage check failed: %s", exc)
 
         checks = {"database": False, "storage": False, "network": False}
 
@@ -650,6 +852,7 @@ class GazetteArchaeologist:
             checks["storage"] = True
         except Exception as exc:
             logger.error("✗ Storage check failed: %s", exc)
+ codex/add-improvements-to-meta-historian-agent
 
         # Network check
         try:
@@ -708,6 +911,21 @@ class GazetteArchaeologist:
 
         return sorted(found)
 
+ codex/implement-database-connection-pooling-739ujd
+    def _upload_to_storage(self, key: str, data: bytes, metadata: Dict[str, str]) -> bool:
+        """Upload to S3-compatible storage with error handling"""
+        if self.dry_run:
+            logger.info("Dry run: skipping upload for %s", key)
+            return True
+        try:
+            self.storage["client"].put_object(
+                Bucket=CONFIG["bucket_name"],
+                Key=key,
+                Body=data,
+                ContentType="application/pdf",
+                Metadata={k: str(v)[:1024] for k, v in metadata.items()},
+            )
+
     def _upload_to_storage(self, key: str, data: bytes, metadata: Dict) -> bool:
         """Upload to Alibaba OSS or S3 with error handling"""
         try:
@@ -724,6 +942,7 @@ class GazetteArchaeologist:
                     ContentType="application/pdf",
                     Metadata={k: str(v)[:1024] for k, v in metadata.items()},
                 )
+ codex/add-improvements-to-meta-historian-agent
 
             logger.debug("Uploaded to storage: %s", key)
             return True
@@ -734,7 +953,11 @@ class GazetteArchaeologist:
                 self.metrics.storage_errors += 1
             return False
 
+ codex/implement-database-connection-pooling-739ujd
+    def _process_gazette(self, year: int, gazette_num: int) -> None:
+
     def _process_gazette(self, year: int, gazette_num: int):
+ codex/add-improvements-to-meta-historian-agent
         """Process single gazette: download, store, parse, ingest"""
         url = f"{CONFIG['base_url']}/{year}/{gazette_num}.pdf"
         gazette_id = f"ZA_Gazette_{year}_{gazette_num:04d}"
@@ -796,7 +1019,11 @@ class GazetteArchaeologist:
         # Checksum
         sha256 = hashlib.sha256(pdf_bytes).hexdigest()
 
+ codex/implement-database-connection-pooling-739ujd
+        # Upload to S3
+
         # Upload to OSS/S3
+ codex/add-improvements-to-meta-historian-agent
         metadata = {
             "gazette-id": gazette_id,
             "source-url": url,
@@ -1138,7 +1365,11 @@ class GazetteArchaeologist:
         Returns:
             Tuple of (stored_count, updated_count)
         """
+ codex/implement-database-connection-pooling-739ujd
+        if not acts or self.dry_run:
+
         if not acts:
+ codex/add-improvements-to-meta-historian-agent
             return 0, 0
 
         stored = 0
@@ -1168,7 +1399,13 @@ class GazetteArchaeologist:
                                     preamble = COALESCE(%s, preamble),
                                     sections = COALESCE(%s::jsonb, sections),
                                     full_text = COALESCE(%s, full_text),
+ codex/implement-database-connection-pooling-739ujd
+                                    confidence_probability = GREATEST(confidence_probability, %s),
+                                    verification_status = COALESCE(%s, verification_status),
+                                    source_metadata = COALESCE(%s::jsonb, source_metadata)
+
                                     confidence_probability = GREATEST(confidence_probability, %s)
+ codex/add-improvements-to-meta-historian-agent
                                 WHERE act_number = %s
                             """,
                                 (
@@ -1178,6 +1415,11 @@ class GazetteArchaeologist:
                                     Json(record["sections"]),
                                     record["full_text"],
                                     record["confidence_probability"],
+ codex/implement-database-connection-pooling-739ujd
+                                    record["verification_status"],
+                                    Json(record["source_metadata"]),
+
+ codex/add-improvements-to-meta-historian-agent
                                     act.act_number,
                                 ),
                             )
@@ -1206,8 +1448,15 @@ class GazetteArchaeologist:
 
         return stored, updated
 
+ codex/implement-database-connection-pooling-739ujd
+    def _save_metrics(self, year: int, summary: Dict[str, Any]) -> None:
+        """Save harvest metrics to database"""
+        if self.dry_run:
+            return
+
     def _save_metrics(self, year: int, summary: Dict):
         """Save harvest metrics to database"""
+ codex/add-improvements-to-meta-historian-agent
         try:
             with self._get_db_connection() as conn:
                 with conn.cursor() as cur:
@@ -1255,6 +1504,28 @@ class GazetteArchaeologist:
         except Exception as exc:
             logger.error("Failed to save metrics: %s", exc)
 
+ codex/implement-database-connection-pooling-739ujd
+    def _write_metrics_file(self, year: int, summary: Dict[str, Any]) -> None:
+        """Write metrics summary to harvest_metrics.json"""
+        payload = {
+            "year": year,
+            "summary": summary,
+        }
+        try:
+            with open("harvest_metrics.json", "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2)
+        except Exception as exc:
+            logger.error("Failed to write harvest_metrics.json: %s", exc)
+
+    def close(self) -> None:
+        """Clean up resources"""
+        try:
+            if self.db_pool:
+                self.db_pool.closeall()
+                logger.info("Database pool closed")
+
+            if self.session:
+
     def close(self):
         """Clean up resources"""
         try:
@@ -1263,6 +1534,7 @@ class GazetteArchaeologist:
                 logger.info("Database pool closed")
 
             if hasattr(self, "session"):
+ codex/add-improvements-to-meta-historian-agent
                 self.session.close()
                 logger.info("HTTP session closed")
 
@@ -1271,12 +1543,45 @@ class GazetteArchaeologist:
 
 
 # ------------ CLI Entry Point ------------
+ codex/implement-database-connection-pooling-739ujd
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Meta-Historian Gazette Harvester")
+    parser.add_argument("--year", type=int, default=CONFIG["target_year"], help="Target year to harvest")
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=CONFIG["max_workers"],
+        help="Concurrent workers for download/processing",
+    )
+    parser.add_argument(
+        "--dry-run",
+        default="false",
+        help="Dry run mode (no uploads or DB writes). true/false",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    """Main entry point with graceful error handling"""
+    args = parse_args()
+    CONFIG["target_year"] = args.year
+    CONFIG["max_workers"] = args.max_workers
+    dry_run = str(args.dry_run).lower() in {"1", "true", "yes"}
+
+    setup_logging(args.year)
+
+    archaeologist = None
+
+    try:
+        archaeologist = GazetteArchaeologist(args.year, args.max_workers, dry_run)
+
 def main():
     """Main entry point with graceful error handling"""
     archaeologist = None
 
     try:
         archaeologist = GazetteArchaeologist()
+ codex/add-improvements-to-meta-historian-agent
         archaeologist.harvest_year()
         exit_code = 0
 
@@ -1296,6 +1601,10 @@ def main():
 
 
 if __name__ == "__main__":
+ codex/implement-database-connection-pooling-739ujd
+    raise SystemExit(main())
+
     import sys
 
     sys.exit(main())
+ codex/add-improvements-to-meta-historian-agent

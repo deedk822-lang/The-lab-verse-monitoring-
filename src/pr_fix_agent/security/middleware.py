@@ -14,7 +14,6 @@ import structlog
 
 logger = structlog.get_logger()
 
-
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     S4: Add comprehensive security headers to all responses.
@@ -33,7 +32,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            "script-src 'nonce-{uuid}'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self'; "

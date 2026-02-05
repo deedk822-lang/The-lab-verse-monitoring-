@@ -27,6 +27,7 @@ async def get_redis_client(settings: Settings | None = None) -> Redis:
 
     ✅ FIX #1: Remove incorrect await on aioredis.from_url (it's synchronous)
     ✅ FIX #2: Add asyncio.Lock to prevent race conditions
+    ✅ FIX #3: Properly handle exceptions when creating the Redis client
 
     Uses double-check locking pattern:
     1. Check if client exists (fast path, no lock)
@@ -48,20 +49,21 @@ async def get_redis_client(settings: Settings | None = None) -> Redis:
         if _redis_client is not None:
             return _redis_client
 
-        # Create client
-        if settings is None:
-            settings = get_settings()
+        try:
+            # Create client
+            if settings is None:
+                settings = get_settings()
 
-        # ✅ FIX: aioredis.from_url is synchronous - don't await it
-        _redis_client = aioredis.from_url(
-            str(settings.redis_url),
-            encoding="utf-8",
-            decode_responses=True,
-            max_connections=settings.redis_max_connections,
-        )
-
-        return _redis_client
-
+            _redis_client = aioredis.from_url(
+                str(settings.redis_url),
+                encoding="utf-8",
+                decode_responses=True,
+                max_connections=settings.redis_max_connections,
+            )
+            return _redis_client
+        except Exception as e:
+            print(f"Failed to initialize Redis client: {e}")
+            raise
 
 async def close_redis() -> None:
     """Close Redis connection (thread-safe)."""

@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 import structlog
 
 from pr_fix_agent.core.config import get_settings
@@ -42,6 +41,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Initialize SecurityHeadersMiddleware after configure_logging and initialize_metrics
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditLoggingMiddleware)
 app.add_middleware(RequestIDMiddleware)
@@ -69,5 +69,5 @@ async def metrics():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error("unhandled_exception", error=str(exc), path=request.url.path)
+    logger.error("unhandled_exception", error=str(exc), path=request.url.path, exception=str(exc))
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})

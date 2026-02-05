@@ -1,0 +1,1490 @@
+[
+  {
+    "cell": null,
+    "code": "PLR0911",
+    "end_location": {
+      "column": 25,
+      "row": 102
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 102
+    },
+    "message": "Too many return statements (9 > 6)",
+    "noqa_row": 102,
+    "url": "https://docs.astral.sh/ruff/rules/too-many-return-statements"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 27,
+      "row": 175
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 175
+    },
+    "message": "Unused method argument: `explanations`",
+    "noqa_row": 175,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 31,
+      "row": 184
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 184
+    },
+    "message": "Unused method argument: `anomalous_sample`",
+    "noqa_row": 184,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 56,
+      "row": 184
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 45,
+      "row": 184
+    },
+    "message": "Unused method argument: `explanation`",
+    "noqa_row": 184,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 25,
+      "row": 211
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 211
+    },
+    "message": "Unused method argument: `anomalous_sample`",
+    "noqa_row": 211,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 21,
+      "row": 212
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 212
+    },
+    "message": "Unused method argument: `context_data`",
+    "noqa_row": 212,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 21,
+      "row": 48
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 48
+    },
+    "message": "Using the global statement to update `explainer` is discouraged",
+    "noqa_row": 48,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 60,
+      "row": 88
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 88
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 88,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 60,
+      "row": 108
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 108
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 108,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 60,
+      "row": 125
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 125
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 125,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 60,
+      "row": 156
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 156
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 156,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B008",
+    "end_location": {
+      "column": 51,
+      "row": 39
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 39
+    },
+    "message": "Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable",
+    "noqa_row": 39,
+    "url": "https://docs.astral.sh/ruff/rules/function-call-in-default-argument"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 77,
+      "row": 81
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 81
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 81,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "ARG001",
+    "end_location": {
+      "column": 12,
+      "row": 86
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 86
+    },
+    "message": "Unused function argument: `request`",
+    "noqa_row": 86,
+    "url": "https://docs.astral.sh/ruff/rules/unused-function-argument"
+  },
+  {
+    "cell": null,
+    "code": "B008",
+    "end_location": {
+      "column": 51,
+      "row": 87
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 87
+    },
+    "message": "Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable",
+    "noqa_row": 87,
+    "url": "https://docs.astral.sh/ruff/rules/function-call-in-default-argument"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 77,
+      "row": 111
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 111
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 111,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B008",
+    "end_location": {
+      "column": 51,
+      "row": 117
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 117
+    },
+    "message": "Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable",
+    "noqa_row": 117,
+    "url": "https://docs.astral.sh/ruff/rules/function-call-in-default-argument"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 77,
+      "row": 157
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 157
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 157,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "B008",
+    "end_location": {
+      "column": 78,
+      "row": 161
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 53,
+      "row": 161
+    },
+    "message": "Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable",
+    "noqa_row": 161,
+    "url": "https://docs.astral.sh/ruff/rules/function-call-in-default-argument"
+  },
+  {
+    "cell": null,
+    "code": "RUF002",
+    "end_location": {
+      "column": 154,
+      "row": 162
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/integrations/zhipu_glm.py",
+    "fix": null,
+    "location": {
+      "column": 153,
+      "row": 162
+    },
+    "message": "Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?",
+    "noqa_row": 163,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-docstring"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 41,
+      "row": 182
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/kimi_instruct/cli.py",
+    "fix": null,
+    "location": {
+      "column": 37,
+      "row": 182
+    },
+    "message": "Unused method argument: `args`",
+    "noqa_row": 182,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "RUF001",
+    "end_location": {
+      "column": 52,
+      "row": 21
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/kimi_instruct/mcp/confidence.py",
+    "fix": null,
+    "location": {
+      "column": 51,
+      "row": 21
+    },
+    "message": "String contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?",
+    "noqa_row": 21,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string"
+  },
+  {
+    "cell": null,
+    "code": "ARG001",
+    "end_location": {
+      "column": 23,
+      "row": 12
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/main.py",
+    "fix": null,
+    "location": {
+      "column": 20,
+      "row": 12
+    },
+    "message": "Unused function argument: `app`",
+    "noqa_row": 12,
+    "url": "https://docs.astral.sh/ruff/rules/unused-function-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 63,
+      "row": 174
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py",
+    "fix": null,
+    "location": {
+      "column": 47,
+      "row": 174
+    },
+    "message": "Unused method argument: `remediation_plan`",
+    "noqa_row": 174,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "UP042",
+    "end_location": {
+      "column": 21,
+      "row": 14
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "from enum import Enum, StrEnum",
+          "end_location": {
+            "column": 22,
+            "row": 3
+          },
+          "location": {
+            "column": 1,
+            "row": 3
+          }
+        },
+        {
+          "content": "(StrEnum)",
+          "end_location": {
+            "column": 32,
+            "row": 14
+          },
+          "location": {
+            "column": 21,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Inherit from `enum.StrEnum`"
+    },
+    "location": {
+      "column": 7,
+      "row": 14
+    },
+    "message": "Class ProviderPolicy inherits from both `str` and `enum.Enum`",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/replace-str-enum"
+  },
+  {
+    "cell": null,
+    "code": "RUF012",
+    "end_location": {
+      "column": 113,
+      "row": 96
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 96
+    },
+    "message": "Mutable class attributes should be annotated with `typing.ClassVar`",
+    "noqa_row": 96,
+    "url": "https://docs.astral.sh/ruff/rules/mutable-class-default"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 53,
+      "row": 112
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 112
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 112,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 72,
+      "row": 166
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 71,
+      "row": 166
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 166,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 77,
+      "row": 167
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 76,
+      "row": 167
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 167,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 41,
+      "row": 168
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 40,
+      "row": 168
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 168,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 39,
+      "row": 169
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 38,
+      "row": 169
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 169,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 22,
+      "row": 198
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 198
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 198,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 31,
+      "row": 206
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 30,
+      "row": 206
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 206,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "E701",
+    "end_location": {
+      "column": 22,
+      "row": 226
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 226
+    },
+    "message": "Multiple statements on one line (colon)",
+    "noqa_row": 226,
+    "url": "https://docs.astral.sh/ruff/rules/multiple-statements-on-one-line-colon"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 26,
+      "row": 238
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 22,
+      "row": 238
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 238,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 18,
+      "row": 245
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 245
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 245,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PLW2901",
+    "end_location": {
+      "column": 21,
+      "row": 247
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 247
+    },
+    "message": "`for` loop variable `line` overwritten by assignment target",
+    "noqa_row": 247,
+    "url": "https://docs.astral.sh/ruff/rules/redefined-loop-name"
+  },
+  {
+    "cell": null,
+    "code": "ARG001",
+    "end_location": {
+      "column": 23,
+      "row": 35
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/api/main.py",
+    "fix": null,
+    "location": {
+      "column": 20,
+      "row": 35
+    },
+    "message": "Unused function argument: `app`",
+    "noqa_row": 35,
+    "url": "https://docs.astral.sh/ruff/rules/unused-function-argument"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 72,
+      "row": 23
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 23
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 23,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 66,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 42
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 42,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 34,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.analyzer` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 56,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 44,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.orchestrator` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 66,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 58,
+      "row": 42
+    },
+    "message": "`pr_fix_agent.security` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 42,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 18,
+      "row": 50
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 50
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 50,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 68,
+      "row": 74
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 74
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 74,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 64,
+      "row": 102
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 102
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 102,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 19,
+      "row": 19
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 19
+    },
+    "message": "Using the global statement to update `_engine` is discouraged",
+    "noqa_row": 19,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 25,
+      "row": 40
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 40
+    },
+    "message": "Using the global statement to update `_async_engine` is discouraged",
+    "noqa_row": 40,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 19,
+      "row": 61
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 61
+    },
+    "message": "Using the global statement to update `_engine` is discouraged",
+    "noqa_row": 61,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 34,
+      "row": 61
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 61
+    },
+    "message": "Using the global statement to update `_async_engine` is discouraged",
+    "noqa_row": 61,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "RUF012",
+    "end_location": {
+      "column": 6,
+      "row": 91
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/models.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 32
+    },
+    "message": "Mutable class attributes should be annotated with `typing.ClassVar`",
+    "noqa_row": 32,
+    "url": "https://docs.astral.sh/ruff/rules/mutable-class-default"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 45,
+      "row": 8
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 37,
+      "row": 8
+    },
+    "message": "`datetime.timezone` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "UP035",
+    "end_location": {
+      "column": 29,
+      "row": 10
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 10
+    },
+    "message": "`typing.Dict` is deprecated, use `dict` instead",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/deprecated-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 29,
+      "row": 10
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 25,
+      "row": 10
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "RUF012",
+    "end_location": {
+      "column": 6,
+      "row": 71
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 19,
+      "row": 58
+    },
+    "message": "Mutable class attributes should be annotated with `typing.ClassVar`",
+    "noqa_row": 58,
+    "url": "https://docs.astral.sh/ruff/rules/mutable-class-default"
+  },
+  {
+    "cell": null,
+    "code": "RUF012",
+    "end_location": {
+      "column": 6,
+      "row": 61
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/ollama_agent.py",
+    "fix": null,
+    "location": {
+      "column": 19,
+      "row": 55
+    },
+    "message": "Mutable class attributes should be annotated with `typing.ClassVar`",
+    "noqa_row": 55,
+    "url": "https://docs.astral.sh/ruff/rules/mutable-class-default"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 42,
+      "row": 294
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/ollama_agent.py",
+    "fix": null,
+    "location": {
+      "column": 36,
+      "row": 294
+    },
+    "message": "Unused method argument: `kwargs`",
+    "noqa_row": 294,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 77,
+      "row": 128
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 69,
+      "row": 128
+    },
+    "message": "Unused method argument: `analysis`",
+    "noqa_row": 128,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "PLW1510",
+    "end_location": {
+      "column": 36,
+      "row": 185
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "content": "check=False, ",
+          "end_location": {
+            "column": 17,
+            "row": 187
+          },
+          "location": {
+            "column": 17,
+            "row": 187
+          }
+        }
+      ],
+      "message": "Add explicit `check=False`"
+    },
+    "location": {
+      "column": 22,
+      "row": 185
+    },
+    "message": "`subprocess.run` without explicit `check` argument",
+    "noqa_row": 185,
+    "url": "https://docs.astral.sh/ruff/rules/subprocess-run-without-check"
+  },
+  {
+    "cell": null,
+    "code": "S607",
+    "end_location": {
+      "column": 94,
+      "row": 186
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 186
+    },
+    "message": "Starting a process with a partial executable path",
+    "noqa_row": 186,
+    "url": "https://docs.astral.sh/ruff/rules/start-process-with-partial-path"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 26,
+      "row": 196
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 22,
+      "row": 196
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 196,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "ARG002",
+    "end_location": {
+      "column": 67,
+      "row": 216
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 62,
+      "row": 216
+    },
+    "message": "Unused method argument: `fixes`",
+    "noqa_row": 216,
+    "url": "https://docs.astral.sh/ruff/rules/unused-method-argument"
+  },
+  {
+    "cell": null,
+    "code": "PLR0912",
+    "end_location": {
+      "column": 9,
+      "row": 233
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 233
+    },
+    "message": "Too many branches (21 > 12)",
+    "noqa_row": 233,
+    "url": "https://docs.astral.sh/ruff/rules/too-many-branches"
+  },
+  {
+    "cell": null,
+    "code": "PLR0915",
+    "end_location": {
+      "column": 9,
+      "row": 233
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 233
+    },
+    "message": "Too many statements (72 > 50)",
+    "noqa_row": 233,
+    "url": "https://docs.astral.sh/ruff/rules/too-many-statements"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 30,
+      "row": 257
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 257
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 257,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 18,
+      "row": 288
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 288
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 288,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 18,
+      "row": 297
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 297
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 297,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 18,
+      "row": 323
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 323
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 323,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 30,
+      "row": 344
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 344
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 344,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "PTH123",
+    "end_location": {
+      "column": 22,
+      "row": 361
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py",
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 361
+    },
+    "message": "`open()` should be replaced by `Path.open()`",
+    "noqa_row": 361,
+    "url": "https://docs.astral.sh/ruff/rules/builtin-open"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 73,
+      "row": 33
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 33
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 33,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "SIM102",
+    "end_location": {
+      "column": 73,
+      "row": 42
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/audit.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 39
+    },
+    "message": "Use a single `if` statement instead of nested `if` statements",
+    "noqa_row": 39,
+    "url": "https://docs.astral.sh/ruff/rules/collapsible-if"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 69,
+      "row": 111
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/middleware.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 111
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 111,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 28,
+      "row": 20
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/redis_client.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 20
+    },
+    "message": "Using the global statement to update `_redis_init_lock` is discouraged",
+    "noqa_row": 20,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 25,
+      "row": 40
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/redis_client.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 40
+    },
+    "message": "Using the global statement to update `_redis_client` is discouraged",
+    "noqa_row": 40,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "PLW0603",
+    "end_location": {
+      "column": 25,
+      "row": 70
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/redis_client.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 70
+    },
+    "message": "Using the global statement to update `_redis_client` is discouraged",
+    "noqa_row": 70,
+    "url": "https://docs.astral.sh/ruff/rules/global-statement"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 66,
+      "row": 12
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 12
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 12,
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 56,
+      "row": 13
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 13
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 70,
+      "row": 14
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 14
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "PTH110",
+    "end_location": {
+      "column": 26,
+      "row": 12
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/config.py",
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 12
+    },
+    "message": "`os.path.exists()` should be replaced by `Path.exists()`",
+    "noqa_row": 12,
+    "url": "https://docs.astral.sh/ruff/rules/os-path-exists"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 47,
+      "row": 14
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/config.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 14
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "B904",
+    "end_location": {
+      "column": 73,
+      "row": 54
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 54
+    },
+    "message": "Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling",
+    "noqa_row": 54,
+    "url": "https://docs.astral.sh/ruff/rules/raise-without-from-inside-except"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 20,
+      "row": 129
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 129
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 129,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 133
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 133
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 133,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "PLC0415",
+    "end_location": {
+      "column": 20,
+      "row": 171
+    },
+    "filename": "/home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 171
+    },
+    "message": "`import` should be at the top-level of a file",
+    "noqa_row": 171,
+    "url": "https://docs.astral.sh/ruff/rules/import-outside-top-level"
+  }
+]

@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Dict
 
-
 class ConfidenceEstimator:
     threshold = 0.78
 
@@ -17,10 +16,16 @@ class ConfidenceEstimator:
                 "tongyi/tongyi-deepresearch-30b", prompt
             )
             data = json.loads(resp)
-            return float(data.get("score", 0.0))
+            if not isinstance(data, dict) or "score" not in data or not isinstance(data["score"], float):
+                self.log.warning("Invalid JSON response from LLM")
+                return self.heuristic_score(plan, context)
         except Exception as e:
-            self.log.warning("LLM score failed %s – heuristic fallback", e)
-            heuristic = min(len(plan.get("steps", [])) / 5, 1.0) * 0.6
-            if "risk" in context:
-                heuristic -= context["risk"] * 0.3
-            return max(0.0, min(1.0, heuristic))
+            self.log.error(f"LLM score failed {e}")
+            return self.heuristic_score(plan, context)
+
+    def heuristic_score(self, plan: dict, context: dict) -> float:
+        # Implement the heuristic scoring logic
+        heuristic = min(len(plan.get("steps", [])) / 5, 1.0) * 0.6
+        if "risk" in context:
+            heuristic -= context["risk"] * 0.3
+        return max(0.0, min(1.0, heuristic))

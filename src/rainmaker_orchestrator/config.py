@@ -4,7 +4,6 @@ from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
 
-
 class ConfigManager:
     """Centralized configuration management with environment variable support."""
 
@@ -41,3 +40,7 @@ class ConfigManager:
         if value in ("false", "0", "no", "off"):
             return False
         return default
+
+# Example usage:
+config_manager = ConfigManager(".env")
+api_key = config_manager.get("API_KEY")

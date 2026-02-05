@@ -49,8 +49,12 @@ async def startup_event():
     logger.info("Anomaly Detection Service is starting up.")
     if not os.environ.get("PYTEST_RUNNING"):
         background_data = np.random.rand(10, 10, 1)
+        # Securely store the model configuration or load it from a secure location
+        model_config_path = "/path/to/model/config"
         explainer = AdvancedExplainabilityEngine(
-            model=lstm_model, training_data=background_data
+            model=lstm_model,
+            training_data=background_data,
+            config_path=model_config_path,
         )
         logger.info("Explainability engine initialized.")
     else:

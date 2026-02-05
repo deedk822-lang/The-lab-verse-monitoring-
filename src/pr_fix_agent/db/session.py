@@ -11,8 +11,8 @@ from sqlalchemy.pool import QueuePool
 
 from pr_fix_agent.core.config import Settings, get_settings
 
-_engine = None
-_async_engine = None
+_ENGINE = None
+_ASYNC_ENGINE = None
 
 
 def get_db_engine(settings: Settings | None = None):
@@ -32,6 +32,7 @@ def get_db_engine(settings: Settings | None = None):
             pool_timeout=settings.db_pool_timeout,
             connect_args=connect_args,
             echo=settings.db_echo,
+            # Add logging or other security measures here
         )
     return _engine
 
@@ -47,6 +48,7 @@ async def get_async_db_engine(settings: Settings | None = None):
             pool_size=settings.db_pool_size,
             max_overflow=settings.db_max_overflow,
             echo=settings.db_echo,
+            # Add logging or other security measures here
         )
     return _async_engine
 

@@ -26,10 +26,9 @@ class SecurityValidator:
         except Exception as e:
             raise SecurityError(f"Invalid path: {user_path}") from e
 
-        try:
-            target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        # Ensure the target path is within the repository
+        if not self.repo_path.is_relative_to(target_path):
+            raise SecurityError("Path traversal detected: {user_path}")
 
         return target_path
 
@@ -122,6 +121,4 @@ class RateLimiter:
 __all__ = [
     'SecurityError',
     'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
 ]

@@ -69,7 +69,6 @@ async def generate_with_glm(
                 request.content_type,
                 request.context
             )
-
         return {
             "success": True,
             "content": content,
@@ -79,7 +78,6 @@ async def generate_with_glm(
     except Exception as e:
         logger.error(f"GLM generation failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/security-analysis", summary="Perform autonomous security analysis")
 async def autoglm_security_analysis(
@@ -99,7 +97,6 @@ async def autoglm_security_analysis(
     try:
         async with create_autoglm_orchestrator() as autoglm:
             analysis = await autoglm.autonomous_security_analysis()
-
         return {
             "success": True,
             "analysis": analysis,
@@ -109,7 +106,6 @@ async def autoglm_security_analysis(
     except Exception as e:
         logger.error(f"AutoGLM security analysis failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/secure-content", summary="Generate secure content")
 async def autoglm_secure_content(
@@ -145,7 +141,6 @@ async def autoglm_secure_content(
                 request.content_type,
                 request.context
             )
-
         return {
             "success": True,
             "content": secure_content,
@@ -155,7 +150,6 @@ async def autoglm_secure_content(
     except Exception as e:
         logger.error(f"AutoGLM secure content generation failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.get("/health", summary="Health check for GLM and AutoGLM services")
 async def autoglm_health_check(current_user: User = Depends(get_current_user)):
@@ -198,7 +192,6 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
         try:
             async with create_autoglm_orchestrator() as autoglm:
-                # Just test initialization - don't run full analysis for health check
                 health_status["services"]["autoglm"] = {"status": "operational"}
         except Exception as e:
             health_status["services"]["autoglm"] = {"status": "error", "error": "Internal server error"}

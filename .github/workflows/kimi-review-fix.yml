@@ -142,7 +142,7 @@ jobs:
           })
           .then(res => res.json())
           .then(data => {
-            console.log('::set-output name=fixes::' + data.choices[0].message.content);
+            require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `fixes=${data.choices[0].message.content}\n`);
           })
           .catch(err => {
             console.error(err);
@@ -170,13 +170,13 @@ jobs:
               
               # Use Python for safe replacement
               python3 -c "
-import sys
-with open('$FILE', 'r') as f:
-    content = f.read()
-new_content = content.replace('$SEARCH', '$REPLACE', 1)
-with open('$FILE', 'w') as f:
-    f.write(new_content)
-"
+              import sys
+              with open('$FILE', 'r') as f:
+                  content = f.read()
+              new_content = content.replace('$SEARCH', '$REPLACE', 1)
+              with open('$FILE', 'w') as f:
+                  f.write(new_content)
+              "
               
               # Check if code file for tests
               if [[ "$FILE" =~ \.(py|js|ts|go|java)$ ]]; then

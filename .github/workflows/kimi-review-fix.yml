@@ -1,11 +1,16 @@
 name: Kimi Auto-Fix Review Flags
 
 on:
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
   pull_request_review_comment:
     types: [created]
   issue_comment:
     types: [created]
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
 
   # Trigger when CodeRabbit/Gemini post review comments
   pull_request_review_comment:
@@ -17,29 +22,132 @@ on:
   
   # Trigger when PR is opened/reopened (for initial bot reviews)
  test-kimi-workflow-trigger
+ test-kimi-workflow-trigger
   pull_request:
     types: [opened, reopened, ready_for_review]
 
 env:
   KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+ codex/refactor-server-side-workflow-and-documentation-730q24
+  KIMI_BASE_URL: ${{ vars.KIMI_BASE_URL || 'https://api.moonshot.cn/v1' }}
+
  codex/refactor-server-side-workflow-and-documentation
   KIMI_BASE_URL: ${{ vars.KIMI_BASE_URL || 'https://api.moonshot.cn/v1' }}
 
+ test-kimi-workflow-trigger
  test-kimi-workflow-trigger
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   analyze-and-fix:
+ codex/refactor-server-side-workflow-and-documentation-730q24
+    if: |
+      (github.base_ref == 'main' || github.ref == 'refs/heads/main') &&
+      (
+        github.event_name != 'issue_comment' ||
+        github.event.issue.pull_request != null
+      )
+
  codex/refactor-server-side-workflow-and-documentation
 
     # Only run if PR targets main branch
  test-kimi-workflow-trigger
     if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
+ test-kimi-workflow-trigger
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       issues: write
+ codex/refactor-server-side-workflow-and-documentation-730q24
+    steps:
+      - name: Get PR Info
+        id: pr-info
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            let headRef;
+            let baseRef;
+            let prNumber;
+
+            if (context.eventName === 'pull_request') {
+              headRef = context.payload.pull_request.head.ref;
+              baseRef = context.payload.pull_request.base.ref;
+              prNumber = context.payload.pull_request.number;
+            } else if (context.eventName === 'pull_request_review_comment') {
+              headRef = context.payload.pull_request.head.ref;
+              baseRef = context.payload.pull_request.base.ref;
+              prNumber = context.payload.pull_request.number;
+            } else if (context.eventName === 'issue_comment') {
+              try {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number
+                });
+                headRef = pr.head.ref;
+                baseRef = pr.base.ref;
+                prNumber = pr.number;
+
+                if (pr.base.ref !== 'main') {
+                  console.log(`PR targets ${pr.base.ref}, not main. Skipping.`);
+                  core.setOutput('skip', 'true');
+                  return;
+                }
+              } catch (error) {
+                console.log(`Error fetching PR: ${error.message}`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            }
+
+            if (!headRef || !prNumber) {
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            core.setOutput('head_ref', headRef);
+            core.setOutput('base_ref', baseRef || '');
+            core.setOutput('pr_number', String(prNumber));
+            core.setOutput('skip', 'false');
+            console.log(`PR #${prNumber}: ${headRef} -> ${baseRef || 'unknown'}`);
+
+      - name: Skip Check
+        if: steps.pr-info.outputs.skip == 'true'
+        run: |
+          echo "Skipping - PR does not target main or is not a PR"
+          exit 0
+
+      - name: Checkout PR Branch
+        if: steps.pr-info.outputs.skip != 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr-info.outputs.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Branch Safety
+        if: steps.pr-info.outputs.skip != 'true'
+        run: |
+          CURRENT_BRANCH="$(git branch --show-current)"
+          echo "Current branch: $CURRENT_BRANCH"
+
+          if [ "$CURRENT_BRANCH" = "main" ]; then
+            echo "ERROR: Checked out main branch instead of PR branch"
+            exit 1
+          fi
+
+          if [ "$CURRENT_BRANCH" != "${{ steps.pr-info.outputs.head_ref }}" ]; then
+            echo "ERROR: Branch mismatch"
+            exit 1
+          fi
+
+          echo "Safe to proceed on branch: $CURRENT_BRANCH"
+
+      - name: Setup Node.js
+        if: steps.pr-info.outputs.skip != 'true'
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+
  codex/refactor-server-side-workflow-and-documentation
     steps:
       - name: Checkout PR Code
@@ -61,10 +169,33 @@ jobs:
 
         uses: actions/setup-node@v4
  test-kimi-workflow-trigger
+ test-kimi-workflow-trigger
         with:
           node-version: '20'
 
       - name: Fetch Review Comments
+ codex/refactor-server-side-workflow-and-documentation-730q24
+        if: steps.pr-info.outputs.skip != 'true'
+        id: fetch-comments
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            let prNumber;
+
+            if (context.eventName === 'issue_comment') {
+              if (!context.payload.issue.pull_request) {
+                console.log('Not a PR comment, skipping');
+                core.setOutput('has_comments', 'false');
+                return;
+              }
+              prNumber = context.issue.number;
+            } else if (context.eventName === 'pull_request_review_comment') {
+              prNumber = context.payload.pull_request.number;
+            } else {
+              prNumber = context.payload.pull_request?.number;
+            }
+
+
         id: fetch-comments
  codex/refactor-server-side-workflow-and-documentation
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
@@ -74,10 +205,42 @@ jobs:
         with:
           script: |
             const prNumber = context.issue.number || context.payload.pull_request?.number;
+ test-kimi-workflow-trigger
             if (!prNumber) {
               core.setOutput('has_comments', 'false');
               return;
             }
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
+            try {
+              const { data: reviewComments } = await github.rest.pulls.listReviewComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              const manualTrigger = (context.payload.comment?.body || '').includes('/kimi-fix');
+              const botComments = reviewComments.filter(comment =>
+                comment.user.login.includes('coderabbit') || comment.user.login.includes('gemini')
+              );
+
+              if (botComments.length === 0 && !manualTrigger) {
+                core.setOutput('has_comments', 'false');
+                return;
+              }
+
+              core.setOutput('has_comments', 'true');
+              core.setOutput('pr_number', String(prNumber));
+              core.setOutput('comments', JSON.stringify(botComments));
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('Not a PR or no access');
+                core.setOutput('has_comments', 'false');
+                return;
+              }
+              throw error;
+            }
+
  codex/refactor-server-side-workflow-and-documentation
 
             
@@ -131,11 +294,15 @@ jobs:
             core.setOutput('comments', JSON.stringify(botComments));
             core.setOutput('manual_trigger', manualTrigger.toString());
  test-kimi-workflow-trigger
+ test-kimi-workflow-trigger
 
       - name: Analyze with Kimi K2.5
         if: steps.fetch-comments.outputs.has_comments == 'true'
         id: kimi-analysis
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           COMMENTS_JSON: ${{ steps.fetch-comments.outputs.comments }}
@@ -174,6 +341,11 @@ jobs:
               throw new Error('Invalid response format from Kimi API');
             }
             core.setOutput('fixes', data.choices[0].message.content);
+
+ codex/refactor-server-side-workflow-and-documentation-730q24
+      - name: Apply Fixes
+        if: steps.kimi-analysis.outputs.fixes
+        id: apply-fixes
 
         run: |
           cat > analyze.js << 'EOF'
@@ -236,10 +408,13 @@ Rules:
         if: steps.kimi-analysis.outputs.fixes
         id: apply-fixes
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
         env:
           FIXES_JSON: ${{ steps.kimi-analysis.outputs.fixes }}
         run: |
           echo "$FIXES_JSON" | jq -c '.fixes[]?' | while read -r fix; do
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
 
         run: |
           FIXES='${{ steps.kimi-analysis.outputs.fixes }}'
@@ -247,17 +422,23 @@ Rules:
           # Parse Kimi's response and apply each fix
           echo "$FIXES" | jq -c '.fixes[]?' | while read fix; do
  test-kimi-workflow-trigger
+ test-kimi-workflow-trigger
             FILE=$(echo "$fix" | jq -r '.file_path')
             SEARCH=$(echo "$fix" | jq -r '.search_pattern')
             REPLACE=$(echo "$fix" | jq -r '.replacement_code')
             TEST_CMD=$(echo "$fix" | jq -r '.test_command // empty')
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
             if [ -f "$FILE" ]; then
               FILE="$FILE" SEARCH="$SEARCH" REPLACE="$REPLACE" python3 -c "import os; p=os.environ['FILE']; s=os.environ['SEARCH']; r=os.environ['REPLACE']; t=open(p,encoding='utf-8').read(); open(p,'w',encoding='utf-8').write(t.replace(s,r,1))"
               if [[ "$FILE" =~ \.(py|js|ts|go|java)$ ]]; then
                 echo "should_test=true" >> "$GITHUB_ENV"
                 if [ -n "$TEST_CMD" ]; then
                   echo "test_cmd=$TEST_CMD" >> "$GITHUB_ENV"
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
 
             
             if [ -f "$FILE" ]; then
@@ -284,12 +465,16 @@ Rules:
                 if [ -n "$TEST_CMD" ]; then
                   echo "test_cmd=$TEST_CMD" >> $GITHUB_ENV
  test-kimi-workflow-trigger
+ test-kimi-workflow-trigger
                 fi
               fi
             fi
           done
 
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
       - name: Setup Python
         if: env.should_test == 'true'
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
@@ -299,11 +484,14 @@ Rules:
       - name: Run Tests (Conditional)
         if: env.should_test == 'true'
         run: |
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
 
       - name: Run Tests (Conditional)
         if: env.should_test == 'true'
         run: |
           echo "Running tests for code changes..."
+ test-kimi-workflow-trigger
  test-kimi-workflow-trigger
           if [ -f "requirements.txt" ]; then
             pip install -r requirements.txt
@@ -316,10 +504,13 @@ Rules:
           elif [ -f "go.mod" ]; then
             go test ./...
           fi
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
 
           
           # Run custom test command if Kimi specified one
+ test-kimi-workflow-trigger
  test-kimi-workflow-trigger
           if [ -n "${{ env.test_cmd }}" ]; then
             eval "${{ env.test_cmd }}"
@@ -330,7 +521,10 @@ Rules:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Kimi Fix Bot"
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
  codex/refactor-server-side-workflow-and-documentation
+ test-kimi-workflow-trigger
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "fix: resolve review comments from CodeRabbit/Gemini"
@@ -352,6 +546,8 @@ Rules:
               repo: context.repo.repo,
               issue_number: Number('${{ steps.fetch-comments.outputs.pr_number }}'),
               body: '✅ **Kimi Auto-Fix Applied**'
+ codex/refactor-server-side-workflow-and-documentation-730q24
+
 
           
           # Check if there are changes
@@ -401,5 +597,6 @@ All fixes tested and committed to this branch."
 The automated fix process encountered an error. Manual intervention required.
             
 Error: ${{ job.steps.apply-fixes.outcome == 'failure' && 'Failed to apply fixes' || 'Test failures after fix' }}`
+ test-kimi-workflow-trigger
  test-kimi-workflow-trigger
             });

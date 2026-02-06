@@ -53,6 +53,7 @@ jobs:
             core.setOutput('pr_number', String(pr.number));
             core.setOutput('head_ref', pr.head.ref);
             core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('head_repo', pr.head.repo.full_name);
             core.setOutput('base_ref', pr.base.ref);
 
       - name: Stop when not targeting main
@@ -66,6 +67,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          repository: ${{ steps.pr-context.outputs.head_repo }}
           ref: ${{ steps.pr-context.outputs.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 

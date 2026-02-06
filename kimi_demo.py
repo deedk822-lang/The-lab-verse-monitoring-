@@ -1,9 +1,17 @@
 import os
 
 def process_data(data):
-    # TODO: Implement data processing logic
-    # Kimi can help complete this function
-    pass
+    """
+    Process a list of numbers by squaring each element.
+    This implementation was suggested by Kimi Code.
+    """
+    try:
+        processed = [x**2 for x in data]
+        print(f"Processed data: {processed}")
+        return processed
+    except Exception as e:
+        print(f"Error processing data: {e}")
+        return None
 
 def main():
     print("Kimi Code Demo")

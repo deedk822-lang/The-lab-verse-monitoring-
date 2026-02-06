@@ -1,42 +1,76 @@
 name: Kimi Auto-Fix Review Flags
 
 on:
+ codex/refactor-server-side-workflow-and-documentation
   pull_request_review_comment:
     types: [created]
   issue_comment:
     types: [created]
+
+  # Trigger when CodeRabbit/Gemini post review comments
+  pull_request_review_comment:
+    types: [created]
+  
+  # Trigger on PR comments with /kimi-fix command
+  issue_comment:
+    types: [created]
+  
+  # Trigger when PR is opened/reopened (for initial bot reviews)
+ test-kimi-workflow-trigger
   pull_request:
     types: [opened, reopened, ready_for_review]
 
 env:
   KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+ codex/refactor-server-side-workflow-and-documentation
   KIMI_BASE_URL: ${{ vars.KIMI_BASE_URL || 'https://api.moonshot.cn/v1' }}
+
+ test-kimi-workflow-trigger
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   analyze-and-fix:
+ codex/refactor-server-side-workflow-and-documentation
+
+    # Only run if PR targets main branch
+ test-kimi-workflow-trigger
     if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       issues: write
+ codex/refactor-server-side-workflow-and-documentation
     steps:
       - name: Checkout PR Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    
+    steps:
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+ test-kimi-workflow-trigger
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
+ codex/refactor-server-side-workflow-and-documentation
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+
+        uses: actions/setup-node@v4
+ test-kimi-workflow-trigger
         with:
           node-version: '20'
 
       - name: Fetch Review Comments
         id: fetch-comments
+ codex/refactor-server-side-workflow-and-documentation
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+
+        uses: actions/github-script@v6
+ test-kimi-workflow-trigger
         with:
           script: |
             const prNumber = context.issue.number || context.payload.pull_request?.number;
@@ -44,26 +78,64 @@ jobs:
               core.setOutput('has_comments', 'false');
               return;
             }
+ codex/refactor-server-side-workflow-and-documentation
+
+            
+            // Get review comments (inline code comments)
+ test-kimi-workflow-trigger
             const { data: reviewComments } = await github.rest.pulls.listReviewComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber
             });
+ codex/refactor-server-side-workflow-and-documentation
             const manualTrigger = (context.payload.comment?.body || '').includes('/kimi-fix');
             const botComments = reviewComments.filter(comment =>
               comment.user.login.includes('coderabbit') || comment.user.login.includes('gemini')
             );
+
+            
+            // Get issue comments (PR discussion)
+            const { data: issueComments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            // Filter for bot comments from CodeRabbit or Gemini
+            const botComments = reviewComments.filter(comment => 
+              comment.user.login.includes('coderabbit') || 
+              comment.user.login.includes('gemini') ||
+              comment.user.login.includes('github-actions')
+            );
+            
+            // Check for manual trigger command
+            const triggerKeywords = ['/kimi-fix', '/fix reviews', '/fix flags'];
+            const manualTrigger = issueComments.some(comment => 
+              triggerKeywords.some(keyword => comment.body.includes(keyword))
+            );
+            
+ test-kimi-workflow-trigger
             if (botComments.length === 0 && !manualTrigger) {
               core.setOutput('has_comments', 'false');
               return;
             }
+ codex/refactor-server-side-workflow-and-documentation
             core.setOutput('has_comments', 'true');
             core.setOutput('pr_number', String(prNumber));
             core.setOutput('comments', JSON.stringify(botComments));
 
+            
+            core.setOutput('has_comments', 'true');
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('comments', JSON.stringify(botComments));
+            core.setOutput('manual_trigger', manualTrigger.toString());
+ test-kimi-workflow-trigger
+
       - name: Analyze with Kimi K2.5
         if: steps.fetch-comments.outputs.has_comments == 'true'
         id: kimi-analysis
+ codex/refactor-server-side-workflow-and-documentation
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           COMMENTS_JSON: ${{ steps.fetch-comments.outputs.comments }}
@@ -103,28 +175,121 @@ jobs:
             }
             core.setOutput('fixes', data.choices[0].message.content);
 
+        run: |
+          cat > analyze.js << 'EOF'
+          const comments = ${{ steps.fetch-comments.outputs.comments }};
+          
+          // Build prompt for Kimi
+          const prompt = {
+            model: "kimi-k2.5",
+            messages: [
+              {
+                role: "system",
+                content: `You are an expert code review fixer. Analyze GitHub review comments and generate exact code fixes.
+                
+Rules:
+1. Target: main branch only - verify before any operation
+2. Conditional testing:
+   - Run tests/linters for: *.py, *.js, *.ts, *.go, *.java (logic changes)
+   - Skip tests for: *.md, *.txt, docs/*, comments-only changes
+3. Fix types:
+   - CodeRabbit "unused enum" → remove or implement
+   - CodeRabbit "config error" → fix YAML/JSON
+   - Gemini "logic error" → fix with test coverage
+   - Security issues → prioritize and add tests
+4. Output format: JSON with file_path, search_pattern, replacement_code, test_command (or null if skip)`
+              },
+              {
+                role: "user",
+                content: `Review comments to fix:\n${JSON.stringify(comments, null, 2)}\n\nGenerate fixes as JSON array.`
+              }
+            ],
+            temperature: 0.2,
+            response_format: { type: "json_object" }
+          };
+          
+          fetch('https://api.moonshot.cn/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.KIMI_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(prompt)
+          })
+          .then(res => res.json())
+          .then(data => {
+            const content = data.choices[0].message.content;
+            console.log('::set-output name=fixes::' + content);
+          })
+          .catch(err => {
+            console.error('Kimi API error:', err);
+            process.exit(1);
+          });
+          EOF
+          
+          node analyze.js
+        env:
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+ test-kimi-workflow-trigger
+
       - name: Apply Fixes
         if: steps.kimi-analysis.outputs.fixes
         id: apply-fixes
+ codex/refactor-server-side-workflow-and-documentation
         env:
           FIXES_JSON: ${{ steps.kimi-analysis.outputs.fixes }}
         run: |
           echo "$FIXES_JSON" | jq -c '.fixes[]?' | while read -r fix; do
+
+        run: |
+          FIXES='${{ steps.kimi-analysis.outputs.fixes }}'
+          
+          # Parse Kimi's response and apply each fix
+          echo "$FIXES" | jq -c '.fixes[]?' | while read fix; do
+ test-kimi-workflow-trigger
             FILE=$(echo "$fix" | jq -r '.file_path')
             SEARCH=$(echo "$fix" | jq -r '.search_pattern')
             REPLACE=$(echo "$fix" | jq -r '.replacement_code')
             TEST_CMD=$(echo "$fix" | jq -r '.test_command // empty')
+ codex/refactor-server-side-workflow-and-documentation
             if [ -f "$FILE" ]; then
               FILE="$FILE" SEARCH="$SEARCH" REPLACE="$REPLACE" python3 -c "import os; p=os.environ['FILE']; s=os.environ['SEARCH']; r=os.environ['REPLACE']; t=open(p,encoding='utf-8').read(); open(p,'w',encoding='utf-8').write(t.replace(s,r,1))"
               if [[ "$FILE" =~ \.(py|js|ts|go|java)$ ]]; then
                 echo "should_test=true" >> "$GITHUB_ENV"
                 if [ -n "$TEST_CMD" ]; then
                   echo "test_cmd=$TEST_CMD" >> "$GITHUB_ENV"
+
+            
+            if [ -f "$FILE" ]; then
+              # Apply the fix using sed or direct replacement
+              echo "Applying fix to $FILE"
+              # Create backup
+              cp "$FILE" "$FILE.bak"
+              
+              # Apply replacement (using Python for complex replacements)
+              python3 << PYEOF
+          import re
+          with open('$FILE', 'r') as f:
+              content = f.read()
+          
+          new_content = content.replace('$SEARCH', '$REPLACE', 1)
+          
+          with open('$FILE', 'w') as f:
+              f.write(new_content)
+          PYEOF
+              
+              # Determine if we should run tests
+              if [[ "$FILE" =~ \.(py|js|ts|go|java)$ ]]; then
+                echo "should_test=true" >> $GITHUB_ENV
+                if [ -n "$TEST_CMD" ]; then
+                  echo "test_cmd=$TEST_CMD" >> $GITHUB_ENV
+ test-kimi-workflow-trigger
                 fi
               fi
             fi
           done
 
+ codex/refactor-server-side-workflow-and-documentation
       - name: Setup Python
         if: env.should_test == 'true'
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
@@ -134,6 +299,12 @@ jobs:
       - name: Run Tests (Conditional)
         if: env.should_test == 'true'
         run: |
+
+      - name: Run Tests (Conditional)
+        if: env.should_test == 'true'
+        run: |
+          echo "Running tests for code changes..."
+ test-kimi-workflow-trigger
           if [ -f "requirements.txt" ]; then
             pip install -r requirements.txt
             python -m pytest || python -m unittest discover
@@ -145,6 +316,11 @@ jobs:
           elif [ -f "go.mod" ]; then
             go test ./...
           fi
+ codex/refactor-server-side-workflow-and-documentation
+
+          
+          # Run custom test command if Kimi specified one
+ test-kimi-workflow-trigger
           if [ -n "${{ env.test_cmd }}" ]; then
             eval "${{ env.test_cmd }}"
           fi
@@ -154,6 +330,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Kimi Fix Bot"
+ codex/refactor-server-side-workflow-and-documentation
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "fix: resolve review comments from CodeRabbit/Gemini"
@@ -175,4 +352,54 @@ jobs:
               repo: context.repo.repo,
               issue_number: Number('${{ steps.fetch-comments.outputs.pr_number }}'),
               body: '✅ **Kimi Auto-Fix Applied**'
+
+          
+          # Check if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "fix: resolve review comments from CodeRabbit/Gemini
+            
+- Auto-fixed via Kimi K2.5
+- Target: main branch
+- Reviewer flags addressed: unused enums, config issues, logic errors"
+            
+            # Verify we're on the PR branch (not main directly)
+            CURRENT_BRANCH=$(git branch --show-current)
+            if [ "$CURRENT_BRANCH" == "main" ]; then
+              echo "ERROR: Attempted to push directly to main"
+              exit 1
+            fi
+            
+            git push origin "$CURRENT_BRANCH"
+            
+            # Comment on PR
+            gh pr comment ${{ steps.fetch-comments.outputs.pr_number }} --body "✅ **Kimi Auto-Fix Applied**
+            
+Fixed issues flagged by reviewers:
+- Removed unused enum members (or implemented missing functionality)
+- Fixed configuration errors
+- Addressed logic issues
+            
+All fixes tested and committed to this branch."
+          else
+            echo "No changes to commit"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report Failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Kimi Auto-Fix Failed**
+              
+The automated fix process encountered an error. Manual intervention required.
+            
+Error: ${{ job.steps.apply-fixes.outcome == 'failure' && 'Failed to apply fixes' || 'Test failures after fix' }}`
+ test-kimi-workflow-trigger
             });

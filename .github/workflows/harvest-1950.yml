@@ -1,13 +1,3 @@
- codex/implement-database-connection-pooling-739ujd
-name: "Harvest 1950 Gazettes (Apartheid Legislative Cascade)"
-
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'gazette_archaeologist.py'
-      - '.github/workflows/harvest-1950.yml'
-
 name: Harvest 1950 Gazettes (Apartheid Legislative Cascade)
 
 on:
@@ -16,8 +6,7 @@ on:
     paths:
       - 'gazette_archaeologist.py'
       - '.github/workflows/harvest-1950.yml'
-
- codex/add-improvements-to-meta-historian-agent
+  
   workflow_dispatch:
     inputs:
       target_year:
@@ -32,134 +21,73 @@ on:
         description: 'Dry run mode (no uploads)'
         required: false
         default: 'false'
- codex/implement-database-connection-pooling-739ujd
+  
   schedule:
-    - cron: '0 2 * * 0' # Weekly Sunday 2AM UTC
+    - cron: '0 2 * * 0'  # Weekly Sunday 2AM UTC
 
 env:
-  # Defaults (can be overridden by job env)
   RATE_LIMIT: '2.0'
   MAX_RETRIES: '3'
   DB_POOL_MIN: '2'
   DB_POOL_MAX: '10'
 
 jobs:
-  health-check:
-    runs-on: ubuntu-latest
-    environment: production
-    outputs:
-      database_ok: ${{ steps.check.outputs.database }}
-      storage_ok: ${{ steps.check.outputs.storage }}
-
-
-  schedule:
-    - cron: '0 2 * * 0'  # Weekly Sunday 2AM UTC
-
-jobs:
   # Pre-flight health checks
   health-check:
     runs-on: ubuntu-latest
     environment: production
-
+    
     outputs:
-      database_ok: ${{ steps.check.outputs.database }}
-      storage_ok: ${{ steps.check.outputs.storage }}
-
- codex/add-improvements-to-meta-historian-agent
+      database_ok: ${{ steps.check.outputs.database_ok }}
+      storage_ok: ${{ steps.check.outputs.storage_ok }}
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-
+      
       - name: Install dependencies
         run: |
- codex/implement-database-connection-pooling-739ujd
-          python -m pip install --upgrade pip
-          python -m pip install psycopg2-binary boto3
-
           pip install --upgrade pip
           pip install psycopg2-binary requests oss2
- codex/add-improvements-to-meta-historian-agent
-
+      
       - name: Health check
         id: check
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
- codex/implement-database-connection-pooling-739ujd
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}              # For MinIO/alternate S3 compatible endpoints
-          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          BUCKET_NAME: meta-historian-gazettes
-        run: |
-          set -euo pipefail
-          echo "Running pre-flight health checks"
-
-          # Database check
-          python - <<'PY'
-import os, sys
-try:
-    import psycopg2
-    conn = psycopg2.connect(os.environ['DATABASE_URL'])
-    conn.close()
-    print("DATABASE_OK")
-except Exception as e:
-    print("DATABASE_FAIL", e, file=sys.stderr)
-    sys.exit(2)
-PY
-
-          # S3-compatible storage check (boto3 head_bucket)
-          python - <<'PY'
-import os, sys, boto3
-try:
-    endpoint = os.getenv('S3_ENDPOINT') or None
-    kw = {}
-    if endpoint:
-        kw['endpoint_url'] = endpoint
-    if os.getenv('S3_ACCESS_KEY_ID'):
-        kw['aws_access_key_id'] = os.getenv('S3_ACCESS_KEY_ID')
-        kw['aws_secret_access_key'] = os.getenv('S3_SECRET_ACCESS_KEY')
-    s3 = boto3.client('s3', **kw)
-    s3.head_bucket(Bucket=os.getenv('BUCKET_NAME'))
-    print("STORAGE_OK")
-except Exception as e:
-    print("STORAGE_FAIL", e, file=sys.stderr)
-    sys.exit(3)
-PY
-
-          # set outputs for next job
-          echo "database=ok" >> $GITHUB_OUTPUT
-          echo "storage=ok" >> $GITHUB_OUTPUT
-
-
           ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
           ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
           ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
           BUCKET_NAME: meta-historian-gazettes
+        shell: bash
         run: |
-          python - <<'PY'
-          import os
+          python3 << 'PYEOF'
           import psycopg2
-
-          output_path = os.environ['GITHUB_OUTPUT']
-          database_ok = False
-          storage_ok = False
-
+          import os
+          import sys
+          
+          # Database check
           try:
-              conn = psycopg2.connect(os.getenv('DATABASE_URL'))
-              with conn.cursor() as cur:
-                  cur.execute('SELECT 1')
-              database_ok = True
-              print('database=ok')
-          except Exception as exc:
-              print(f'Database check failed: {exc}')
+              conn = psycopg2.connect(os.getenv('DATABASE_URL'), connect_timeout=10)
+              cur = conn.cursor()
+              cur.execute('SELECT 1')
+              print('✓ Database check passed')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('database_ok=ok\n')
+          except Exception as e:
+              print(f'✗ Database check failed: {e}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('database_ok=failed\n')
+              sys.exit(1)
           finally:
               if 'conn' in locals():
                   conn.close()
-
+          
+          # Storage check
           try:
               import oss2
               auth = oss2.Auth(
@@ -172,44 +100,24 @@ PY
                   os.getenv('BUCKET_NAME')
               )
               bucket.get_bucket_info()
-              storage_ok = True
-              print('storage=ok')
-          except Exception as exc:
-              print(f'Storage check failed: {exc}')
-
-          with open(output_path, 'a', encoding='utf-8') as handle:
-              handle.write(f"database={'ok' if database_ok else 'failed'}\n")
-              handle.write(f"storage={'ok' if storage_ok else 'failed'}\n")
-
-          if not (database_ok and storage_ok):
-              raise SystemExit(1)
-          PY
-
+              print('✓ Storage check passed')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('storage_ok=ok\n')
+          except Exception as e:
+              print(f'✗ Storage check failed: {e}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('storage_ok=failed\n')
+              sys.exit(1)
+          PYEOF
+  
   # Main harvest job
- codex/add-improvements-to-meta-historian-agent
   harvest:
     runs-on: ubuntu-latest
     needs: health-check
     if: needs.health-check.outputs.database_ok == 'ok' && needs.health-check.outputs.storage_ok == 'ok'
     environment: production
- codex/implement-database-connection-pooling-739ujd
-    timeout-minutes: 180
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-      S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-      S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-      BUCKET_NAME: meta-historian-gazettes
-      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
-      MAX_WORKERS: ${{ github.event.inputs.max_workers || '3' }}
-      RATE_LIMIT: ${{ env.RATE_LIMIT }}
-      MAX_RETRIES: ${{ env.MAX_RETRIES }}
-      DB_POOL_MIN: ${{ env.DB_POOL_MIN }}
-      DB_POOL_MAX: ${{ env.DB_POOL_MAX }}
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-
     timeout-minutes: 180  # 3 hours max
-
+    
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       STORAGE_PROVIDER: alibaba
@@ -219,72 +127,22 @@ PY
       BUCKET_NAME: meta-historian-gazettes
       TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
       MAX_WORKERS: ${{ github.event.inputs.max_workers || '3' }}
-      RATE_LIMIT: '2.0'
-      MAX_RETRIES: '3'
-      DB_POOL_MIN: '2'
-      DB_POOL_MAX: '10'
-
- codex/add-improvements-to-meta-historian-agent
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-
- codex/implement-database-connection-pooling-739ujd
-      - name: Install system deps (Debian/Ubuntu)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libpq-dev poppler-utils tesseract-ocr
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install \
-            psycopg2-binary \
-            pdfplumber \
-            requests \
-            boto3 \
-            python-dateutil
-
-      - name: Verify imports
-        run: |
-          python - <<'PY'
-import importlib, sys
-for pkg in ("psycopg2","pdfplumber","boto3","requests"):
-    importlib.import_module(pkg)
-print("All imports OK")
-PY
-
-      - name: Run Harvester
-        id: run_harvester
-        env:
-          TARGET_YEAR: ${{ env.TARGET_YEAR }}
-          MAX_WORKERS: ${{ env.MAX_WORKERS }}
-          RATE_LIMIT: ${{ env.RATE_LIMIT }}
-          MAX_RETRIES: ${{ env.MAX_RETRIES }}
-          DRY_RUN: ${{ env.DRY_RUN }}
-        run: |
-          set -euo pipefail
-          YEAR=${TARGET_YEAR}
-          WORKERS=${MAX_WORKERS}
-          DRY=${DRY_RUN}
-          LOGFILE="harvester_${YEAR}.log"
-          echo "🚀 Starting harvest for year ${YEAR} (workers=${WORKERS}, dry_run=${DRY})"
-          # Harvester must accept CLI args: --year, --max-workers, --dry-run and write log + metrics file
-          python gazette_archaeologist.py --year "${YEAR}" --max-workers "${WORKERS}" --dry-run "${DRY}" 2>&1 | tee "${LOGFILE}"
-          echo "HARVEST_EXIT=0" >> $GITHUB_OUTPUT
-
-      - name: Upload run logs
-
+      
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libpq-dev
-
+      
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
@@ -295,75 +153,120 @@ PY
             oss2 \
             python-dateutil \
             boto3
-
+      
       - name: Verify installation
         run: |
           python -c "import psycopg2; import pdfplumber; import oss2; print('All imports OK')"
-
+      
       - name: Run Harvester
         id: harvest
+        shell: bash
         run: |
           echo "🚀 Starting harvest for year $TARGET_YEAR"
-          echo "Configuration: $MAX_WORKERS workers, ${RATE_LIMIT}s rate limit"
-
-          python gazette_archaeologist.py
-
+          echo "Configuration: $MAX_WORKERS workers, dry_run=$DRY_RUN"
+          
+          # Run harvester and capture exit code
+          python gazette_archaeologist.py --year "$TARGET_YEAR" --max-workers "$MAX_WORKERS" ${DRY_RUN:+--dry-run}
+          EXIT_CODE=$?
+          
+          # Check for expected log file
+          if [ ! -f "harvester_${TARGET_YEAR}.log" ]; then
+            echo "❌ ERROR: Expected log file harvester_${TARGET_YEAR}.log not found"
+            exit 1
+          fi
+          
+          # Check exit code
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "❌ ERROR: Harvester exited with code $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
+          
           echo "harvest_status=success" >> $GITHUB_OUTPUT
-        continue-on-error: true
-
+          echo "✅ Harvest completed successfully"
+      
       - name: Extract metrics
         if: always()
         run: |
           if [ -f "harvester_$TARGET_YEAR.log" ]; then
             echo "📊 Harvest Metrics:"
             grep -E "(Discovered|Stored|✅ Harvest complete)" "harvester_$TARGET_YEAR.log" | tail -20
+          else
+            echo "⚠️  Log file not found"
           fi
-
-      - name: Upload logs
- codex/add-improvements-to-meta-historian-agent
+      
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: harvest-logs-${{ env.TARGET_YEAR }}-${{ github.run_number }}
- codex/implement-database-connection-pooling-739ujd
-          path: harvester_*.log
-          retention-days: 30
-
-      - name: Parse quick metrics from log
-        if: always()
-        run: |
-          YEAR=${{ env.TARGET_YEAR }}
-          LOGFILE="harvester_${YEAR}.log"
-          if [ -f "$LOGFILE" ]; then
-            echo "---- last 200 lines of log ----"
-            tail -n 200 "$LOGFILE"
-            # Grep for summary markers if harvester prints them
-            grep -E "HARVEST_METRIC:|ERROR|FAIL|Stored act" "$LOGFILE" || true
-          else
-            echo "No log found"
-            exit 0
-          fi
-
-
+          name: harvest-artifacts-${{ env.TARGET_YEAR }}-${{ github.run_number }}
           path: |
             harvester_*.log
+            harvest_metrics_*.json
           retention-days: 30
-
+      
       - name: Check for failures
         if: always()
         run: |
           if [ -f "harvester_$TARGET_YEAR.log" ]; then
             ERRORS=$(grep -c "ERROR" "harvester_$TARGET_YEAR.log" || echo "0")
             FAILURES=$(grep -c "💥" "harvester_$TARGET_YEAR.log" || echo "0")
-
+            
             echo "Errors: $ERRORS, Failures: $FAILURES"
-
+            
             if [ "$ERRORS" -gt 10 ] || [ "$FAILURES" -gt 5 ]; then
               echo "⚠️  High error rate detected"
               exit 1
             fi
           fi
-
+      
+      - name: Persist metrics to database
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -f "harvest_metrics_${TARGET_YEAR}.json" ]; then
+            echo "📊 Persisting metrics to database..."
+            python3 << 'PYEOF'
+          import json
+          import os
+          import psycopg2
+          from psycopg2.extras import Json
+          
+          year = os.getenv('TARGET_YEAR')
+          metrics_file = f"harvest_metrics_{year}.json"
+          
+          with open(metrics_file) as f:
+              summary = json.load(f)
+          
+          conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+          cur = conn.cursor()
+          
+          cur.execute("""
+              INSERT INTO harvest_metrics 
+              (harvest_year, duration_seconds, gazettes_discovered, gazettes_processed,
+               gazettes_failed, acts_extracted, acts_stored, error_count, summary)
+              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+          """, (
+              int(year),
+              summary['duration_seconds'],
+              summary['gazettes']['discovered'],
+              summary['gazettes']['processed'],
+              summary['gazettes']['failed'],
+              summary['acts']['extracted'],
+              summary['acts']['stored'],
+              summary['errors']['total'],
+              Json(summary)
+          ))
+          
+          conn.commit()
+          conn.close()
+          
+          print(f"✅ Metrics persisted for year {year}")
+          PYEOF
+          else
+            echo "⚠️  Metrics file not found, skipping database insert"
+          fi
+      
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
@@ -376,106 +279,45 @@ PY
               body: `Harvest job failed for year ${process.env.TARGET_YEAR}\n\n` +
                     `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
                     `Please check the logs for details.`,
-              labels: ['automated', 'harvest-failure']
+              labels: ['automated', 'harvest-failure', 'needs-review']
             })
-
+  
   # Post-harvest analysis
- codex/add-improvements-to-meta-historian-agent
   analyze:
     runs-on: ubuntu-latest
     needs: harvest
     if: always() && needs.harvest.result != 'cancelled'
     environment: production
- codex/implement-database-connection-pooling-739ujd
+    
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
-
-
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
-
- codex/add-improvements-to-meta-historian-agent
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
- codex/implement-database-connection-pooling-739ujd
-          cache: 'pip'
-
-      - name: Install DB client
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install psycopg2-binary
-
-      - name: Generate report & data-quality checks
-        run: |
-          python - <<'PY'
-import os, sys, json, psycopg2
-dsn = os.getenv('DATABASE_URL')
-year = int(os.getenv('TARGET_YEAR'))
-conn = psycopg2.connect(dsn)
-cur = conn.cursor()
-
-print("📊 Ingestion manifest summary")
-cur.execute("""
-  SELECT status, COUNT(*) as cnt, COALESCE(SUM(acts_extracted),0) as acts
-  FROM ingestion_manifest
-  WHERE year = %s
-  GROUP BY status
-  ORDER BY status
-""", (year,))
-for row in cur.fetchall():
-    print(f"{row[0]:12} | count={row[1]:4} | acts_extracted={row[2]}")
-
-print("\n📜 Acts statistics")
-cur.execute("""
-  SELECT COUNT(*) as total_acts,
-         COUNT(DISTINCT era) as eras,
-         COALESCE(AVG(confidence_probability),0)::numeric(10,3) as avg_confidence
-  FROM statutes
-  WHERE EXTRACT(YEAR FROM assent_date) = %s
-""", (year,))
-row = cur.fetchone()
-print(f"Total Acts: {row[0]}  Eras: {row[1]}  Avg Confidence: {row[2]}")
-
-print("\n⚠️ Low-confidence acts (top 10)")
-cur.execute("""
-  SELECT act_number, COALESCE(confidence_probability,0) as conf, verification_status
-  FROM statutes
-  WHERE EXTRACT(YEAR FROM assent_date) = %s
-  ORDER BY conf ASC
-  LIMIT 10
-""", (year,))
-for a in cur.fetchall():
-    print(f"{a[0]:30} | confidence={a[1]:.3f} | status={a[2]}")
-
-conn.close()
-PY
-
-
-
+      
       - name: Install dependencies
         run: pip install psycopg2-binary
-
+      
       - name: Generate report
         run: |
-          python - <<'PY'
-          import os
+          python3 << 'PYEOF'
           import psycopg2
-
+          import os
+          
           conn = psycopg2.connect(os.getenv('DATABASE_URL'))
           cur = conn.cursor()
-
+          
           year = int(os.getenv('TARGET_YEAR'))
-
+          
           # Get manifest stats
           cur.execute('''
-              SELECT
+              SELECT 
                   status,
                   COUNT(*) as count,
                   SUM(acts_extracted) as total_acts
@@ -484,43 +326,44 @@ PY
               GROUP BY status
               ORDER BY status
           ''', (year,))
-
+          
           print('📊 Harvest Statistics for', year)
           print('=' * 50)
           for row in cur.fetchall():
               print(f'{row[0]:12} | Count: {row[1]:4} | Acts: {row[2] or 0:4}')
-
+          
           # Get acts stats
           cur.execute('''
-              SELECT
+              SELECT 
                   COUNT(*) as total_acts,
                   COUNT(DISTINCT era) as eras,
                   AVG(confidence_probability) as avg_confidence
               FROM statutes
               WHERE EXTRACT(YEAR FROM assent_date) = %s
           ''', (year,))
-
+          
           stats = cur.fetchone()
-          print('\n📜 Acts Statistics')
-          print('=' * 50)
-          print(f'Total Acts:        {stats[0]}')
-          print(f'Eras:              {stats[1]}')
-          print(f'Avg Confidence:    {stats[2]:.3f}')
-
+          if stats and stats[0]:
+              print('\n📜 Acts Statistics')
+              print('=' * 50)
+              print(f'Total Acts:        {stats[0]}')
+              print(f'Eras:              {stats[1]}')
+              print(f'Avg Confidence:    {stats[2]:.3f}')
+          
           conn.close()
-          PY
-
+          PYEOF
+      
       - name: Check data quality
         run: |
-          python - <<'PY'
-          import os
+          python3 << 'PYEOF'
           import psycopg2
-
+          import os
+          
           conn = psycopg2.connect(os.getenv('DATABASE_URL'))
           cur = conn.cursor()
-
+          
           year = int(os.getenv('TARGET_YEAR'))
-
+          
           # Find low confidence acts
           cur.execute('''
               SELECT act_number, confidence_probability, verification_status
@@ -530,91 +373,70 @@ PY
               ORDER BY confidence_probability
               LIMIT 10
           ''', (year,))
-
+          
           low_conf = cur.fetchall()
-
+          
           if low_conf:
               print('⚠️  Low Confidence Acts (require review):')
               for act in low_conf:
                   print(f'  {act[0]:25} | Confidence: {act[1]:.3f} | Status: {act[2]}')
           else:
               print('✅ All acts have acceptable confidence levels')
-
+          
           conn.close()
-          PY
+          PYEOF
 
-  # Separate workflow for retry failed gazettes
- codex/add-improvements-to-meta-historian-agent
+  # Retry failed gazettes (manual workflow only)
   retry-failures:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    needs: harvest
     environment: production
- codex/implement-database-connection-pooling-739ujd
+    
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
+    
     steps:
       - uses: actions/checkout@v4
-
-      - name: Retry failed gazettes (reset to pending)
-        run: |
-          python - <<'PY'
-import os, sys, psycopg2
-dsn = os.getenv('DATABASE_URL')
-year = int(os.getenv('TARGET_YEAR'))
-conn = psycopg2.connect(dsn)
-cur = conn.cursor()
-cur.execute("""
-  UPDATE ingestion_manifest
-  SET status = 'pending',
-      error_text = NULL,
-      retry_count = COALESCE(retry_count,0) + 1,
-      processed_at = NULL
-  WHERE status = 'failed' AND COALESCE(retry_count,0) < 3 AND year = %s
-  RETURNING gazette_id
-""", (year,))
-rows = cur.fetchall()
-conn.commit()
-print(f"Reset {len(rows)} failed gazettes for retry")
-conn.close()
-PY
-
-
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      STORAGE_PROVIDER: alibaba
-      ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
-      ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
-      ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
-      BUCKET_NAME: meta-historian-gazettes
-      TARGET_YEAR: ${{ github.event.inputs.target_year || '1950' }}
-
-    steps:
-      - uses: actions/checkout@v4
-
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install psycopg2-binary
+      
       - name: Retry failed gazettes
         run: |
-          python - <<'PY'
-          import os
+          python3 << 'PYEOF'
           import psycopg2
-
+          import os
+          
           conn = psycopg2.connect(os.getenv('DATABASE_URL'))
           cur = conn.cursor()
-
+          
+          year = int(os.getenv('TARGET_YEAR'))
+          
           # Reset failed gazettes with low retry count
           cur.execute('''
               UPDATE ingestion_manifest
-              SET status = 'pending', error_text = NULL
-              WHERE status = 'failed'
+              SET status = 'pending',
+                  error_text = NULL
+              WHERE status = 'failed' 
               AND retry_count < 3
               AND year = %s
               RETURNING gazette_id
-          ''', (int(os.getenv('TARGET_YEAR')),))
-
-          reset_count = cur.rowcount
+          ''', (year,))
+          
+          reset_ids = cur.fetchall()
+          reset_count = len(reset_ids)
+          
           conn.commit()
           conn.close()
-
-          print(f'Reset {reset_count} failed gazettes for retry')
-          PY
- codex/add-improvements-to-meta-historian-agent
+          
+          print(f'✅ Reset {reset_count} failed gazettes for retry')
+          for row in reset_ids:
+              print(f'  - {row[0]}')
+          PYEOF

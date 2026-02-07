@@ -1,4 +1,5 @@
 import asyncio
+import os
 from autogen import ConversableAgent, LLMConfig
 from autogen.agentchat.group.patterns import AutoPattern
 from dotenv import load_dotenv
@@ -19,11 +20,23 @@ class VaalAIEmpireOrchestrator:
         self.sars_monitor = SARSMonitorAgent(self.llm_config)
 
     def _load_llm_config(self):
+        """
+        Loads LLM configuration from OAI_CONFIG_LIST file, falls back to
+        environment variables (OPENAI_MODEL, OPENAI_API_KEY), and finally
+        uses a dummy config if neither is found.
+        """
         try:
             return LLMConfig.from_json(env_or_file="OAI_CONFIG_LIST")
         except ValueError:
-            print("Could not find OAI_CONFIG_LIST file. Using dummy config.")
-            return LLMConfig(config_list=[{"model": "gpt-4", "api_key": "dummy"}])
+            print("Could not find OAI_CONFIG_LIST file. Trying environment variables.")
+            model = os.getenv("OPENAI_MODEL")
+            api_key = os.getenv("OPENAI_API_KEY")
+            if model and api_key:
+                print("Loaded configuration from environment variables.")
+                return LLMConfig(config_list=[{"model": model, "api_key": api_key}])
+            else:
+                print("Environment variables not set. Using dummy config.")
+                return LLMConfig(config_list=[{"model": "gpt-4", "api_key": "dummy"}])
 
     async def initialize(self):
         print("[Orchestrator] 🔥 Initializing Vaal AI Empire...")
@@ -60,4 +73,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as e:
         print(f"\nCould not run orchestrator main function: {e}")
-        print("This is expected if you have not set up your OAI_CONFIG_LIST file.")
+        print("This is expected if you have not set up your OAI_CONFIG_LIST file or environment variables.")

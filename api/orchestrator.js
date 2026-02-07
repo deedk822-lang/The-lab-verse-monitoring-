@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import { retryWithBackoff } from '../utils/retryWithBackoff.js';
 import { MODEL_CATALOG } from '../models.config.js';
 import { sql } from '@vercel/postgres';
@@ -8,6 +9,14 @@ const modelRequestCounter = new Counter({
   help: 'Total number of requests for a specific model',
   labelNames: ['model'],
 });
+
+function sanitizeInput(input) {
+  if (!input) {
+    return '';
+  }
+  // Allow alphanumeric characters, spaces, and a few safe punctuation marks.
+  return input.replace(/[^a-zA-Z0-9 .,!?'-]/g, '');
+}
 
 export default async function handler(req, res) {
   const { task, location, language, student_id: client_id } = req.body;
@@ -32,6 +41,9 @@ export default async function handler(req, res) {
       break;
     case 'rag_embeddings':
       model_id = 'cohere-embed-multilingual';
+      break;
+    case 'crewai_research':
+      model_id = 'crewai-researcher';
       break;
     default:
       model_id = 'mistral-7b-instruct-v0.2-q4'; // Default safe choice
@@ -180,6 +192,44 @@ async function executeOnModel(modelId, payload) {
         total_tokens: (response?.meta?.billed_units?.input_tokens || 0) + (response?.meta?.billed_units?.output_tokens || 0)
       }
     };
+  }
+
+  if (model.provider === 'CrewAI') {
+    return new Promise((resolve, reject) => {
+      const sanitizedQuery = sanitizeInput(payload.query);
+      const pythonProcess = spawn('python3', [model.script, sanitizedQuery]);
+
+      let output = '';
+      let errorOutput = '';
+
+      pythonProcess.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      pythonProcess.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+
+      pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+          return reject(new Error(`CrewAI script exited with code ${code}: ${errorOutput}`));
+        }
+        try {
+          const parsedOutput = JSON.parse(output);
+          if (parsedOutput.error) {
+            return reject(new Error(`CrewAI script error: ${parsedOutput.error}`));
+          }
+          resolve({
+            output: parsedOutput.result,
+            usage: {
+              total_tokens: parsedOutput.token_usage.total_tokens || 0
+            }
+          });
+        } catch (e) {
+          reject(new Error(`Failed to parse CrewAI output: ${e.message}`));
+        }
+      });
+    });
   }
 }
 

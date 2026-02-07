@@ -1,8 +1,9 @@
-import requests
 import os
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
+
+from security.secure_session import SecureSession
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ class SocialPoster:
 
     def __init__(self, db=None):
         self.db = db
+        self.session = SecureSession()
         self.providers = self._detect_providers()
 
         # API endpoints
@@ -112,7 +114,7 @@ class SocialPoster:
             payload["mediaUrls"] = [image_url]
 
         try:
-            response = requests.post(
+            response = self.session.post(
                 f"{self.ayrshare_url}/post",
                 headers=headers,
                 json=payload,
@@ -170,7 +172,7 @@ class SocialPoster:
             }
 
             try:
-                response = requests.post(
+                response = self.session.post(
                     f"{self.socialpilot_url}/posts",
                     headers=headers,
                     json=payload,
@@ -313,7 +315,7 @@ class SocialPoster:
             payload["caption"] = content
 
         try:
-            response = requests.post(url, data=payload, timeout=30)
+            response = self.session.post(url, data=payload, timeout=30)
 
             if response.status_code != 200:
                 raise Exception(f"Facebook error ({response.status_code}): {response.text}")
@@ -371,7 +373,7 @@ class SocialPoster:
                 payload["mediaUrls"] = [image_url]
 
             try:
-                response = requests.post(
+                response = self.session.post(
                     f"{self.ayrshare_url}/post",
                     headers=headers,
                     json=payload,
@@ -419,7 +421,7 @@ class SocialPoster:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
-                response = requests.get(
+                response = self.session.get(
                     f"{self.ayrshare_url}/post/{post_id}",
                     headers=headers,
                     timeout=15

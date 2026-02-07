@@ -1,0 +1,151 @@
+image: python:3.11-slim
+
+definitions:
+  caches:
+    pip: ~/.cache/pip
+    docker: ~/.docker
+
+  services:
+    docker:
+      memory: 3072 # Higher memory for Docker builds
+
+  # Reusable Python anchors
+  python_packages: &python_packages
+    - apt-get update && apt-get install -y gcc git openssh-client
+    - pip install --upgrade pip setuptools wheel
+
+pipelines:
+  # DEFAULT: Runs on every push
+  default:
+    - parallel:
+        - step:
+            name: "Security Scan"
+            caches:
+              - pip
+            script:
+              - *python_packages
+              - pip install bandit safety pip-audit
+              - echo "🔒 Running Bandit security scan..."
+              - bandit -r src/ -ll -ii -f json -o bandit-report.json || true
+              - bandit -r src/ -ll -ii
+              - echo "🔍 Auditing dependencies..."
+              - pip-audit --desc || true
+              - safety check -r requirements.txt || true
+            artifacts:
+              - bandit-report.json
+
+        - step:
+            name: "Code Quality"
+            caches:
+              - pip
+            script:
+              - *python_packages
+              - pip install black isort flake8 pylint mypy
+              - echo "📝 Formatting check (Black)..."
+              - black --check --diff src/ tests/
+              - echo "📦 Import sorting check..."
+              - isort --check-only --diff src/ tests/
+              - echo "🔍 Linting (Flake8)..."
+              - flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203,W503
+              - echo "🧠 Type checking (MyPy)..."
+              - mypy src/ --ignore-missing-imports --strict || true
+
+        - step:
+            name: "Unit Tests & Coverage"
+            caches:
+              - pip
+            script:
+              - *python_packages
+              - pip install -r requirements.txt
+              - pip install pytest pytest-cov pytest-html pytest-asyncio
+              - echo "🧪 Running tests..."
+              - pytest tests/ -v --cov=src --cov-report=xml --cov-report=html --cov-fail-under=80 --html=test-report.html --self-contained-html
+              - echo "📊 Coverage: $(grep -o 'percent=\"[0-9]*\"' coverage.xml | head -1 | grep -o '[0-9]*')%"
+            artifacts:
+              - coverage.xml
+              - htmlcov/**
+              - test-report.html
+
+    - step:
+        name: "Build Docker Image"
+        image: atlassian/default-image:3
+        caches:
+          - docker
+        services:
+          - docker
+        script:
+          - echo "🔨 Building image..."
+          - docker build -t the-lab-verse-monitoring:$BITBUCKET_COMMIT .
+          - docker tag the-lab-verse-monitoring:$BITBUCKET_COMMIT the-lab-verse-monitoring:latest
+          - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          - docker push the-lab-verse-monitoring:$BITBUCKET_COMMIT
+          - docker push the-lab-verse-monitoring:latest
+
+  # PULL REQUESTS: Triggers Bitbucket Rovo AI Review
+  pull-requests:
+    - parallel:
+        - step:
+            name: "PR Validation"
+            caches:
+              - pip
+            script:
+              - *python_packages
+              - pip install -r requirements.txt
+              - pip install black isort flake8 pytest
+              - black --check src/ tests/
+              - isort --check-only src/ tests/
+              - flake8 src/ tests/
+              - pytest tests/ -v --cov=src --cov-fail-under=70
+
+        - step:
+            name: "Rovo AI Review"
+            script:
+              - echo "🤖 Bitbucket Rovo is analyzing this PR..."
+              - echo "Rovo will check for: Security issues, Code smells, Best practices"
+              - echo "Check the 'Rovo' tab in this PR for AI-generated insights"
+
+  # DEVELOP BRANCH → Staging
+  branches:
+    develop:
+      - step:
+          name: "Deploy to Staging"
+          deployment: staging
+          trigger: automatic
+          caches:
+            - pip
+          script:
+            - *python_packages
+            - pip install requests # For health check
+            - apt-get install -y ssh
+            - mkdir -p ~/.ssh
+            - echo "$STAGING_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+            - chmod 600 ~/.ssh/id_rsa
+            - ssh-keyscan -H $STAGING_HOST >> ~/.ssh/known_hosts
+            - echo "🚀 Deploying to Staging..."
+            - ssh $STAGING_USER@$STAGING_HOST "cd /opt/monitoring && docker-compose pull && docker-compose up -d"
+            - sleep 10
+            - echo "🏥 Health check..."
+            - python -c "import requests; r=requests.get('$STAGING_URL/health'); exit(0 if r.status_code==200 else 1)"
+
+    # MAIN BRANCH → Production (Manual)
+    main:
+      - step:
+          name: "Deploy to Production"
+          deployment: production
+          trigger: manual
+          caches:
+            - pip
+          script:
+            - *python_packages
+            - pip install requests
+            - apt-get install -y ssh
+            - mkdir -p ~/.ssh
+            - echo "$PROD_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+            - chmod 600 ~/.ssh/id_rsa
+            - ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts
+            - echo "🚀 Deploying to Production..."
+            - ssh $PROD_USER@$PROD_HOST "cd /opt/monitoring && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d"
+            - sleep 15
+            - echo "🏥 Production health check..."
+            - python -c "import requests; r=requests.get('$PROD_URL/health'); print('Status:', r.status_code); exit(0 if r.status_code==200 else 1)"
+            - echo "✅ Deployment successful!"

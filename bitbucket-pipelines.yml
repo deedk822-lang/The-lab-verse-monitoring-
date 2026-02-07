@@ -24,8 +24,8 @@ pipelines:
               - bandit -r src/ -ll -ii -f json -o bandit-report.json || true
               - bandit -r src/ -ll -ii
               - echo "Auditing dependencies..."
-              - pip-audit --desc || true
-              - safety check -r requirements.txt || true
+              - pip-audit --desc
+              - safety check -r requirements.txt
             artifacts:
               - bandit-report.json
 
@@ -36,11 +36,11 @@ pipelines:
             script:
               - apt-get update && apt-get install -y gcc git openssh-client
               - pip install --upgrade pip setuptools wheel
-              - pip install black isort flake8 pylint mypy
+              - pip install black isort flake8 mypy
               - black --check --diff src/ tests/
               - isort --check-only --diff src/ tests/
               - flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203,W503
-              - mypy src/ --ignore-missing-imports --strict || true
+              - mypy src/ --ignore-missing-imports --strict
 
         - step:
             name: Unit Tests and Coverage
@@ -66,11 +66,17 @@ pipelines:
         services:
           - docker
         script:
-          - docker build -t the-lab-verse-monitoring:$BITBUCKET_COMMIT .
-          - docker tag the-lab-verse-monitoring:$BITBUCKET_COMMIT the-lab-verse-monitoring:latest
+          - IMAGE_NAME="$DOCKER_USERNAME/the-lab-verse-monitoring"
+          - docker build -t "$IMAGE_NAME:$BITBUCKET_COMMIT" .
           - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          - docker push the-lab-verse-monitoring:$BITBUCKET_COMMIT
-          - docker push the-lab-verse-monitoring:latest
+          - docker push "$IMAGE_NAME:$BITBUCKET_COMMIT"
+          - |
+            if [ "$BITBUCKET_BRANCH" = "main" ] || [ "$BITBUCKET_BRANCH" = "develop" ]; then
+              docker tag "$IMAGE_NAME:$BITBUCKET_COMMIT" "$IMAGE_NAME:latest"
+              docker push "$IMAGE_NAME:latest"
+            else
+              echo "Skipping latest push for branch: $BITBUCKET_BRANCH"
+            fi
 
   pull-requests:
     "**":

@@ -63,7 +63,7 @@ jobs:
           # Sets python path to include the project root so imports work
           export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
           
-          python3 -c "
+          python3 -c "import textwrap, sys; exec(textwrap.dedent('''
           import sys
           from src.agents.tax_collector import TaxAgentMaster
 
@@ -75,13 +75,13 @@ jobs:
           # Execute Real Revenue Search (VanHack/Crisis)
           revenue = agent.execute_revenue_search()
           print(f'💰 GUARDIAN REPORT: Revenue Generated: R{revenue}')
-          "
+          '''))"
 
       - name: ✍️ Run Content Factory (Visionary)
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
           
-          python3 -c "
+          python3 -c "import textwrap, sys; exec(textwrap.dedent('''
           import sys
           from src.products.content_studio import ContentStudio
           
@@ -95,13 +95,13 @@ jobs:
           else:
               print('❌ Studio Offline (Check HF Key)')
               sys.exit(1)
-          "
+          '''))"
 
       - name: 💰 Run Tax Compliance Scan
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/vaal-ai-empire
           
-          python3 -c "
+          python3 -c "import textwrap, sys; exec(textwrap.dedent('''
           from src.agents.tax_collector import TaxAgentMaster
           
           print('📉 ACTIVATING TAX COMPLIANCE SCAN...')
@@ -112,7 +112,7 @@ jobs:
           # Execute Real Audit
           result = agent.execute_revenue_search()
           print(f'✅ COMPLIANCE CHECK COMPLETE. Value: R{result}')
-          "
+          '''))"
 
   # JOB 2: THE ARBITER (Reporting)
   the_arbiter:

@@ -13,6 +13,7 @@ import sys
 import time
 import hashlib
 import pathlib
+import requests
 from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 from typing import List, Dict, Optional
@@ -30,7 +31,18 @@ LOG.addHandler(RotatingFileHandler(
 
 # Track sent posts to avoid duplicates
 LEDGER = pathlib.Path("sent.json")
-SENT_CACHE = set(json.loads(LEDGER.read_text()) if LEDGER.exists() else "[]")
+try:
+    SENT_CACHE = set(json.loads(LEDGER.read_text())) if LEDGER.exists() else set()
+except (json.JSONDecodeError, TypeError):
+    SENT_CACHE = set()
+
+# Global sessions for connection pooling
+_SESSIONS = {}
+
+def _get_session(name="default"):
+    if name not in _SESSIONS:
+        _SESSIONS[name] = requests.Session()
+    return _SESSIONS[name]
 
 @dataclass
 class Post:
@@ -174,7 +186,7 @@ def _send_calendar(creds, post: Post) -> str:
 
 def _send_ayrshare(api_key: str, post: Post) -> str:
     """Fallback: Post via AyrShare."""
-    import requests
+    session = _get_session("ayrshare")
     
     payload = {
         "post": post.text,
@@ -183,7 +195,7 @@ def _send_ayrshare(api_key: str, post: Post) -> str:
     if post.media:
         payload["mediaUrls"] = [str(m) for m in post.media]
     
-    response = requests.post(
+    response = session.post(
         "https://app.ayrshare.com/api/post",
         headers={"Authorization": f"Bearer {api_key}"},
         json=payload

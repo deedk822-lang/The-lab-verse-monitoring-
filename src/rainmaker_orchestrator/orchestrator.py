@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import re
@@ -27,6 +28,9 @@ class RainmakerOrchestrator:
     Implements a 4-Judge protocol with self-healing and telemetry.
     """
 
+    # Pre-compile regex for performance
+    JSON_CLEANUP_PATTERN = re.compile(r"^```json\s*|\s*```$", re.MULTILINE)
+
     def __init__(
         self,
         workspace_path: str = "./workspace",
@@ -50,6 +54,12 @@ class RainmakerOrchestrator:
         self.config: ConfigManager = ConfigManager(config_file=config_file)
         self.client: httpx.AsyncClient = httpx.AsyncClient(timeout=120.0)
 
+        # Cache credentials and endpoints
+        self._zai_key = self.config.get("ZAI_API_KEY")
+        self._mistral_key = self.config.get("MISTRAL_API_KEY")
+        self._zai_api_base = (self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4").rstrip("/")
+        self._mistral_api_base = (self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1").rstrip("/")
+
     async def aclose(self) -> None:
         """Gracefully close HTTP client."""
         await self.client.aclose()
@@ -58,20 +68,17 @@ class RainmakerOrchestrator:
     @track(name="judge_call")
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         """Route calls to the appropriate judge model based on role."""
-        zai_key: Optional[str] = self.config.get("ZAI_API_KEY")
-        mistral_key: Optional[str] = self.config.get("MISTRAL_API_KEY")
-
-        if not zai_key and not mistral_key:
+        if not self._zai_key and not self._mistral_key:
             logger.error("No API keys configured (ZAI_API_KEY or MISTRAL_API_KEY)")
             raise ValueError("Missing required API credentials")
 
-        if zai_key:
-            api_key: str = zai_key
-            api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
+        if self._zai_key:
+            api_key: str = self._zai_key
+            api_base: str = self._zai_api_base
             model: str = "glm-4.7"
         else:
-            api_key = mistral_key  # type: ignore[assignment]
-            api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
+            api_key = self._mistral_key  # type: ignore[assignment]
+            api_base = self._mistral_api_base
             model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
 
         headers: Dict[str, str] = {
@@ -92,7 +99,7 @@ class RainmakerOrchestrator:
             ],
             "response_format": {"type": "json_object"},
         }
-        url: str = f"{api_base.rstrip('/')}/chat/completions"
+        url: str = f"{api_base}/chat/completions"
 
         try:
             response: httpx.Response = await self.client.post(
@@ -119,14 +126,19 @@ class RainmakerOrchestrator:
         logger.info("⚖️ Initiating Authority Flow...")
 
         try:
-            audit_res: Dict[str, Any] = await self._call_judge(
+            lead_json = json.dumps(lead_data)
+            # Parallelize independent judge calls
+            audit_task = self._call_judge(
                 "auditor",
-                f"Analyze this request for compliance and risk: {json.dumps(lead_data)}",
+                f"Analyze this request for compliance and risk: {lead_json}",
             )
-            vision_res: Dict[str, Any] = await self._call_judge(
+            vision_task = self._call_judge(
                 "visionary",
-                f"Create a strategic execution plan: {json.dumps(lead_data)}",
+                f"Create a strategic execution plan: {lead_json}",
             )
+
+            audit_res, vision_res = await asyncio.gather(audit_task, vision_task)
+
             op_res: Dict[str, Any] = await self._call_judge(
                 "operator",
                 f"Generate implementation based on strategy: {json.dumps(vision_res)}",
@@ -166,11 +178,9 @@ class RainmakerOrchestrator:
                 model_res: Dict[str, Any] = await self._call_judge("operator", current_context)
                 content: str = model_res["choices"][0]["message"]["content"]
 
-                clean_json: str = re.sub(
-                    r"^```json\s*|\s*```$",
+                clean_json: str = self.JSON_CLEANUP_PATTERN.sub(
                     "",
                     content.strip(),
-                    flags=re.MULTILINE,
                 )
                 parsed: Dict[str, Any] = json.loads(clean_json)
 

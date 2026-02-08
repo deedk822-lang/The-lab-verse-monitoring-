@@ -1,12 +1,10 @@
 import os
 import logging
- feat/implement-authority-engine
 import time
 from hubspot.crm.deals import SimplePublicObjectInput
 from pydantic import BaseModel
 
 from contextlib import asynccontextmanager
- main
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
@@ -55,7 +53,6 @@ async def health():
         "features": ["4-Judge Flow", "Self-Healing", "Opik Telemetry"]
     }
 
- feat/implement-authority-engine
 async def process_webhook_data(payload: HubSpotWebhookPayload, app: FastAPI):
     """
     Analyze an incoming HubSpot webhook message with the orchestrator, update the corresponding HubSpot contact with AI-derived fields, and conditionally create and associate an enriched deal.
@@ -170,4 +167,3 @@ async def execute(payload: ExecuteTaskPayload, request: Request):
     except Exception as e:
         logger.error(f"Execution failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
- main

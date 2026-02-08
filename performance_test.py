@@ -1,7 +1,3 @@
- bolt/parallelize-daily-automation-8919749710849742159
-
-
- bolt/cache-hf-model-loading-6086113376814306475
 import timeit
 import sys
 
@@ -95,7 +91,6 @@ def benchmark():
 if __name__ == "__main__":
     success = benchmark()
 
- vercel/enable-vercel-speed-insights-o-6em3bz
 import time
 import sys
 import os
@@ -190,5 +185,4 @@ def test_optimization(MockDatabase, MockFactory, MockScheduler):
 
 if __name__ == "__main__":
     success = test_optimization()
- main
     sys.exit(0 if success else 1)

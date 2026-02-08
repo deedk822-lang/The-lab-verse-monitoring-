@@ -10,6 +10,8 @@ __all__ = [
 ]
 
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
-from rainmaker_orchestrator.agents.healer import SelfHealingAgent
+try:
+    from rainmaker_orchestrator.agents.healer import SelfHealingAgent
+except ImportError:
+    SelfHealingAgent = None
 from rainmaker_orchestrator.config import ConfigManager
- main

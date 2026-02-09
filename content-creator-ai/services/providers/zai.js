@@ -207,6 +207,29 @@ class ZAIProvider {
   isEnabled() {
     return this.enabled;
   }
+
+  async checkHealth() {
+    if (!this.enabled) {
+      return { healthy: false, message: 'ZAI provider is not enabled' };
+    }
+    try {
+      // A simple non-costly operation to check API key validity and connectivity
+      await axios.post(this.endpoint, {
+        model: this.model,
+        messages: [{ role: 'user', content: 'test' }],
+        max_tokens: 1
+      }, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return { healthy: true, message: 'ZAI provider is responding' };
+    } catch (error) {
+      logger.error('ZAI provider health check failed:', error.response?.data || error.message);
+      return { healthy: false, message: error.response?.data?.error?.message || error.message };
+    }
+  }
 }
 
 module.exports = new ZAIProvider();

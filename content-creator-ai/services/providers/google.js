@@ -183,6 +183,21 @@ class GoogleProvider {
   isEnabled() {
     return this.enabled;
   }
+
+  async checkHealth() {
+    if (!this.enabled) {
+      return { healthy: false, message: 'Google provider is not enabled' };
+    }
+    try {
+      // A simple non-costly operation to check API key validity and connectivity
+      const model = this.genAI.getGenerativeModel({ model: config.providers.google.models.text });
+      await model.countTokens("test");
+      return { healthy: true, message: 'Google provider is responding' };
+    } catch (error) {
+      logger.error('Google provider health check failed:', error);
+      return { healthy: false, message: error.message };
+    }
+  }
 }
 
 module.exports = new GoogleProvider();

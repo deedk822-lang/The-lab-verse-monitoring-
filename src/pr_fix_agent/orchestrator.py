@@ -5,6 +5,7 @@ Issue Fixed: Complete LLM-powered code review pipeline
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -180,9 +181,26 @@ Snippet: {finding.code_snippet}
             Path(fix.file_path).write_text(fix.fixed_code)
 
         try:
+            pytest_cmd = [
+                sys.executable,
+                "-m",
+                "pytest",
+                "tests/",
+                "--json-report",
+                "--json-report-file=test-results.json",
+            ]
+            env = {
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
+            }
             result = subprocess.run(
-                ["pytest", "tests/", "--json-report", "--json-report-file=test-results.json"],
-                cwd=repo_path, capture_output=True, text=True
+                pytest_cmd,
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                shell=False,
+                env=env,
+                check=False,
             )
 
             # Load json report if it exists

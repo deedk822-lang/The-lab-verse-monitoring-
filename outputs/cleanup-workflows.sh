@@ -56,32 +56,24 @@ done
 echo ""
 echo "⚙️  Optimizing heavy workflows..."
 
-# Optimize llm-code-review.yml
-if [ -f ".github/workflows/llm-code-review.yml" ]; then
-    echo "  → Adding concurrency control to llm-code-review.yml"
+for workflow in "${WORKFLOWS_TO_OPTIMIZE[@]}"; do
+    if [ -f ".github/workflows/$workflow" ]; then
+        echo "  → Checking $workflow"
 
-    # Check if concurrency already exists
-    if ! grep -q "concurrency:" ".github/workflows/llm-code-review.yml"; then
-        # Backup original
-        cp ".github/workflows/llm-code-review.yml" ".github/workflows.disabled/llm-code-review.yml.backup"
-
-        echo -e "  ${YELLOW}⚠${NC}  Manual optimization needed for llm-code-review.yml"
-        echo "      Check .github/workflows.disabled/llm-code-review.yml.backup"
+        # Check if concurrency already exists
+        if ! grep -q "concurrency:" ".github/workflows/$workflow"; then
+            # Create backup
+            cp ".github/workflows/$workflow" ".github/workflows.disabled/${workflow}.backup"
+            echo -e "  ${YELLOW}⚠${NC}  Manual optimization needed for $workflow"
+            echo "      Backup created: .github/workflows.disabled/${workflow}.backup"
+            echo "      Add concurrency control at the top of the workflow"
+        else
+            echo -e "  ${GREEN}✓${NC} $workflow already has concurrency control"
+        fi
     else
-        echo -e "  ${GREEN}✓${NC} llm-code-review.yml already has concurrency control"
+        echo -e "  ${GREEN}✓${NC} $workflow not found (may already be disabled)"
     fi
-fi
-
-# Optimize pr-fix-agent.yml
-if [ -f ".github/workflows/pr-fix-agent.yml" ]; then
-    echo "  → Checking pr-fix-agent.yml"
-
-    if ! grep -q "concurrency:" ".github/workflows/pr-fix-agent.yml"; then
-        echo -e "  ${YELLOW}⚠${NC}  Manual optimization needed for pr-fix-agent.yml"
-    else
-        echo -e "  ${GREEN}✓${NC} pr-fix-agent.yml already has concurrency control"
-    fi
-fi
+done
 
 # Generate summary
 echo ""
@@ -98,7 +90,7 @@ echo ""
 
 # List remaining workflows
 echo "📋 Active Workflows:"
-find .github/workflows -name "*.yml" -o -name "*.yaml" | while read file; do
+find .github/workflows -name "*.yml" -o -name "*.yaml" | while IFS= read -r file; do
     workflow_name=$(basename "$file")
     echo "  • $workflow_name"
 done
@@ -108,7 +100,7 @@ echo -e "${GREEN}✅ Cleanup complete!${NC}"
 echo ""
 echo "📝 Next Steps:"
 echo "  1. Review the changes: git status"
-echo "  2. Test the new pipeline: git add . && git commit -m 'chore: optimize CI/CD'"
+echo "  2. Test the new pipeline: git add .github/workflows/ && git commit -m 'chore: optimize CI/CD'"
 echo "  3. Push and watch: git push"
 echo "  4. Check PR - should see ~5 checks instead of 12"
 echo ""

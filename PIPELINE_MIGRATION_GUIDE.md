@@ -11,7 +11,7 @@ Your PR had **12 checks queued** because you had too many workflows running simu
 **File:** `.github/workflows/main-ci.yml`
 
 ### Pipeline Structure:
-```
+```text
 Stage 1 (2 min)  → Quick Validation + Lint
                 ↓
 Stage 2 (3 min)  → Security Scans
@@ -54,8 +54,10 @@ mv .github/workflows/ci-cd.yml .github/workflows.disabled/
 mv .github/workflows/ci.yml .github/workflows.disabled/
 mv .github/workflows/type-safe-ci.yml .github/workflows.disabled/
 
-# 3. Remove duplicate kimi file
-rm .github/workflows/kimi-enhancer.yaml  # Keep the .yml version
+# 3. Move duplicate kimi file (verify .yml version exists first)
+if [ -f ".github/workflows/kimi-enhancer.yml" ]; then
+  mv .github/workflows/kimi-enhancer.yaml .github/workflows.disabled/  # Keep the .yml version
+fi
 
 # 4. Commit the new pipeline
 git add .github/workflows/main-ci.yml
@@ -108,7 +110,7 @@ jobs:
 ## 📊 Expected Results
 
 ### Before:
-```
+```text
 ✗ 12 checks queued
 ✗ 3 checks running
 ✗ Wait time: 2-4 hours
@@ -116,7 +118,7 @@ jobs:
 ```
 
 ### After:
-```
+```text
 ✓ 1 main pipeline (5 jobs)
 ✓ All checks run in 15 minutes
 ✓ Proper dependencies
@@ -156,7 +158,7 @@ All security checks still run, but now:
 
 ### To make a check required:
 Update branch protection rules:
-```
+```text
 Settings → Branches → Branch protection rules → main
 → Require status checks: "Quick Validation", "Test Suite"
 ```

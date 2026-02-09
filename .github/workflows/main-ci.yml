@@ -29,7 +29,7 @@ jobs:
       - name: Validate JSON files
         run: |
           echo "🔍 Validating JSON files..."
-          find . -name "*.json" -not -path "*/node_modules/*" | while read file; do
+          find . -name "*.json" -not -path "*/node_modules/*" | while IFS= read -r file; do
             jq empty "$file" || exit 1
           done
           echo "✅ All JSON files valid"
@@ -60,7 +60,6 @@ jobs:
 
       - name: Run Ruff
         run: ruff check . --output-format=github
-        continue-on-error: true
 
       - name: Run Black
         run: black --check .
@@ -71,7 +70,7 @@ jobs:
         continue-on-error: true
 
       - name: Type check with MyPy
-        run: mypy --ignore-missing-imports src/ vaal_ai_empire/ agent/ app/ || true
+        run: mypy --ignore-missing-imports src/ vaal_ai_empire/ agent/ app/
 
   # ==========================================================================
   # STAGE 2: Security Scans (Parallel) - ~3 minutes
@@ -92,10 +91,20 @@ jobs:
         run: pip install safety bandit pip-audit semgrep
 
       - name: Run Safety
-        run: safety check --json || true
+        run: safety check --json
 
       - name: Run Bandit
-        run: bandit -r . -f json -o bandit-report.json || true
+        run: |
+          bandit -r . -f json -o bandit-report.json
+
+          # Fail if HIGH severity issues found
+          if [ -f bandit-report.json ]; then
+            HIGH_COUNT=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json)
+            if [ "$HIGH_COUNT" -gt 0 ]; then
+              echo "❌ Found $HIGH_COUNT HIGH severity security issues"
+              exit 1
+            fi
+          fi
 
       - name: Run Semgrep
         run: |
@@ -103,7 +112,7 @@ jobs:
             --config auto \
             --sarif \
             --output semgrep.sarif \
-            --metrics=off || true
+            --metrics=off
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
@@ -175,7 +184,7 @@ jobs:
             --tb=short
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
           flags: unittests
@@ -201,6 +210,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -246,14 +256,33 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: npm ci || true
+        run: npm ci || echo "No package.json found, skipping npm install"
+
+      - name: Build application
+        run: npm run build || echo "No build script found"
+
+      - name: Start application server
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Wait for server to be ready
+          npx wait-on http://localhost:3000 --timeout 60000 || {
+            echo "❌ Server failed to start"
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          }
 
       - name: Lighthouse CI
         uses: treosh/lighthouse-ci-action@v10
         with:
           urls: http://localhost:3000
           uploadArtifacts: true
-        continue-on-error: true
+
+      - name: Stop application server
+        if: always()
+        run: kill $SERVER_PID 2>/dev/null || true
 
   # ==========================================================================
   # Summary Report

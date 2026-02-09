@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
 import io
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,9 @@ class ImageGenerator:
     """Multi-provider image generation service"""
 
     def __init__(self):
+        # ⚡ Bolt Optimization: Reuse HTTP connections via session
+        self.session = requests.Session()
+
         self.providers = self._detect_available_providers()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -29,6 +33,16 @@ class ImageGenerator:
             "huggingface": 0.0,     # Free inference (rate limited)
             "local": 0.0            # Local Stable Diffusion
         }
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.close()
+
+    def close(self):
+        """Close the HTTP session"""
+        self.session.close()
 
     def _detect_available_providers(self) -> Dict[str, bool]:
         """Detect which image generation providers are available"""
@@ -58,7 +72,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -137,7 +151,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -193,7 +207,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -219,7 +233,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -249,7 +263,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,
@@ -338,23 +352,36 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """
+        Generate multiple images in parallel.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate images concurrently,
+        reducing total processing time by up to 80% for multiple prompts.
+        """
+        if not prompts:
+            return []
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        results = [None] * len(prompts)
 
+        def _task(index, prompt):
             try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
+                logger.info(f"Generating image {index+1}/{len(prompts)}: {prompt[:50]}...")
+                return index, self.generate(prompt, style=style)
             except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
+                logger.error(f"Failed to generate image {index+1}: {e}")
+                return index, {
                     "image_url": self._create_placeholder(prompt),
                     "provider": "error",
                     "cost_usd": 0.0,
                     "error": str(e)
-                })
+                }
+
+        # Parallelize image generation
+        max_workers = min(len(prompts), 5)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_index = {executor.submit(_task, i, p): i for i, p in enumerate(prompts)}
+            for future in as_completed(future_to_index):
+                idx, result = future.result()
+                results[idx] = result
 
         return results
 

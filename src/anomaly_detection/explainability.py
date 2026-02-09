@@ -2,19 +2,15 @@
 """
 Advanced explainability using SHAP, LIME, and custom explanations
 """
-import os
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from typing import Dict, List, Any, Optional, Tuple
-import matplotlib.pyplot as plt
-import seaborn as sns
-from io import BytesIO
-import base64
-import logging
-from dataclasses import dataclass
-from datetime import datetime
 
 
 # Wrapper model for SHAP DeepExplainer

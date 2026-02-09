@@ -18,11 +18,19 @@ export async function generateContent(prompt, options = {}) {
       temperature: options.temperature || 0.7,
     });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), options.timeout || 10000)
-    );
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Request timed out')), options.timeout || 10000);
+    });
 
-    return await Promise.race([textPromise, timeoutPromise]);
+    try {
+      const result = await Promise.race([textPromise, timeoutPromise]);
+      clearTimeout(timeoutId);
+      return result;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
 
   } catch (error) {
     console.error('❌ Generation failed:', error.message);

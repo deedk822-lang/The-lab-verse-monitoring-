@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  localai:
+    image: localai/localai:latest
+    container_name: localai
+    ports:
+      - "8080:8080"           # OpenAI-compatible API
+    environment:
+      - MODELS_PATH=/models
+      - API_KEY=localai-key  # optional; use a secure key in CI/secrets
+    volumes:
+      - ./models:/models
+    restart: unless-stopped

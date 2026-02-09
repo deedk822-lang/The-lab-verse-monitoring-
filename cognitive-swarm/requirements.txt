@@ -5,3 +5,4 @@ pyyaml
 
 # AI provider SDK (OpenAI's SDK is the standard for OpenRouter)
 openai
+openlit

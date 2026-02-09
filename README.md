@@ -1,376 +1,464 @@
-# AI Content Creation Suite with Multi-Channel Distribution
+# 🛡️ VAAL AI Empire - Credit Protection System
 
-A comprehensive fullstack JavaScript application that replicates n8n content creation workflows with support for multiple AI providers and automated multi-channel content distribution.
+**Enterprise-grade cost protection for LLM deployments on Alibaba Cloud**
 
-## 🚀 Features
+Prevents runaway costs on free-tier and pay-per-use cloud instances with multi-layer safeguards, real-time monitoring, and automatic circuit breakers.
 
-### Multi-Provider AI Support
+---
 
-- **OpenAI**: GPT-4, DALL-E, Whisper, TTS
-- **Google Gemini**: Advanced reasoning, Imagen, Veo, Google Search/Maps integration
-- **LocalAI**: Privacy-focused local inference with various models
-- **Z.AI GLM-4.6**: Efficient reasoning, tool use, long context (200K tokens)
-- **Perplexity AI**: Web search and real-time research capabilities
-- **Manus AI**: Creative writing and content optimization
-- **Claude AI**: Advanced reasoning and analysis (via MCP)
-- **Mistral AI**: Multilingual content generation (via MCP)
-- **ElevenLabs**: AI voice synthesis and audio generation
+## 🎯 Features
 
-### Multi-Channel Distribution
+### 💰 **Multi-Tier Credit System**
+- **FREE Tier**: 50 req/day, 25k tokens, $0.25/day
+- **ECONOMY Tier**: 100 req/day, 50k tokens, $0.50/day  
+- **STANDARD Tier**: 300 req/day, 150k tokens, $2.00/day
+- **PREMIUM Tier**: 500 req/day, 300k tokens, $5.00/day
 
-- **Social Media**: Automated posting via Ayrshare to Twitter, Facebook, LinkedIn, Instagram, YouTube, TikTok, Telegram, Reddit
-- **Email Marketing**: MailChimp campaign creation and sending
-- **Cross-Platform Communication**: A2A integration with Slack, Teams, Discord, Zapier, IFTTT, n8n, Make
-- **Voice Content**: Audio generation and podcast creation with ElevenLabs
-- **Webhook Integration**: Zapier-compatible for workflow automation
+### 🔒 **Security & Protection**
+- ✅ Prompt injection prevention
+- ✅ SSRF-safe HTTP client
+- ✅ Input sanitization & validation
+- ✅ Multi-provider LLM abstraction
 
-### Content Generation Capabilities
+### 📊 **Real-Time Monitoring**
+- ✅ Live usage dashboard
+- ✅ Circuit breaker (auto-blocks at 95%)
+- ✅ Email alerts (70% warning, 90% critical)
+- ✅ Webhook alerts (Slack/Discord)
+- ✅ Resource monitoring (CPU/RAM/Disk)
+- ✅ Hourly burst protection
 
-- **Text**: Articles, blog posts, social media content
-- **Images**: High-quality generation with aspect ratio control
-- **Videos**: Prompt-based video generation and animation
-- **Audio**: Text-to-speech, voice cloning, and audiobook creation
-- **Multimodal**: Combined content types with integrated workflows
+### 🚀 **LLM Provider Support**
+- HuggingFace (with HF_TOKEN)
+- OpenAI (GPT-3.5/4)
+- Qwen/Alibaba DashScope
+- Kimi AI CLI
+- Z.AI (extensible)
 
-### Advanced Features
+---
 
-- Real-time progress tracking with WebSockets
-- SEO optimization and metadata generation
-- Multi-platform content optimization
-- Cost tracking and usage analytics
-- Caching with Redis for improved performance
-- Rate limiting and API key authentication
-- Docker support for easy deployment
-- MCP (Model Context Protocol) integration
-- A2A (Application-to-Application) communication
+## 📦 Installation
 
-## 🛠️ Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Redis (optional, for caching)
-- Docker & Docker Compose (for containerized deployment)
-
-### Installation
-
-1. **Clone and setup:**
+### **Quick Start (Automated)**
 
 ```bash
+# Clone repository
 git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
 cd The-lab-verse-monitoring-
-npm install
+
+# Checkout the credit protection branch
+git checkout security-hardening-llm-upgrade-222347293222010539
+
+# Run automated setup
+bash scripts/setup-alibaba-cloud-protection.sh
 ```
 
-2. **Configure API keys in `.env`:**
+The script will:
+1. ✅ Install system dependencies
+2. ✅ Create Python virtual environment
+3. ✅ Install Python packages
+4. ✅ Configure `.env` file
+5. ✅ Set up systemd service
+6. ✅ Create storage directories
+7. ✅ Verify installation
+
+### **Manual Installation**
 
 ```bash
-# Copy the example environment file
+# 1. Install system dependencies
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-venv git curl jq bc
+
+# 2. Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install Python dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 4. Create directories
+sudo mkdir -p /var/lib/vaal/credit_protection
+sudo mkdir -p /var/log/vaal
+sudo chown -R $USER:$USER /var/lib/vaal /var/log/vaal
+
+# 5. Configure environment
 cp .env.example .env
-
-# Edit .env with your API keys
-# At minimum, configure:
-API_KEY=your_secure_api_key_here
-OPENAI_API_KEY=your_openai_key  # OR
-GOOGLE_API_KEY=your_google_key  # OR any other AI provider
-
-# For multi-channel distribution, also configure:
-AYRSHARE_API_KEY=your_ayrshare_key_here           # For social media
-MAILCHIMP_API_KEY=your_mailchimp_key_here        # For email
-ELEVENLABS_API_KEY=your_elevenlabs_key_here      # For voice
+nano .env  # Edit with your API keys
 ```
 
-3. **Start the application:**
+---
+
+## ⚙️ Configuration
+
+### **1. Environment Variables (.env)**
+
+**CRITICAL - Required:**
+```bash
+# HuggingFace Token (REQUIRED for most models)
+HF_TOKEN=hf_your_token_here  # Get from https://huggingface.co/settings/tokens
+
+# Credit Protection Tier
+CREDIT_TIER=free  # Options: free, economy, standard, premium
+
+# LLM Provider
+LLM_PROVIDER=huggingface  # Options: huggingface, openai, qwen
+```
+
+**Optional - Alerts:**
+```bash
+# Email Alerts
+ALERT_EMAIL_ENABLED=true
+ALERT_EMAIL_TO=your-email@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your-gmail@gmail.com
+SMTP_PASSWORD=your-app-password  # Use Gmail App Password
+
+# Webhook Alerts (Slack/Discord)
+ALERT_WEBHOOK_ENABLED=true
+ALERT_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+**Optional - Additional Providers:**
+```bash
+# OpenAI (if using GPT models)
+OPENAI_API_KEY=sk-your_key_here
+
+# Qwen/DashScope
+QWEN_API_KEY=your_qwen_key_here
+
+# Kimi AI
+KIMI_API_KEY=your_kimi_key_here
+```
+
+### **2. Get HuggingFace Token**
+
+1. Go to https://huggingface.co/settings/tokens
+2. Click "New token"
+3. Name: `vaal-ai-empire`
+4. Type: **Read** (or **Write** for private models)
+5. Copy token to `.env` file
+
+### **3. Configure Gmail Alerts (Optional)**
+
+1. Enable 2FA on Google Account
+2. Generate App Password: https://myaccount.google.com/apppasswords
+3. Use the 16-character password in `SMTP_PASSWORD`
+
+---
+
+## 🚀 Usage
+
+### **Start the Service**
 
 ```bash
-npm start
+# Enable auto-start on boot
+sudo systemctl enable credit-protection
+
+# Start service
+sudo systemctl start credit-protection
+
+# Check status
+sudo systemctl status credit-protection
 ```
 
-4. **Open your browser:**
-
-```
-http://localhost:3000
-```
-
-### Docker Deployment
+### **Live Monitoring Dashboard**
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+./scripts/dashboard.sh
 ```
 
-## 🔧 Configuration
+**Dashboard shows:**
+- 📊 Real-time usage percentages
+- 🔋 Daily/hourly quota consumption
+- 💻 System resources (CPU/RAM/Disk)
+- 🚨 Circuit breaker status
+- 📈 Progress bars with color coding
 
-### Environment Variables
+### **Emergency Shutdown**
 
-| Variable | Description | Default |
-|----------|-------------|----------|
-| `PORT` | Server port | 3000 |
-| `NODE_ENV` | Environment | development |
-| `API_KEY` | API authentication key | - |
-| `REDIS_URL` | Redis connection URL | redis://localhost:6379 |
-
-### AI Provider Configuration
-
-#### Required (at least one)
-- `OPENAI_API_KEY` - OpenAI API key
-- `GOOGLE_API_KEY` - Google AI API key  
-- `ZAI_API_KEY` - Z.AI API key
-- `LOCALAI_URL` - LocalAI server URL
-
-#### Optional Enhancement Services
-- `PERPLEXITY_API_KEY` - For web search and research
-- `MANUS_API_KEY` - For creative writing optimization
-- `CLAUDE_API_KEY` - For advanced reasoning (MCP)
-- `MISTRAL_API_KEY` - For multilingual content (MCP)
-- `ELEVENLABS_API_KEY` - For voice synthesis
-
-### Distribution Services
-
-#### Social Media (Ayrshare)
-- `AYRSHARE_API_KEY` - Required for social media posting
-
-#### Email Marketing (MailChimp)
-- `MAILCHIMP_API_KEY` - Required for email campaigns
-- `MAILCHIMP_SERVER_PREFIX` - Your MailChimp server (e.g., us1)
-- `MAILCHIMP_LIST_ID` - Your subscriber list ID
-
-#### Cross-Platform Communication (A2A)
-- `A2A_SLACK_WEBHOOK` - Slack webhook URL
-- `A2A_TEAMS_WEBHOOK` - Microsoft Teams webhook URL
-- `A2A_DISCORD_WEBHOOK` - Discord webhook URL
-
-## 📚 API Reference
-
-### Multi-Channel Distribution
+If you detect unusual activity or need to stop all LLM requests immediately:
 
 ```bash
-# Zapier webhook endpoint (primary integration point)
-POST /api/ayrshare/ayr
-Content-Type: application/json
-x-api-key: your-api-key
+./scripts/emergency-shutdown.sh
+```
 
+This will:
+1. ⛔ Trigger circuit breaker (2 hours)
+2. 🛑 Stop credit protection service
+3. ❌ Kill all LLM processes
+4. 🔒 Create emergency lockfile
+
+### **View Logs**
+
+```bash
+# Live tail
+tail -f /var/log/vaal/credit-protection.log
+
+# Error logs
+tail -f /var/log/vaal/credit-protection-error.log
+
+# Usage history (monthly)
+cat /var/lib/vaal/credit_protection/usage_log_2026-01.jsonl | jq
+```
+
+---
+
+## 🔌 API Integration
+
+### **FastAPI Middleware**
+
+Add credit protection to your FastAPI app:
+
+```python
+from fastapi import FastAPI
+from vaal_ai_empire.credit_protection.middleware import CreditProtectionMiddleware
+
+app = FastAPI()
+
+# Add credit protection middleware
+app.add_middleware(
+    CreditProtectionMiddleware,
+    enable_resource_monitoring=True
+)
+
+@app.post("/api/generate")
+async def generate_text(prompt: str):
+    # Your LLM logic here
+    # Credit protection automatically enforced
+    pass
+```
+
+### **Direct Usage in Code**
+
+```python
+from vaal_ai_empire.credit_protection import get_manager, ProviderType
+
+manager = get_manager()
+
+# Check quota before request
+allowed, reason = manager.check_quota(
+    estimated_tokens=4000,
+    estimated_cost=0.04
+)
+
+if not allowed:
+    print(f"Request blocked: {reason}")
+    return
+
+# Make LLM request
+response = your_llm_function()
+
+# Record usage
+manager.record_usage(
+    provider=ProviderType.HUGGINGFACE,
+    request_tokens=2000,
+    response_tokens=2000,
+    cost=0.04,
+    duration_ms=1500,
+    status="success"
+)
+```
+
+### **Get Usage Summary**
+
+```python
+from vaal_ai_empire.credit_protection import get_manager
+
+manager = get_manager()
+summary = manager.get_usage_summary()
+
+print(f"Tier: {summary['tier']}")
+print(f"Daily requests: {summary['daily']['requests']} / {summary['daily']['limits']['requests']}")
+print(f"Daily cost: ${summary['daily']['cost_usd']:.4f}")
+print(f"Circuit breaker: {summary['circuit_breaker']['open']}")
+```
+
+---
+
+## 📊 Monitoring & Alerts
+
+### **Alert Thresholds**
+
+| Level | Threshold | Action |
+|-------|-----------|--------|
+| ⚠️ **Warning** | 70% | Email/Webhook alert |
+| 🚨 **Critical** | 90% | Email/Webhook alert |
+| ⛔ **Circuit Breaker** | 95% | Auto-block all requests |
+
+### **Alert Channels**
+
+**Email Example:**
+```
+Subject: ⚠️ Credit Usage Warning (70% threshold)
+
+Your daily credit usage has reached the warning threshold.
+
+Current Usage:
+- Requests: 35 / 50 (70.0%)
+- Tokens: 17,500 / 25,000 (70.0%)
+- Cost: $0.175 / $0.25 (70.0%)
+
+Tier: FREE
+```
+
+**Webhook Example (Slack/Discord):**
+```json
 {
-  "topic": "AI Technology Trends",
-  "platforms": "twitter,linkedin,facebook,instagram",
-  "audience": "tech professionals", 
-  "tone": "professional",
-  "provider": "perplexity",
-  "includeEmail": true,
-  "emailSubject": "Latest AI Trends",
-  "generateAudio": true,
-  "voiceType": "professional"
+  "text": "🚨 Credit Usage Warning",
+  "attachments": [{
+    "color": "#ffcc00",
+    "text": "Daily usage: 70% of quota",
+    "footer": "VAAL AI Empire Credit Protection"
+  }]
 }
 ```
 
-### Individual Service Endpoints
-
-```bash
-# Social media only
-POST /api/ayrshare/post
-
-# Email campaign only  
-POST /api/ayrshare/email
-
-# Voice generation only
-POST /api/elevenlabs/tts
-
-# Content generation only
-POST /api/content/generate
-
-# Test all services
-GET /api/test/health
-```
-
-### Test Endpoints
-
-```bash
-# Test individual services
-GET /api/test/ayrshare          # Social media
-GET /api/ayrshare/test/mailchimp # Email
-GET /api/test/workflow          # Full multi-channel test
-GET /api/test/providers         # AI providers
-```
+---
 
 ## 🏗️ Architecture
 
 ```
-src/
-├── config/          # Provider configurations
-├── middleware/      # Authentication, caching, error handling
-├── routes/          # API endpoints
-│   ├── content.js   # Content generation
-│   ├── ayrshare.js  # Multi-channel distribution
-│   └── test.js      # Testing endpoints
-├── services/        # AI providers and integrations
-│   ├── ayrshareService.js     # Social media posting
-│   ├── mailchimpService.js    # Email campaigns
-│   ├── perplexityService.js   # Web search & research
-│   ├── manusService.js        # Creative optimization
-│   ├── mcpService.js          # Claude & Mistral integration
-│   ├── a2aService.js          # Cross-platform communication
-│   └── elevenLabsService.js   # Voice synthesis
-├── utils/           # Logging, Redis, utilities
-└── server.js        # Main application entry point
+vaal_ai_empire/
+├── credit_protection/
+│   ├── __init__.py          # Package exports
+│   ├── manager.py           # Core quota manager
+│   ├── middleware.py        # FastAPI middleware
+│   └── monitor_service.py   # Background monitoring
+├── api/
+│   ├── sanitizers.py        # Input sanitization
+│   └── secure_requests.py   # SSRF-safe HTTP
+agent/
+└── tools/
+    └── llm_provider.py      # Multi-provider abstraction
+scripts/
+├── setup-alibaba-cloud-protection.sh  # Automated setup
+├── dashboard.sh                       # Live monitoring
+├── emergency-shutdown.sh              # Emergency stop
+└── systemd/
+    └── credit-protection.service      # System service
 ```
-
-## 🔌 Integration Examples
-
-### Zapier Integration
-
-1. Create a Zapier webhook trigger
-2. Configure action to POST to `/api/ayrshare/ayr`
-3. Map webhook data to content parameters
-4. Enable automatic multi-channel distribution
-
-### Advanced Workflow Example
-
-```javascript
-// Research + Generate + Optimize + Distribute workflow
-const workflow = {
-  topic: "Sustainable AI Development",
-  
-  // Research phase (Perplexity)
-  research: {
-    provider: "perplexity",
-    useWebSearch: true,
-    focusArea: "recent"
-  },
-  
-  // Generation phase (Multiple providers)
-  generation: {
-    providers: ["google", "claude", "manus"],
-    tone: "authoritative",
-    audience: "business leaders"
-  },
-  
-  // Distribution phase
-  distribution: {
-    social: {
-      platforms: ["linkedin", "twitter", "facebook"],
-      optimizePerPlatform: true
-    },
-    email: {
-      subject: "Sustainable AI: Industry Report",
-      segment: "business_leaders"
-    },
-    audio: {
-      voiceType: "professional",
-      generatePodcast: true
-    },
-    notifications: {
-      slack: true,
-      teams: true
-    }
-  }
-};
-```
-
-## 🧪 Testing
-
-```bash
-# Test all providers and services
-npm test
-
-# Test specific functionality
-curl http://localhost:3000/api/test/health
-
-# Test multi-channel workflow
-curl -X POST http://localhost:3000/api/ayrshare/ayr \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
-  -d '{"topic":"AI Test","platforms":"twitter,linkedin"}'
-```
-
-## 📊 Monitoring
-
-The application includes comprehensive logging and monitoring:
-
-- **Winston** for structured logging
-- **Redis** for caching and session management  
-- **Health checks** for all providers and services
-- **Cost tracking** for API usage
-- **Real-time WebSocket** progress updates
-- **Performance metrics** and analytics
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Environment Setup:**
-
-```bash
-export NODE_ENV=production
-export API_KEY=your-secure-production-key
-export REDIS_URL=redis://your-redis-server:6379
-```
-
-2. **Docker Production:**
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-3. **Fly.io Deployment:** (Recommended)
-
-```bash
-# Install Fly CLI
-fly auth login
-fly create your-app-name
-fly deploy
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🆘 Support
-
-- **Documentation**: Check the `/docs` directory
-- **Issues**: Create a GitHub issue
-- **Discussions**: Use GitHub Discussions for questions
-- **Setup Guide**: See `ZAPIER_AYRSHARE_SETUP.md` for detailed configuration
-
-## 🔄 Recent Updates
-
-### Latest Features
-
-- ✅ **Multi-Channel Distribution**: Ayrshare + MailChimp + A2A integration
-- ✅ **Advanced AI Providers**: Perplexity, Manus, Claude, Mistral via MCP
-- ✅ **Voice Synthesis**: ElevenLabs integration for audio content
-- ✅ **Real-time Monitoring**: WebSocket progress updates
-- ✅ **Cross-Platform Communication**: A2A service for team notifications
-- ✅ **Enhanced Research**: Web search with Perplexity AI
-- ✅ **Creative Optimization**: Content enhancement with Manus AI
-
-### Roadmap
-
-- 🔄 Advanced analytics dashboard
-- 🔄 Custom model fine-tuning
-- 🔄 Batch processing capabilities
-- 🔄 Advanced workflow automation
-- 🔄 Multi-language UI support
-- 🔄 Video content generation
-- 🔄 Advanced A/B testing for content
-
-## About
-
-A comprehensive Node.js server that runs multiple AI agents and integrates with various platforms for automated content creation and distribution across social media, email, voice, and team communication channels.
 
 ---
 
-**🎯 Perfect for**: Content creators, marketing teams, businesses, and developers who want to automate their content distribution across multiple channels with AI-powered generation and optimization.
+## 🔐 Security Features
+
+### **1. Prompt Injection Prevention**
+Detects and blocks dangerous patterns:
+- `ignore previous instructions`
+- `system: you are`
+- `execute()` / `eval()`
+- XSS attempts
+
+### **2. SSRF Protection**
+Blocks requests to:
+- Private IP ranges (10.0.0.0/8, 192.168.0.0/16)
+- Localhost (127.0.0.1)
+- Link-local addresses
+- Cloud metadata endpoints
+
+### **3. Input Sanitization**
+- Null byte removal
+- Whitespace normalization
+- Filename path traversal prevention
+- Length limits (configurable)
+
+---
+
+## 📈 Tier Comparison
+
+| Feature | FREE | ECONOMY | STANDARD | PREMIUM |
+|---------|------|---------|----------|----------|
+| **Daily Requests** | 50 | 100 | 300 | 500 |
+| **Daily Tokens** | 25k | 50k | 150k | 300k |
+| **Daily Cost Limit** | $0.25 | $0.50 | $2.00 | $5.00 |
+| **Max Request Tokens** | 2k | 4k | 8k | 16k |
+| **Hourly Burst** | 10 req | 20 req | 50 req | 100 req |
+| **Circuit Breaker** | ✅ | ✅ | ✅ | ✅ |
+| **Email Alerts** | ✅ | ✅ | ✅ | ✅ |
+| **Webhook Alerts** | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## 🛠️ Troubleshooting
+
+### **Service won't start**
+```bash
+# Check logs
+sudo journalctl -u credit-protection -n 50
+
+# Verify configuration
+python3 -c "from vaal_ai_empire.credit_protection import get_manager; print(get_manager())"
+
+# Check permissions
+ls -la /var/lib/vaal/credit_protection
+```
+
+### **HuggingFace token errors**
+```bash
+# Verify token
+huggingface-cli whoami
+
+# Or test manually
+python3 -c "from huggingface_hub import HfApi; HfApi().whoami()"
+```
+
+### **Circuit breaker stuck**
+```bash
+# Manually reset
+python3 << 'PYTHON'
+from vaal_ai_empire.credit_protection import get_manager
+manager = get_manager()
+manager.circuit_open = False
+print("Circuit breaker reset")
+PYTHON
+```
+
+### **Reset daily usage**
+```bash
+python3 << 'PYTHON'
+from vaal_ai_empire.credit_protection import get_manager
+manager = get_manager()
+manager.reset_daily_usage()
+print("Daily usage reset")
+PYTHON
+```
+
+---
+
+## 📝 License
+
+MIT License - See LICENSE file for details
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new features
+4. Submit a pull request
+
+---
+
+## 🆘 Support
+
+- **Issues**: https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues
+- **Discussions**: https://github.com/deedk822-lang/The-lab-verse-monitoring-/discussions
+- **Email**: deedk822@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+- **HuggingFace**: For excellent transformer models
+- **Alibaba Cloud**: Cloud infrastructure
+- **FastAPI**: Modern Python web framework
+- **Kimi AI**: Automated code enhancement
+
+---
+
+**Built with ❤️ for cost-conscious LLM deployments**
+
+*Protect your credits. Scale with confidence.* 🛡️

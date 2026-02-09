@@ -1,0 +1,10 @@
+# =============================================================================
+# VAAL AI Empire - Namespace
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vaal-ai-empire
+  labels:
+    name: vaal-ai-empire
+    environment: production

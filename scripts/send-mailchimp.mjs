@@ -32,7 +32,7 @@ export async function sendMailChimp() {
     const campaign = await response.json();
 
     // Set content
-    await fetch(`https://${process.env.MAILCHIMP_DC}.api.mailchimp.com/3.0/campaigns/${campaign.id}/content`, {
+    const setContentResponse = await fetch(`https://${process.env.MAILCHIMP_DC}.api.mailchimp.com/3.0/campaigns/${campaign.id}/content`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${process.env.MAILCHIMP_API_KEY}`,
@@ -46,11 +46,19 @@ export async function sendMailChimp() {
       })
     });
 
+    if (!setContentResponse.ok) {
+      throw new Error(`MailChimp API error (setting content): ${setContentResponse.statusText}`);
+    }
+
     // Send
-    await fetch(`https://${process.env.MAILCHIMP_DC}.api.mailchimp.com/3.0/campaigns/${campaign.id}/actions/send`, {
+    const sendResponse = await fetch(`https://${process.env.MAILCHIMP_DC}.api.mailchimp.com/3.0/campaigns/${campaign.id}/actions/send`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.MAILCHIMP_API_KEY}` }
     });
+
+    if (!sendResponse.ok) {
+      throw new Error(`MailChimp API error (sending): ${sendResponse.statusText}`);
+    }
 
     console.log('✅ MailChimp sent');
 

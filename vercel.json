@@ -2,31 +2,20 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/api/generate-article.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "public"
-      }
+      "src": "./Dockerfile",
+      "use": "@vercel/docker"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/src/api/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/$1"
     }
   ],
   "env": {
-    "CDATA_CONNECT_API": "disabled",
-    "CDATA_API_KEY": "disabled",
-    "AIRTABLE_BASE_ID": "@airtable_base_id",
-    "AIRTABLE_API_KEY": "@airtable_api_key"
+    "REDIS_URL": "redis://redistogo:6379/0",
+    "JWT_SECRET": "replace-this-with-a-strong-secret",
+    "OIDC_DISCOVERY": "https://demo.okta.com/oauth2/default/.well-known/openid-configuration",
+    "KIMI_API_KEY": ""
   }
 }

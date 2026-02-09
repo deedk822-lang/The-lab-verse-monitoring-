@@ -1,159 +1,336 @@
-name: 🤖 Kimi AI Enhancer
+name: Kimi Enhancer
 
 on:
-  workflow_dispatch:
-    inputs:
-      task:
-        description: 'Task for Kimi (e.g., "Implement comprehensive security package")'
-        required: true
-        default: 'Analyze and improve codebase'
-      mode:
-        description: 'Execution mode'
-        type: choice
-        options:
-          - 'create-pr'
-          - 'direct-commit'
-        default: 'create-pr'
-      branch_name:
-        description: 'Branch name for PR (auto-generated if empty)'
-        required: false
-        default: 'kimi-enhancement'
+  issue_comment:
+    types: [created]
 
 jobs:
-  enhance:
+  authorize-and-fix:
+    # Gate 1: Only trigger on /kimi-fix command
+    # Gate 2: Only authorized users (Owner, Member, Collaborator)
+    if: |
+      contains(github.event.comment.body, '/kimi-fix') &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
     runs-on: ubuntu-latest
-    # No permissions needed when using PAT - token has its own permissions
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Verify User Authorization
+        id: auth
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const validAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+            const assoc = context.payload.comment.author_association;
+
+            if (!validAssociations.includes(assoc)) {
+              console.log(`User association: ${assoc} - not authorized`);
+              core.setOutput('authorized', 'false');
+
+              // Post denial comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ @${context.payload.comment.user.login} You are not authorized to trigger /kimi-fix.\n\nRequired: OWNER, MEMBER, or COLLABORATOR\nYour role: ${assoc}`
+              });
+              return;
+            }
+
+            core.setOutput('authorized', 'true');
+            console.log(`User ${context.payload.comment.user.login} authorized as ${assoc}`);
+
+      - name: Exit if Not Authorized
+        if: steps.auth.outputs.authorized == 'false'
+        run: exit 0
+
+      - name: Get PR Information
+        id: pr-info
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const prNumber = context.issue.number;
+
+            // Fetch full PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            if (pr.base.ref !== 'main') {
+              console.log(`PR targets ${pr.base.ref}, not main. Exiting.`);
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            core.setOutput('skip', 'false');
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('base_ref', pr.base.ref);
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('repo_full_name', pr.head.repo.full_name);
+
+      - name: Skip Non-Main PRs
+        if: steps.pr-info.outputs.skip == 'true'
+        run: |
+          echo "PR does not target main. Skipping."
+          exit 0
+
+      - name: Checkout PR Branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-          token: ${{ secrets.KIMI_PAT }}  # Use your PAT here
-          persist-credentials: true
+          ref: ${{ steps.pr-info.outputs.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
-      - name: Install Kimi CLI
+      - name: Install Dependencies
+        run: |
+          pip install openai==1.12.0 PyGithub==2.2.0
+
+      - name: Fetch Review Comments and Fix
         env:
           KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr-info.outputs.pr_number }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          curl -LsSf https://cdn.kimi.com/binaries/kimi-cli/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          kimi config set-key "$KIMI_API_KEY"
-          kimi --version
+          python3 << 'PYEOF'
+          import os
+          import json
+          import sys
+          from pathlib import Path
+          from openai import OpenAI
+          from github import Github
 
-      - name: Configure Git with PAT
-        run: |
-          git config --global user.name "Kimi AI"
-          git config --global user.email "kimi-ai@github-actions"
-          # Configure git to use PAT for pushing
-          git remote set-url origin https://x-access-token:${{ secrets.KIMI_PAT }}@github.com/${{ github.repository }}.git
+          # Initialize clients
+          kimi = OpenAI(
+              api_key=os.environ['KIMI_API_KEY'],
+              base_url="https://api.moonshot.cn/v1"
+          )
 
-      - name: Create working branch
-        id: branch
-        run: |
-          BRANCH_NAME="${{ github.event.inputs.branch_name }}-$(date +%s)"
-          git checkout -b $BRANCH_NAME
-          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          gh = Github(os.environ['GITHUB_TOKEN'])
+          repo = gh.get_repo(f"{os.environ['REPO_OWNER']}/{os.environ['REPO_NAME']}")
+          pr = repo.get_pull(int(os.environ['PR_NUMBER']))
 
-      - name: Execute Kimi Task
-        id: kimi
-        run: |
-          cat > /tmp/task.txt << 'EOF'
-          ${{ github.event.inputs.task }}
+          print(f"Processing PR #{pr.number}: {pr.title}")
+          print(f"Branch: {pr.head.ref} -> {pr.base.ref}")
 
-          You are working in a GitHub Actions environment with full repository access.
-          You can:
-          1. Read and write files in the repository using WriteFile and StrReplaceFile tools
-          2. Execute shell commands using the Shell tool
-          3. Use git commands to commit changes
+          # Fetch all review comments
+          review_comments = list(pr.get_review_comments())
+          issue_comments = list(pr.get_issue_comments())
 
-          Please implement the requested changes and verify they work correctly.
-          EOF
+          # Filter for bot comments
+          bot_comments = [
+              c for c in review_comments
+              if any(bot in c.user.login.lower() for bot in ['coderabbit', 'gemini', 'github-actions'])
+          ]
 
-          kimi --print --yolo -c "$(cat /tmp/task.txt)" > /tmp/kimi_output.txt 2>&1
-          cat /tmp/kimi_output.txt
+          if not bot_comments:
+              print("No bot review comments found. Checking for manual trigger...")
+              # Check if manual trigger contains specific instructions
+              manual_comments = [
+                  c for c in issue_comments
+                  if '/kimi-fix' in c.body and c.user.login == os.environ.get('GITHUB_ACTOR', '')
+              ]
+              if not manual_comments:
+                  print("Nothing to fix.")
+                  sys.exit(0)
 
-      - name: Check for changes
-        id: changes
-        run: |
-          git add -A
-          if git diff --cached --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No changes detected by Kimi"
-          else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "✅ Changes detected"
-            git diff --cached --stat
-          fi
+          # Build prompt for Kimi
+          comments_text = "\n\n".join([
+              f"File: {c.path}\nLine: {c.line}\nCommenter: {c.user.login}\nBody: {c.body}"
+              for c in bot_comments
+          ])
 
-      - name: Commit changes
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          git commit -m "🤖 Kimi AI: ${{ github.event.inputs.task }}
+          prompt = f"""You are an expert code review fixer. Analyze these GitHub review comments and generate exact code fixes.
 
-          Automated enhancement performed by Kimi CLI
-          Task: ${{ github.event.inputs.task }}
-          Workflow Run: ${{ github.run_id }}
-          Actor: ${{ github.actor }}"
+          Review Comments:
+          {comments_text}
 
-      - name: Push changes
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          git push origin ${{ steps.branch.outputs.name }}
-          echo "Pushed to branch: ${{ steps.branch.outputs.name }}"
+          Repository Context:
+          - Target Branch: main
+          - PR Branch: {pr.head.ref}
+          - Files Changed: {[f.filename for f in pr.get_files()]}
 
-      - name: Create Pull Request
-        if: steps.changes.outputs.has_changes == 'true' && github.event.inputs.mode == 'create-pr'
-        uses: peter-evans/create-pull-request@v6
+          Rules:
+          1. Only fix files that exist in the PR
+          2. For CodeRabbit style issues: Remove unused code, fix formatting
+          3. For Gemini logic issues: Fix the logic and ensure tests would pass
+          4. For config issues: Fix YAML/JSON syntax
+          5. Security issues: Prioritize and add validation
+          6. Return fixes as JSON array with: file_path, line_number, original_code, fixed_code, explanation
+
+          Return ONLY valid JSON in this format:
+          {{
+            "fixes": [
+              {{
+                "file_path": "path/to/file.py",
+                "line_number": 42,
+                "original_code": "def bad_func():",
+                "fixed_code": "def good_func():",
+                "explanation": "Fixed naming convention"
+              }}
+            ]
+          }}
+
+          If no fixes needed, return: {{"fixes": []}}"""
+
+          print("Calling Kimi API...")
+          try:
+              response = kimi.chat.completions.create(
+                  model="kimi-k2.5",
+                  messages=[
+                      {"role": "system", "content": "You are a code review fixer. Return only valid JSON."},
+                      {"role": "user", "content": prompt}
+                  ],
+                  temperature=0.2,
+                  max_tokens=4000
+              )
+
+              content = response.choices[0].message.content
+
+              # Extract JSON from potential markdown code blocks
+              if "```json" in content:
+                  content = content.split("```json")[1].split("```")[0]
+              elif "```" in content:
+                  content = content.split("```")[1].split("```")[0]
+
+              result = json.loads(content.strip())
+              fixes = result.get('fixes', [])
+
+          except Exception as e:
+              print(f"Error calling Kimi API: {e}")
+              # Post failure comment
+              pr.create_issue_comment(f"❌ Kimi API failed: {str(e)}")
+              sys.exit(1)
+
+          if not fixes:
+              print("No fixes suggested by Kimi.")
+              pr.create_issue_comment("✅ Kimi analyzed the review comments. No automated fixes required.")
+              sys.exit(0)
+
+          print(f"Applying {len(fixes)} fixes...")
+
+          # Apply fixes
+          applied_fixes = []
+          for fix in fixes:
+              try:
+                  file_path = fix['file_path']
+                  line_num = fix['line_number']
+                  original = fix['original_code']
+                  fixed = fix['fixed_code']
+
+                  # Read file
+                  full_path = Path(file_path)
+                  if not full_path.exists():
+                      print(f"File not found: {file_path}")
+                      continue
+
+                  content = full_path.read_text()
+                  lines = content.split('\n')
+
+                  # Find and replace (line-specific or content-specific)
+                  if line_num <= len(lines):
+                      # Check if line matches original
+                      if original.strip() in lines[line_num - 1]:
+                          lines[line_num - 1] = lines[line_num - 1].replace(original, fixed)
+                          full_path.write_text('\n'.join(lines))
+                          applied_fixes.append(fix)
+                          print(f"✅ Fixed {file_path}:{line_num}")
+                      else:
+                          # Try general replacement
+                          if original in content:
+                              new_content = content.replace(original, fixed, 1)
+                              full_path.write_text(new_content)
+                              applied_fixes.append(fix)
+                              print(f"✅ Fixed {file_path} (general replacement)")
+                          else:
+                              print(f"⚠️ Original code not found in {file_path}:{line_num}")
+                  else:
+                      print(f"⚠️ Line {line_num} out of range in {file_path}")
+
+              except Exception as e:
+                  print(f"Error applying fix to {file_path}: {e}")
+
+          if not applied_fixes:
+              print("No fixes were applied.")
+              sys.exit(0)
+
+          # Configure git
+          os.system('git config user.email "kimi-fix[bot]@users.noreply.github.com"')
+          os.system('git config user.name "Kimi Fix Bot"')
+
+          # Check for changes
+          import subprocess
+          status = subprocess.run(['git', 'status', '--porcelain'], capture_output=True, text=True)
+
+          if not status.stdout.strip():
+              print("No changes to commit.")
+              sys.exit(0)
+
+          # Determine if tests should run (code vs docs)
+          files_changed = subprocess.run(['git', 'diff', '--name-only'], capture_output=True, text=True).stdout
+          code_extensions = {'.py', '.js', '.ts', '.go', '.java', '.rs', '.cpp', '.c'}
+          should_test = any(Path(f).suffix in code_extensions for f in files_changed.split('\n') if f)
+
+          # Commit
+          subprocess.run(['git', 'add', '-A'], check=True)
+          commit_msg = f"""fix: resolve review comments from CodeRabbit/Gemini
+
+          Auto-fixed via Kimi K2.5:
+          {chr(10).join([f"- {f['file_path']}: {f['explanation']}" for f in applied_fixes])}
+
+          Triggered by: @{os.environ.get('GITHUB_ACTOR', 'unknown')}
+          PR: #{pr.number}"""
+
+          subprocess.run(['git', 'commit', '-m', commit_msg], check=True)
+
+          # Push
+          result = subprocess.run(
+              ['git', 'push', 'origin', pr.head.ref],
+              capture_output=True,
+              text=True
+          )
+
+          if result.returncode != 0:
+              print(f"Push failed: {result.stderr}")
+              pr.create_issue_comment(f"❌ Failed to push fixes: {result.stderr}")
+              sys.exit(1)
+
+          # Post success comment
+          test_note = "\n\n*Tests will run automatically via CI.*" if should_test else "\n\n*Documentation changes only - tests skipped.*"
+
+          pr.create_issue_comment(f"""✅ **Kimi Auto-Fix Applied**
+
+          Fixed {len(applied_fixes)} issue(s):
+
+          {chr(10).join([f"**{f['file_path']}** (line {f['line_number']}): {f['explanation']}" for f in applied_fixes])}
+
+          Commit pushed to `{pr.head.ref}`.{test_note}""")
+
+          print("Done!")
+          PYEOF
+
+      - name: Report Failure
+        if: failure()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
-          token: ${{ secrets.KIMI_PAT }}  # Use PAT here too
-          branch: ${{ steps.branch.outputs.name }}
-          base: main
-          title: "🤖 Kimi AI Enhancement: ${{ github.event.inputs.task }}"
-          body: |
-            ## 🤖 Automated Enhancement by Kimi AI
-
-            **Task:** ${{ github.event.inputs.task }}
-
-            **Changes Summary:**
-            This PR contains automated code improvements generated by Kimi CLI.
-
-            **Files Modified:**
-            See the diff below for details.
-
-            **Action Required:**
-            - [ ] Review code changes
-            - [ ] Run tests to verify functionality
-            - [ ] Approve and merge if satisfactory
-
-            ---
-            *This PR was automatically generated by Kimi CLI via GitHub Actions*
-          labels: automated, enhancement, kimi-ai
-          draft: false
-
-      - name: Direct Commit to Main
-        if: steps.changes.outputs.has_changes == 'true' && github.event.inputs.mode == 'direct-commit'
-        run: |
-          git checkout main
-          git merge --no-ff ${{ steps.branch.outputs.name }} -m "Merge Kimi AI changes from ${{ steps.branch.outputs.name }}"
-          git push origin main
-          echo "Committed directly to main branch"
-
-      - name: Report Status
-        if: always()
-        run: |
-          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
-            echo "✅ Kimi successfully enhanced the repository"
-            if [ "${{ github.event.inputs.mode }}" == "create-pr" ]; then
-              echo "🔗 Pull Request created from branch: ${{ steps.branch.outputs.name }}"
-            else
-              echo "📝 Changes committed directly to main"
-            fi
-          else
-            echo "ℹ️ No changes were made (Kimi may have analyzed but not modified files)"
-          fi
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Kimi Auto-Fix Failed**\n\nCheck the Actions logs for details.`
+            });

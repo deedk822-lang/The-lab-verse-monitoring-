@@ -109,15 +109,15 @@ jobs:
 
                   prompt = f"""You are a Python expert. Fix these {error_type} errors:
 
-{errors}
+                  {errors}
 
-Provide:
-1. Root cause analysis (2 sentences)
-2. Specific fixes with file paths and code changes
-3. Shell commands to apply fixes
+                  Provide:
+                  1. Root cause analysis (2 sentences)
+                  2. Specific fixes with file paths and code changes
+                  3. Shell commands to apply fixes
 
-Format as JSON:
-{{"fixes": [{{"file": "path", "action": "description", "command": "shell command"}}]}}"""
+                  Format as JSON:
+                  {{"fixes": [{{"file": "path", "action": "description", "command": "shell command"}}]}}"""
 
                   response = ollama.chat(
                       model=model,

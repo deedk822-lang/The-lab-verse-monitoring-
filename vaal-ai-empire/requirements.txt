@@ -1,54 +1,41 @@
-# Core Infrastructure
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-dotenv==1.0.0
-requests==2.31.0
-pydantic==2.12.5
-pydantic-settings==2.1.0
-sqlalchemy<2.0.0
-alembic==1.13.0
+# Vaal AI Empire - Python Dependencies
 
-# Alibaba Cloud (Optional - comment out if not using)
-# aliyun-python-sdk-core==2.14.0
-# aliyun-python-sdk-ecs==4.24.0
+# AG2 Multi-Agent Framework
+ag2[openai]>=0.10.0
 
-# AI/ML Stack
-cohere==5.11.0
-# groq==0.4.2  # Install separately if needed
-transformers==4.35.2
-torch==2.3.0
-accelerate==0.25.0
-sentence-transformers==2.2.2
-huggingface-hub==0.19.4
+# Cohere for Semantic Search
+cohere>=5.0.0
 
-# Mistral & LocalAI
-ollama==0.1.6  # Requires local Ollama installation
+# HNSW Vector Index
+hnswlib>=0.8.0
 
-# Social Media
-twilio==8.10.1
-tweepy==4.14.0
+# Standard ML/Data Libraries
+numpy>=1.24.0
+pandas>=2.0.0
 
-# MailChimp
-mailchimp-marketing==3.0.80
+# Environment Management
+python-dotenv>=1.0.0
 
-# Asana & Jira
-asana==3.2.1
-atlassian-python-api==3.41.11
+# Async Support
+aiohttp>=3.9.0
+asyncio>=3.4.3
 
-# Databricks
-databricks-sql-connector==2.9.3
-
-# Communication
-sendgrid==6.10.0
-
-# Automation
-schedule==1.2.1
-apscheduler==3.10.4
-
-# Monitoring
-prometheus-client==0.19.0
+# JSON/Data Handling
+orjson>=3.9.0
 
 # Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Kimi Model Dependencies (now served via vLLM)
+openai>=1.0.0
+tenacity>=8.0.0
+
+# Aya Vision Model Dependencies
+torch>=2.6
+
+# HTTP Requests
+requests>=2.28.0
+
+# HubSpot API
+hubspot-api-client>=8.1.1

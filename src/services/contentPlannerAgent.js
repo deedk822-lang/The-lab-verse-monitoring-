@@ -41,7 +41,7 @@ export class ContentPlannerAgent {
           'Then proceed to github-commit-agent',
           'Finally publish to WordPress and social media'
         ],
-        meta {
+        meta: {
           requestId: context.requestId || `plan_${Date.now()}`,
           timestamp: new Date().toISOString(),
           source: 'rankyak-webhook'
@@ -315,7 +315,7 @@ export class ContentPlannerAgent {
       featured_media: briaOutput.wpMediaId,
       categories: ['AI', 'Monitoring', 'Automation'],
       tags: contentPlan.keywords,
-      meta {
+      meta: {
         github_url: '', // Will be filled after GitHub commit
         bria_attribution: briaOutput.attributionToken,
         source: 'rankyak-webhook'

@@ -1,8 +1,7 @@
-from functools import lru_cache
-from typing import Dict, List, Optional, Tuple, Any
 import logging
-import json
 from datetime import datetime
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,8 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
         "cohere": None,
         "groq": None,
         "mistral": None,
-        "huggingface": None
+        "huggingface": None,
+        "kimi": None
     }
 
     # Try Cohere
@@ -56,6 +56,14 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  HuggingFace unavailable: {e}")
 
+    # Try Kimi
+    try:
+        from api.kimi import KimiAPI
+        providers["kimi"] = KimiAPI()
+        logger.info("✅ Kimi provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Kimi unavailable: {e}")
+
     available = [k for k, v in providers.items() if v is not None]
     if available:
         logger.info(f"Available text providers: {', '.join(available)}")
@@ -71,7 +79,16 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     except Exception as e:
         logger.warning(f"⚠️  Image generation disabled: {e}")
 
-    return providers, image_generator
+    # --- Initialize Multimodal Provider ---
+    multimodal_provider = None
+    try:
+        from api.aya_vision import AyaVisionAPI
+        multimodal_provider = AyaVisionAPI()
+        logger.info("✅ Aya Vision multimodal provider initialized")
+    except (ImportError, ValueError) as e:
+        logger.warning(f"⚠️  Aya Vision multimodal provider unavailable: {e}")
+
+    return providers, image_generator, multimodal_provider
 
 
 class ContentFactory:
@@ -80,7 +97,27 @@ class ContentFactory:
     def __init__(self, db=None):
         self.db = db
         # Unpack the cached providers and image generator
-        self.providers, self.image_generator = _get_cached_providers()
+        self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+
+    def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
+        """
+        Public method to generate content from multimodal inputs using the Aya Vision provider.
+        """
+        if not self.multimodal_provider:
+            raise RuntimeError("Aya Vision multimodal provider is not available.")
+
+        try:
+            result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
+            # You might want to log this usage to your database if needed
+            return {
+                "text": result["text"],
+                "provider": "aya_vision",
+                "cost_usd": result.get("usage", {}).get("cost_usd", 0.0),
+                "tokens": result.get("usage", {}).get("output_tokens", 0)
+            }
+        except Exception as e:
+            logger.error(f"Aya Vision generation failed: {e}")
+            raise
 
     def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
         """
@@ -90,7 +127,7 @@ class ContentFactory:
 
     def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
         """Try providers in priority order until one succeeds"""
-        priority = ["groq", "cohere", "mistral", "huggingface"]
+        priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
 
         for provider_name in priority:
             provider = self.providers.get(provider_name)
@@ -113,6 +150,11 @@ class ContentFactory:
                 elif provider_name == "mistral":
                     result = provider.query_local(prompt)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}
+                elif provider_name == "kimi":
+                    result = provider.generate_content(prompt, max_tokens)
+                    if self.db:
+                        self.db.log_api_usage("kimi", "generate_content", result.get("usage", {}).get("total_tokens", 0), 0.0)
+                    return {"text": result["text"], "provider": "kimi", "cost_usd": 0.0, "tokens": result.get("usage", {}).get("output_tokens", 0)}
                 elif provider_name == "huggingface":
                     result = provider.generate(prompt, max_tokens)
                     return {"text": result["text"], "provider": provider_name, "cost_usd": 0.0, "tokens": 0}

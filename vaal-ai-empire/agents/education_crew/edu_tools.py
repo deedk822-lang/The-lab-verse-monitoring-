@@ -1,6 +1,7 @@
 import json
-import os
+
 from crewai.tools import BaseTool
+
 
 class EducationTools:
 
@@ -11,9 +12,9 @@ class EducationTools:
         def _run(self, grade_level: str) -> str:
             # Load Local Libraries
             try:
-                with open('data/education/sa_caps_baseline.json', 'r') as f:
+                with open('data/education/sa_caps_baseline.json') as f:
                     sa_data = json.load(f)
-                with open('data/education/global_future_skills.json', 'r') as f:
+                with open('data/education/global_future_skills.json') as f:
                     global_data = json.load(f)
             except FileNotFoundError:
                 return "Error: Curriculum databases not found."
@@ -37,7 +38,7 @@ class EducationTools:
             # Perform a proper gap analysis by finding skills in global standards not in SA curriculum.
             sa_all_skills = {skill for skills_list in sa_curr.values() for skill in skills_list}
             global_all_skills = {skill for skills_list in global_curr.values() for skill in skills_list}
-            
+
             missing_skills = list(global_all_skills - sa_all_skills)
             gap_report["missing_critical_skills"] = sorted(missing_skills)
 

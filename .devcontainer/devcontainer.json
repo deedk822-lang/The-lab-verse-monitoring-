@@ -1,0 +1,10 @@
+{
+    "name": "Kimi Code Environment",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "moonshot-ai.kimi-code"
+            ]
+        }
+    }
+}

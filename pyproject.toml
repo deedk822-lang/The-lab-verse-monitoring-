@@ -135,6 +135,15 @@ build-backend = "hatchling.build"
 packages = ["src/pr_fix_agent"]
 
 [tool.pytest.ini_options]
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
+testpaths = ["tests_real", "tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --strict-markers"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
 minversion = "7.0"
 pythonpath = ["src"]  # Critical: Tells pytest where to find modules
 testpaths = ["tests"]
@@ -162,6 +171,7 @@ markers = [
 ]
 timeout = 300
 asyncio_mode = "auto"
+ main
 
 [tool.coverage.run]
 branch = true

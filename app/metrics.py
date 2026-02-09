@@ -3,21 +3,22 @@ Prometheus metrics for VAAL AI Empire monitoring.
 Tracks LLM usage, performance, security events, and system health.
 """
 
+import logging
 import time
 from functools import wraps
 from typing import Callable, Optional
-from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    Summary,
-    Info,
-    generate_latest,
-    REGISTRY,
-    CONTENT_TYPE_LATEST
-)
+
 from fastapi import Response
-import logging
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    REGISTRY,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    Summary,
+    generate_latest,
+)
 
 logger = logging.getLogger(__name__)
 

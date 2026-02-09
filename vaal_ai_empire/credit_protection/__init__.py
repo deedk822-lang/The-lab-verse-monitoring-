@@ -4,13 +4,13 @@ Prevents runaway costs on cloud instances.
 """
 
 from vaal_ai_empire.credit_protection.manager import (
+    TIER_QUOTAS,
     CreditProtectionManager,
+    ProviderType,
     ResourceMonitor,
     TierLevel,
-    ProviderType,
     UsageQuota,
     UsageRecord,
-    TIER_QUOTAS,
     get_credit_manager,
     get_manager,
 )

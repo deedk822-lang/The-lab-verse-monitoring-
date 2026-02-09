@@ -198,7 +198,8 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           pip install pytest pytest-cov
+          pip install -e .
       
       - name: 🧪 Run tests
         run: |
-          pytest tests/ -v --cov || true
+          pytest -v --cov || true

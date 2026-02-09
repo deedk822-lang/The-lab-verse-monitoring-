@@ -3,18 +3,17 @@ Kimi Instruct CLI Interface
 Command-line interface for managing Kimi tasks and project status
 """
 
-import asyncio
 import argparse
+import asyncio
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any
+from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from kimi_instruct.core import KimiInstruct, TaskPriority, TaskStatus
+from kimi_instruct.core import KimiInstruct, TaskPriority
 
 
 class KimiCLI:
@@ -162,7 +161,7 @@ class KimiCLI:
             metadata={"cli_optimization": True},
         )
 
-        print(f"🔄 Running optimization...")
+        print("🔄 Running optimization...")
 
         # Execute optimization
         success = await self.kimi.execute_task(task.id)

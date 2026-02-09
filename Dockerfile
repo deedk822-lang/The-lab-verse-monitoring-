@@ -1,47 +1,119 @@
-FROM node:18-alpine
+# ============================================================================
+# VAAL AI Empire - Multi-stage Production Dockerfile
+# ============================================================================
 
-# Create app directory
-WORKDIR /opt/myapp
+# ----------------------------------------------------------------------------
+# Builder Stage - Compile dependencies and prepare environment
+# ----------------------------------------------------------------------------
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04 AS builder
 
-# Install Python and build tools needed for some packages
-RUN apk add --no-cache python3 py3-pip make g++ gcc linux-headers libc-dev python3-dev
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Copy package files
-COPY package*.json ./
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    build-essential \
+    git \
+    curl \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN npm ci --only=production
+# Upgrade pip and install build tools
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
 
-# Install additional tools
-RUN apk add --no-cache curl bash jq
+# Create working directory
+WORKDIR /build
 
-# Install Alibaba Cloud CLI
-RUN curl -LO https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz && \
-    tar xzvf aliyun-cli-linux-latest-amd64.tgz && \
-    mv aliyun /usr/local/bin/ && \
-    rm aliyun-cli-linux-latest-amd64.tgz
+# Copy requirements first for better caching
+COPY requirements.txt requirements-dev.txt ./
+
+# Install Python dependencies
+RUN pip install --user --no-warn-script-location \
+    -r requirements.txt && \
+    pip install --user --no-warn-script-location \
+    gunicorn uvicorn[standard]
+
+# ----------------------------------------------------------------------------
+# Runtime Stage - Minimal production image
+# ----------------------------------------------------------------------------
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/root/.local/bin:$PATH \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3.10-distutils \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd -m -u 1000 -s /bin/bash vaaluser && \
+    mkdir -p /app /models /cache /logs && \
+    chown -R vaaluser:vaaluser /app /models /cache /logs
+
+# Copy Python packages from builder
+COPY --from=builder --chown=vaaluser:vaaluser /root/.local /root/.local
+
+# Set working directory
+WORKDIR /app
 
 # Copy application code
-COPY . .
+COPY --chown=vaaluser:vaaluser . .
 
-# Create logs directory
-RUN mkdir -p logs
+# Create necessary directories
+RUN mkdir -p \
+    /app/vaal_ai_empire/api \
+    /app/agent/tools \
+    /app/agent/nodes \
+    /app/logs \
+    /app/uploads
 
-# Remove any existing GLM-4.7 references (keeping our new implementation)
-RUN rm -rf node_modules/*glm* 2>/dev/null || true
-RUN find . -name "*glm*" -not -path "./src/*" -delete 2>/dev/null || true
+# Set permissions
+RUN chmod +x scripts/*.sh 2>/dev/null || true
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-USER nextjs
+# Switch to non-root user
+USER vaaluser
 
-# Expose port
-EXPOSE 3000
+# Expose ports
+EXPOSE 8000 9090
 
-# Health check - this matches the URL you specified
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/test/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the application
-CMD ["npm", "start"]
+# Default command
+CMD ["gunicorn", "app.main:app", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--timeout", "300", \
+     "--graceful-timeout", "120", \
+     "--keep-alive", "5", \
+     "--log-level", "info", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]
+
+# Alternative CMD for development
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# Labels
+LABEL maintainer="VAAL AI Empire Team" \
+      version="2.0.0" \
+      description="Multi-provider LLM system with security hardening" \
+      org.opencontainers.image.source="https://github.com/deedk822-lang/The-lab-verse-monitoring-"

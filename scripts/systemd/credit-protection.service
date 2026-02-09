@@ -1,0 +1,27 @@
+[Unit]
+Description=VAAL AI Empire Credit Protection Service
+After=network.target
+
+[Service]
+Type=simple
+User=vaal
+WorkingDirectory=/path/to/vaal
+Environment="PATH=/path/to/vaal/venv/bin"
+EnvironmentFile=/path/to/vaal/.env
+ExecStart=/path/to/vaal/venv/bin/python3 -m vaal_ai_empire.credit_protection.monitor_service
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=append:/var/log/vaal/credit-protection.log
+StandardError=append:/var/log/vaal/credit-protection-error.log
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/vaal /var/log/vaal
+
+[Install]
+WantedBy=multi-user.target

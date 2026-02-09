@@ -1,13 +1,13 @@
 import os
-import requests
+import time  # For potential rate limit handling
 from datetime import datetime, timezone
 from typing import Dict, Optional
-import time # For potential rate limit handling
 
+import requests
 from hubspot import HubSpot
-from hubspot.crm.contacts import PublicObjectSearchRequest, Filter, FilterGroup
+from hubspot.crm.contacts import Filter, FilterGroup, PublicObjectSearchRequest
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
-from hubspot.exceptions import ApiError # Import specific exception
+from hubspot.exceptions import ApiError  # Import specific exception
 
 # ========================
 # CONFIG

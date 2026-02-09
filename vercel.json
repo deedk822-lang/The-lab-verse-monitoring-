@@ -1,35 +1,21 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "./Dockerfile",
+      "use": "@vercel/docker"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
   "env": {
-    "NEXT_PUBLIC_API_ENDPOINT": "https://api.labverse.example.com"
-  },
-  "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/health": {
-      "runtime": "edge"
-    }
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://rainmaker-orchestrator.onrender.com/:path*"
-    }
-  ],
-  "regions": ["iad1"]
+    "REDIS_URL": "redis://redistogo:6379/0",
+    "JWT_SECRET": "replace-this-with-a-strong-secret",
+    "OIDC_DISCOVERY": "https://demo.okta.com/oauth2/default/.well-known/openid-configuration",
+    "KIMI_API_KEY": ""
+  }
 }

@@ -1,11 +1,11 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
 try:
-    from transformers import pipeline
     import torch
+    from transformers import pipeline
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     logger.warning("⚠️  Transformers library not found or not the correct version. AyaVisionAPI will be unavailable.")

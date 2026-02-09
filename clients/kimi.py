@@ -1,7 +1,8 @@
-import os
 import asyncio
-from openai import AsyncOpenAI, APIStatusError, APITimeoutError
 import logging
+import os
+
+from openai import APIStatusError, APITimeoutError, AsyncOpenAI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class KimiApiClient:
                     temperature=0.1,
                 )
                 return response.choices[0].message.content
-            except APITimeoutError as e:
+            except APITimeoutError:
                 logger.warning(f"Request timed out. Attempt {attempt + 1} of {max_retries}. Retrying in {delay}s...")
             except APIStatusError as e:
                 if e.status_code == 429: # Rate limit error

@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 try:
     from api.kimi import KimiAPI
 except (ImportError, ValueError) as e:
-    print(f"Error: Could not import KimiAPI. Make sure your environment is set up correctly.")
+    print("Error: Could not import KimiAPI. Make sure your environment is set up correctly.")
     print(f"Details: {e}")
     sys.exit(1)
 
@@ -76,7 +76,7 @@ def main():
 
         print(f"\n✅ Successfully generated Playwright script and saved it to '{args.output_file}'")
         print("To run the script:")
-        print(f"1. Install dependencies: pip install playwright && playwright install")
+        print("1. Install dependencies: pip install playwright && playwright install")
         print(f"2. Execute: python {args.output_file}")
 
 if __name__ == "__main__":

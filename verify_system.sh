@@ -5,7 +5,7 @@ echo "🔍 [SYSTEM VERIFIER] Starting comprehensive system verification..."
 
 # 1. No merge conflicts remain
 echo "  [1/10] Verifying no merge conflicts..."
-if grep -lr '<<<<<<< HEAD' . --exclude=verify_system.sh; then
+if grep -lr '<<<<' . --exclude=verify_system.sh; then
   echo "❌ FAILED: Merge conflicts found."
   exit 1
 fi

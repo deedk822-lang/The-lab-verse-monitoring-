@@ -1,10 +1,12 @@
 # File: scripts/scheduled_completion.py
-import asana
-import sys
-import os
-from datetime import datetime
-from dateutil.parser import parse
 import json
+import os
+import sys
+from datetime import datetime
+
+import asana
+from dateutil.parser import parse
+
 
 def get_client():
     """Initializes and returns the Asana client using the PAT."""
@@ -54,7 +56,7 @@ def main():
     criteria = os.getenv('COMPLETION_CRITERIA', 'overdue_tasks')
     dry_run = os.getenv('DRY_RUN', 'false').lower() == 'true'
 
-    print(f"🔄 Scheduled completion running...")
+    print("🔄 Scheduled completion running...")
     print(f"📋 Criteria: {criteria}")
     print(f"🧪 Dry run: {dry_run}")
     print("-" * 50)

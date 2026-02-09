@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "./Dockerfile",
+      "use": "@vercel/docker"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "REDIS_URL": "redis://redistogo:6379/0",
+    "JWT_SECRET": "replace-this-with-a-strong-secret",
+    "OIDC_DISCOVERY": "https://demo.okta.com/oauth2/default/.well-known/openid-configuration",
+    "KIMI_API_KEY": ""
+  }
+}

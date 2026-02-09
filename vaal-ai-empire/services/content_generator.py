@@ -6,16 +6,13 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-# ⚡ Bolt Optimization: Cache provider initialization
-# This function is decorated with lru_cache to ensure that the expensive
-# process of initializing all API providers only happens once.
+# ⚡ Bolt Optimization: Separate cached initializers for lazy loading
+# Instead of initializing everything at once, we split them into smaller,
+# cached functions that are only called when that specific provider type is needed.
+
 @lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
-    """
-    Initialize and cache all content and image generation providers.
-    This function is executed only once, and its result is cached.
-    """
-    # --- Initialize Text Providers ---
+def _get_text_providers() -> Dict[str, Any]:
+    """Initialize and cache text generation providers."""
     providers = {
         "cohere": None,
         "groq": None,
@@ -64,31 +61,29 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Kimi unavailable: {e}")
 
-    available = [k for k, v in providers.items() if v is not None]
-    if available:
-        logger.info(f"Available text providers: {', '.join(available)}")
-    else:
-        logger.error("❌ No content generation providers available!")
+    return providers
 
-    # --- Initialize Image Generator ---
-    image_generator = None
+
+@lru_cache(maxsize=1)
+def _get_image_generator() -> Optional[Any]:
+    """Initialize and cache image generation provider."""
     try:
         from api.image_generation import BusinessImageGenerator
-        image_generator = BusinessImageGenerator()
-        logger.info("✅ Image generation provider initialized")
+        return BusinessImageGenerator()
     except Exception as e:
         logger.warning(f"⚠️  Image generation disabled: {e}")
+        return None
 
-    # --- Initialize Multimodal Provider ---
-    multimodal_provider = None
+
+@lru_cache(maxsize=1)
+def _get_multimodal_provider() -> Optional[Any]:
+    """Initialize and cache multimodal provider."""
     try:
         from api.aya_vision import AyaVisionAPI
-        multimodal_provider = AyaVisionAPI()
-        logger.info("✅ Aya Vision multimodal provider initialized")
+        return AyaVisionAPI()
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Aya Vision multimodal provider unavailable: {e}")
-
-    return providers, image_generator, multimodal_provider
+        return None
 
 
 class ContentFactory:
@@ -96,8 +91,19 @@ class ContentFactory:
 
     def __init__(self, db=None):
         self.db = db
-        # Unpack the cached providers and image generator
-        self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+
+    # ⚡ Bolt Optimization: Properties for lazy loading
+    @property
+    def providers(self) -> Dict[str, Any]:
+        return _get_text_providers()
+
+    @property
+    def image_generator(self) -> Optional[Any]:
+        return _get_image_generator()
+
+    @property
+    def multimodal_provider(self) -> Optional[Any]:
+        return _get_multimodal_provider()
 
     def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
         """
@@ -108,7 +114,6 @@ class ContentFactory:
 
         try:
             result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
-            # You might want to log this usage to your database if needed
             return {
                 "text": result["text"],
                 "provider": "aya_vision",

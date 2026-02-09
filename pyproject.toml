@@ -65,11 +65,13 @@ packages = {find = {where = ["src"]}}
 pr_fix_agent = ["*.py"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests_real"]
+testpaths = ["tests_real", "tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 addopts = "-v --strict-markers"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.black]
 line-length = 100

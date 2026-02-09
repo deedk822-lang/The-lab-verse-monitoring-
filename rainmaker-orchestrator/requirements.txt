@@ -1,6 +1,0 @@
-requests
-tiktoken
-prometheus-client
-aiohttp
-transformers>=4.30.0
-torch>=2.0.0

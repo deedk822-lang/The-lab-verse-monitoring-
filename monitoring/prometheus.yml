@@ -1,63 +1,78 @@
+# ============================================================================
+# VAAL AI Empire - Prometheus Configuration
+# ============================================================================
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
     cluster: 'vaal-ai-empire'
     environment: 'production'
-    region: 'za-gauteng'
 
-# Alertmanager configuration
+# Alertmanager configuration (optional)
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ['alertmanager:9093']
+        - targets:
+          # - alertmanager:9093
 
-# Load alert rules
+# Load rules once and periodically evaluate them
 rule_files:
-  - '/etc/prometheus/rules/*.yml'
+  # - "alerts/*.yml"
 
+# Scrape configurations
 scrape_configs:
-  # Your Next.js Gateway
-  - job_name: 'vaal-gateway'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics'
-    scrape_interval: 10s
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'vaal-gateway'
-
-  # Model-specific endpoints (if you split them)
-  - job_name: 'qwen-orchestrator'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics/qwen'
-    scrape_interval: 15s
-
-  - job_name: 'deepseek-sars'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics/deepseek'
-    scrape_interval: 15s
-
-  - job_name: 'qwen-vl-seer'
-    static_configs:
-      - targets: ['host.docker.internal:3000']
-    metrics_path: '/api/metrics/qwen-vl'
-    scrape_interval: 15s
-
-  # System metrics
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # Redis cache metrics
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-
+  # -------------------------------------------------------------------------
   # Prometheus self-monitoring
+  # -------------------------------------------------------------------------
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # -------------------------------------------------------------------------
+  # VAAL AI Empire Application
+  # -------------------------------------------------------------------------
+  - job_name: 'vaal-app'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['app:9090']
+        labels:
+          service: 'vaal-api'
+          env: 'production'
+    metrics_path: '/metrics'
+
+  # -------------------------------------------------------------------------
+  # PostgreSQL Database (if postgres_exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+
+  # -------------------------------------------------------------------------
+  # Redis Cache (if redis_exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: 'redis'
+
+  # -------------------------------------------------------------------------
+  # Node Exporter for System Metrics (optional)
+  # -------------------------------------------------------------------------
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+
+  # -------------------------------------------------------------------------
+  # NVIDIA GPU Metrics (if dcgm-exporter is used)
+  # -------------------------------------------------------------------------
+  # - job_name: 'gpu'
+  #   static_configs:
+  #     - targets: ['dcgm-exporter:9400']
+  #       labels:
+  #         service: 'gpu-metrics'

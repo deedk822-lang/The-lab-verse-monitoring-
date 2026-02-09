@@ -90,19 +90,19 @@ def main():
     """Main setup function."""
     print("🤖 Initializing Jules Agent Structure...")
     print("="*50)
-    
+
     try:
         # Check if we're in a git repository
         if not os.path.exists('.git'):
             print("❌ Error: Not in a git repository root!")
             print("   Please run this script from the repository root.")
             sys.exit(1)
-        
+
         # Create all files
         create_file(".jules/config.yml", CONFIG_YAML)
         create_file("AGENTS.md", AGENTS_MD)
         create_file(".jules/logs/.gitkeep", "")
-        
+
         print("="*50)
         print("\n🎉 Jules setup complete!")
         print("\n📋 Next steps:")
@@ -115,7 +115,7 @@ def main():
         print("   - Set up branch protection rules in GitHub")
         print("   - Enable workflow permissions (read and write)")
         print("   - Review AGENTS.md for protocol details")
-        
+
     except Exception as e:
         print(f"\n❌ Error during setup: {e}")
         sys.exit(1)

@@ -3,15 +3,14 @@ REAL Security Tests for PR Fix Agent
 These tests actually validate security, not stubs
 """
 
-import pytest
-import re
-from pathlib import Path
-import tempfile
 import shutil
-import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 # Conventional import from src
-from pr_fix_agent.security import SecurityValidator, SecurityError
+from pr_fix_agent.security import SecurityError, SecurityValidator
 
 # ============================================================================
 # REAL TESTS - These actually test security

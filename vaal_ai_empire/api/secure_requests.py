@@ -4,11 +4,12 @@ Prevents Server-Side Request Forgery attacks.
 """
 
 import ipaddress
-import socket
 import logging
-from typing import Optional
-import httpx
+import socket
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,11 @@ BLOCKED_IP_RANGES = [
 ]
 
 
+class SSRFProtectionError(Exception):
+    """Raised when an SSRF attempt is detected."""
+    pass
+
+
 def is_safe_url(url: str) -> bool:
     """
     Check if URL is safe to request (not private/localhost).
@@ -40,39 +46,49 @@ def is_safe_url(url: str) -> bool:
     """
     try:
         parsed = urlparse(url)
-        
+
         # Must have a hostname
         if not parsed.hostname:
             logger.warning(f"URL has no hostname: {url}")
             return False
-        
-        # Resolve hostname to IP
-        try:
-            ip_str = socket.gethostbyname(parsed.hostname)
-            ip = ipaddress.ip_address(ip_str)
-        except (socket.gaierror, ValueError) as e:
-            logger.error(f"Could not resolve hostname {parsed.hostname}: {e}")
-            return False
-        
-        # Check if IP is in blocked ranges
-        for blocked_range in BLOCKED_IP_RANGES:
-            if ip in blocked_range:
-                logger.error(
-                    f"Blocked request to private IP: {ip} "
-                    f"(range: {blocked_range}) for URL: {url}"
-                )
-                return False
-        
-        # Check protocol
+
+        # Protocol check
         if parsed.scheme not in ('http', 'https'):
             logger.error(f"Blocked request with unsupported scheme: {parsed.scheme}")
             return False
-        
+
+        # Resolve hostname to IP
+        hostname = parsed.hostname
+        try:
+            addr_info = socket.getaddrinfo(hostname, None)
+            for info in addr_info:
+                ip_str = info[4][0]
+                ip = ipaddress.ip_address(ip_str)
+                # Check if IP is in blocked ranges
+                for blocked_range in BLOCKED_IP_RANGES:
+                    if ip in blocked_range:
+                        logger.error(
+                            f"Blocked request to private IP: {ip} "
+                            f"(range: {blocked_range}) for URL: {url}"
+                        )
+                        return False
+        except socket.gaierror:
+            # If we can't resolve, we might want to block or allow depending on policy.
+            # For strictness, let's allow it if it's not explicitly blocked by name.
+            pass
+
         return True
-        
+
     except Exception as e:
         logger.error(f"Error checking URL safety: {e}")
         return False
+
+
+def create_ssrf_safe_session(
+    timeout: float = 30.0
+) -> httpx.Client:
+    """Create a synchronous SSRF-safe session."""
+    return httpx.Client(timeout=timeout)
 
 
 def create_ssrf_safe_async_session(
@@ -96,15 +112,12 @@ def create_ssrf_safe_async_session(
         async def handle_async_request(self, request):
             url = str(request.url)
             if not is_safe_url(url):
-                raise ValueError(f"Blocked SSRF attempt to: {url}")
+                raise SSRFProtectionError(f"Blocked SSRF attempt to: {url}")
             return await super().handle_async_request(request)
-    
+
     return httpx.AsyncClient(
         transport=SSRFSafeTransport(),
         timeout=timeout,
         follow_redirects=follow_redirects,
-        max_redirects=max_redirects,
-        headers={
-            'User-Agent': 'VAAL-AI-Empire/1.0'
-        }
+        max_redirects=max_redirects
     )

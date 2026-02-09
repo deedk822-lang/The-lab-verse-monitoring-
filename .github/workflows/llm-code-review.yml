@@ -1,8 +1,16 @@
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
 name: LLM-Powered Code Review (FIXED v2)
 
 on:
   pull_request:
     types: [opened, synchronize, labeled]
+
+name: LLM-Powered Code Review (FIXED)
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+ main
   workflow_dispatch:
 
 # CRITICAL: Prevent multiple LLM runs
@@ -15,9 +23,15 @@ permissions:
   pull-requests: write
 
 jobs:
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
   # ==========================================================================
   # STEP 1: Collect Findings (with robust error handling)
   # ==========================================================================
+
+  # ========================================================================
+  # STEP 1: Collect Findings
+  # ========================================================================
+ main
 
   collect-findings:
     name: Collect Code Review Findings
@@ -47,6 +61,7 @@ jobs:
         run: |
           mkdir -p analysis-results
 
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           # Run tools with proper error handling
           echo "Running Bandit..."
           bandit -r src/ -f json -o analysis-results/bandit.json 2>&1 || {
@@ -102,6 +117,14 @@ jobs:
 
           echo "✅ Analysis complete. Has findings: $HAS_FINDINGS"
 
+          bandit -r src/ -f json -o analysis-results/bandit.json || echo "bandit failed"
+          ruff check src/ --output-format=json > analysis-results/ruff.json || echo "ruff failed"
+          mypy src/ --json-report analysis-results/ || echo "mypy failed"
+          safety check --json > analysis-results/safety.json || echo "safety failed"
+
+          echo "findings_file=analysis-results" >> $GITHUB_OUTPUT
+ main
+
       - name: Upload findings
         uses: actions/upload-artifact@v4
         if: always()
@@ -109,11 +132,19 @@ jobs:
           name: analysis-results
           path: analysis-results/
           retention-days: 7
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
 
   # ==========================================================================
   # STEP 2: Process with LLM (only if findings exist)
   # ==========================================================================
 
+
+
+  # ========================================================================
+  # STEP 2: Reasoning + Coding + Testing (Combined)
+  # ========================================================================
+
+ main
   process-and-test:
     name: Process Findings and Test
     runs-on: ubuntu-latest
@@ -136,7 +167,11 @@ jobs:
 
       - name: Install package
         run: |
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           pip install -e ".[dev]" || pip install pytest pytest-json-report
+
+          pip install -e ".[dev]"
+ main
 
       - name: Download findings
         uses: actions/download-artifact@v4
@@ -149,6 +184,7 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
           sleep 10
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
 
           # Pull models with timeout protection
           timeout 300 ollama pull deepseek-r1:1.5b || echo "Model pull timed out, using cached version"
@@ -164,10 +200,23 @@ jobs:
 
           # Run reasoning mode with timeout
           timeout 600 python -m pr_fix_agent.orchestrator \
+
+          # Use smaller models for standard runners
+          ollama pull deepseek-r1:1.5b
+          ollama pull qwen2.5-coder:1.5b
+
+      - name: Run orchestrator (reasoning + coding)
+        run: |
+          # Create directory for proposals
+          mkdir -p artifacts/proposals
+
+          python -m pr_fix_agent.orchestrator \
+ main
             --mode reasoning \
             --findings analysis-results/ \
             --output artifacts/proposals/proposals.json \
             --reasoning-model deepseek-r1:1.5b \
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
             --coding-model qwen2.5-coder:1.5b || {
               echo '{"proposals": [], "error": "Reasoning timeout or failure"}' > artifacts/proposals/proposals.json
             }
@@ -200,9 +249,83 @@ jobs:
             --json-report-file=artifacts/test-results/test-results.json \
             --tb=short 2>&1 | tee test_output.log
 
+            --coding-model qwen2.5-coder:1.5b
+
+          python -m pr_fix_agent.orchestrator \
+            --mode coding \
+            --proposals artifacts/proposals/proposals.json \
+            --apply \
+            --reasoning-model deepseek-r1:1.5b \
+            --coding-model qwen2.5-coder:1.5b
+
+      - name: Run tests (FIXED LOGIC)
+        id: test
+        run: |
+          set +e
+
+          mkdir -p artifacts/test-results
+          pytest tests/ -v \
+            --json-report \
+            --json-report-file=artifacts/test-results/test-results.json \
+            --tb=short
+
           TEST_EXIT_CODE=$?
           set -e
 
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+
+          if [ $TEST_EXIT_CODE -eq 0 ] && [ -f artifacts/test-results/test-results.json ]; then
+            echo "tests_passed=true" >> $GITHUB_OUTPUT
+            echo "✅ All tests passed (exit code: 0)"
+          else
+            echo "tests_passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Tests failed (exit code: $TEST_EXIT_CODE)"
+          fi
+
+      - name: Upload proposals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-proposals
+          path: artifacts/proposals/proposals.json
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test-results/test-results.json
+          retention-days: 30
+
+      - name: Upload fixed code
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixed-code
+          path: src/
+          retention-days: 7
+
+  # ========================================================================
+  # STEP 3: Create PR
+  # ========================================================================
+  create-pr:
+    name: Create Pull Request
+    runs-on: ubuntu-latest
+    needs: [process-and-test]
+    if: needs.process-and-test.outputs.tests_passed == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+ main
+
+          TEST_EXIT_CODE=$?
+          set -e
+
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
 
           # Create valid test results if file is missing or invalid
@@ -232,11 +355,55 @@ jobs:
   # STEP 3: Create PR (only if tests pass)
   # ==========================================================================
 
-  create-pr:
-    name: Create Pull Request
+      - name: Install package
+        run: pip install -e .
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate PR body (FIXED)
+        run: |
+          python -m pr_fix_agent.orchestrator \
+            --mode generate-pr \
+            --proposals artifacts/fix-proposals/proposals.json \
+            --test-results artifacts/test-results/test-results.json \
+            --output pr-body.md
+
+      - name: Apply fixed code
+        run: |
+          cp -r artifacts/fixed-code/* src/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "🤖 Auto-fix: Code review findings"
+          title: "🤖 Auto-fix: Code review findings ✅"
+          body-path: pr-body.md
+          branch: auto-fix/code-review-${{ github.run_number }}
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
+          labels: |
+            automated-fix
+            code-review
+          draft: false
+          delete-branch: true
+ main
+
+  # ========================================================================
+  # STEP 4: Create Draft PR (If tests fail)
+  # ========================================================================
+
+  create-draft-pr:
+    name: Create Draft PR (Tests Failed)
     runs-on: ubuntu-latest
     needs: [process-and-test]
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
     if: needs.process-and-test.outputs.tests_passed == 'true'
+
+    if: needs.process-and-test.outputs.tests_passed == 'false'
+ main
 
     steps:
       - uses: actions/checkout@v4
@@ -250,16 +417,24 @@ jobs:
           python-version: '3.11'
 
       - name: Install package
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
         run: pip install -e . || echo "Package install failed, continuing"
+
+        run: pip install -e .
+ main
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           name: llm-processing-artifacts
+
+ main
           path: artifacts/
 
-      - name: Generate PR body
+      - name: Generate PR body with test failures
         run: |
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           # Create a simple PR body if orchestrator is not available
           cat > pr-body.md << 'EOF'
           ## 🤖 Automated Code Review Fixes
@@ -298,20 +473,48 @@ jobs:
             cp -r artifacts/fixed-code/* src/ 2>/dev/null || echo "No fixed code to apply"
           fi
 
-      - name: Create Pull Request
+          python -m pr_fix_agent.orchestrator \
+            --mode generate-pr \
+            --proposals artifacts/fix-proposals/proposals.json \
+            --test-results artifacts/test-results/test-results.json \
+            --output pr-body.md
+ main
+
+      - name: Apply fixed code
+        run: |
+          cp -r artifacts/fixed-code/* src/ || echo "No fixed code to apply"
+
+      - name: Create Draft Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           commit-message: "🤖 Auto-fix: Code review findings"
           title: "🤖 Auto-fix: Code review findings ✅"
           body-path: pr-body.md
           branch: auto-fix/code-review-${{ github.run_number }}
+
+          commit-message: "🤖 Auto-fix: Code review findings (TESTS FAILED)"
+          title: "🤖 [DRAFT] Auto-fix: Code review findings ❌ Tests Failed"
+          body-path: pr-body.md
+          branch: auto-fix/code-review-failed-${{ github.run_number }}
+ main
           base: ${{ github.event.pull_request.base.ref || 'main' }}
           labels: |
             automated-fix
             code-review
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           draft: false
           delete-branch: true
+
+            tests-failed
+          draft: true
+          delete-branch: false
+
+  # ========================================================================
+  # STEP 5: Summary
+  # ========================================================================
+ main
 
   # ==========================================================================
   # STEP 4: Summary (always runs)
@@ -320,7 +523,11 @@ jobs:
   report-summary:
     name: Report Summary
     runs-on: ubuntu-latest
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
     needs: [collect-findings, process-and-test, create-pr]
+
+    needs: [process-and-test, create-pr, create-draft-pr]
+ main
     if: always()
 
     steps:
@@ -329,6 +536,7 @@ jobs:
           echo "## 🤖 LLM Code Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+ fix/llm-code-review-workflow-and-observability-11213618464637699068
           # Findings status
           if [ "${{ needs.collect-findings.outputs.has_findings }}" == "true" ]; then
             echo "- **Findings**: ✅ Found issues to review" >> $GITHUB_STEP_SUMMARY
@@ -362,3 +570,18 @@ jobs:
           echo "### ⚡ Performance" >> $GITHUB_STEP_SUMMARY
           echo "- Models: deepseek-r1:1.5b (reasoning) + qwen2.5-coder:1.5b (coding)" >> $GITHUB_STEP_SUMMARY
           echo "- Cost: $0 (local Ollama)" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.process-and-test.outputs.tests_passed }}" == "true" ]; then
+            echo "- **Tests**: ✅ PASSED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **PR Created**: ${{ needs.create-pr.result == 'success' && '✅ Regular PR' || '⚠️ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Tests**: ❌ FAILED (exit code: ${{ needs.process-and-test.outputs.test_exit_code }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **PR Created**: ${{ needs.create-draft-pr.result == 'success' && '⚠️ Draft PR (needs review)' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Details" >> $GITHUB_STEP_SUMMARY
+          echo "- Exit code indicates actual test outcome" >> $GITHUB_STEP_SUMMARY
+          echo "- Draft PR created if tests fail" >> $GITHUB_STEP_SUMMARY
+          echo "- Regular PR created if tests pass" >> $GITHUB_STEP_SUMMARY
+ main

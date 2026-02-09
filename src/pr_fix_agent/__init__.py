@@ -3,21 +3,12 @@ PR Fix Agent Core Library
 Production-ready components for error analysis, security validation, and automated fixing
 """
 
-from .security import (
-    SecurityError,
-    SecurityValidator,
-    InputValidator,
-    RateLimiter
-)
-from .analyzer import (
-    PRErrorAnalyzer,
-    ErrorStatistics,
-    PRErrorFixer
-)
-from .ollama_agent_fixed import OllamaAgent
-from .observability import CostTracker, LLMCost, BudgetExceededError
-from .models import ModelSpec, ModelSelector
-from .orchestrator import Orchestrator
+from .analyzer import PRErrorAnalyzer, PRErrorFixer
+from .models import ModelSelector, ModelSpec
+from .observability import BudgetExceededError, CostTracker, LLMCost
+from .ollama_agent import OllamaAgent, OllamaQueryError
+from .orchestrator import CodeReviewOrchestrator
+from .security import InputValidator, RateLimiter, SecurityError, SecurityValidator
 
 __all__ = [
     # Security
@@ -27,9 +18,9 @@ __all__ = [
     'RateLimiter',
     # Analysis & Fixing
     'PRErrorAnalyzer',
-    'ErrorStatistics',
     'PRErrorFixer',
     'OllamaAgent',
+    'OllamaQueryError',
     # Observability
     'CostTracker',
     'LLMCost',
@@ -38,8 +29,8 @@ __all__ = [
     'ModelSpec',
     'ModelSelector',
     # Orchestration
-    'Orchestrator',
+    'CodeReviewOrchestrator',
 ]
 
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 __author__ = 'PR Fix Agent Team'

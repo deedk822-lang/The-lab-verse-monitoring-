@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  content-creator:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_ENABLED=true
+      - REDIS_URL=redis://redis:6379
+      # Add your API keys here or use .env file
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - API_KEY=${API_KEY}
+      - DEFAULT_PROVIDER=${DEFAULT_PROVIDER:-google}
+    depends_on:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  # Optional: LocalAI for self-hosted inference
+  localai:
+    image: localai/localai:latest-aio-cpu
+    ports:
+      - "8080:8080"
+    environment:
+      - THREADS=4
+      - CONTEXT_SIZE=512
+    restart: unless-stopped
+    volumes:
+      - localai-data:/build/models
+
+volumes:
+  redis-data:
+  localai-data:

@@ -1,0 +1,29 @@
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#f1f8e9','primaryTextColor':'#1b5e20'}}}%%
+C4Context
+    title Lab-Verse Enhanced Production System
+
+    Person(user, "User", "Generates video / TTS")
+    System_Boundary(labverse, "Lab-Verse Core") {
+        System(gateway, "API Gateway", "Express + Helmet + RL + JWT")
+        System(auth, "Auth Service", "JWT stub (Passport ready)")
+        System(video, "Video Service", "Google AI Studio")
+        System(tts, "TTS Service", "ElevenLabs")
+        System(alert, "Alert Manager", "BullMQ + Slack webhook")
+        SystemDb(redis, "Redis", "Cache + Queues + Rate-Limit")
+        SystemDb(storage, "Local Volume", "Videos / Audio")
+    }
+    System_Ext(google, "Google AI Studio", "Generative Video")
+    System_Ext(eleven, "ElevenLabs", "TTS API")
+    System_Ext(slack, "Slack", "Alerts")
+
+    Rel(user, gateway, "HTTPS")
+    Rel(gateway, auth, "Validate JWT")
+    Rel(gateway, video, "Generate")
+    Rel(gateway, tts, "Synthesise")
+    Rel(gateway, alert, "Notify")
+    Rel(video, google, "Fetch")
+    Rel(tts, eleven, "Fetch")
+    Rel(alert, slack, "Webhook")
+    Rel(video, redis, "Cache")
+    Rel(tts, redis, "Cache")
+    Rel(video, storage, "Save file")

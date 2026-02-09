@@ -1,275 +1,464 @@
-# 🚀 Enhanced Lab-Verse Monitoring Stack
-*Production-grade, AI-native infrastructure with "Kimi Instruct"*
+# 🛡️ VAAL AI Empire - Credit Protection System
 
-![Build Status](https://github.com/deedk822-lang/The-lab-verse-monitoring-/workflows/CI/badge.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Contributors](https://img.shields.io/github/contributors/deedk822-lang/The-lab-verse-monitoring-)
-![Last Commit](https://img.shields.io/github/last-commit/deedk822-lang/The-lab-verse-monitoring-)
+**Enterprise-grade cost protection for LLM deployments on Alibaba Cloud**
+
+Prevents runaway costs on free-tier and pay-per-use cloud instances with multi-layer safeguards, real-time monitoring, and automatic circuit breakers.
 
 ---
 
-## 1. Executive Summary
-| Metric | Before | After (Enhanced) |
-|--------|--------|------------------|
-| **MTTR** | 30 min | **<5 min** |
-| **AI-task autonomy** | 60% | **92%** |
-| **Revenue uplift** | — | **+18% MRR in 30 d** |
-| **Security posture** | Basic | **Zero‑Trust + eBPF** |
-| **Observability** | 10 dashboards | **1 unified God‑view** |
+## 🎯 Features
+
+### 💰 **Multi-Tier Credit System**
+- **FREE Tier**: 50 req/day, 25k tokens, $0.25/day
+- **ECONOMY Tier**: 100 req/day, 50k tokens, $0.50/day  
+- **STANDARD Tier**: 300 req/day, 150k tokens, $2.00/day
+- **PREMIUM Tier**: 500 req/day, 300k tokens, $5.00/day
+
+### 🔒 **Security & Protection**
+- ✅ Prompt injection prevention
+- ✅ SSRF-safe HTTP client
+- ✅ Input sanitization & validation
+- ✅ Multi-provider LLM abstraction
+
+### 📊 **Real-Time Monitoring**
+- ✅ Live usage dashboard
+- ✅ Circuit breaker (auto-blocks at 95%)
+- ✅ Email alerts (70% warning, 90% critical)
+- ✅ Webhook alerts (Slack/Discord)
+- ✅ Resource monitoring (CPU/RAM/Disk)
+- ✅ Hourly burst protection
+
+### 🚀 **LLM Provider Support**
+- HuggingFace (with HF_TOKEN)
+- OpenAI (GPT-3.5/4)
+- Qwen/Alibaba DashScope
+- Kimi AI CLI
+- Z.AI (extensible)
 
 ---
 
-## 2. 🧠 Core AI Upgrades
-<details>
-<summary>Click to expand AI architecture details</summary>
+## 📦 Installation
 
-### 2.1 Multi-Provider AI Routing with OpenRouter
-```yaml
-# NEW: Unified 400+ model access
-openrouter:
-  primary: openrouter/anthropic/claude-sonnet-4
-  fallbacks:
-    - openrouter/google/gemini-2.5-flash      # $0.075/$0.30 per 1M tokens
-    - openrouter/meta-llama/llama-4-scout:free # Free tier backup
-  cost_optimization:
-    max_cost_per_task: 0.02
-    monthly_budget: 500
-edge_local:
-  - ollama:qwen2:7b
-```
-- **Cost Savings**: 25-40% vs direct provider APIs
-- **Reliability**: Automatic failover across 400+ models
-- **Free Tier**: Meta Llama & DeepSeek models for development
+### **Quick Start (Automated)**
 
-### 2.2 Swarm‑Negotiation 2.0 (A2A)
-```python
-# src/hybrid_swarm.py - Core negotiation engine
-async def _run_multi_agent_negotiation(self, agent_positions):
-    # Minimax‑regret consensus with risk discounting
-    consensus = await self.minimax_regret_solver(
-        agent_positions, 
-        risk_aversion=0.2,
-        nash_equilibrium=True
-    )
-    return consensus
-```
-</details>
-
----
-
-## 3. 🔐 Security Hardening
-<details>
-<summary>Click to expand security details</summary>
-| Layer | Enhancement |
-|-------|-------------|
-| **Runtime (eBPF)** | quantumguard drops anomalous syscalls (seccomp+bpf) |
-| **Supply‑chain** | Cosign‑signed images + Rekor transparency log |
-| **Secrets** | Vault + 24h auto‑rotation + short‑lived DB creds |
-| **Zero‑trust** | mTLS + SPIFFE IDs; JWT bound to workload identity |
-| **SBOM** | Syft/Grype scans in CI; gate on high CVEs |
-</details>
-
----
-
-## 4. ⚡ Performance & Cost Optimizations
-<details>
-<summary>Click to expand performance details</summary>
-
-### 4.1 Predictive Auto‑Scaling
-```promql
-# Prometheus recording rule
-- record: labverse:predicted_cpu_5m
-  expr: predict_linear(node_cpu_seconds_total{mode="idle"}[30m], 300)
-```
-
-### 4.2 AI Cost Guardrails
-```json
-// config/kimi_config_production.json (cost control)
-{
-  "cost_control": {
-    "monthly_ai_budget_usd": 500,
-    "hard_stop_at_90_percent": true,
-    "alert_slack_channel": "#cost-alerts",
-    "per_task_usd_limit": 0.02,
-    "auto_fallback_to_local": true
-  }
-}
-```
-</details>
-
----
-
-## 5. 📊 Unified Observability (God‑View)
-<details>
-<summary>Click to expand observability stack</summary>
-
-### 5.1 Grafana "God‑View" Dashboard
-**Single pane exposes:**
-- **Business KPIs**: MRR, LTV, churn prediction, conversion rates
-- **AI KPIs**: token cost per task, model drift score, provider latency
-- **SRE KPIs**: p50/p95/p99 latency, error‑budget burn, saturation
-</details>
-
----
-
-## 6. 💰 Revenue Intelligence
-<details>
-<summary>Click to expand revenue optimization</summary>
-
-### 6.1 Real‑Time MRR Pipeline
-```python
-# src/scout_monetization/forecast.py
-import pandas as pd
-from prophet import Prophet
-from xgboost import XGBRegressor
-
-async def forecast_mrr(days: int = 90, confidence: float = 0.95):
-    # Ensemble Prophet + XGBoost for accuracy
-    prophet_forecast = prophet_model.predict(days)
-    xgb_forecast = xgb_model.predict(features)
-    
-    ensemble_forecast = (prophet_forecast * 0.6) + (xgb_forecast * 0.4)
-    return {
-        "forecast": ensemble_forecast,
-        "confidence_interval": calculate_ci(ensemble_forecast, confidence),
-        "key_drivers": analyze_feature_importance()
-    }
-```
-</details>
-
----
-
-## 7. 🔄 CI/CD & GitOps
-<details>
-<summary>Click to expand CI/CD details</summary>
-```mermaid
-%%{init:{'theme':'dark'}}%%
-flowchart LR
-    A[Git Push] -->|Webhook| B[Argo CD]
-    B --> C[Kustomize Build]
-    C --> D[Sigstore Sign]
-    D --> E[Canary 10%]
-    E --> F{Kimi SLO Gate}
-    F -->|Pass| G[100% Rollout]
-    F -->|Fail| H[Auto‑Rollback + RCA]
-    
-    style A fill:#2ea44f
-    style F fill:#d73a49
-    style G fill:#2ea44f
-    style H fill:#d73a49
-```
-</details>
-
----
-
-## 8. 🧪 Day‑2 Operations (Auto‑Generated Runbooks)
-<details>
-<summary>Click to expand Day-2 Operations</summary>
-| Runbook | Trigger | Automation |
-|---------|---------|------------|
-| **Redis mem > 90%** | Alertmanager | Kimi runs MEMORY_PURGE + vertical scale |
-| **GPT‑4 rate‑limit** | Prometheus | Fallback to Claude; finance ticket with cost delta |
-| **MRR −5% daily** | Scout anomaly | Budget reallocation to best ROAS channel |
-| **AI drift detected** | Model monitor | Auto-retrain + A/B test new model |
-| **Security incident** | QuantumGuard | Instant lockdown + forensics automation |
-</details>
-
----
-
-## 9. 🚦 Quick-Start
 ```bash
-# 1. Clone repository
+# Clone repository
 git clone https://github.com/deedk822-lang/The-lab-verse-monitoring-.git
 cd The-lab-verse-monitoring-
 
-# 2. Configure secrets (NEVER commit .env.local)
-cp .env.example .env.local
-# Add your API keys:
-# OPENROUTER_API_KEY=sk-or-v1-...
-# OPENAI_API_KEY=sk-...
+# Checkout the credit protection branch
+git checkout security-hardening-llm-upgrade-222347293222010539
 
-# 3. Launch stack
-./quick-setup-production.sh
-
-# 4. Verify services
-curl http://localhost:8084/health | jq
+# Run automated setup
+bash scripts/setup-alibaba-cloud-protection.sh
 ```
 
----
+The script will:
+1. ✅ Install system dependencies
+2. ✅ Create Python virtual environment
+3. ✅ Install Python packages
+4. ✅ Configure `.env` file
+5. ✅ Set up systemd service
+6. ✅ Create storage directories
+7. ✅ Verify installation
 
-## 10. 🎯 Service Access Points
-| Service | URL | Purpose | Auth |
-|---------|-----|---------|------|
-| Kimi Dashboard | http://localhost:8084/dashboard | AI manager | API Key |
-| Grafana | http://localhost:3001 | Monitoring | admin/admin123 |
-| Prometheus | http://localhost:9090 | Metrics | None |
-| Scout Revenue | http://localhost:8086 | Revenue optimization | API Key |
+### **Manual Installation**
 
----
-
-## 11. 🆘 Troubleshooting
-<details>
-<summary>Common Issues & Solutions</summary>
-
-### "Kimi service not responding"
 ```bash
-docker-compose logs -f kimi-project-manager
-docker-compose restart kimi-project-manager
+# 1. Install system dependencies
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-venv git curl jq bc
+
+# 2. Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install Python dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 4. Create directories
+sudo mkdir -p /var/lib/vaal/credit_protection
+sudo mkdir -p /var/log/vaal
+sudo chown -R $USER:$USER /var/lib/vaal /var/log/vaal
+
+# 5. Configure environment
+cp .env.example .env
+nano .env  # Edit with your API keys
 ```
 
-### "AI providers failing"
-Check OpenRouter status and test connectivity:
+---
+
+## ⚙️ Configuration
+
+### **1. Environment Variables (.env)**
+
+**CRITICAL - Required:**
 ```bash
-curl -X POST http://localhost:8084/api/v1/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"text": "test"}'
+# HuggingFace Token (REQUIRED for most models)
+HF_TOKEN=hf_your_token_here  # Get from https://huggingface.co/settings/tokens
+
+# Credit Protection Tier
+CREDIT_TIER=free  # Options: free, economy, standard, premium
+
+# LLM Provider
+LLM_PROVIDER=huggingface  # Options: huggingface, openai, qwen
 ```
-</details>
+
+**Optional - Alerts:**
+```bash
+# Email Alerts
+ALERT_EMAIL_ENABLED=true
+ALERT_EMAIL_TO=your-email@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your-gmail@gmail.com
+SMTP_PASSWORD=your-app-password  # Use Gmail App Password
+
+# Webhook Alerts (Slack/Discord)
+ALERT_WEBHOOK_ENABLED=true
+ALERT_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+**Optional - Additional Providers:**
+```bash
+# OpenAI (if using GPT models)
+OPENAI_API_KEY=sk-your_key_here
+
+# Qwen/DashScope
+QWEN_API_KEY=your_qwen_key_here
+
+# Kimi AI
+KIMI_API_KEY=your_kimi_key_here
+```
+
+### **2. Get HuggingFace Token**
+
+1. Go to https://huggingface.co/settings/tokens
+2. Click "New token"
+3. Name: `vaal-ai-empire`
+4. Type: **Read** (or **Write** for private models)
+5. Copy token to `.env` file
+
+### **3. Configure Gmail Alerts (Optional)**
+
+1. Enable 2FA on Google Account
+2. Generate App Password: https://myaccount.google.com/apppasswords
+3. Use the 16-character password in `SMTP_PASSWORD`
 
 ---
 
-## 12. ⚠️ Security Best Practices
-- **NEVER commit** `.env.local` to version control
-- **Use Vault** for production secrets (included in stack)
-- **Rotate keys** every 24 hours (automated via Vault)
-- **Enable mTLS** for production deployments
+## 🚀 Usage
+
+### **Start the Service**
+
+```bash
+# Enable auto-start on boot
+sudo systemctl enable credit-protection
+
+# Start service
+sudo systemctl start credit-protection
+
+# Check status
+sudo systemctl status credit-protection
+```
+
+### **Live Monitoring Dashboard**
+
+```bash
+./scripts/dashboard.sh
+```
+
+**Dashboard shows:**
+- 📊 Real-time usage percentages
+- 🔋 Daily/hourly quota consumption
+- 💻 System resources (CPU/RAM/Disk)
+- 🚨 Circuit breaker status
+- 📈 Progress bars with color coding
+
+### **Emergency Shutdown**
+
+If you detect unusual activity or need to stop all LLM requests immediately:
+
+```bash
+./scripts/emergency-shutdown.sh
+```
+
+This will:
+1. ⛔ Trigger circuit breaker (2 hours)
+2. 🛑 Stop credit protection service
+3. ❌ Kill all LLM processes
+4. 🔒 Create emergency lockfile
+
+### **View Logs**
+
+```bash
+# Live tail
+tail -f /var/log/vaal/credit-protection.log
+
+# Error logs
+tail -f /var/log/vaal/credit-protection-error.log
+
+# Usage history (monthly)
+cat /var/lib/vaal/credit_protection/usage_log_2026-01.jsonl | jq
+```
 
 ---
 
-## 13. 📈 Expected Outcomes
-| Outcome | Baseline | Target | Measurement | Status |
-|---------|----------|--------|-------------|--------|
-| **MRR growth** | $50k | $59k | Scout ledger | 🎯 |
-| **Cloud cost** | $4k/mo | $3k/mo | AWS/GCP CUR | 🎯 |
-| **Release velocity** | 1/week | 5/day | Argo CD metrics | 🎯 |
-| **Incident MTTR** | 30 min | <5 min | PagerDuty/Grafana | 🎯 |
-| **AI cost efficiency** | — | <$0.02/task | Prometheus | 🎯 |
+## 🔌 API Integration
+
+### **FastAPI Middleware**
+
+Add credit protection to your FastAPI app:
+
+```python
+from fastapi import FastAPI
+from vaal_ai_empire.credit_protection.middleware import CreditProtectionMiddleware
+
+app = FastAPI()
+
+# Add credit protection middleware
+app.add_middleware(
+    CreditProtectionMiddleware,
+    enable_resource_monitoring=True
+)
+
+@app.post("/api/generate")
+async def generate_text(prompt: str):
+    # Your LLM logic here
+    # Credit protection automatically enforced
+    pass
+```
+
+### **Direct Usage in Code**
+
+```python
+from vaal_ai_empire.credit_protection import get_manager, ProviderType
+
+manager = get_manager()
+
+# Check quota before request
+allowed, reason = manager.check_quota(
+    estimated_tokens=4000,
+    estimated_cost=0.04
+)
+
+if not allowed:
+    print(f"Request blocked: {reason}")
+    return
+
+# Make LLM request
+response = your_llm_function()
+
+# Record usage
+manager.record_usage(
+    provider=ProviderType.HUGGINGFACE,
+    request_tokens=2000,
+    response_tokens=2000,
+    cost=0.04,
+    duration_ms=1500,
+    status="success"
+)
+```
+
+### **Get Usage Summary**
+
+```python
+from vaal_ai_empire.credit_protection import get_manager
+
+manager = get_manager()
+summary = manager.get_usage_summary()
+
+print(f"Tier: {summary['tier']}")
+print(f"Daily requests: {summary['daily']['requests']} / {summary['daily']['limits']['requests']}")
+print(f"Daily cost: ${summary['daily']['cost_usd']:.4f}")
+print(f"Circuit breaker: {summary['circuit_breaker']['open']}")
+```
 
 ---
 
-## 14. 🗺️ Roadmap
-- **Quantum‑safe TLS** (CRYSTALS‑KYBER) integration
-- **Voice‑driven on‑call** assistant (Whisper + Kimi)
-- **Carbon‑aware scheduling** (shift workloads to green‑energy windows)
-- **Multi‑cloud arbitrage** (automatic cost optimization across AWS/GCP/Azure)
+## 📊 Monitoring & Alerts
+
+### **Alert Thresholds**
+
+| Level | Threshold | Action |
+|-------|-----------|--------|
+| ⚠️ **Warning** | 70% | Email/Webhook alert |
+| 🚨 **Critical** | 90% | Email/Webhook alert |
+| ⛔ **Circuit Breaker** | 95% | Auto-block all requests |
+
+### **Alert Channels**
+
+**Email Example:**
+```
+Subject: ⚠️ Credit Usage Warning (70% threshold)
+
+Your daily credit usage has reached the warning threshold.
+
+Current Usage:
+- Requests: 35 / 50 (70.0%)
+- Tokens: 17,500 / 25,000 (70.0%)
+- Cost: $0.175 / $0.25 (70.0%)
+
+Tier: FREE
+```
+
+**Webhook Example (Slack/Discord):**
+```json
+{
+  "text": "🚨 Credit Usage Warning",
+  "attachments": [{
+    "color": "#ffcc00",
+    "text": "Daily usage: 70% of quota",
+    "footer": "VAAL AI Empire Credit Protection"
+  }]
+}
+```
 
 ---
 
-## 15. 🤝 Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+## 🏗️ Architecture
+
+```
+vaal_ai_empire/
+├── credit_protection/
+│   ├── __init__.py          # Package exports
+│   ├── manager.py           # Core quota manager
+│   ├── middleware.py        # FastAPI middleware
+│   └── monitor_service.py   # Background monitoring
+├── api/
+│   ├── sanitizers.py        # Input sanitization
+│   └── secure_requests.py   # SSRF-safe HTTP
+agent/
+└── tools/
+    └── llm_provider.py      # Multi-provider abstraction
+scripts/
+├── setup-alibaba-cloud-protection.sh  # Automated setup
+├── dashboard.sh                       # Live monitoring
+├── emergency-shutdown.sh              # Emergency stop
+└── systemd/
+    └── credit-protection.service      # System service
+```
 
 ---
 
-## 16. 📄 License
-MIT License - see [LICENSE](LICENSE) file for details.
+## 🔐 Security Features
+
+### **1. Prompt Injection Prevention**
+Detects and blocks dangerous patterns:
+- `ignore previous instructions`
+- `system: you are`
+- `execute()` / `eval()`
+- XSS attempts
+
+### **2. SSRF Protection**
+Blocks requests to:
+- Private IP ranges (10.0.0.0/8, 192.168.0.0/16)
+- Localhost (127.0.0.1)
+- Link-local addresses
+- Cloud metadata endpoints
+
+### **3. Input Sanitization**
+- Null byte removal
+- Whitespace normalization
+- Filename path traversal prevention
+- Length limits (configurable)
 
 ---
 
-## 17. 💬 Support
-- 📫 Issues: [GitHub Issues](https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/deedk822-lang/The-lab-verse-monitoring-/discussions)
-- 📧 Email: support@labverse.dev
+## 📈 Tier Comparison
+
+| Feature | FREE | ECONOMY | STANDARD | PREMIUM |
+|---------|------|---------|----------|----------|
+| **Daily Requests** | 50 | 100 | 300 | 500 |
+| **Daily Tokens** | 25k | 50k | 150k | 300k |
+| **Daily Cost Limit** | $0.25 | $0.50 | $2.00 | $5.00 |
+| **Max Request Tokens** | 2k | 4k | 8k | 16k |
+| **Hourly Burst** | 10 req | 20 req | 50 req | 100 req |
+| **Circuit Breaker** | ✅ | ✅ | ✅ | ✅ |
+| **Email Alerts** | ✅ | ✅ | ✅ | ✅ |
+| **Webhook Alerts** | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
-> 🎯 **Bottom line**: Production-ready monitoring with AI-driven revenue optimization, 99.9% uptime, and <$0.02/task costs.
+## 🛠️ Troubleshooting
+
+### **Service won't start**
+```bash
+# Check logs
+sudo journalctl -u credit-protection -n 50
+
+# Verify configuration
+python3 -c "from vaal_ai_empire.credit_protection import get_manager; print(get_manager())"
+
+# Check permissions
+ls -la /var/lib/vaal/credit_protection
+```
+
+### **HuggingFace token errors**
+```bash
+# Verify token
+huggingface-cli whoami
+
+# Or test manually
+python3 -c "from huggingface_hub import HfApi; HfApi().whoami()"
+```
+
+### **Circuit breaker stuck**
+```bash
+# Manually reset
+python3 << 'PYTHON'
+from vaal_ai_empire.credit_protection import get_manager
+manager = get_manager()
+manager.circuit_open = False
+print("Circuit breaker reset")
+PYTHON
+```
+
+### **Reset daily usage**
+```bash
+python3 << 'PYTHON'
+from vaal_ai_empire.credit_protection import get_manager
+manager = get_manager()
+manager.reset_daily_usage()
+print("Daily usage reset")
+PYTHON
+```
+
+---
+
+## 📝 License
+
+MIT License - See LICENSE file for details
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new features
+4. Submit a pull request
+
+---
+
+## 🆘 Support
+
+- **Issues**: https://github.com/deedk822-lang/The-lab-verse-monitoring-/issues
+- **Discussions**: https://github.com/deedk822-lang/The-lab-verse-monitoring-/discussions
+- **Email**: deedk822@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+- **HuggingFace**: For excellent transformer models
+- **Alibaba Cloud**: Cloud infrastructure
+- **FastAPI**: Modern Python web framework
+- **Kimi AI**: Automated code enhancement
+
+---
+
+**Built with ❤️ for cost-conscious LLM deployments**
+
+*Protect your credits. Scale with confidence.* 🛡️

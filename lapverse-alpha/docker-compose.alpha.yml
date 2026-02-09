@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  lapverse-alpha:
+    build:
+      context: .
+      dockerfile: Dockerfile.alpha
+    ports:
+      - "3000:3000"
+    environment:
+      - LOCALAI_BASE_URL=http://localai:8080
+      - LOCALAI_API_KEY=
+      - LOCALAI_QUOTA_USD=1000 # High quota for alpha
+    networks:
+      - lapverse-network
+
+  localai:
+    image: quay.io/go-skynet/local-ai:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models
+    environment:
+      - MODELS_PATH=/models
+    networks:
+      - lapverse-network
+
+networks:
+  lapverse-network:
+    driver: bridge

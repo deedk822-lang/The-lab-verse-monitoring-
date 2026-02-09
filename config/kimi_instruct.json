@@ -1,0 +1,16 @@
+{
+    "human_oversight_mode": "collaborative",
+    "auto_execution_threshold": 0.7,
+    "human_checkin_interval_hours": 24,
+    "max_concurrent_tasks": 5,
+    "risk_thresholds": {
+        "low": 0.3,
+        "medium": 0.6,
+        "high": 0.8
+    },
+    "escalation_rules": {
+        "budget_exceeded": "immediate",
+        "timeline_at_risk": "within_4_hours",
+        "technical_blocker": "within_1_hour"
+    }
+}

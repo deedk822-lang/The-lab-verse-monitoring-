@@ -1,0 +1,86 @@
+name: Jules Actuator
+
+on:
+  # Run when analysis finishes or when a human approves
+  check_suite:
+    types: [completed]
+  pull_request:
+    types: [labeled, synchronize]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  execute-merge:
+    runs-on: ubuntu-latest
+    # Only run for jules/** branches
+    if: startsWith(github.event.pull_request.head.ref, 'jules/')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for Merge Eligibility
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get PR number from context
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # Using GitHub CLI to check labels safely
+          LABELS=$(gh pr view $PR_NUMBER --json labels --jq '.labels[].name')
+
+          if echo "$LABELS" | grep -q "jules-approved"; then
+            echo "eligible=true" >> $GITHUB_OUTPUT
+            echo "✅ PR has jules-approved label"
+          elif echo "$LABELS" | grep -q "block-automerge"; then
+            echo "eligible=false" >> $GITHUB_OUTPUT
+            echo "::warning::Merge blocked by 'block-automerge' label"
+          else
+            echo "eligible=false" >> $GITHUB_OUTPUT
+            echo "⏸️ PR not yet approved for auto-merge"
+          fi
+
+      - name: Auto-Merge
+        if: steps.check.outputs.eligible == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # Enable auto-merge with squash method
+          gh pr merge $PR_NUMBER --squash --auto --delete-branch
+
+          echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+
+      - name: Self-Healing (Auto-Rebase)
+        if: failure() && steps.check.outputs.eligible == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # If merge failed (likely due to branch being behind), try rebase
+          echo "⚠️ Merge failed, attempting auto-rebase..."
+
+          gh pr merge $PR_NUMBER --rebase --auto || {
+            echo "::error::Rebase failed - manual intervention required"
+            gh pr comment $PR_NUMBER --body "🤖 Jules attempted auto-rebase but failed. Manual conflict resolution needed."
+          }
+
+      - name: Log Merge Event
+        if: success() && steps.check.outputs.eligible == 'true'
+        run: |
+          mkdir -p .jules/logs
+
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          BRANCH=${{ github.event.pull_request.head.ref }}
+
+          echo "📝 Logged merge event for PR #$PR_NUMBER at $TIMESTAMP"

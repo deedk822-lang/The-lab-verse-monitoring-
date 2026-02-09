@@ -1,0 +1,18 @@
+name: gpt-oss-20b
+backend: transformers
+model: openai/gpt-oss-20b
+parameters:
+  max_tokens: 512
+  temperature: 0.7
+  top_p: 0.95
+  torch_dtype: auto
+  device_map: auto
+  trust_remote_code: false
+# Performance optimizations
+mmap: true
+quantization: Q4_K_M
+prompt_cache_path: cache/gpt-oss-20b.bin
+prompt_cache_all: true
+# LapVerse integration
+function_calling: true
+stream: true

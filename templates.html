@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Templates - Jira Setup Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+        .template-card { transition: all 0.3s ease; border: 2px solid transparent; }
+        .template-card:hover { border-color: #008DA8; transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .template-card.selected { border-color: #008DA8; background-color: #f0f9ff; }
+        .filter-btn { transition: all 0.2s ease; }
+        .filter-btn.active { background-color: #008DA8; color: white; }
+        .comparison-table { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">Jira Setup Guide</h1>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="index.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                        <a href="#" class="text-gray-900 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Templates</a>
+                        <a href="workflows.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Workflows</a>
+                        <a href="checklist.html" class="text-gray-500 hover:text-teal-600 px-3 py-2 rounded-md text-sm font-medium">Checklist</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg pt-24 pb-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                    Project Templates
+                    <span class="text-teal-600">Gallery</span>
+                </h1>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                    Choose from 25+ professionally designed project templates. Each template includes pre-configured workflows, issue types, and best practices for your specific use case.
+                </p>
+                <div class="flex justify-center items-center space-x-8 text-sm text-gray-500">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Pre-configured Workflows
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Custom Issue Types
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Best Practice Reports
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters and Search -->
+    <section class="py-8 bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row gap-6 items-center">
+                <div class="flex-1">
+                    <div class="relative">
+                        <input type="text" id="templateSearch" placeholder="Search templates by name or description..." 
+                               class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                               onkeyup="filterTemplates()">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button class="filter-btn active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" onclick="filterByCategory('all')">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" onclick="filterByCategory('Development')">Development</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" onclick="filterByCategory('Service')">Service</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" onclick="filterByCategory('Business')">Business</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" onclick="filterByCategory('Product')">Product</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Templates Grid -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div id="templatesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Templates will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Template Comparison Modal -->
+    <div id="comparisonModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div class="bg-gradient-to-r from-teal-600 to-teal-700 px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Template Comparison</h2>
+                        <p class="text-teal-100 mt-1">Compare features and choose the best template for your needs</p>
+                    </div>
+                    <button onclick="closeComparison()" class="text-white hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-8">
+                <div id="comparisonContent" class="comparison-table">
+                    <!-- Comparison content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Preview Modal -->
+    <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div class="bg-gradient-to-r from-teal-600 to-teal-700 px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 id="previewTitle" class="text-2xl font-bold text-white">Template Preview</h2>
+                        <p id="previewSubtitle" class="text-teal-100 mt-1">Detailed view of template features and configuration</p>
+                    </div>
+                    <button onclick="closePreview()" class="text-white hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-8 overflow-y-auto max-h-[60vh]">
+                <div id="previewContent">
+                    <!-- Preview content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="px-8 py-6 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closePreview()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Close
+                    </button>
+                    <button onclick="useTemplate()" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                        Use This Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">Jira Setup Guide</h3>
+                <p class="text-gray-400 mb-8">Your comprehensive resource for Jira configuration and best practices</p>
+                <div class="border-t border-gray-800 pt-8">
+                    <p class="text-gray-500">&copy; 2025 Jira Setup Guide. Built with modern web technologies for optimal performance.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Template data with detailed information
+        const detailedTemplates = {
+            software: [
+                {
+                    id: 'scrum', name: 'Scrum', description: 'Agile development with sprints, backlogs, and iterative delivery',
+                    category: 'Development', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+                    features: ['Sprint Planning', 'Backlog Management', 'Burndown Charts', 'Story Points', 'Retrospectives'],
+                    issueTypes: ['Story', 'Bug', 'Task', 'Epic'],
+                    workflows: ['To Do → In Progress → In Review → Done'],
+                    reports: ['Sprint Report', 'Burndown Chart', 'Velocity Chart', 'Control Chart'],
+                    bestFor: 'Development teams following agile methodologies'
+                },
+                {
+                    id: 'kanban', name: 'Kanban', description: 'Continuous flow development with work-in-progress limits',
+                    category: 'Development', icon: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+                    features: ['WIP Limits', 'Continuous Flow', 'Cumulative Flow Diagram', 'Cycle Time Tracking'],
+                    issueTypes: ['Story', 'Bug', 'Task', 'Epic'],
+                    workflows: ['Backlog → Selected → In Progress → Done'],
+                    reports: ['Cumulative Flow Diagram', 'Control Chart', 'Cycle Time Report'],
+                    bestFor: 'Teams preferring continuous delivery over sprints'
+                },
+                {
+                    id: 'bug-tracking', name: 'Bug Tracking', description: 'Comprehensive bug and defect management system',
+                    category: 'Development', icon: 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    features: ['Priority Levels', 'Severity Classification', 'Environment Tracking', 'Repro Steps'],
+                    issueTypes: ['Bug', 'Defect', 'Issue', 'Test Case'],
+                    workflows: ['Open → In Progress → Testing → Closed/Reopened'],
+                    reports: ['Bug Trends', 'Resolution Time', 'Priority Distribution'],
+                    bestFor: 'QA teams and development teams focused on quality'
+                },
+                {
+                    id: 'devops', name: 'DevOps', description: 'Development and operations workflow integration',
+                    category: 'Development', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+                    features: ['CI/CD Integration', 'Environment Management', 'Deployment Tracking', 'Incident Response'],
+                    issueTypes: ['Feature', 'Bug', 'Incident', 'Deployment', 'Change Request'],
+                    workflows: ['Planning → Development → Testing → Staging → Production'],
+                    reports: ['Deployment Frequency', 'Lead Time', 'Change Failure Rate', 'MTTR'],
+                    bestFor: 'DevOps teams managing full software lifecycle'
+                }
+            ],
+            service: [
+                {
+                    id: 'it-support', name: 'IT Support', description: 'Internal IT service management and support',
+                    category: 'Service', icon: 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    features: ['SLA Management', 'Ticket Routing', 'Knowledge Base', 'Asset Management'],
+                    issueTypes: ['Incident', 'Service Request', 'Problem', 'Change'],
+                    workflows: ['New → Assigned → In Progress → Resolved → Closed'],
+                    reports: ['SLA Compliance', 'Ticket Volume', 'Resolution Time', 'Customer Satisfaction'],
+                    bestFor: 'IT departments providing internal support'
+                },
+                {
+                    id: 'help-desk', name: 'Help Desk', description: 'Customer support and external service management',
+                    category: 'Service', icon: 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    features: ['Customer Portal', 'Multi-channel Support', 'Escalation Rules', 'Feedback Collection'],
+                    issueTypes: ['Support Request', 'Question', 'Complaint', 'Feedback'],
+                    workflows: ['Open → Pending → In Progress → Waiting for Customer → Resolved'],
+                    reports: ['Customer Satisfaction', 'First Response Time', 'Resolution Time', 'Ticket Trends'],
+                    bestFor: 'Customer support teams and external service providers'
+                },
+                {
+                    id: 'facilities', name: 'Facilities', description: 'Facilities management and maintenance requests',
+                    category: 'Service', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+                    features: ['Location Management', 'Asset Tracking', 'Preventive Maintenance', 'Vendor Management'],
+                    issueTypes: ['Maintenance Request', 'Space Request', 'Asset Issue', 'Vendor Request'],
+                    workflows: ['Submitted → Approved → Scheduled → In Progress → Completed'],
+                    reports: ['Request Volume', 'Completion Time', 'Cost Tracking', 'Asset Utilization'],
+                    bestFor: 'Facilities and office management teams'
+                },
+                {
+                    id: 'hr-service', name: 'HR Service', description: 'Human resources service requests and management',
+                    category: 'Service', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+                    features: ['Employee Onboarding', 'Leave Management', 'Policy Management', 'Confidentiality'],
+                    issueTypes: ['HR Request', 'Leave Request', 'Onboarding', 'Policy Question'],
+                    workflows: ['Submitted → Review → Approved → In Progress → Completed'],
+                    reports: ['Request Types', 'Processing Time', 'Employee Satisfaction', 'Compliance Tracking'],
+                    bestFor: 'Human resources departments and employee services'
+                }
+            ],
+            work: [
+                {
+                    id: 'project-management', name: 'Project Management', description: 'General project tracking and management',
+                    category: 'Business', icon: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+                    features: ['Gantt Charts', 'Resource Planning', 'Budget Tracking', 'Milestone Management'],
+                    issueTypes: ['Task', 'Milestone', 'Deliverable', 'Risk', 'Decision'],
+                    workflows: ['Planning → Active → Review → Complete'],
+                    reports: ['Project Timeline', 'Resource Utilization', 'Budget vs Actual', 'Risk Assessment'],
+                    bestFor: 'Project managers and cross-functional teams'
+                },
+                {
+                    id: 'task-tracking', name: 'Task Tracking', description: 'Simple task and to-do management',
+                    category: 'Business', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+                    features: ['Simple Interface', 'Quick Task Creation', 'Due Date Tracking', 'Progress Visualization'],
+                    issueTypes: ['Task', 'Sub-task', 'Reminder'],
+                    workflows: ['To Do → In Progress → Done'],
+                    reports: ['Task Completion', 'Overdue Tasks', 'Productivity Trends'],
+                    bestFor: 'Individuals and small teams needing simple task management'
+                },
+                {
+                    id: 'marketing', name: 'Marketing', description: 'Marketing campaign management and coordination',
+                    category: 'Business', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z',
+                    features: ['Campaign Planning', 'Content Calendar', 'Budget Management', 'Performance Analytics'],
+                    issueTypes: ['Campaign', 'Content Piece', 'Design Task', 'Social Media Post', 'Event'],
+                    workflows: ['Idea → Planning → In Progress → Review → Live → Analysis'],
+                    reports: ['Campaign ROI', 'Content Performance', 'Budget Tracking', 'Lead Generation'],
+                    bestFor: 'Marketing teams and agencies'
+                },
+                {
+                    id: 'event-planning', name: 'Event Planning', description: 'Event coordination and planning management',
+                    category: 'Business', icon: 'M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-9 0v10a2 2 0 002 2h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10z',
+                    features: ['Timeline Management', 'Vendor Coordination', 'Budget Tracking', 'Guest Management'],
+                    issueTypes: ['Event', 'Task', 'Vendor', 'Venue', 'Marketing Activity'],
+                    workflows: ['Planning → In Progress → Review → Execution → Post-Event'],
+                    reports: ['Event Timeline', 'Budget vs Actual', 'Vendor Performance', 'Attendance Tracking'],
+                    bestFor: 'Event planners and conference organizers'
+                }
+            ],
+            discovery: [
+                {
+                    id: 'product-roadmap', name: 'Product Roadmap', description: 'Product strategy and roadmap planning',
+                    category: 'Product', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                    features: ['Strategic Planning', 'Feature Prioritization', 'Timeline Visualization', 'Stakeholder Alignment'],
+                    issueTypes: ['Epic', 'Feature', 'Initiative', 'Goal', 'Idea'],
+                    workflows: ['Discovery → Validation → Prioritization → Development → Launch'],
+                    reports: ['Roadmap Timeline', 'Feature Value Score', 'Development Capacity', 'Launch Success'],
+                    bestFor: 'Product managers and strategy teams'
+                },
+                {
+                    id: 'idea-management', name: 'Idea Management', description: 'Collect and prioritize ideas from various sources',
+                    category: 'Product', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+                    features: ['Idea Collection', 'Voting System', 'Feasibility Assessment', 'Idea Portfolio'],
+                    issueTypes: ['Idea', 'Suggestion', 'Proposal', 'Concept'],
+                    workflows: ['Submitted → Under Review → Evaluated → Approved → Implemented'],
+                    reports: ['Idea Submission Trends', 'Implementation Rate', 'Source Analysis', 'ROI Tracking'],
+                    bestFor: 'Innovation teams and product discovery processes'
+                },
+                {
+                    id: 'competitive-analysis', name: 'Competitive Analysis', description: 'Track competitors and market analysis',
+                    category: 'Product', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                    features: ['Competitor Tracking', 'Feature Comparison', 'Market Analysis', 'SWOT Analysis'],
+                    issueTypes: ['Competitor', 'Feature Analysis', 'Market Trend', 'Strategic Initiative'],
+                    workflows: ['Research → Analysis → Review → Action → Monitoring'],
+                    reports: ['Competitive Landscape', 'Feature Gap Analysis', 'Market Position', 'Trend Analysis'],
+                    bestFor: 'Strategy teams and product marketing'
+                },
+                {
+                    id: 'user-research', name: 'User Research', description: 'Manage user feedback and research activities',
+                    category: 'Product', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+                    features: ['User Interviews', 'Survey Management', 'Feedback Collection', 'Persona Development'],
+                    issueTypes: ['Research Question', 'Interview', 'Survey', 'Feedback', 'Persona'],
+                    workflows: ['Planning → Recruitment → Execution → Analysis → Insights'],
+                    reports: ['Research Coverage', 'Insight Themes', 'Participant Demographics', 'Research Impact'],
+                    bestFor: 'UX researchers and product teams'
+                }
+            ]
+        };
+
+        let currentFilter = 'all';
+        let selectedTemplates = [];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllTemplates();
+            initializeAnimations();
+        });
+
+        function initializeAnimations() {
+            // Animate template cards on load
+            anime({
+                targets: '.template-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100),
+                duration: 600,
+                easing: 'easeOutQuad'
+            });
+        }
+
+        function loadAllTemplates() {
+            const allTemplates = [
+                ...detailedTemplates.software,
+                ...detailedTemplates.service,
+                ...detailedTemplates.work,
+                ...detailedTemplates.discovery
+            ];
+
+            const grid = document.getElementById('templatesGrid');
+            grid.innerHTML = allTemplates.map(template => `
+                <div class="template-card bg-white rounded-xl p-6 shadow-lg cursor-pointer" data-category="${template.category}" data-template-id="${template.id}">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4">
+                                <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${template.icon}"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">${template.name}</h3>
+                                <span class="text-xs text-teal-600 bg-teal-100 px-2 py-1 rounded-full">${template.category}</span>
+                            </div>
+                        </div>
+                        <button onclick="toggleTemplateSelection('${template.id}')" class="text-gray-400 hover:text-teal-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 mb-4">${template.description}</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            ${template.issueTypes.length} Issue Types
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            ${template.features.length} Features
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'></path>
+                            </svg>
+                            ${template.reports.length} Reports
+                        </div>
+                    </div>
+                    <div class="mt-6 flex space-x-2">
+                        <button onclick="previewTemplate('${template.id}')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                            Preview
+                        </button>
+                        <button onclick="compareTemplate('${template.id}')" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                            Compare
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterTemplates() {
+            const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('#templatesGrid .template-card');
+            
+            cards.forEach(card => {
+                const templateName = card.querySelector('h3').textContent.toLowerCase();
+                const templateDesc = card.querySelector('p').textContent.toLowerCase();
+                const category = card.dataset.category.toLowerCase();
+                
+                const matchesSearch = templateName.includes(searchTerm) || templateDesc.includes(searchTerm);
+                const matchesFilter = currentFilter === 'all' || category === currentFilter.toLowerCase();
+                
+                if (matchesSearch && matchesFilter) {
+                    card.style.display = 'block';
+                    anime({
+                        targets: card,
+                        opacity: [0, 1],
+                        scale: [0.9, 1],
+                        duration: 300,
+                        easing: 'easeOutQuad'
+                    });
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function filterByCategory(category) {
+            currentFilter = category;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            filterTemplates();
+        }
+
+        function toggleTemplateSelection(templateId) {
+            const index = selectedTemplates.indexOf(templateId);
+            const button = event.target.closest('button');
+            
+            if (index > -1) {
+                selectedTemplates.splice(index, 1);
+                button.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>`;
+                button.classList.remove('text-teal-600');
+                button.classList.add('text-gray-400');
+            } else {
+                selectedTemplates.push(templateId);
+                button.innerHTML = `<svg class="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>`;
+                button.classList.remove('text-gray-400');
+                button.classList.add('text-teal-600');
+            }
+        }
+
+        function previewTemplate(templateId) {
+            const allTemplates = [
+                ...detailedTemplates.software,
+                ...detailedTemplates.service,
+                ...detailedTemplates.work,
+                ...detailedTemplates.discovery
+            ];
+            
+            const template = allTemplates.find(t => t.id === templateId);
+            if (!template) return;
+
+            document.getElementById('previewTitle').textContent = template.name;
+            document.getElementById('previewSubtitle').textContent = template.description;
+            
+            const previewContent = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-3">Key Features</h4>
+                            <div class="grid grid-cols-1 gap-2">
+                                ${template.features.map(feature => `
+                                    <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <svg class="w-5 h-5 text-teal-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-gray-700">${feature}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-3">Issue Types</h4>
+                            <div class="flex flex-wrap gap-2">
+                                ${template.issueTypes.map(type => `
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${type}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-3">Available Reports</h4>
+                            <div class="space-y-2">
+                                ${template.reports.map(report => `
+                                    <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <svg class="w-5 h-5 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'></path>
+                                        </svg>
+                                        <span class="text-gray-700">${report}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-3">Workflow</h4>
+                            <div class="p-4 bg-teal-50 rounded-lg">
+                                <p class="text-gray-700">${template.workflows[0]}</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-3">Best For</h4>
+                            <p class="text-gray-600">${template.bestFor}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('previewContent').innerHTML = previewContent;
+            document.getElementById('previewModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function compareTemplate(templateId) {
+            // For now, just show preview - in a full implementation, this would show a comparison view
+            previewTemplate(templateId);
+        }
+
+        function closeComparison() {
+            document.getElementById('comparisonModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function useTemplate() {
+            showNotification('Template selected! Redirecting to setup wizard...', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'warning' ? 'bg-yellow-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            anime({
+                targets: notification,
+                translateX: [300, 0],
+                opacity: [0, 1],
+                duration: 300,
+                easing: 'easeOutQuad'
+            });
+            
+            setTimeout(() => {
+                anime({
+                    targets: notification,
+                    translateX: [0, 300],
+                    opacity: [1, 0],
+                    duration: 300,
+                    easing: 'easeInQuad',
+                    complete: () => notification.remove()
+                });
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  kimi-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.kimi
+    container_name: kimi-cli
+    volumes:
+      - .:/app
+    tty: true
+    stdin_open: true

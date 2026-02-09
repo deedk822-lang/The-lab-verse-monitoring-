@@ -1,13 +1,15 @@
+import argparse
+import json
+import os
+from datetime import datetime
+from typing import Dict, List, Optional
+
 import cohere
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
-import os
 import requests
-import json
-from typing import List, Dict, Optional
-from datetime import datetime
-import argparse
+from sklearn.cluster import KMeans
+
 
 class EnhancedKeywordResearchService:
     """
@@ -295,7 +297,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
         Returns:
             Comprehensive results dictionary
         """
-        print(f"🚀 Starting enhanced keyword research pipeline...")
+        print("🚀 Starting enhanced keyword research pipeline...")
 
         # Step 1: Load keywords
         print(f"📊 Loading keywords from {csv_path}...")
@@ -304,7 +306,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
         print(f"   Loaded {total_keywords} keywords")
 
         # Step 2: Embed keywords
-        print(f"🧬 Generating embeddings with Cohere...")
+        print("🧬 Generating embeddings with Cohere...")
         embeddings = self.embed_keywords(df['keyword'].tolist())
         print(f"   Created {embeddings.shape[0]}x{embeddings.shape[1]} embedding matrix")
 
@@ -313,7 +315,7 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
         df['topic'] = self.cluster_keywords(embeddings, num_topics)
 
         # Step 4: Generate topic names
-        print(f"📝 Generating topic names with Cohere...")
+        print("📝 Generating topic names with Cohere...")
         topic_keywords = {topic: list(set(group['keyword']))
                          for topic, group in df.groupby('topic')}
 
@@ -370,9 +372,9 @@ Format as JSON with keys: title, outline (array), word_count, key_points (array)
                     'content_brief': content_brief
                 })
 
-                print(f"   ✅ Complete")
+                print("   ✅ Complete")
 
-        print(f"\n✨ Pipeline complete!")
+        print("\n✨ Pipeline complete!")
 
         return {
             'dataframe': df.to_dict(orient='records'),

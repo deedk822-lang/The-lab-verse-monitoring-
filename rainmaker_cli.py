@@ -4,11 +4,12 @@ This script serves as the entry point for the self-healing coding agent.
 """
 
 import asyncio
-import sys
-import re
-import json
 import os
+import re
+import sys
+
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
+
 
 async def main():
     """Main CLI entry point"""
@@ -58,15 +59,15 @@ async def main():
         print(f"Status: {result.get('status', 'unknown').upper()}")
 
         if result.get("status") == "success":
-            print(f"✅ Success!")
+            print("✅ Success!")
             print(f"Final Code Path: {result.get('final_code_path')}")
             print(f"Retries: {result.get('retries')}")
-            print(f"\n--- Explanation ---")
+            print("\n--- Explanation ---")
             print(result.get('explanation', 'N/A'))
-            print(f"\n--- Output ---")
+            print("\n--- Output ---")
             print(result.get('output', 'N/A'))
         else:
-            print(f"❌ Failure!")
+            print("❌ Failure!")
             print(f"Message: {result.get('message')}")
             last_error = result.get('last_error', {})
             print("\n--- Last Error Details ---")

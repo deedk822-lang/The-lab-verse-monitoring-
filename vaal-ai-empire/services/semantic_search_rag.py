@@ -3,13 +3,13 @@ Semantic Search and RAG Service for Vaal AI Empire
 Combines Cohere embeddings with vector search for intelligent content discovery
 """
 
-import os
-import json
 import logging
-from typing import List, Dict, Optional, Tuple
-import numpy as np
-import cohere
+import os
 from datetime import datetime
+from typing import Dict, List, Optional
+
+import cohere
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -478,7 +478,6 @@ class ContentClusteringService:
             Dictionary with cluster assignments and keywords
         """
         from sklearn.cluster import KMeans
-        from sklearn.feature_extraction.text import CountVectorizer
 
         logger.info(f"Clustering {len(documents)} documents into {n_clusters} clusters...")
 

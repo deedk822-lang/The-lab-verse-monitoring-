@@ -16,8 +16,8 @@ def test_health_endpoint():
         orch.return_value.aclose = AsyncMock()
         from api.server import app
 
-        client = TestClient(app)
-        resp = client.get("/health")
+        with TestClient(app) as client:
+            resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "connected"
 
@@ -30,7 +30,7 @@ def test_execute_success():
     with patch("api.server.RainmakerOrchestrator", return_value=orchestrator):
         from api.server import app
 
-        client = TestClient(app)
-        resp = client.post("/execute", json={"type": "authority_task", "context": "run"})
-        assert resp.status_code == 200
-        assert resp.json()["status"] == "ok"
+        with TestClient(app) as client:
+            resp = client.post("/execute", json={"type": "authority_task", "context": "run"})
+            assert resp.status_code == 200
+            assert resp.json()["status"] == "ok"

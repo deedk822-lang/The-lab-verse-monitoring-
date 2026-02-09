@@ -1,0 +1,206 @@
+name: Kimi Auto-Fix Review Flags
+
+on:
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+env:
+  KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  analyze-and-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      # FIX: Get PR info first (works for all event types)
+      - name: Get PR Info
+        id: pr-info
+        uses: actions/github-script@v6
+        with:
+          script: |
+            let headRef, baseRef, prNumber;
+            
+            if (context.eventName === 'pull_request') {
+              headRef = context.payload.pull_request.head.ref;
+              baseRef = context.payload.pull_request.base.ref;
+              prNumber = context.payload.pull_request.number;
+            } else {
+              // For comment events, fetch PR via API
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+              headRef = pr.head.ref;
+              baseRef = pr.base.ref;
+              prNumber = pr.number;
+            }
+            
+            core.setOutput('head_ref', headRef);
+            core.setOutput('base_ref', baseRef);
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('is_main', baseRef === 'main');
+
+      # FIX: Check base_ref from previous step
+      - name: Check Main Branch
+        if: steps.pr-info.outputs.is_main != 'true'
+        run: |
+          echo "PR targets '${{ steps.pr-info.outputs.base_ref }}', not main. Skipping."
+          exit 0
+
+      # FIX: Use head_ref from pr-info step
+      - name: Checkout PR Code
+        if: steps.pr-info.outputs.is_main == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr-info.outputs.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        if: steps.pr-info.outputs.is_main == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch Review Comments
+        if: steps.pr-info.outputs.is_main == 'true'
+        id: fetch-comments
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = ${{ steps.pr-info.outputs.pr_number }};
+            
+            const { data: reviewComments } = await github.rest.pulls.listReviewComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const { data: issueComments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComments = reviewComments.filter(comment => 
+              comment.user.login.includes('coderabbit') || 
+              comment.user.login.includes('gemini')
+            );
+            
+            const triggerKeywords = ['/kimi-fix', '/fix reviews', '/fix flags'];
+            const manualTrigger = issueComments.some(comment => 
+              triggerKeywords.some(keyword => comment.body.includes(keyword))
+            );
+            
+            if (botComments.length === 0 && !manualTrigger) {
+              core.setOutput('has_comments', 'false');
+              return;
+            }
+            
+            core.setOutput('has_comments', 'true');
+            core.setOutput('comments', JSON.stringify(botComments));
+
+      - name: Analyze with Kimi K2.5
+        if: steps.fetch-comments.outputs.has_comments == 'true'
+        id: kimi-analysis
+        run: |
+          cat > analyze.js << 'EOF'
+          const comments = ${{ steps.fetch-comments.outputs.comments }};
+          
+          const prompt = {
+            model: "kimi-k2.5",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert code review fixer. Analyze GitHub review comments and generate exact code fixes. Target main branch only. Rules: 1) Run tests for code changes (*.py,*.js,etc) 2) Skip tests for docs (*.md) 3) Fix unused enums, config errors, logic issues. Return JSON with fixes array containing file_path, search_pattern, replacement_code."
+              },
+              {
+                role: "user",
+                content: "Review comments to fix:\n" + JSON.stringify(comments, null, 2)
+              }
+            ],
+            temperature: 0.2,
+            response_format: { type: "json_object" }
+          };
+          
+          fetch('https://api.moonshot.cn/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + process.env.KIMI_API_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(prompt)
+          })
+          .then(res => res.json())
+          .then(data => {
+            console.log('::set-output name=fixes::' + data.choices[0].message.content);
+          })
+          .catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          EOF
+          
+          node analyze.js
+        env:
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+
+      - name: Apply Fixes
+        if: steps.kimi-analysis.outputs.fixes
+        id: apply-fixes
+        run: |
+          FIXES='${{ steps.kimi-analysis.outputs.fixes }}'
+          
+          echo "$FIXES" | jq -c '.fixes[]?' | while read fix; do
+            FILE=$(echo "$fix" | jq -r '.file_path')
+            SEARCH=$(echo "$fix" | jq -r '.search_pattern')
+            REPLACE=$(echo "$fix" | jq -r '.replacement_code')
+            
+            if [ -f "$FILE" ]; then
+              cp "$FILE" "$FILE.bak"
+              
+              # Use Python for safe replacement
+              python3 -c "
+import sys
+with open('$FILE', 'r') as f:
+    content = f.read()
+new_content = content.replace('$SEARCH', '$REPLACE', 1)
+with open('$FILE', 'w') as f:
+    f.write(new_content)
+"
+              
+              # Check if code file for tests
+              if [[ "$FILE" =~ \.(py|js|ts|go|java)$ ]]; then
+                echo "should_test=true" >> $GITHUB_ENV
+              fi
+            fi
+          done
+
+      - name: Run Tests
+        if: env.should_test == 'true'
+        run: |
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt && python -m pytest; fi
+          if [ -f "package.json" ]; then npm install && npm test; fi
+
+      - name: Commit and Push
+        if: steps.apply-fixes.outcome == 'success'
+        run: |
+          git config user.name "Kimi Bot"
+          git config user.email "bot@github.com"
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "fix: resolve review comments [skip ci]"
+            CURRENT_BRANCH=$(git branch --show-current)
+            if [ "$CURRENT_BRANCH" = "main" ]; then echo "ERROR: On main branch"; exit 1; fi
+            git push origin "$CURRENT_BRANCH"
+          fi

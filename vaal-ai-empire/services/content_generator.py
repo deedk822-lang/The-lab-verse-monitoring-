@@ -6,16 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-# ⚡ Bolt Optimization: Cache provider initialization
-# This function is decorated with lru_cache to ensure that the expensive
-# process of initializing all API providers only happens once.
 @lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
-    """
-    Initialize and cache all content and image generation providers.
-    This function is executed only once, and its result is cached.
-    """
-    # --- Initialize Text Providers ---
+def _get_text_providers() -> Dict[str, Any]:
+    """Initialize and cache text generation providers."""
     providers = {
         "cohere": None,
         "groq": None,
@@ -70,25 +63,33 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
     else:
         logger.error("❌ No content generation providers available!")
 
-    # --- Initialize Image Generator ---
-    image_generator = None
+    return providers
+
+
+@lru_cache(maxsize=1)
+def _get_image_generator() -> Optional[Any]:
+    """Initialize and cache image generation provider."""
     try:
         from api.image_generation import BusinessImageGenerator
-        image_generator = BusinessImageGenerator()
+        generator = BusinessImageGenerator()
         logger.info("✅ Image generation provider initialized")
+        return generator
     except Exception as e:
         logger.warning(f"⚠️  Image generation disabled: {e}")
+        return None
 
-    # --- Initialize Multimodal Provider ---
-    multimodal_provider = None
+
+@lru_cache(maxsize=1)
+def _get_multimodal_provider() -> Optional[Any]:
+    """Initialize and cache multimodal provider."""
     try:
         from api.aya_vision import AyaVisionAPI
-        multimodal_provider = AyaVisionAPI()
+        provider = AyaVisionAPI()
         logger.info("✅ Aya Vision multimodal provider initialized")
+        return provider
     except (ImportError, ValueError) as e:
         logger.warning(f"⚠️  Aya Vision multimodal provider unavailable: {e}")
-
-    return providers, image_generator, multimodal_provider
+        return None
 
 
 class ContentFactory:
@@ -96,8 +97,21 @@ class ContentFactory:
 
     def __init__(self, db=None):
         self.db = db
-        # Unpack the cached providers and image generator
-        self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
+
+    @property
+    def providers(self) -> Dict[str, Any]:
+        """Lazy loader for text providers"""
+        return _get_text_providers()
+
+    @property
+    def image_generator(self) -> Optional[Any]:
+        """Lazy loader for image generator"""
+        return _get_image_generator()
+
+    @property
+    def multimodal_provider(self) -> Optional[Any]:
+        """Lazy loader for multimodal provider"""
+        return _get_multimodal_provider()
 
     def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
         """
@@ -108,7 +122,6 @@ class ContentFactory:
 
         try:
             result = self.multimodal_provider.generate_from_messages(messages, max_new_tokens)
-            # You might want to log this usage to your database if needed
             return {
                 "text": result["text"],
                 "provider": "aya_vision",

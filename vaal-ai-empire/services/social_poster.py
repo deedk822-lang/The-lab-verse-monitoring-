@@ -1,7 +1,6 @@
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
-from typing import Dict, List, Optional
 
 import requests
 
@@ -18,7 +17,7 @@ class SocialPoster:
         self.ayrshare_url = "https://app.ayrshare.com/api"
         self.socialpilot_url = "https://api.socialpilot.co/v2"
 
-    def _detect_providers(self) -> Dict[str, bool]:
+    def _detect_providers(self) -> dict[str, bool]:
         """Detect available posting providers"""
         providers = {
             "ayrshare": bool(os.getenv("AYRSHARE_API_KEY")),
@@ -35,8 +34,8 @@ class SocialPoster:
 
         return providers
 
-    def post(self, content: str, platforms: List[str],
-            image_url: Optional[str] = None, provider: str = "auto") -> Dict:
+    def post(self, content: str, platforms: list[str],
+            image_url: str | None = None, provider: str = "auto") -> dict:
         """
         Post to social media
 
@@ -94,8 +93,8 @@ class SocialPoster:
         else:
             return "simulation"
 
-    def post_via_ayrshare(self, content: str, platforms: List[str],
-                         image_url: Optional[str] = None) -> Dict:
+    def post_via_ayrshare(self, content: str, platforms: list[str],
+                         image_url: str | None = None) -> dict:
         """Post via Ayrshare (multi-platform)"""
         api_key = os.getenv("AYRSHARE_API_KEY")
 
@@ -150,8 +149,8 @@ class SocialPoster:
             logger.error(f"Ayrshare error: {e}")
             raise e
 
-    def post_via_socialpilot(self, content: str, platforms: List[str],
-                            image_url: Optional[str] = None) -> Dict:
+    def post_via_socialpilot(self, content: str, platforms: list[str],
+                            image_url: str | None = None) -> dict:
         """Post via SocialPilot (white-label)"""
         api_key = os.getenv("SOCIALPILOT_API_KEY")
 
@@ -217,8 +216,8 @@ class SocialPoster:
             "simulated": False
         }
 
-    def post_direct(self, content: str, platforms: List[str],
-                   image_url: Optional[str] = None) -> Dict:
+    def post_direct(self, content: str, platforms: list[str],
+                   image_url: str | None = None) -> dict:
         """Post directly using platform APIs"""
         results = []
 
@@ -256,7 +255,7 @@ class SocialPoster:
             "simulated": False
         }
 
-    def _post_twitter(self, content: str, image_url: Optional[str] = None) -> Dict:
+    def _post_twitter(self, content: str, image_url: str | None = None) -> dict:
         """Post to Twitter using API v2"""
         bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
 
@@ -295,7 +294,7 @@ class SocialPoster:
             logger.error(f"Twitter post failed: {e}")
             raise e
 
-    def _post_facebook(self, content: str, image_url: Optional[str] = None) -> Dict:
+    def _post_facebook(self, content: str, image_url: str | None = None) -> dict:
         """Post to Facebook Page"""
         access_token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
         page_id = os.getenv("FACEBOOK_PAGE_ID")
@@ -332,8 +331,8 @@ class SocialPoster:
             logger.error(f"Facebook post failed: {e}")
             raise e
 
-    def simulate_post(self, content: str, platforms: List[str],
-                     image_url: Optional[str] = None) -> Dict:
+    def simulate_post(self, content: str, platforms: list[str],
+                     image_url: str | None = None) -> dict:
         """Simulate posting (for testing)"""
         logger.info(f"📱 [SIMULATED] Posting to {', '.join(platforms)}")
         logger.info(f"   Content: {content[:100]}...")
@@ -350,8 +349,8 @@ class SocialPoster:
             "simulated": True
         }
 
-    def schedule_post(self, content: str, platforms: List[str],
-                     schedule_time: str, image_url: Optional[str] = None) -> Dict:
+    def schedule_post(self, content: str, platforms: list[str],
+                     schedule_time: str, image_url: str | None = None) -> dict:
         """Schedule a post for future publishing"""
 
         if self.providers["ayrshare"]:
@@ -411,7 +410,7 @@ class SocialPoster:
                 "note": "Will be posted by automation script"
             }
 
-    def get_post_analytics(self, post_id: str, platform: str) -> Dict:
+    def get_post_analytics(self, post_id: str, platform: str) -> dict:
         """Get analytics for a posted content"""
 
         if self.providers["ayrshare"]:
@@ -434,7 +433,7 @@ class SocialPoster:
 
         return {"status": "unavailable"}
 
-    def bulk_post(self, posts: List[Dict]) -> Dict:
+    def bulk_post(self, posts: list[dict]) -> dict:
         """Post multiple pieces of content"""
         results = {
             "total": len(posts),
@@ -468,7 +467,7 @@ class SocialPoster:
 
         return results
 
-    def get_provider_status(self) -> Dict:
+    def get_provider_status(self) -> dict:
         """Get status of all providers"""
         return {
             "providers": self.providers,
@@ -476,7 +475,7 @@ class SocialPoster:
             "supported_platforms": self.get_supported_platforms()
         }
 
-    def get_supported_platforms(self) -> List[str]:
+    def get_supported_platforms(self) -> list[str]:
         """Get list of supported platforms"""
         platforms = ["facebook", "instagram", "twitter", "linkedin"]
 

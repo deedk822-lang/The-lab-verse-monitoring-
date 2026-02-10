@@ -3,10 +3,10 @@ Prometheus metrics for VAAL AI Empire monitoring.
 Tracks LLM usage, performance, security events, and system health.
 """
 
+from collections.abc import Callable
+from functools import wraps
 import logging
 import time
-from functools import wraps
-from typing import Callable, Optional
 
 from fastapi import Response
 from prometheus_client import (
@@ -245,7 +245,7 @@ active_users = Gauge(
 # Helper Functions and Decorators
 # ============================================================================
 
-def track_time(metric: Histogram, labels: Optional[dict] = None):
+def track_time(metric: Histogram, labels: dict | None = None):
     """Decorator to track execution time."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -341,7 +341,7 @@ def record_llm_usage(
     task: str,
     prompt_tokens: int,
     completion_tokens: int,
-    cost: Optional[float] = None
+    cost: float | None = None
 ):
     """Record LLM usage metrics."""
     llm_tokens_used.labels(

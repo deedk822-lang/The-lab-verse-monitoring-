@@ -43,7 +43,7 @@ def validate_zai():
         return True, f"Z.ai Connected (model: {response.model})"
 
     except Exception as e:
-        return False, f"Z.ai Failed: {str(e)}"
+        return False, f"Z.ai Failed: {e!s}"
 
 
 def validate_perplexity():
@@ -67,7 +67,7 @@ def validate_perplexity():
         return True, "Perplexity Connected (sonar-pro)"
 
     except Exception as e:
-        return False, f"Perplexity Failed: {str(e)}"
+        return False, f"Perplexity Failed: {e!s}"
 
 
 def main():

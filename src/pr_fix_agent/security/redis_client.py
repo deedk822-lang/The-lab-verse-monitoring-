@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from functools import lru_cache
+from typing import TYPE_CHECKING
 
 import redis.asyncio as aioredis
-from redis.asyncio import Redis
 
 from pr_fix_agent.core.config import Settings, get_settings
+
+if TYPE_CHECKING:
+    from redis.asyncio import Redis
 
 # Module-level client and lock for thread-safe initialization
 _redis_client: Redis | None = None

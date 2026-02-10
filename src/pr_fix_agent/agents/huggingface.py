@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from enum import Enum
 import os
 import time
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from pr_fix_agent.ollama_agent import OllamaAgent
 from pr_fix_agent.security.secure_requests import create_ssrf_safe_session
+
 
 class ProviderPolicy(str, Enum):
     """Provider selection strategies."""
@@ -46,7 +46,7 @@ class HuggingFaceAgent:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         default_model: str = "meta-llama/Meta-Llama-3-70B-Instruct",
         default_provider: ProviderPolicy = ProviderPolicy.FASTEST,
     ):
@@ -64,9 +64,9 @@ class HuggingFaceAgent:
     def chat(
         self,
         prompt: str,
-        model: Optional[str] = None,
-        provider: Optional[ProviderPolicy] = None,
-        system_message: Optional[str] = None,
+        model: str | None = None,
+        provider: ProviderPolicy | None = None,
+        system_message: str | None = None,
         max_tokens: int = 1000,
         temperature: float = 0.7,
     ) -> ChatResponse:
@@ -142,7 +142,7 @@ class HuggingFaceAgent:
             duration=time.time() - start_time,
         )
 
-    def embed(self, text: str, model: str = "sentence-transformers/all-MiniLM-L6-v2") -> List[float]:
+    def embed(self, text: str, model: str = "sentence-transformers/all-MiniLM-L6-v2") -> list[float]:
         """Generate embeddings using HF Inference API."""
         API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model}"
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -183,8 +183,8 @@ class UnifiedLLMAgent:
     def __init__(
         self,
         backend: str = "huggingface",
-        api_key: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        default_model: str | None = None,
         default_provider: ProviderPolicy = ProviderPolicy.AUTO,
     ):
         self.backend = backend
@@ -197,7 +197,7 @@ class UnifiedLLMAgent:
         else:
             self.agent = OllamaAgent()
 
-    def chat(self, prompt: str, **kwargs) -> Union[ChatResponse, Any]:
+    def chat(self, prompt: str, **kwargs) -> ChatResponse | Any:
         """Unified chat interface."""
         if self.backend == "huggingface":
             return self.agent.chat(prompt, **kwargs)

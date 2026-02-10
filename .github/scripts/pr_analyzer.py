@@ -11,9 +11,9 @@ import sys
 def main() -> int:
     """
     Produce a short report of changed file paths read from standard input.
-    
+
     Reads a newline-separated list of file paths from stdin, ignores empty lines, and prints a "Changed files:" header followed by each path prefixed with "- ". If no paths are provided, prints "- (none)".
-    
+
     Returns:
         int: `0` to indicate successful, informational execution.
     """

@@ -84,7 +84,7 @@ class TestHuggingFaceTokenUsage:
         )
 
         with caplog.at_level('WARNING'):
-            provider = HuggingFaceProvider(config)
+            HuggingFaceProvider(config)
 
         # Should log warning about missing token
         assert "HuggingFace token" in caplog.text
@@ -113,7 +113,7 @@ class TestHuggingFaceTokenUsage:
         # Don't set HF_TOKEN
 
         with caplog.at_level('WARNING'):
-            provider = initialize_from_env()
+            initialize_from_env()
 
         # Should warn about missing token
         assert "HF_TOKEN not set" in caplog.text

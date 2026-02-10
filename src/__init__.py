@@ -7,14 +7,14 @@ from .analyzer import ErrorStatistics, PRErrorAnalyzer
 from .security import InputValidator, RateLimiter, SecurityError, SecurityValidator
 
 __all__ = [
+    'ErrorStatistics',
+    'InputValidator',
+    # Analysis
+    'PRErrorAnalyzer',
+    'RateLimiter',
     # Security
     'SecurityError',
     'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
-    # Analysis
-    'PRErrorAnalyzer',
-    'ErrorStatistics',
 ]
 
 __version__ = '1.0.0'

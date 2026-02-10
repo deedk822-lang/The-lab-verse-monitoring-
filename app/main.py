@@ -3,39 +3,35 @@ Enhanced main application with security, monitoring, distributed state, and Atla
 Integrated with Prometheus and Grafana for observability.
 """
 
+from collections import OrderedDict
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 import hashlib
 import hmac
 import json
 import logging
 import os
 import time
-from collections import OrderedDict
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
-import httpx
-import redis.asyncio as redis
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+import httpx
 from pydantic import BaseModel
-from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
+import redis.asyncio as redis
 
 from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
+from app.middleware.metrics import (
+    llm_request_duration_seconds,
+    llm_requests_total,
+    llm_tokens_total,
+    setup_metrics,
+)
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
-
-from app.middleware.metrics import setup_metrics
-from app.middleware.metrics import (
-    llm_requests_total,
-    llm_request_duration_seconds,
-    llm_tokens_total,
-    db_connections_active,
-    db_queries_total,
-    redis_operations_total,
-)
+from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 # Configure logging
 logging.basicConfig(
@@ -47,28 +43,28 @@ logger = logging.getLogger(__name__)
 # Models with proper typing
 class RepositoryInfo(BaseModel):
     name: str
-    full_name: Optional[str] = None
-    url: Optional[str] = None
+    full_name: str | None = None
+    url: str | None = None
 
 class CommitInfo(BaseModel):
     hash: str
-    message: Optional[str] = None
-    author: Optional[Dict[str, Any]] = None
-    date: Optional[str] = None
+    message: str | None = None
+    author: dict[str, Any] | None = None
+    date: str | None = None
 
 class BitbucketWebhookPayload(BaseModel):
     repository: RepositoryInfo
     commit: CommitInfo
     build_status: str
-    event_type: Optional[str] = "build_status"
+    event_type: str | None = "build_status"
 
 class AtlassianWebhookPayload(BaseModel):
     event: str
     date: str
-    actor: Dict[str, Any]
+    actor: dict[str, Any]
     repository: RepositoryInfo
     commit: CommitInfo
-    build_status: Optional[Dict[str, Any]] = None
+    build_status: dict[str, Any] | None = None
 
 # Fallback in-memory state for non-distributed environments
 class InMemoryDedupeCache:
@@ -82,7 +78,7 @@ class InMemoryDedupeCache:
         expired = [k for k, ts in self._cache.items() if current_time - ts > self.ttl_seconds]
         for k in expired: del self._cache[k]
 
-    def generate_key(self, payload: Dict[str, Any]) -> str:
+    def generate_key(self, payload: dict[str, Any]) -> str:
         webhook_id = payload.get('webhookEvent', payload.get('id', ''))
         timestamp = payload.get('timestamp', payload.get('created_at', ''))
         unique_str = f"{webhook_id}:{timestamp}:{str(payload)[:100]}"
@@ -99,7 +95,7 @@ class InMemoryRateLimiter:
     def __init__(self, max_requests: int = 100, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self._requests: Dict[str, list] = {}
+        self._requests: dict[str, list] = {}
 
     async def is_allowed(self, key: str) -> bool:
         now = time.time()
@@ -111,9 +107,9 @@ class InMemoryRateLimiter:
         return True
 
 # Global state components (initialized in lifespan)
-dedupe_cache: Union[RedisDedupeCache, InMemoryDedupeCache] = InMemoryDedupeCache()
-rate_limiter: Union[RedisRateLimiter, InMemoryRateLimiter] = InMemoryRateLimiter()
-redis_client: Optional[redis.Redis] = None
+dedupe_cache: RedisDedupeCache | InMemoryDedupeCache = InMemoryDedupeCache()
+rate_limiter: RedisRateLimiter | InMemoryRateLimiter = InMemoryRateLimiter()
+redis_client: redis.Redis | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -183,7 +179,7 @@ setup_metrics(app)
 
 # Security dependencies
 async def verify_self_healing_key(
-    x_self_healing_key: Optional[str] = Header(None)
+    x_self_healing_key: str | None = Header(None)
 ) -> bool:
     """Verify self-healing webhook authentication key."""
     expected_key = os.getenv('SELF_HEALING_KEY')
@@ -215,7 +211,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={
             "error": exc.detail,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url)
         }
     )
@@ -227,7 +223,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "error": "Internal server error",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url)
         }
     )
@@ -236,7 +232,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def health_check():
     return {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "version": "2.0.0",
         "region": "ap-southeast-1",
         "enhanced_with_qwen": True,
@@ -265,7 +261,7 @@ async def readiness_check():
 async def handle_bitbucket_webhook(
     request: Request,
     rate_limited: bool = Depends(check_rate_limit)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Handle traditional Bitbucket webhook"""
     body = await request.body()
     secret = os.getenv("WEBHOOK_SECRET")
@@ -298,14 +294,14 @@ async def handle_bitbucket_webhook(
             "enhanced": True,
             "region": "ap-southeast-1",
             "source": "direct_bitbucket",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "direct_bitbucket",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 @app.post("/webhooks/atlassian")
@@ -331,11 +327,11 @@ async def atlassian_webhook(
         logger.error(f"Webhook processing error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-def convert_atlassian_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+def convert_atlassian_payload(payload: dict[str, Any]) -> dict[str, Any]:
     event_type = payload.get('webhookEvent', 'unknown')
     standard = {
         "event_type": event_type,
-        "timestamp": payload.get('timestamp', datetime.now(timezone.utc).isoformat()),
+        "timestamp": payload.get('timestamp', datetime.now(UTC).isoformat()),
         "source": "atlassian",
         "data": {}
     }
@@ -361,7 +357,7 @@ def convert_atlassian_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         }
     return standard
 
-async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def forward_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     event_type = payload.get('event_type', '')
     if 'jira' in event_type.lower() or 'issue' in payload.get('data', {}):
         target_url = os.getenv('JIRA_BASE_URL')
@@ -383,13 +379,13 @@ async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Error forwarding webhook: {e}")
         return {"status": "error", "error": str(e)}
 
-async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
+async def forward_to_jira(webhook_url: str, payload: BitbucketWebhookPayload | AtlassianWebhookPayload, qwen_analysis: dict[str, Any]) -> None:
     """Forward enhanced analysis to Jira through Atlassian webhook"""
     try:
         enhanced_payload = {
             "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
             "qwen_analysis": qwen_analysis,
-            "enhanced_timestamp": datetime.now(timezone.utc).isoformat()
+            "enhanced_timestamp": datetime.now(UTC).isoformat()
         }
 
         async with httpx.AsyncClient() as client:
@@ -401,17 +397,17 @@ async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPaylo
     except Exception as e:
         logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
 
-async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+async def handle_build_failure(payload: BitbucketWebhookPayload) -> dict[str, Any]:
     """Original build failure handling logic"""
     return {
         "status": "failure_handled",
         "build_id": payload.commit.hash,
         "repository": payload.repository.name,
-        "timestamp": payload.commit.date or datetime.now(timezone.utc).isoformat(),
+        "timestamp": payload.commit.date or datetime.now(UTC).isoformat(),
         "processed_by": "lab-verse-monitoring-agent-singapore"
     }
 
-async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> dict[str, Any]:
     """Enhanced analysis using Qwen 3 Plus"""
     try:
         # Simulate Qwen 3 Plus analysis
@@ -430,16 +426,16 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
                 "process"
             ),
             "jira_ready": True,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         return analysis
     except Exception as e:
-        logger.error(f"Qwen 3 Plus analysis failed: {str(e)}")
+        logger.error(f"Qwen 3 Plus analysis failed: {e!s}")
         return {"error": str(e), "fallback": "Original analysis used"}
 
 @app.get("/bitbucket/status")
-async def bitbucket_integration_status() -> Dict[str, Any]:
+async def bitbucket_integration_status() -> dict[str, Any]:
     """Bitbucket integration status"""
     return {
         "status": "connected",
@@ -448,11 +444,11 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "last_sync": "recent",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 @app.get("/jira/status")
-async def jira_integration_status() -> Dict[str, Any]:
+async def jira_integration_status() -> dict[str, Any]:
     """Jira integration status"""
     return {
         "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
@@ -460,7 +456,7 @@ async def jira_integration_status() -> Dict[str, Any]:
         "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "enhanced_with_ai": True,
         "last_forwarded": "recent",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 @app.post("/api/generate")

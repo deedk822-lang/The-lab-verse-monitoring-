@@ -3,15 +3,12 @@ Security-Hardened Analyzer for PR Fix Agent
 Implements multi-layer defense against prompt injection, RCE, ReDoS, and more.
 """
 
-import re
-import time
-import threading
 from pathlib import Path
-from typing import Dict, List, Optional
-from dataclasses import dataclass
+import re
+import threading
 
-from .security import SecurityValidator, SecurityError
 from .ollama_agent import OllamaAgent, OllamaQueryError
+from .security import SecurityError, SecurityValidator
 
 # Input Length Limits
 MAX_ERROR_LENGTH = 10000  # Prevent DoS
@@ -66,7 +63,7 @@ class SafeRegex:
     TIMEOUT = 1.0
 
     @staticmethod
-    def safe_search(pattern: str, text: str, timeout: float = TIMEOUT) -> Optional[re.Match]:
+    def safe_search(pattern: str, text: str, timeout: float = TIMEOUT) -> re.Match | None:
         """Regex search with timeout."""
         result = [None]
         exception = [None]
@@ -102,7 +99,7 @@ class LLMResponseValidator:
     def validate_code(code: str) -> str:
         """Validate LLM-generated code."""
         if len(code) > MAX_RESPONSE_LENGTH:
-            raise ValueError(f"Code too long")
+            raise ValueError("Code too long")
 
         code_lower = code.lower()
         for pattern in LLMResponseValidator.DANGEROUS_PATTERNS:
@@ -129,7 +126,7 @@ class PRErrorAnalyzer:
             r"SyntaxError: (.+)", r"ModuleNotFoundError: (.+)",
         ]
 
-    def parse_github_actions_log(self, log_content: str) -> Dict[str, List[str]]:
+    def parse_github_actions_log(self, log_content: str) -> dict[str, list[str]]:
         """Parse log to extract errors and warnings."""
         errors = []
         for line in log_content.split('\n'):
@@ -139,7 +136,7 @@ class PRErrorAnalyzer:
                     break
         return {"errors": errors, "warnings": []}
 
-    def analyze_error(self, error: str) -> Dict[str, str]:
+    def analyze_error(self, error: str) -> dict[str, str]:
         """Analyze error with prompt injection defenses."""
         prompt = self.sanitizer.create_safe_prompt(
             error,
@@ -195,7 +192,7 @@ class PRErrorFixer:
         self.sanitizer = PromptSanitizer()
         self.llm_validator = LLMResponseValidator()
 
-    def fix_missing_file_error(self, error: str) -> Optional[str]:
+    def fix_missing_file_error(self, error: str) -> str | None:
         """Fix missing file error securely."""
         match = SafeRegex.safe_search(SafeRegex.FILE_NOT_FOUND, error)
         if not match: return None
@@ -223,7 +220,7 @@ class PRErrorFixer:
         file_path.write_text(code_clean)
         return str(file_path)
 
-    def fix_missing_dependency(self, error: str) -> Optional[str]:
+    def fix_missing_dependency(self, error: str) -> str | None:
         """Add missing dependencies to requirements files."""
         match = SafeRegex.safe_search(SafeRegex.MODULE_NOT_FOUND, error)
         if not match: return None

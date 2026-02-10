@@ -5,8 +5,8 @@ PROVIDES: Single pr-fix-agent command with subcommands
 """
 
 import argparse
-import sys
 from pathlib import Path
+import sys
 
 import structlog
 
@@ -29,7 +29,7 @@ def health_check() -> int:
     print("\n1. Checking Ollama connectivity...")
     try:
         agent = OllamaAgent(model="codellama")
-        response = agent.query("test", timeout=10)
+        agent.query("test", timeout=10)
         print("   ✅ Ollama is running and responsive")
     except OllamaQueryError as e:
         print(f"   ❌ Ollama connectivity failed: {e}")
@@ -151,7 +151,7 @@ def main():
     # health-check command
     # ========================================================================
 
-    health_parser = subparsers.add_parser(
+    subparsers.add_parser(
         'health-check',
         help='Perform system health check'
     )

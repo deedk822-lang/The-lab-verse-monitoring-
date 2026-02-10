@@ -2,13 +2,14 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Dict
+import sys
+from typing import Any
 
 import aiohttp
+from openai import AsyncOpenAI
 import openlit
 import redis.asyncio as redis
 import yaml
-from openai import AsyncOpenAI
 
 openlit.init()
 
@@ -20,7 +21,7 @@ class CognitiveSwarmOrchestrator:
     Listens for events, uses a Supervisor Agent to create a plan,
     and executes the plan with a swarm of specialized AI agents.
     """
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.redis_client = redis.from_url(
             f"redis://{config['redis']['host']}:{config['redis']['port']}/{config['redis']['db']}",
@@ -49,7 +50,7 @@ class CognitiveSwarmOrchestrator:
         except aiohttp.ClientError as e:
             logger.error(f"Failed to send Slack notification: {e}")
 
-    async def _run_supervisor_agent(self, event_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_supervisor_agent(self, event_payload: dict[str, Any]) -> dict[str, Any]:
         """Generates a strategic plan using the Supervisor Agent."""
         logger.info("Activating Supervisor Agent to generate plan...")
 
@@ -85,7 +86,7 @@ class CognitiveSwarmOrchestrator:
             logger.error(f"Supervisor Agent failed: {e}")
             raise
 
-    async def _execute_agent_task(self, task: Dict[str, Any], context: Dict[str, Any]) -> str:
+    async def _execute_agent_task(self, task: dict[str, Any], context: dict[str, Any]) -> str:
         """Executes a single step of the plan with a specialized agent."""
         agent_type = task['agent_type']
         model = self.agent_model_map.get(agent_type)
@@ -181,7 +182,7 @@ class CognitiveSwarmOrchestrator:
                     logger.info(f"Received event on channel '{message['channel']}'. Triggering swarm...")
                     # Run handler in the background to not block the listener
                     asyncio.create_task(self._handle_event(message['data']))
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"Error in event listener loop: {e}")
@@ -199,20 +200,20 @@ async def main():
 
     # Create orchestrator and sensor
     orchestrator = CognitiveSwarmOrchestrator(config)
-    github_sensor = GitHubMonitorSensor(config, redis_client)
+    # github_sensor = GitHubMonitorSensor(config, redis_client) # FIXME: Missing class definition
 
     # Run services concurrently
     logger.info("Starting all services...")
     await asyncio.gather(
         orchestrator.listen_for_events(),
-        github_sensor.run()
+        # github_sensor.run()
     )
 
 if __name__ == "__main__":
     # Ensure required environment variables are set
     if not os.getenv("OPENAI_API_KEY") or not os.getenv("OPENAI_API_BASE"):
         logger.error("FATAL: OPENAI_API_KEY and OPENAI_API_BASE must be set as environment variables.")
-        exit(1)
+        sys.exit(1)
 
     try:
         asyncio.run(main())

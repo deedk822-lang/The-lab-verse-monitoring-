@@ -5,8 +5,8 @@ Main entry point for automated PR error fixing
 """
 
 import argparse
-import sys
 from pathlib import Path
+import sys
 
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .ollama_agent import OllamaAgent
@@ -36,8 +36,8 @@ def main():
     # Initialize components
     agent = OllamaAgent(model=args.model)
     validator = SecurityValidator(repo_path)
-    analyzer = PRErrorAnalyzer(agent=agent)
-    fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path), validator=validator)
+    PRErrorAnalyzer(agent=agent)
+    PRErrorFixer(agent=agent, repo_path=str(repo_path), validator=validator)
 
     print("✅ PR Fix Agent initialized and ready.")
     return 0

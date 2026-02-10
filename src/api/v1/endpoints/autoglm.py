@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class GLMGenerateRequest(BaseModel):
     """Request model for GLM content generation"""
     content_type: str
-    context: Dict[str, Any]
-    options: Dict[str, Any] = {}
+    context: dict[str, Any]
+    options: dict[str, Any] = {}
 
 
 class AutoGLMSecurityAnalysisRequest(BaseModel):
@@ -30,7 +30,7 @@ class AutoGLMSecurityAnalysisRequest(BaseModel):
 class AutoGLMSecureContentRequest(BaseModel):
     """Request model for AutoGLM secure content generation"""
     content_type: str
-    context: Dict[str, Any]
+    context: dict[str, Any]
 
 
 @router.post("/generate", summary="Generate content with GLM-4.7")
@@ -40,19 +40,19 @@ async def generate_with_glm(
 ):
     """
     Generate structured content using the GLM-4.7 model for the given request.
-    
+
     Generates content of the specified content_type using request.context and returns a payload with the generated content, a Unix timestamp, and the tenant identifier from the authenticated user.
-    
+
     Parameters:
         request (GLMGenerateRequest): Request containing `content_type` (the kind of content to generate) and `context` (data used to guide generation).
-    
+
     Returns:
         dict: Response payload with keys:
             - `success` (bool): `True` on successful generation.
             - `content` (Any): Generated structured content.
             - `timestamp` (float): Unix timestamp when the response was created.
             - `tenant_id` (str): Tenant identifier of the authenticated user.
-    
+
     Raises:
         HTTPException: 403 if the user lacks the "glm" permission; 500 on internal errors during generation.
     """
@@ -77,7 +77,7 @@ async def generate_with_glm(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"GLM generation failed: {str(e)}", exc_info=True)
+        logger.error(f"GLM generation failed: {e!s}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -107,7 +107,7 @@ async def autoglm_security_analysis(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"AutoGLM security analysis failed: {str(e)}", exc_info=True)
+        logger.error(f"AutoGLM security analysis failed: {e!s}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -118,17 +118,17 @@ async def autoglm_secure_content(
 ):
     """
     Generate security-reviewed content for the given content type and context using the AutoGLM orchestrator.
-    
+
     Parameters:
         request (AutoGLMSecureContentRequest): Request containing `content_type` (the kind of content to produce) and `context` (data used to inform generation).
-        
+
     Returns:
         dict: A payload with keys:
             - `success`: `True` on successful generation.
             - `content`: The generated secure content.
             - `timestamp`: Unix epoch time when the response was produced.
             - `tenant_id`: Tenant identifier of the requesting user.
-    
+
     Raises:
         HTTPException: 403 if the current user lacks the "autoglm" permission; 500 on internal errors during generation.
     """
@@ -153,7 +153,7 @@ async def autoglm_secure_content(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"AutoGLM secure content generation failed: {str(e)}", exc_info=True)
+        logger.error(f"AutoGLM secure content generation failed: {e!s}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -161,9 +161,9 @@ async def autoglm_secure_content(
 async def autoglm_health_check(current_user: User = Depends(get_current_user)):
     """
     Perform health checks for configured GLM and AutoGLM services and assemble an overall health status.
-    
+
     Only services for which the current user has permission and for which required configuration is present are checked; unchecked services are reported as "not configured". The returned payload includes a POSIX timestamp and the requesting user's tenant identifier.
-    
+
     Returns:
         dict: A mapping containing:
             - "status" (str): overall health status.
@@ -192,16 +192,16 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
                 }
         except Exception as e:
             health_status["services"]["glm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"GLM health check failed: {str(e)}", exc_info=True)
+            logger.error(f"GLM health check failed: {e!s}", exc_info=True)
 
     # Test AutoGLM if configured and user has access
     if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
         try:
-            async with create_autoglm_orchestrator() as autoglm:
+            async with create_autoglm_orchestrator():
                 # Just test initialization - don't run full analysis for health check
                 health_status["services"]["autoglm"] = {"status": "operational"}
         except Exception as e:
             health_status["services"]["autoglm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"AutoGLM health check failed: {str(e)}", exc_info=True)
+            logger.error(f"AutoGLM health check failed: {e!s}", exc_info=True)
 
     return health_status

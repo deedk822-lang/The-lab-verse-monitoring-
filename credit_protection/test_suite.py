@@ -4,8 +4,8 @@ VAAL AI Empire - Comprehensive Test Suite
 Proves that all components work correctly
 """
 
-import sys
 from pathlib import Path
+import sys
 
 # Test data directory
 TEST_DIR = "/tmp/vaal_test"
@@ -40,7 +40,7 @@ def test_credit_manager():
 
     # Test 1.2: Check request allowed
     try:
-        allowed, reason, usage = manager.can_make_request(1000, "kimi")
+        allowed, reason, _usage = manager.can_make_request(1000, "kimi")
         print_result("Check request", True, f"Allowed: {allowed}, Reason: {reason}")
     except Exception as e:
         print_result("Check request", False, str(e))

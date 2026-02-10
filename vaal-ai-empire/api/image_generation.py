@@ -5,11 +5,10 @@ Supports multiple providers: Stable Diffusion, DALL-E, Replicate
 
 import base64
 import concurrent.futures
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import requests
 
@@ -45,7 +44,7 @@ class ImageGenerator:
             "local": 0.0            # Local Stable Diffusion
         }
 
-    def _detect_available_providers(self) -> Dict[str, bool]:
+    def _detect_available_providers(self) -> dict[str, bool]:
         """Detect which image generation providers are available"""
         providers = {
             "stability": bool(os.getenv("STABILITY_API_KEY")),
@@ -91,7 +90,7 @@ class ImageGenerator:
             return False
 
     def generate(self, prompt: str, style: str = "professional",
-                 provider: str = "auto", skip_enhance: bool = False) -> Dict:
+                 provider: str = "auto", skip_enhance: bool = False) -> dict:
         """
         Generate image from text prompt
 
@@ -155,7 +154,7 @@ class ImageGenerator:
 
         return "placeholder"
 
-    def _generate_stability(self, prompt: str) -> Dict:
+    def _generate_stability(self, prompt: str) -> dict:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
@@ -197,9 +196,9 @@ class ImageGenerator:
             "prompt": prompt
         }
 
-    def _generate_replicate(self, prompt: str) -> Dict:
+    def _generate_replicate(self, prompt: str) -> dict:
         """Generate using Replicate API"""
-        api_token = os.getenv("REPLICATE_API_TOKEN")
+        os.getenv("REPLICATE_API_TOKEN")
 
         import replicate
 
@@ -232,7 +231,7 @@ class ImageGenerator:
             "prompt": prompt
         }
 
-    def _generate_huggingface(self, prompt: str) -> Dict:
+    def _generate_huggingface(self, prompt: str) -> dict:
         """Generate using HuggingFace Inference API"""
         api_token = os.getenv("HUGGINGFACE_TOKEN")
 
@@ -266,7 +265,7 @@ class ImageGenerator:
             "prompt": prompt
         }
 
-    def _generate_local(self, prompt: str) -> Dict:
+    def _generate_local(self, prompt: str) -> dict:
         """Generate using local Stable Diffusion"""
         # Automatic1111 API
         endpoint = "http://localhost:7860"
@@ -304,7 +303,7 @@ class ImageGenerator:
             "prompt": prompt
         }
 
-    def _generate_fallback(self, prompt: str) -> Dict:
+    def _generate_fallback(self, prompt: str) -> dict:
         """Fallback: try all available providers"""
         for provider in ["replicate", "huggingface", "stability", "local"]:
             if self.providers[provider]:
@@ -360,7 +359,7 @@ class ImageGenerator:
             logger.error(f"Failed to create placeholder: {e}")
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
-    def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
+    def generate_batch(self, prompts: list[str], style: str = "professional") -> list[dict]:
         """
         Generate multiple images in parallel.
         ⚡ Bolt Optimization: Uses ThreadPoolExecutor to speed up multiple API calls.
@@ -398,7 +397,7 @@ class ImageGenerator:
 
         return results
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get service status"""
         return {
             "available_providers": [p for p, status in self.providers.items() if status],
@@ -448,7 +447,7 @@ class BusinessImageGenerator:
             ]
         }
 
-    def generate_for_business(self, business_type: str, count: int = 5) -> List[Dict]:
+    def generate_for_business(self, business_type: str, count: int = 5) -> list[dict]:
         """Generate business-specific images"""
         prompts = self.templates.get(business_type, self.templates["retail"])
 

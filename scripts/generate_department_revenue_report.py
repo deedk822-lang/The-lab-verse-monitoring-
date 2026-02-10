@@ -19,10 +19,9 @@ Revenue Model:
 - Cloud storage operations: $5
 """
 
+from datetime import datetime
 import json
 import os
-from datetime import datetime
-from typing import Dict
 
 
 class DepartmentRevenueTracker:
@@ -118,7 +117,7 @@ class DepartmentRevenueTracker:
         """Calculate total revenue across all departments"""
         return sum(dept["revenue"] for dept in self.departments.values())
 
-    def generate_report(self) -> Dict:
+    def generate_report(self) -> dict:
         """Generate comprehensive revenue report"""
         total_revenue = self.get_total_revenue()
 
@@ -135,7 +134,7 @@ class DepartmentRevenueTracker:
             reverse=True
         )
 
-        for dept_id, dept_data in sorted_depts:
+        for _dept_id, dept_data in sorted_depts:
             dept_report = {
                 "department": dept_data["name"],
                 "lead": dept_data["lead"],
@@ -148,7 +147,7 @@ class DepartmentRevenueTracker:
 
         return report
 
-    def generate_q1_2026_forecast(self) -> Dict:
+    def generate_q1_2026_forecast(self) -> dict:
         """Generate Q1 2026 revenue forecast by department"""
         # Project 13 weeks of operations (Q1 2026)
         weeks_in_q1 = 13
@@ -160,11 +159,11 @@ class DepartmentRevenueTracker:
             "departments": []
         }
 
-        for dept_id, dept_data in self.departments.items():
+        for _dept_id, dept_data in self.departments.items():
             weekly_revenue = dept_data["revenue"]  # Current week as baseline
             q1_revenue = 0
 
-            for week in range(weeks_in_q1):
+            for _week in range(weeks_in_q1):
                 weekly_revenue *= weekly_multiplier
                 q1_revenue += weekly_revenue
 

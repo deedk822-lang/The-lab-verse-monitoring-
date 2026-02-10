@@ -1,6 +1,5 @@
-import logging
 from datetime import datetime
-from typing import Dict, List
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +9,7 @@ class RevenueAnomalyDetector:
     def __init__(self, db):
         self.db = db
 
-    def detect_anomalies(self) -> List[Dict]:
+    def detect_anomalies(self) -> list[dict]:
         """
         Detect anomalies such as sudden drops in revenue
         Returns a list of detected anomalies with descriptions

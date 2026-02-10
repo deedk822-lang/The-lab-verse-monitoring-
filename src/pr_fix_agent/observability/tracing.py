@@ -4,13 +4,16 @@ OpenTelemetry Tracing
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from pr_fix_agent.core.config import Settings
+if TYPE_CHECKING:
+    from pr_fix_agent.core.config import Settings
 
 
 def initialize_tracing(settings: Settings) -> None:

@@ -4,12 +4,13 @@ Observability module for PR Fix Agent.
 
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, timezone
 import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
 from typing import Any, Dict
 
 import structlog
+
 
 # Re-configure structured logging for consistent output
 def configure_structured_logging():
@@ -91,7 +92,7 @@ class CostTracker:
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             cost_usd=cost_usd,
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(UTC).isoformat()
         )
 
         self.costs.append(cost)
@@ -113,7 +114,7 @@ class CostTracker:
 
         return cost
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get cost summary"""
         return {
             "total_spent_usd": self.total_spent,
@@ -126,7 +127,7 @@ class CostTracker:
 
 
 __all__ = [
-    'LLMCost',
     'BudgetExceededError',
     'CostTracker',
+    'LLMCost',
 ]

@@ -1,7 +1,8 @@
-import logging
+import concurrent.futures
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple
+import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 # This function is decorated with lru_cache to ensure that the expensive
 # process of initializing all API providers only happens once.
 @lru_cache(maxsize=1)
-def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
+def _get_cached_providers() -> tuple[dict[str, Any], Any | None, Any | None]:
     """
     Initialize and cache all content and image generation providers.
     This function is executed only once, and its result is cached.
@@ -99,7 +100,7 @@ class ContentFactory:
         # Unpack the cached providers and image generator
         self.providers, self.image_generator, self.multimodal_provider = _get_cached_providers()
 
-    def generate_multimodal_content(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
+    def generate_multimodal_content(self, messages: list[dict[str, Any]], max_new_tokens: int = 300) -> dict:
         """
         Public method to generate content from multimodal inputs using the Aya Vision provider.
         """
@@ -119,13 +120,13 @@ class ContentFactory:
             logger.error(f"Aya Vision generation failed: {e}")
             raise
 
-    def generate_content(self, prompt: str, max_tokens: int = 500) -> Dict:
+    def generate_content(self, prompt: str, max_tokens: int = 500) -> dict:
         """
         Public method to generate content using the best available provider.
         """
         return self._generate_with_fallback(prompt, max_tokens)
 
-    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> Dict:
+    def _generate_with_fallback(self, prompt: str, max_tokens: int = 500) -> dict:
         """Try providers in priority order until one succeeds"""
         priority = ["groq", "cohere", "mistral", "kimi", "huggingface"]
 
@@ -165,27 +166,41 @@ class ContentFactory:
         raise Exception("All content generation providers failed")
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
-                            num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
+                            num_posts: int = 10, num_images: int = 5) -> dict:
+        """
+        Generate complete social media pack with REAL content.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate posts and images concurrently.
+        """
 
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
+            # Parallelize posts and images generation
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                # 1. Start posts generation
+                posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
+
+                # 2. Start image generation
+                if self.image_generator:
+                    images_future = executor.submit(self.image_generator.generate_for_business, business_type, count=num_images)
+                else:
+                    images_future = None
+
+                # Wait for results
+                posts_result = posts_future.result()
+                posts = self._parse_posts(posts_result["text"], num_posts)
+
+                if images_future:
+                    try:
+                        images = images_future.result()
+                        logger.info(f"✅ Generated {len(images)} images")
+                    except Exception as e:
+                        logger.error(f"Image generation failed: {e}")
+                        images = self._create_placeholder_images(num_images)
+                else:
                     images = self._create_placeholder_images(num_images)
-            else:
-                images = self._create_placeholder_images(num_images)
 
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)
@@ -225,7 +240,7 @@ Example format:
 Now generate {num_posts} unique posts:"""
         return prompt
 
-    def _parse_posts(self, text: str, expected_count: int) -> List[str]:
+    def _parse_posts(self, text: str, expected_count: int) -> list[str]:
         if "---" in text:
             posts = [p.strip() for p in text.split("---") if p.strip()]
         else:
@@ -247,10 +262,10 @@ Now generate {num_posts} unique posts:"""
                 cleaned_posts.append("Coming soon! Stay tuned for exciting updates. 🎉")
         return cleaned_posts[:expected_count]
 
-    def _create_placeholder_images(self, count: int) -> List[Dict]:
+    def _create_placeholder_images(self, count: int) -> list[dict]:
         return [{"prompt": f"Business image {i+1}", "image_url": f"https://via.placeholder.com/800x600?text=Image+{i+1}", "provider": "placeholder", "cost_usd": 0.0} for i in range(count)]
 
-    def generate_email_sequence(self, business_name: str, business_type: str, days: int = 7) -> List[Dict]:
+    def generate_email_sequence(self, business_name: str, business_type: str, days: int = 7) -> list[dict]:
         prompt = f"""Generate a {days}-day email sequence for {business_name}, a {business_type} in South Africa.
 
 Each email should include:
@@ -272,7 +287,7 @@ Generate all {days} emails now:"""
             logger.error(f"Email generation failed: {e}")
             return self._create_template_emails(business_name, days)
 
-    def _parse_emails(self, text: str, expected_count: int) -> List[Dict]:
+    def _parse_emails(self, text: str, expected_count: int) -> list[dict]:
         emails = []
         current_email = {}
         lines = text.split("\n")
@@ -292,7 +307,7 @@ Generate all {days} emails now:"""
             emails.append(current_email)
         return emails[:expected_count]
 
-    def _create_template_emails(self, business_name: str, days: int) -> List[Dict]:
+    def _create_template_emails(self, business_name: str, days: int) -> list[dict]:
         templates = [{"subject": f"Welcome to {business_name}!", "body": f"Thank you for connecting with {business_name}. We're excited to serve you!"}, {"subject": f"Special Offer from {business_name}", "body": f"Check out our special offers this week at {business_name}!"}, {"subject": f"Tips & Tricks from {business_name}", "body": f"Here are some expert tips from the team at {business_name}."}]
         emails = []
         for i in range(days):
@@ -300,7 +315,7 @@ Generate all {days} emails now:"""
             emails.append({"day": i + 1, "subject": template["subject"], "body": template["body"]})
         return emails
 
-    def generate_mailchimp_campaign(self, business_name: str, pack: Dict) -> Dict:
+    def generate_mailchimp_campaign(self, business_name: str, pack: dict) -> dict:
         subject = f"Your Weekly Content Pack - {business_name}"
         html_content = f"""
         <!DOCTYPE html>
@@ -344,5 +359,5 @@ Generate all {days} emails now:"""
         """
         return {"subject": subject, "html_content": html_content, "status": "created", "posts_included": len(pack.get("posts", [])), "images_included": len(pack.get("images", []))}
 
-    def get_provider_status(self) -> Dict:
+    def get_provider_status(self) -> dict:
         return {provider: "available" if client else "unavailable" for provider, client in self.providers.items()}

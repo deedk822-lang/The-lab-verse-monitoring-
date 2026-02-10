@@ -6,10 +6,12 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import TYPE_CHECKING
 
 import structlog
 
-from pr_fix_agent.core.config import Settings
+if TYPE_CHECKING:
+    from pr_fix_agent.core.config import Settings
 
 
 def configure_logging(settings: Settings) -> None:
@@ -32,15 +34,9 @@ def configure_logging(settings: Settings) -> None:
     ]
 
     if settings.log_format == "json":
-        processors = shared_processors + [
-            structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer(),
-        ]
+        processors = [*shared_processors, structlog.processors.format_exc_info, structlog.processors.JSONRenderer()]
     else:
-        processors = shared_processors + [
-            structlog.processors.format_exc_info,
-            structlog.dev.ConsoleRenderer(),
-        ]
+        processors = [*shared_processors, structlog.processors.format_exc_info, structlog.dev.ConsoleRenderer()]
 
     structlog.configure(
         processors=processors,

@@ -92,7 +92,6 @@
     "@alicloud/tea-util": "^1.4.5",
     "@alicloud/openapi-client": "^0.4.8",
     "@alicloud/credentials": "^2.3.0",
-    "@alicloud/accessanalyzer20200901": "^1.0.10",
     "@alicloud/ecs20140526": "^3.0.3",
     "@alicloud/ram20150501": "^3.0.6",
     "@opentelemetry/api": "^1.7.0",

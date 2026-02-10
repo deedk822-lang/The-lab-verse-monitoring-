@@ -1,4 +1,3 @@
- codex/add-initial-configuration-and-server-files
 """
 Live-Agent Stream package.
 
@@ -9,4 +8,3 @@ during test collection without performing side-effects.
 """
 
 """Server package for agent helpers."""
- codex/add-mypy-configuration-and-server-components

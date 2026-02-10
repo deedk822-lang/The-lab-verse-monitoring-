@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class AyaVisionAPI:
             logger.error(f"❌ Failed to initialize Aya Vision pipeline: {e}")
             raise ValueError(f"Could not initialize AyaVisionAPI: {e}")
 
-    def generate_from_messages(self, messages: List[Dict[str, Any]], max_new_tokens: int = 300) -> Dict:
+    def generate_from_messages(self, messages: list[dict[str, Any]], max_new_tokens: int = 300) -> dict:
         """
         Generates text content based on a list of messages which can include images and text.
         """

@@ -121,8 +121,9 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true' && github.event.inputs.mode == 'create-pr'
         id: create_pr
         uses: peter-evans/create-pull-request@v6
+        continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           branch: ${{ steps.branch.outputs.name }}
           title: "🤖 Kimi AI: ${{ github.event.inputs.task }}"
           body: |

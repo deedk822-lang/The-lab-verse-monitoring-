@@ -3,9 +3,9 @@ Shared state management using Redis for distributed rate limiting and deduplicat
 """
 
 import hashlib
-import time
-from typing import Dict, Any, Optional
 import logging
+import time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class RedisDedupeCache:
         self.redis = redis_client
         self.ttl = ttl_seconds
 
-    def generate_key(self, payload: Dict[str, Any]) -> str:
+    def generate_key(self, payload: dict[str, Any]) -> str:
         """Generate unique key for payload."""
         webhook_id = payload.get('webhookEvent', payload.get('id', ''))
         timestamp = payload.get('timestamp', payload.get('created_at', ''))

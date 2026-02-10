@@ -7,8 +7,8 @@ import logging
 import re
 import threading
 import time
+from typing import Any
 import unicodedata
-from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +45,10 @@ def normalize_unicode(text: str) -> str:
     return unicodedata.normalize('NFKC', text)
 
 
-def detect_injection_patterns(text: str) -> List[str]:
+def detect_injection_patterns(text: str) -> list[str]:
     """Detect dangerous patterns in text."""
     normalized = normalize_unicode(text)
-    matches = []
+    matches: list[str] = []
     # Check simple patterns
     for pattern in DANGEROUS_PATTERNS:
         if re.search(pattern, normalized):
@@ -99,9 +99,9 @@ def sanitize_prompt(
     return normalized.strip()
 
 
-def sanitize_context(context: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_context(context: dict[str, Any]) -> dict[str, Any]:
     """Recursively sanitize context dictionary."""
-    sanitized = {}
+    sanitized: dict[str, Any] = {}
     for key, value in context.items():
         if isinstance(value, str):
             sanitized[key] = sanitize_prompt(value, strict=False)
@@ -112,7 +112,7 @@ def sanitize_context(context: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 
-def sanitize_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_webhook_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """Sanitize webhook payload to prevent injection."""
     return sanitize_context(payload)
 
@@ -120,10 +120,10 @@ def sanitize_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
 class RateLimiter:
     """Thread-safe rate limiter."""
 
-    def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
+    def __init__(self, max_requests: int = 100, window_seconds: int = 3600) -> None:
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests: List[float] = []
+        self.requests: list[float] = []
         self._lock = threading.Lock()
 
     async def is_allowed(self, key: str) -> bool:
@@ -143,14 +143,14 @@ class RateLimiter:
             self.requests.append(now)
             return True
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get stats."""
         with self._lock:
             return {
                 "remaining": self.max_requests - len(self.requests)
             }
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset."""
         with self._lock:
             self.requests.clear()
@@ -159,10 +159,10 @@ class RateLimiter:
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filenames to prevent directory traversal.
-    
+
     Args:
         filename: Input filename
-        
+
     Returns:
         Sanitized filename
     """

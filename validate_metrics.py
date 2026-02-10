@@ -5,10 +5,9 @@ Grafana Metrics Validator - Enhanced Version
 Verifies metrics are flowing correctly to Grafana Cloud
 Validates data integrity and alert configurations
 """
+from datetime import datetime
 import os
 import sys
-from datetime import datetime
-from typing import Dict, Optional
 
 import requests
 
@@ -25,7 +24,7 @@ class GrafanaValidator:
             print('⚠️  Grafana credentials not configured. Skipping validation.')
             sys.exit(0)
 
-    def query(self, query: str, time_param: Optional[str] = None) -> Optional[Dict]:
+    def query(self, query: str, time_param: str | None = None) -> dict | None:
         """Execute PromQL query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query'
 
@@ -47,7 +46,7 @@ class GrafanaValidator:
             print(f'❌ Query failed: {e}')
             return None
 
-    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> Optional[Dict]:
+    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> dict | None:
         """Execute range query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query_range'
 
@@ -216,8 +215,7 @@ def check_data_freshness():
             latest_timestamp = 0
             for series in result_data:
                 timestamp = float(series.get('value', [0, 0])[0])
-                if timestamp > latest_timestamp:
-                    latest_timestamp = timestamp
+                latest_timestamp = max(latest_timestamp, timestamp)
 
             if latest_timestamp > 0:
                 last_update = datetime.fromtimestamp(latest_timestamp)

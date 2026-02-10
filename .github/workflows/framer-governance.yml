@@ -146,8 +146,9 @@ jobs:
       - name: Create CMS Update PR
         if: steps.ai_sync.outputs.body != ''
         uses: peter-evans/create-pull-request@v6
+        continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           commit-message: "chore: AI-generated CMS content update"
           title: "🤖 AI CMS Update"
           body: ${{ steps.ai_sync.outputs.body }}

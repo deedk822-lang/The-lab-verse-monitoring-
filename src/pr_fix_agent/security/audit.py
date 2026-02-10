@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-import json
-import logging
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path
+import json
+import logging
+from typing import TYPE_CHECKING
 
-from pr_fix_agent.core.config import Settings, get_settings
+from pr_fix_agent.core.config import get_settings
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class AuditLogger:

@@ -1,13 +1,13 @@
+from datetime import UTC, datetime
 import os
 import time  # For potential rate limit handling
-from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any
 
-import requests
 from hubspot import HubSpot
 from hubspot.crm.contacts import Filter, FilterGroup, PublicObjectSearchRequest
 from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
 from hubspot.exceptions import ApiError  # Import specific exception
+import requests
 
 # ========================
 # CONFIG
@@ -25,7 +25,7 @@ HUBSPOT_CLIENT = HubSpot(access_token=HUBSPOT_TOKEN) if HUBSPOT_TOKEN else None
 # ========================
 # CORE: Enhanced GitHub Audit
 # ========================
-def audit_github(handle: str) -> Optional[Dict]:
+def audit_github(handle: str) -> dict[str, Any] | None:
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json" # Using v3 for consistency
@@ -67,7 +67,7 @@ def audit_github(handle: str) -> Optional[Dict]:
         return None
 
     # --- ENHANCEMENT: Improved Activity Analysis with Multiple Signals ---
-    cutoff_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    cutoff_date = datetime(2024, 1, 1, tzinfo=UTC)
 
     recent_pushes = 0
     recent_reviews = 0
@@ -181,7 +181,7 @@ def post_to_hubspot(email: str, card: str) -> None:
         contact_id = results[0].id
         note = SimplePublicObjectInputForCreate(
             properties={
-                "hs_timestamp": datetime.now(timezone.utc).isoformat(),
+                "hs_timestamp": datetime.now(UTC).isoformat(),
                 "hs_note_body": card
             },
             associations=[{

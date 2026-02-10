@@ -4,9 +4,9 @@ VAAL AI Empire - Credit Protection Middleware
 Real FastAPI middleware that protects LLM API calls
 """
 
+from collections.abc import Callable
 import re
 import time
-from typing import Callable
 
 from credit_manager import CreditManager
 from fastapi import HTTPException, Request, Response
@@ -159,7 +159,7 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
 def protect_function(tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
     """
     Decorator to protect individual functions
-    
+
     Usage:
         @protect_function(tier="free")
         def my_llm_function(prompt: str):

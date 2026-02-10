@@ -1,6 +1,6 @@
+from functools import cache
 import logging
 import os
-from functools import lru_cache
 
 from huggingface_hub import InferenceClient
 from sentence_transformers import SentenceTransformer
@@ -11,7 +11,7 @@ SEO_MODEL_NAME = 'all-MiniLM-L6-v2'
 
 
 # ⚡ Bolt Optimization: Cache the model loading
-@lru_cache(maxsize=None)
+@cache
 def get_seo_model():
     """Loads and caches the SentenceTransformer model."""
     try:

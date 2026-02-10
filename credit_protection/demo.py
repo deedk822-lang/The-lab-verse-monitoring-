@@ -4,9 +4,9 @@ VAAL AI Empire - Live Demo
 Shows the system actually working in real-time
 """
 
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 # Demo data directory
 DEMO_DIR = "/tmp/vaal_demo"
@@ -151,7 +151,7 @@ def main():
         print("  ✅ Automatic protection activated!")
 
     # Check circuit breaker status
-    breaker_active, breaker_reason = manager.check_circuit_breaker()
+    breaker_active, _breaker_reason = manager.check_circuit_breaker()
     if breaker_active:
         print("\n  Circuit breaker status: ACTIVE")
         print("  All requests blocked for 60 minutes")

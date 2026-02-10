@@ -7,6 +7,7 @@ import os
 import logging
 import requests
 import base64
+import concurrent.futures
 from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +20,7 @@ class ImageGenerator:
 
     def __init__(self):
         self.providers = self._detect_available_providers()
+        self.session = requests.Session()
         self.output_dir = Path("data/generated_images")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -47,6 +49,12 @@ class ImageGenerator:
 
         return providers
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.close()
+
     def _check_local_sd(self) -> bool:
         """Check if local Stable Diffusion is available"""
         try:
@@ -58,7 +66,7 @@ class ImageGenerator:
 
             for endpoint in endpoints:
                 try:
-                    response = requests.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
+                    response = self.session.get(f"{endpoint}/sdapi/v1/sd-models", timeout=2)
                     if response.status_code == 200:
                         logger.info(f"Local SD found at {endpoint}")
                         return True
@@ -137,7 +145,7 @@ class ImageGenerator:
         """Generate using Stability AI API"""
         api_key = os.getenv("STABILITY_API_KEY")
 
-        response = requests.post(
+        response = self.session.post(
             "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -193,7 +201,7 @@ class ImageGenerator:
 
         # Download image
         image_url = output[0]
-        image_data = requests.get(image_url).content
+        image_data = self.session.get(image_url).content
 
         # Save image
         filename = f"replicate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -219,7 +227,7 @@ class ImageGenerator:
 
         headers = {"Authorization": f"Bearer {api_token}"}
 
-        response = requests.post(
+        response = self.session.post(
             API_URL,
             headers=headers,
             json={"inputs": prompt},
@@ -249,7 +257,7 @@ class ImageGenerator:
         # Automatic1111 API
         endpoint = "http://localhost:7860"
 
-        response = requests.post(
+        response = self.session.post(
             f"{endpoint}/sdapi/v1/txt2img",
             json={
                 "prompt": prompt,
@@ -338,23 +346,34 @@ class ImageGenerator:
             return "https://via.placeholder.com/800x600?text=Image+Generation+Unavailable"
 
     def generate_batch(self, prompts: List[str], style: str = "professional") -> List[Dict]:
-        """Generate multiple images"""
-        results = []
+        """Generate multiple images in parallel"""
+        if not prompts:
+            return []
 
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
+        results = [None] * len(prompts)
 
+        def _generate_single(index, prompt):
+            logger.info(f"Generating image {index+1}/{len(prompts)}: {prompt[:50]}...")
             try:
-                result = self.generate(prompt, style=style)
-                results.append(result)
+                return index, self.generate(prompt, style=style)
             except Exception as e:
-                logger.error(f"Failed to generate image {i+1}: {e}")
-                results.append({
+                logger.error(f"Failed to generate image {index+1}: {e}")
+                return index, {
                     "image_url": self._create_placeholder(prompt),
                     "provider": "error",
                     "cost_usd": 0.0,
                     "error": str(e)
-                })
+                }
+
+        max_workers = min(len(prompts), 10)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(_generate_single, i, prompt): i
+                for i, prompt in enumerate(prompts)
+            }
+            for future in concurrent.futures.as_completed(future_to_index):
+                index, result = future.result()
+                results[index] = result
 
         return results
 

@@ -96,11 +96,7 @@ cat package.json
 
 Look for conflict markers:
 ```json
-<<<<<<< HEAD
   "version": "1.0.0",
-=======
-  "version": "2.0.0",
->>>>>>> feature-branch
 ```
 
 ### Step 3: Resolve Manually

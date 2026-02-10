@@ -8,7 +8,7 @@ Validates data integrity and alert configurations
 import os
 import sys
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any
 
 import requests
 
@@ -16,7 +16,7 @@ import requests
 class GrafanaValidator:
     """Validates Grafana Cloud metrics and configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.base_url = os.getenv('GRAFANA_CLOUD_PROM_URL', '').replace('/api/prom/push', '')
         self.user = os.getenv('GRAFANA_CLOUD_PROM_USER', '')
         self.api_key = os.getenv('GRAFANA_CLOUD_API_KEY', '')
@@ -25,7 +25,7 @@ class GrafanaValidator:
             print('⚠️  Grafana credentials not configured. Skipping validation.')
             sys.exit(0)
 
-    def query(self, query: str, time_param: Optional[str] = None) -> Optional[Dict]:
+    def query(self, query: str, time_param: str | None = None) -> dict[str, Any] | None:
         """Execute PromQL query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query'
 
@@ -42,12 +42,12 @@ class GrafanaValidator:
                 timeout=10
             )
             response.raise_for_status()
-            return response.json()
+            return response.json() # type: ignore
         except requests.exceptions.RequestException as e:
             print(f'❌ Query failed: {e}')
             return None
 
-    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> Optional[Dict]:
+    def query_range(self, query: str, start: str, end: str, step: str = '15s') -> dict[str, Any] | None:
         """Execute range query against Grafana Cloud."""
         query_url = f'{self.base_url}/api/prom/api/v1/query_range'
 
@@ -66,13 +66,13 @@ class GrafanaValidator:
                 timeout=10
             )
             response.raise_for_status()
-            return response.json()
+            return response.json() # type: ignore
         except requests.exceptions.RequestException as e:
             print(f'❌ Range query failed: {e}')
             return None
 
 
-def validate_metrics():
+def validate_metrics() -> bool:
     """Validate all expected metrics exist and are reporting."""
     validator = GrafanaValidator()
 
@@ -121,7 +121,7 @@ def validate_metrics():
         print(f'   {metric["description"]}')
         print(f'   Query: {metric["query"]}')
 
-        result = validator.query(metric['query'])
+        result = validator.query(str(metric['query']))
 
         if result and result.get('status') == 'success':
             data = result.get('data', {})
@@ -196,7 +196,7 @@ def validate_metrics():
     return len(failed) == 0 and len(no_data) == 0
 
 
-def check_data_freshness():
+def check_data_freshness() -> bool:
     """Check if metrics are being updated recently."""
     validator = GrafanaValidator()
 
@@ -213,11 +213,10 @@ def check_data_freshness():
         result_data = data.get('result', [])
 
         if result_data:
-            latest_timestamp = 0
+            latest_timestamp: float = 0
             for series in result_data:
                 timestamp = float(series.get('value', [0, 0])[0])
-                if timestamp > latest_timestamp:
-                    latest_timestamp = timestamp
+                latest_timestamp = max(latest_timestamp, timestamp)
 
             if latest_timestamp > 0:
                 last_update = datetime.fromtimestamp(latest_timestamp)
@@ -247,7 +246,7 @@ def check_data_freshness():
         return False
 
 
-def validate_slo_query():
+def validate_slo_query() -> bool:
     """Validate the SLO availability query works correctly."""
     validator = GrafanaValidator()
 
@@ -294,7 +293,7 @@ def validate_slo_query():
         return False
 
 
-def check_provider_distribution():
+def check_provider_distribution() -> bool:
     """Check distribution of requests across providers."""
     validator = GrafanaValidator()
 
@@ -345,7 +344,7 @@ def check_provider_distribution():
         return False
 
 
-def check_latency_percentiles():
+def check_latency_percentiles() -> None:
     """Check latency percentiles across providers."""
     validator = GrafanaValidator()
 
@@ -375,7 +374,7 @@ def check_latency_percentiles():
                 print()
 
 
-def run_comprehensive_validation():
+def run_comprehensive_validation() -> bool:
     """Run all validation checks."""
     print('\n' + '╔' + '═' * 68 + '╗')
     print('║' + ' ' * 10 + '🔍 COMPREHENSIVE GRAFANA VALIDATION' + ' ' * 21 + '║')
@@ -422,7 +421,7 @@ def run_comprehensive_validation():
             print('   5. Run live_test_agent.py to generate test data')
             print('   6. Wait 30-60 seconds for metrics to propagate')
 
-    print('\n' + '═' * 70 + '\n')
+    print('\n' + '─' * 70 + '\n')
 
     return all_passed
 

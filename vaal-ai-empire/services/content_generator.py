@@ -1,4 +1,5 @@
 import logging
+import concurrent.futures
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -166,26 +167,41 @@ class ContentFactory:
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
+        """
+        Generate complete social media pack with REAL content.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to run text and image generation in parallel.
+        This reduces the total generation time significantly.
+        """
 
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
+            # Start both tasks in parallel
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
+
+                if self.image_generator:
+                    images_future = executor.submit(self.image_generator.generate_for_business, business_type, count=num_images)
+                else:
+                    images_future = None
+
+                # Wait for text generation
+                posts_result = posts_future.result()
+                posts = self._parse_posts(posts_result["text"], num_posts)
+
+                # Wait for image generation
+                images = []
+                if images_future:
+                    try:
+                        images = images_future.result()
+                        logger.info(f"✅ Generated {len(images)} images")
+                    except Exception as e:
+                        logger.error(f"Image generation failed: {e}")
+                        images = self._create_placeholder_images(num_images)
+                else:
                     images = self._create_placeholder_images(num_images)
-            else:
-                images = self._create_placeholder_images(num_images)
 
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)

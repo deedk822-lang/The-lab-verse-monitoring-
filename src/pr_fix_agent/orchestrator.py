@@ -232,6 +232,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', required=True, choices=['reasoning', 'coding', 'generate-pr'])
     parser.add_argument('--findings', help='Path to findings directory')
+    parser.add_argument('--limit', type=int, help='Limit the number of findings to process')
     parser.add_argument('--proposals', help='Path to proposals JSON')
     parser.add_argument('--test-results', help='Path to test results JSON')
     parser.add_argument('--output', help='Output file')
@@ -281,6 +282,10 @@ def main():
 
         if not findings:
             logger.info("no_findings_found")
+
+        if args.limit:
+            logger.info("limiting_findings", limit=args.limit, total=len(findings))
+            findings = findings[:args.limit]
 
         proposals = orch._generate_fix_proposals(findings)
         with open(args.output or "proposals.json", 'w') as f:

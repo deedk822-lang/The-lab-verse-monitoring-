@@ -22,7 +22,7 @@ RED = "\033[91m"
 NC = "\033[0m"
 
 
-def validate_zai():
+def validate_zai() -> tuple[bool, str]:
     """Validates Z.ai GLM-4.7 connection"""
     api_key = os.getenv("ZAI_API_KEY")
     if not api_key:
@@ -40,13 +40,13 @@ def validate_zai():
             max_tokens=10
         )
 
-        return True, f"Z.ai Connected (model: {response.model})"
+        return True, f"Z.ai Connected (model: {response.model!s})"
 
     except Exception as e:
-        return False, f"Z.ai Failed: {str(e)}"
+        return False, f"Z.ai Failed: {e!s}"
 
 
-def validate_perplexity():
+def validate_perplexity() -> tuple[bool, str]:
     """Validates Perplexity Sonar Pro connection"""
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key:
@@ -67,10 +67,10 @@ def validate_perplexity():
         return True, "Perplexity Connected (sonar-pro)"
 
     except Exception as e:
-        return False, f"Perplexity Failed: {str(e)}"
+        return False, f"Perplexity Failed: {e!s}"
 
 
-def main():
+def main() -> None:
     """Main validation entry point"""
     print("🔍 Validating Agent Stack...")
 

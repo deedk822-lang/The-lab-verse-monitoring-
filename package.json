@@ -83,9 +83,9 @@
     "agents"
   ],
   "author": "deedk822-lang",
-    "license": "MIT",
-    "overrides": {
-      "tar": "^7.5.7",
-      "qs": "^6.14.1"
-    }
+  "license": "MIT",
+  "overrides": {
+    "tar": "^7.5.7",
+    "qs": "^6.14.1"
+  }
 }

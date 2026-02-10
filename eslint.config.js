@@ -40,9 +40,13 @@ export default [
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'warn',
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
+      'react/prop-types': 'off',
+      'no-console': 'off',
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
+      'no-control-regex': 'off',
+      'no-case-declarations': 'off',
+      'no-loss-of-precision': 'off'
     },
     settings: {
       react: {

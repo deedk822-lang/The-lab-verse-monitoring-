@@ -37,50 +37,6 @@ const VaalDashboard = () => {
     { id: 3, client: 'Koffie & More', task: 'Send invoice', time: '1d', priority: 'low' }
   ];
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, color }) => (
-    <div className="bg-white rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-3xl font-bold mt-2">{value}</p>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        <Icon className="w-12 h-12 opacity-20" style={{ color }} />
-      </div>
-    </div>
-  );
-
-  const ClientRow = ({ client }) => (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            {client.name.charAt(0)}
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{client.name}</div>
-            <div className="text-sm text-gray-500">{client.type}</div>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-          {client.status}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        R{client.revenue.toLocaleString()}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {client.posts} posts
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
-        <button className="text-green-600 hover:text-green-900">Generate</button>
-      </td>
-    </tr>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -371,5 +327,49 @@ const VaalDashboard = () => {
     </div>
   );
 };
+
+const StatCard = ({ icon: Icon, title, value, subtitle, color }) => (
+  <div className="bg-white rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-600">{title}</p>
+        <p className="text-3xl font-bold mt-2">{value}</p>
+        {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+      </div>
+      <Icon className="w-12 h-12 opacity-20" style={{ color }} />
+    </div>
+  </div>
+);
+
+const ClientRow = ({ client }) => (
+  <tr className="hover:bg-gray-50">
+    <td className="px-6 py-4 whitespace-nowrap">
+      <div className="flex items-center">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          {client.name.charAt(0)}
+        </div>
+        <div className="ml-4">
+          <div className="text-sm font-medium text-gray-900">{client.name}</div>
+          <div className="text-sm text-gray-500">{client.type}</div>
+        </div>
+      </div>
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap">
+      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+        {client.status}
+      </span>
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+      R{client.revenue.toLocaleString()}
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+      {client.posts} posts
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
+      <button className="text-green-600 hover:text-green-900">Generate</button>
+    </td>
+  </tr>
+);
 
 export default VaalDashboard;

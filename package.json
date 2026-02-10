@@ -42,6 +42,9 @@
     "@babel/preset-env": "^7.28.5",
     "@eslint/js": "^9.14.0",
     "eslint": "^8.52.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^15.11.0",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
@@ -80,5 +83,8 @@
     "agents"
   ],
   "author": "deedk822-lang",
-  "license": "MIT"
+    "license": "MIT",
+    "overrides": {
+      "tar": "^7.5.7"
+    }
 }

@@ -25,7 +25,7 @@
     "@mistralai/mistralai": "^1.10.0",
     "@vercel/postgres": "^0.10.0",
     "@vercel/speed-insights": "^1.0.0",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "lucide-react": "^0.555.0",
@@ -42,9 +42,9 @@
     "@babel/preset-env": "^7.28.5",
     "@eslint/js": "^9.14.0",
     "eslint": "^8.52.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "globals": "^15.11.0",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
@@ -85,6 +85,7 @@
   "author": "deedk822-lang",
     "license": "MIT",
     "overrides": {
-      "tar": "^7.5.7"
+      "tar": "^7.5.7",
+      "qs": "^6.14.1"
     }
 }

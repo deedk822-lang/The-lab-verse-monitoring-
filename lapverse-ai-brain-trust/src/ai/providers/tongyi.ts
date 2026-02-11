@@ -2,7 +2,8 @@ import axios from 'axios';
 import { logger } from '../../lib/logger';
 import { Config } from '../../lib/config/Config';
 
-const TONGYI_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+const TONGYI_API_URL =
+  'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
 
 class TongyiDeepResearch {
   private readonly apiKey: string;
@@ -23,11 +24,15 @@ class TongyiDeepResearch {
       return {
         type: 'research_report',
         findings: [
-          { category: 'mock', insight: 'This is mock data because the TONGYI_API_KEY is not set.', confidence: 1.0 },
+          {
+            category: 'mock',
+            insight: 'This is mock data because the TONGYI_API_KEY is not set.',
+            confidence: 1.0
+          }
         ],
         recommendations: [],
         sourcesAnalyzed: 0,
-        confidenceScore: 1.0,
+        confidenceScore: 1.0
       };
     }
 
@@ -36,18 +41,18 @@ class TongyiDeepResearch {
       {
         model: 'qwen-long',
         input: {
-          prompt: `Analyze the following anomaly with a ${researchType} approach: ${query}`,
+          prompt: `Analyze the following anomaly with a ${researchType} approach: ${query}`
         },
         parameters: {
-          result_format: 'text',
-        },
+          result_format: 'text'
+        }
       },
       {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
-          ...opts.headers,
-        },
+          ...opts.headers
+        }
       }
     );
 

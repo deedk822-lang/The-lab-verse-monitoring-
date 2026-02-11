@@ -19,11 +19,14 @@ class SocialGenerator {
   }
 
   generateTwitterPost(topic, keywords, cta) {
-    const hashtags = keywords.slice(0, 3).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
+    const hashtags = keywords
+      .slice(0, 3)
+      .map((k) => `#${k.replace(/\s+/g, '')}`)
+      .join(' ');
     const maxLength = 280 - hashtags.length - cta.length - 10;
-    
+
     const topicText = this.truncateText(topic, maxLength);
-    
+
     return {
       text: `${topicText}\n\n${cta}\n\n${hashtags}`,
       length: topicText.length + cta.length + hashtags.length + 4
@@ -33,10 +36,13 @@ class SocialGenerator {
   generateLinkedInPost(content, topic, keywords, cta) {
     // Extract first paragraph or create summary
     const summary = this.extractSummary(content, 200);
-    const hashtags = keywords.slice(0, 5).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
-    
+    const hashtags = keywords
+      .slice(0, 5)
+      .map((k) => `#${k.replace(/\s+/g, '')}`)
+      .join(' ');
+
     const post = `🚀 ${topic}\n\n${summary}\n\n${cta}\n\n${hashtags}\n\n#ContentCreation #AI #DigitalMarketing`;
-    
+
     return {
       text: post,
       length: post.length
@@ -45,9 +51,9 @@ class SocialGenerator {
 
   generateFacebookPost(content, topic, cta) {
     const summary = this.extractSummary(content, 300);
-    
+
     const post = `${topic}\n\n${summary}\n\n${cta}\n\n👉 Learn more in the full article!`;
-    
+
     return {
       text: post,
       length: post.length
@@ -55,13 +61,16 @@ class SocialGenerator {
   }
 
   generateInstagramPost(topic, keywords, cta) {
-    const hashtags = keywords.slice(0, 10).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
+    const hashtags = keywords
+      .slice(0, 10)
+      .map((k) => `#${k.replace(/\s+/g, '')}`)
+      .join(' ');
     const maxCaptionLength = 200;
-    
+
     const caption = this.truncateText(topic, maxCaptionLength);
-    
+
     const post = `${caption}\n\n${cta}\n\n${hashtags}\n\n#ContentCreator #AITools #DigitalContent`;
-    
+
     return {
       text: post,
       length: post.length,
@@ -71,11 +80,14 @@ class SocialGenerator {
 
   generateThreadsPost(topic, keywords, cta) {
     // Similar to Instagram but optimized for Threads
-    const hashtags = keywords.slice(0, 3).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
+    const hashtags = keywords
+      .slice(0, 3)
+      .map((k) => `#${k.replace(/\s+/g, '')}`)
+      .join(' ');
     const maxLength = 500 - hashtags.length - cta.length - 10;
-    
+
     const text = this.truncateText(topic, maxLength);
-    
+
     return {
       text: `${text}\n\n${cta}\n\n${hashtags}`,
       length: text.length + cta.length + hashtags.length + 4
@@ -91,7 +103,7 @@ class SocialGenerator {
 
     // Get first sentence or paragraph
     const firstSentence = cleanText.split(/[.!?]+/)[0];
-    
+
     if (firstSentence.length <= maxLength) {
       return firstSentence + '.';
     }
@@ -106,7 +118,7 @@ class SocialGenerator {
 
     const truncated = text.substring(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
-    
+
     if (lastSpace > maxLength * 0.8) {
       return truncated.substring(0, lastSpace) + '...';
     }
@@ -116,7 +128,7 @@ class SocialGenerator {
 
   generateEmailNewsletter(content, topic, cta) {
     const summary = this.extractSummary(content, 500);
-    
+
     return {
       subject: `📧 ${topic}`,
       preheader: summary.substring(0, 100) + '...',
@@ -141,7 +153,7 @@ class SocialGenerator {
     const intro = `Hey everyone! Today we're talking about ${topic}.`;
     const summary = this.extractSummary(content, 300);
     const outro = `If you found this helpful, don't forget to like, subscribe, and hit that notification bell for more content like this!`;
-    
+
     return {
       hook: intro,
       body: summary,

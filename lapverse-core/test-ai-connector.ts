@@ -1,4 +1,4 @@
- main
+main;
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -17,16 +17,16 @@ async function testConnection() {
   console.log('Testing AI Connector...');
   console.log('DASHSCOPE_API_KEY:', process.env.DASHSCOPE_API_KEY ? '✓ Set' : '✗ Missing');
   console.log('MOONSHOT_API_KEY:', process.env.MOONSHOT_API_KEY ? '✓ Set' : '✗ Missing');
-  
+
   const finops = new FinOpsTagger();
   const prompt = 'Analyze this test: win_rate=0.07, cost_per_comp=0.042. Flag anomalies.';
-  
+
   try {
     const result = await connectAI(prompt, finops, {
       artifactId: 'test-' + Date.now(),
       tenantId: 'test-tenant'
     });
-    
+
     console.log('\n✓ CONNECTED - AI Response:');
     console.log('Qwen Analysis:', result.qwen);
     console.log('Kimi Response:', result.kimi);
@@ -63,17 +63,21 @@ async function testEngine(name: string, url?: string, key?: string) {
   }
   try {
     // Generic JSON echo-style test; adapt as needed per provider
-    const resp = await axios.post(url, {
-      messages: [{ role: 'user', content: 'ping' }],
-      model: process.env[`${name.toUpperCase()}_MODEL`] || 'auto',
-      stream: false
-    }, {
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json'
+    const resp = await axios.post(
+      url,
+      {
+        messages: [{ role: 'user', content: 'ping' }],
+        model: process.env[`${name.toUpperCase()}_MODEL`] || 'auto',
+        stream: false
       },
-      timeout: 10000
-    });
+      {
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    );
     const ok = resp.status >= 200 && resp.status < 300;
     console.log(`[ok] ${name}: status=${resp.status}`);
     return ok;
@@ -91,6 +95,6 @@ async function testEngine(name: string, url?: string, key?: string) {
     console.log('CONNECTED');
     process.exit(0);
   }
-  process.exit((qwenOk || kimiOk) ? 0 : 1);
+  process.exit(qwenOk || kimiOk ? 0 : 1);
 })();
- cursor/the-lap-verse-core-service-polish-ae35
+cursor / the - lap - verse - core - service - polish - ae35;

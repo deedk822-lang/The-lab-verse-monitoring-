@@ -7,11 +7,11 @@ const FederatedSearch = ({ sources, onAccessRequest }) => {
       <h2>Federated Search</h2>
       <p>Searching across the following sources:</p>
       <ul>
-        {sources.map(source => (
+        {sources.map((source) => (
           <li key={source}>{source}</li>
         ))}
       </ul>
-      <button onClick={() => onAccessRequest("sample-document-id")}>
+      <button onClick={() => onAccessRequest('sample-document-id')}>
         Request Access to a Sample Document
       </button>
     </div>
@@ -27,10 +27,10 @@ const negotiateAccess = (docId) => {
 
 const AfricanHistoryArchive = () => {
   const sources = [
-    "british-library-africa-collection",
-    "french-archives-afrique",
-    "unisa-mbeki-collection",
-    "maktaba-sudan-archive"
+    'british-library-africa-collection',
+    'french-archives-afrique',
+    'unisa-mbeki-collection',
+    'maktaba-sudan-archive'
   ];
 
   return (

@@ -2,14 +2,15 @@ export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
-  ERROR = 3,
+  ERROR = 3
 }
 
 export class Logger {
   private level: LogLevel = LogLevel.INFO;
 
   constructor() {
-    this.level = LogLevel[process.env.LOG_LEVEL?.toUpperCase() as keyof typeof LogLevel] || LogLevel.INFO;
+    this.level =
+      LogLevel[process.env.LOG_LEVEL?.toUpperCase() as keyof typeof LogLevel] || LogLevel.INFO;
   }
 
   private log(level: LogLevel, message: string, meta?: any): void {

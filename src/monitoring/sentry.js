@@ -61,12 +61,14 @@ export function initializeSentry(app) {
 
 // Error handler (must be after all routes)
 export function sentryErrorHandler(app) {
-  app.use(Sentry.Handlers.errorHandler({
-    shouldHandleError(error) {
-      // Capture all errors with status >= 500
-      return error.status >= 500;
-    }
-  }));
+  app.use(
+    Sentry.Handlers.errorHandler({
+      shouldHandleError(error) {
+        // Capture all errors with status >= 500
+        return error.status >= 500;
+      }
+    })
+  );
 }
 
 // Manual error capture

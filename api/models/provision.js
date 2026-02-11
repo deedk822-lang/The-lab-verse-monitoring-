@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   // HRGPT decides which model to deploy based on location constraints
   const decision = await fetch('https://api.hireborderless.com/v1/decision-engine/run', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${process.env.HIREBORDERLESS_API_KEY}` },
+    headers: { Authorization: `Bearer ${process.env.HIREBORDERLESS_API_KEY}` },
     body: JSON.stringify({
       context: {
         location: location,
@@ -31,9 +31,9 @@ export default async function handler(req, res) {
         internet_uptime: await getInternetUptime(location)
       },
       rules: [
-        "IF eskom_stage > 4 THEN use_localai_only",
+        'IF eskom_stage > 4 THEN use_localai_only',
         "IF location = 'Three Rivers' AND task = 'executive' THEN use_gpt_4o_mini",
-        "IF cost_per_hour < 0.50 THEN prefer_cloud",
+        'IF cost_per_hour < 0.50 THEN prefer_cloud',
         "IF language INCLUDES 'sesotho' THEN use_mistral_7b"
       ]
     })

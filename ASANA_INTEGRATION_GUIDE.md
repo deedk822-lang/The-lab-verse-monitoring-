@@ -51,9 +51,11 @@ This guide will help you set up and use the comprehensive Asana task completion 
 ### Step 3: Optional Notification Setup
 
 **For Slack notifications** (optional):
+
 - Add `SLACK_WEBHOOK_URL` secret with your Slack webhook URL
 
 **For Teams notifications** (optional):
+
 - Add `TEAMS_WEBHOOK_URL` secret with your Teams webhook URL
 
 ### Step 4: Verify Workflow Installation
@@ -81,24 +83,28 @@ This guide will help you set up and use the comprehensive Asana task completion 
 ### 📱 All Workflow Options
 
 #### Option 1: Complete Single Task
+
 ```
 Action Type: single_task
 Task ID: [Your task ID]
 ```
 
 #### Option 2: Complete All Tasks in Project
+
 ```
 Action Type: project_tasks
 Project ID: [Your project ID]
 ```
 
 #### Option 3: Complete Tasks by Tag
+
 ```
 Action Type: tagged_tasks
 Tag: [Your tag name]
 ```
 
 #### Option 4: Bulk Complete All Your Tasks (⚠️ Use with Caution)
+
 ```
 Action Type: bulk_complete
 ```
@@ -110,11 +116,13 @@ Action Type: bulk_complete
 **Automatic daily task cleanup** runs at 9 AM UTC (11 AM SAST):
 
 **Available criteria**:
+
 - **overdue**: Complete tasks past their due date
 - **ready_tag**: Complete tasks tagged "ready-for-completion"
 - **old_completed_subtasks**: Complete parent tasks when all subtasks are done
 
 **Manual scheduling**:
+
 1. Go to Actions → "Scheduled Asana Cleanup"
 2. Click "Run workflow"
 3. Choose your criteria
@@ -130,8 +138,9 @@ Action Type: bulk_complete
 - Available in all workflows
 
 **Example output:**
+
 ```
-🔍 WOULD COMPLETE: Design new homepage - Overdue task  
+🔍 WOULD COMPLETE: Design new homepage - Overdue task
 🔍 WOULD COMPLETE: Update documentation - Has ready tag
 ✅ Would complete: 12 tasks
 ⏭️  Skipped: 5 tasks
@@ -149,6 +158,7 @@ Action Type: bulk_complete
 - **GitHub Pages integration** for live dashboards
 
 **Run analytics manually**:
+
 1. Go to Actions → "Asana Analytics Dashboard"
 2. Select analysis period (7, 14, 30, or 90 days)
 3. Enable chart generation
@@ -159,20 +169,25 @@ Action Type: bulk_complete
 **Tasks completed automatically when PRs are merged:**
 
 **Supported formats in PR description:**
+
 ```markdown
 ## Asana Task
+
 asana-task-id: 1234567890
 
 ## Or
+
 Task ID: 1234567890
 
 ## Or direct URL
+
 https://app.asana.com/0/project_id/task_id
 ```
 
 ### 📦 Automatic Backups
 
 **Every operation creates backups:**
+
 - Task information saved before changes
 - 30-day artifact retention
 - Includes: name, notes, assignee, projects, tags, dates
@@ -181,12 +196,14 @@ https://app.asana.com/0/project_id/task_id
 ### 🚨 Error Handling & Notifications
 
 **Automated issue creation** for errors:
+
 - Failed workflow runs
 - API connectivity problems
 - Authentication issues
 - Automatic labeling and assignment
 
 **Slack/Teams notifications** (optional):
+
 - Completion summaries
 - Error alerts
 - Daily/weekly reports
@@ -209,6 +226,7 @@ python scripts/asana-id-finder.py
 ```
 
 **The script shows:**
+
 - All workspaces and projects with IDs
 - Recent tasks with IDs
 - Available tags
@@ -221,6 +239,7 @@ python scripts/asana-id-finder.py
 3. **Copy the PROJECT_ID number**
 
 **Example**:
+
 - URL: `https://app.asana.com/0/1234567890/list`
 - Project ID: `1234567890`
 
@@ -231,6 +250,7 @@ python scripts/asana-id-finder.py
 3. **Copy the TASK_ID number**
 
 **Example**:
+
 - URL: `https://app.asana.com/0/1234567890/9876543210`
 - Task ID: `9876543210`
 
@@ -270,6 +290,7 @@ All workflows support manual execution:
 ### 📈 Weekly Analytics Reports
 
 **Automated insights every Sunday:**
+
 - Task completion trends
 - Project performance rankings
 - Productivity metrics
@@ -277,6 +298,7 @@ All workflows support manual execution:
 - Visual charts and graphs
 
 **Access reports:**
+
 - **Live Dashboard**: GitHub Pages integration
 - **Artifacts**: Downloadable reports (CSV, JSON, HTML)
 - **Summary**: GitHub Actions summary page
@@ -293,6 +315,7 @@ All workflows support manual execution:
 ### 🌐 Live Dashboard
 
 **Interactive web dashboard** (updated weekly):
+
 - **URL**: `https://[username].github.io/[repository]/latest/analytics_dashboard.html`
 - **Features**: Charts, metrics, insights, trend analysis
 - **Mobile responsive** for on-the-go monitoring
@@ -303,31 +326,40 @@ All workflows support manual execution:
 ### Common Issues
 
 #### ❌ "ASANA_PAT secret not found"
+
 **Solution**: Make sure you've added the `ASANA_PAT` secret to repository settings.
 
 #### ❌ "Task not found" or "Project not found"
+
 **Solutions**:
+
 - Use the ID finder script to verify IDs
 - Check Asana permissions for the task/project
 - Verify the task/project still exists
 - Try refreshing your Asana Personal Access Token
 
 #### ❌ "Permission denied"
+
 **Solutions**:
+
 - Regenerate your Asana Personal Access Token
 - Ensure token has necessary workspace permissions
 - Update the `ASANA_PAT` secret with new token
 - Check Asana workspace member permissions
 
 #### ❌ "No tasks found with tag"
+
 **Solutions**:
+
 - Verify tag name spelling (case-insensitive)
 - Check that tagged tasks exist in your workspace
 - Ensure you have access to tagged tasks
 - Use the ID finder script to list available tags
 
 #### ❌ Workflow runs but no tasks completed
+
 **Solutions**:
+
 - Check if tasks are already completed
 - Verify completion criteria settings
 - Use dry run mode to see what would be completed
@@ -346,6 +378,7 @@ Each workflow provides detailed logging:
 ### Performance Optimization
 
 **For large task volumes:**
+
 - Use project-specific completion instead of bulk
 - Implement staged completion with tags
 - Consider multiple smaller workflows

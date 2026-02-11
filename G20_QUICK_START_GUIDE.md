@@ -26,6 +26,7 @@ node execute-g20-workflow.js  # (Update with verified data first)
 Before you run ANY workflow, verify these 8 critical points:
 
 ### ✅ Checkpoint 1: Summit Details
+
 ```
 ✅ Location: Johannesburg, South Africa
 ✅ Dates: November 22-23, 2025
@@ -33,6 +34,7 @@ Before you run ANY workflow, verify these 8 critical points:
 ```
 
 ### ✅ Checkpoint 2: Real Initiatives Only
+
 ```
 ✅ Africa Engagement Framework (Real)
 ✅ Compact with Africa - €15.5B (Real)
@@ -41,30 +43,35 @@ Before you run ANY workflow, verify these 8 critical points:
 ```
 
 ### ✅ Checkpoint 3: Conservative Projections
+
 ```
 ✅ $450 Billion by 2035 (IMF-based)
 ❌ $2.3 Trillion by 2030 (INFLATED - REMOVED)
 ```
 
 ### ✅ Checkpoint 4: Verified Case Studies
+
 ```
 ✅ Kenya: 38% growth (Central Bank of Kenya 2024)
 ✅ PAPSS: $100M+ processed (PAPSS.com official)
 ```
 
 ### ✅ Checkpoint 5: Operational Systems
+
 ```
 ✅ AfCFTA: AVAILABLE NOW (since Jan 2021)
 ❌ "Coming soon" language (REMOVED)
 ```
 
 ### ✅ Checkpoint 6: Payment Systems
+
 ```
 ✅ PAPSS (Real, operational)
 ❌ mBridge for MSMEs (NOT APPLICABLE - REMOVED)
 ```
 
 ### ✅ Checkpoint 7: Official Sources
+
 ```
 ✅ G20.org linked
 ✅ AfCFTA.org linked
@@ -73,6 +80,7 @@ Before you run ANY workflow, verify these 8 critical points:
 ```
 
 ### ✅ Checkpoint 8: Professional Language
+
 ```
 ✅ "Potential" instead of "guaranteed"
 ✅ "Estimated" instead of "will"
@@ -84,16 +92,19 @@ Before you run ANY workflow, verify these 8 critical points:
 ## 📚 **3 ESSENTIAL DOCUMENTS**
 
 ### 1️⃣ G20_CORRECTIONS_CHANGELOG.md
+
 **What it is:** Complete documentation of all 8 corrections  
 **Why you need it:** Understand what was wrong and what's verified  
 **Time to read:** 10 minutes
 
 ### 2️⃣ G20_CONTENT_WORKFLOW_VERIFIED.md
+
 **What it is:** Step-by-step verified workflow with fact-check gates  
 **Why you need it:** Your execution blueprint  
 **Time to read:** 15 minutes
 
 ### 3️⃣ G20_BRANCH_README.md
+
 **What it is:** Complete branch guide with timelines and support  
 **Why you need it:** Context and ongoing management  
 **Time to read:** 10 minutes
@@ -103,6 +114,7 @@ Before you run ANY workflow, verify these 8 critical points:
 ## 🎯 **EXECUTION OPTIONS**
 
 ### Option A: Full Manual Execution (Recommended for First Time)
+
 **Time:** 45 minutes  
 **Control:** Maximum  
 **Best for:** Understanding the process completely
@@ -120,6 +132,7 @@ open G20_CONTENT_WORKFLOW_VERIFIED.md
 ```
 
 ### Option B: Semi-Automated Execution
+
 **Time:** 35 minutes  
 **Control:** High  
 **Best for:** Experienced users who've reviewed corrections
@@ -133,6 +146,7 @@ node execute-g20-workflow.js
 ```
 
 ### Option C: Quick Content Generation
+
 **Time:** 20 minutes  
 **Control:** Moderate  
 **Best for:** Urgent execution with pre-approved prompts
@@ -149,6 +163,7 @@ node execute-g20-workflow.js
 ## ⚠️ **MANDATORY GATES** (Cannot Skip)
 
 ### Gate 1: Pre-Generation Review
+
 ```markdown
 - [ ] Reviewed corrections changelog
 - [ ] Understood what was wrong
@@ -157,6 +172,7 @@ node execute-g20-workflow.js
 ```
 
 ### Gate 2: Post-Generation Fact-Check
+
 ```markdown
 - [ ] Every claim has a source
 - [ ] No fictional frameworks present
@@ -166,6 +182,7 @@ node execute-g20-workflow.js
 ```
 
 ### Gate 3: Pre-Publishing Approval
+
 ```markdown
 - [ ] Content team reviewed
 - [ ] Fact-checking completed
@@ -178,6 +195,7 @@ node execute-g20-workflow.js
 ## 📢 **VERIFIED SOCIAL POSTS** (Ready to Use)
 
 ### Twitter/X (Copy-Paste Ready)
+
 ```
 🇿🇦 G20 2025 Johannesburg Summit (Nov 22-23)
 
@@ -192,6 +210,7 @@ Verified opportunities for SA businesses:
 ```
 
 ### LinkedIn (Copy-Paste Ready)
+
 ```
 🌍 G20 2025 Johannesburg: Verified Opportunities for SA Businesses
 
@@ -222,6 +241,7 @@ Full analysis → [YOUR-BLOG-LINK]
 ## 🔒 **CRITICAL RULES**
 
 ### 🚫 NEVER Publish Without:
+
 1. Source citations for major claims
 2. Conservative financial projections
 3. Fact-check team approval
@@ -229,6 +249,7 @@ Full analysis → [YOUR-BLOG-LINK]
 5. Official G20 source links
 
 ### ✅ ALWAYS Include:
+
 1. Summit location: Johannesburg
 2. Summit dates: Nov 22-23, 2025
 3. Source attribution (G20.org, IMF, etc.)
@@ -242,10 +263,12 @@ Full analysis → [YOUR-BLOG-LINK]
 ### If You Have Questions:
 
 **🔴 URGENT (Within 1 hour):**
+
 - Emergency: emergency@lab-verse.ai
 - Phone: [Emergency Hotline]
 
 **🟡 NORMAL (Within 24 hours):**
+
 - Verification: content-verification@lab-verse.ai
 - Fact-Check: factcheck@lab-verse.ai
 - Technical: workflow-support@lab-verse.ai
@@ -272,6 +295,7 @@ Full analysis → [YOUR-BLOG-LINK]
 ## ⏱️ **TIME ESTIMATES**
 
 ### First-Time Execution
+
 ```
 Review corrections:        10 minutes
 Review verified workflow:  15 minutes
@@ -286,6 +310,7 @@ Total:                      80 minutes (1h 20min)
 ```
 
 ### Subsequent Executions
+
 ```
 Quick review:               5 minutes
 Content generation:        15 minutes
@@ -301,6 +326,7 @@ Total:                     35 minutes
 ## ✅ **SUCCESS CRITERIA**
 
 ### Your Content is Ready When:
+
 1. ✅ Every major claim has a cited source
 2. ✅ No fictional frameworks mentioned
 3. ✅ Financial projections are conservative and IMF-based
@@ -323,6 +349,7 @@ Total:                     35 minutes
 5. ✅ Set aside 45 minutes for execution
 
 **Then execute:**
+
 - Follow `G20_CONTENT_WORKFLOW_VERIFIED.md`
 - Stop at each fact-check gate
 - Verify against corrections changelog
@@ -333,6 +360,7 @@ Total:                     35 minutes
 ## 🎉 **YOU'RE READY!**
 
 You now have:
+
 - ✅ Complete corrections documentation
 - ✅ Verified workflow with fact-check gates
 - ✅ Pre-approved social media posts

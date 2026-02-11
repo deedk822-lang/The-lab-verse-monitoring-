@@ -9,14 +9,10 @@ export async function pushMetrics() {
   }
   const metrics = await promClient.register.metrics();
   try {
-    await axios.post(
-      GRAFANA_CLOUD_PROM_URL,
-      metrics,
-      {
-        headers: { 'Content-Type': 'text/plain' },
-        auth: { username: GRAFANA_CLOUD_PROM_USER, password: GRAFANA_CLOUD_API_KEY },
-      },
-    );
+    await axios.post(GRAFANA_CLOUD_PROM_URL, metrics, {
+      headers: { 'Content-Type': 'text/plain' },
+      auth: { username: GRAFANA_CLOUD_PROM_USER, password: GRAFANA_CLOUD_API_KEY }
+    });
   } catch (err) {
     console.error('Error pushing metrics to Grafana Cloud:', err.message);
   }

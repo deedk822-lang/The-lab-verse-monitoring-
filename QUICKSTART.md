@@ -45,28 +45,32 @@ Admin Controls - User management, analytics
 Copy
 
 # Authentication
+
 POST /api/auth/signup
 POST /api/auth/login
 
 # Payments
+
 POST /api/payments/create-payment-intent
-GET  /api/payments/history
+GET /api/payments/history
 
 # Users
-GET  /api/users/profile
+
+GET /api/users/profile
 POST /api/users/kyc
 
 # Admin
-GET  /api/admin/users
-GET  /api/admin/analytics
+
+GET /api/admin/users
+GET /api/admin/analytics
 
 ✅ Control System
 bash
 Copy
 
-node kimi-cli-standalone.cjs status    # System health
-node kimi-cli-standalone.cjs help      # All commands
-node kimi-cli-standalone.cjs info      # System info
+node kimi-cli-standalone.cjs status # System health
+node kimi-cli-standalone.cjs help # All commands
+node kimi-cli-standalone.cjs info # System info
 
 🔗 Connect Your Frontend
 Your frontend at https://wj4wcpc76zi5k.ok.kimi.link/ can now connect to:
@@ -77,16 +81,16 @@ Copy
 
 // Create payment intent
 fetch('http://localhost:3000/api/payments/create-payment-intent', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ amount: 100, currency: 'zar' })
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ amount: 100, currency: 'zar' })
 });
 
 // User signup
 fetch('http://localhost:3000/api/auth/signup', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password, firstName, lastName })
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ email, password, firstName, lastName })
 });
 
 🎮 Kimi CLI Commands
@@ -94,18 +98,18 @@ System Control
 bash
 Copy
 
-node kimi-cli-standalone.cjs status     # Complete system check
-node kimi-cli-standalone.cjs info       # System information
-node kimi-cli-standalone.cjs help       # Show all commands
+node kimi-cli-standalone.cjs status # Complete system check
+node kimi-cli-standalone.cjs info # System information
+node kimi-cli-standalone.cjs help # Show all commands
 
 After Full Deployment
 bash
 Copy
 
-node kimi-cli.js users list           # List users
-node kimi-cli.js payments analytics   # Payment stats
-node kimi-cli.js compliance check     # Compliance status
-node kimi-cli.js ai analyze           # AI insights
+node kimi-cli.js users list # List users
+node kimi-cli.js payments analytics # Payment stats
+node kimi-cli.js compliance check # Compliance status
+node kimi-cli.js ai analyze # AI insights
 
 📊 Monitoring
 Health Checks
@@ -168,6 +172,7 @@ bash
 Copy
 
 # Change port in .env file or kill existing process
+
 PORT=3001
 
 Database connection failed:
@@ -175,6 +180,7 @@ bash
 Copy
 
 # Check MongoDB is running
+
 docker ps | grep mongo
 
 Dependencies missing:
@@ -182,6 +188,7 @@ bash
 Copy
 
 # Install dependencies
+
 npm install
 
 Permission denied:
@@ -189,6 +196,7 @@ bash
 Copy
 
 # Fix permissions
+
 chmod +x deploy.sh
 
 📚 Documentation

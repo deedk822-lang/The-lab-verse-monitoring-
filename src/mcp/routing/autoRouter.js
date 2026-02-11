@@ -5,30 +5,30 @@ export class AutoRouter {
     // Provider tiers with pricing (per 1K tokens)
     this.pricing = {
       // Premium tier
-      'openai': { input: 0.03, output: 0.06, quality: 0.95 },
-      'anthropic': { input: 0.015, output: 0.075, quality: 0.95 },
+      openai: { input: 0.03, output: 0.06, quality: 0.95 },
+      anthropic: { input: 0.015, output: 0.075, quality: 0.95 },
 
       // Balanced tier
-      'gemini': { input: 0.00125, output: 0.005, quality: 0.85 },
-      'mistral': { input: 0.002, output: 0.006, quality: 0.85 },
-      'perplexity': { input: 0.001, output: 0.005, quality: 0.80 },
+      gemini: { input: 0.00125, output: 0.005, quality: 0.85 },
+      mistral: { input: 0.002, output: 0.006, quality: 0.85 },
+      perplexity: { input: 0.001, output: 0.005, quality: 0.8 },
 
       // Fast tier
-      'groq': { input: 0.0005, output: 0.0008, quality: 0.75 },
+      groq: { input: 0.0005, output: 0.0008, quality: 0.75 },
 
       // Budget tier
-      'deepseek': { input: 0.0001, output: 0.0002, quality: 0.70 },
-      'moonshot': { input: 0.0002, output: 0.0004, quality: 0.70 },
-      'glm': { input: 0.0001, output: 0.0003, quality: 0.65 },
+      deepseek: { input: 0.0001, output: 0.0002, quality: 0.7 },
+      moonshot: { input: 0.0002, output: 0.0004, quality: 0.7 },
+      glm: { input: 0.0001, output: 0.0003, quality: 0.65 }
     };
 
     // Fallback chains by tier
     this.fallbackChains = {
-      'openai': ['openai', 'anthropic', 'gemini', 'groq'],
-      'anthropic': ['anthropic', 'openai', 'gemini', 'groq'],
-      'gemini': ['gemini', 'mistral', 'groq', 'deepseek'],
-      'groq': ['groq', 'gemini', 'deepseek'],
-      'deepseek': ['deepseek', 'moonshot', 'glm'],
+      openai: ['openai', 'anthropic', 'gemini', 'groq'],
+      anthropic: ['anthropic', 'openai', 'gemini', 'groq'],
+      gemini: ['gemini', 'mistral', 'groq', 'deepseek'],
+      groq: ['groq', 'gemini', 'deepseek'],
+      deepseek: ['deepseek', 'moonshot', 'glm']
     };
   }
 
@@ -36,15 +36,10 @@ export class AutoRouter {
    * Select optimal provider based on strategy
    */
   async selectProvider(options) {
-    const {
-      complexity,
-      optimize,
-      maxCost,
-      availableProviders,
-    } = options;
+    const { complexity, optimize, maxCost, availableProviders } = options;
 
     // Filter available providers
-    const candidates = availableProviders.filter(p => this.pricing[p]);
+    const candidates = availableProviders.filter((p) => this.pricing[p]);
 
     if (candidates.length === 0) {
       throw new Error('No available providers');
@@ -71,10 +66,10 @@ export class AutoRouter {
    * Select cheapest provider that meets quality threshold
    */
   selectByCost(candidates, complexity) {
-    const minQuality = complexity.complexity === 'complex' ? 0.80 : 0.65;
+    const minQuality = complexity.complexity === 'complex' ? 0.8 : 0.65;
 
     const sorted = candidates
-      .filter(p => this.pricing[p].quality >= minQuality)
+      .filter((p) => this.pricing[p].quality >= minQuality)
       .sort((a, b) => {
         const costA = this.pricing[a].input + this.pricing[a].output;
         const costB = this.pricing[b].input + this.pricing[b].output;
@@ -87,7 +82,7 @@ export class AutoRouter {
     return {
       name: provider,
       reason: 'cost-optimized',
-      estimatedCost: this.estimateCost(provider, 1000),
+      estimatedCost: this.estimateCost(provider, 1000)
     };
   }
 
@@ -95,9 +90,7 @@ export class AutoRouter {
    * Select highest quality provider
    */
   selectByQuality(candidates) {
-    const sorted = candidates.sort((a, b) =>
-      this.pricing[b].quality - this.pricing[a].quality,
-    );
+    const sorted = candidates.sort((a, b) => this.pricing[b].quality - this.pricing[a].quality);
 
     const provider = sorted[0];
     logger.info(`🏆 Quality-optimized: ${provider} (score: ${this.pricing[provider].quality})`);
@@ -105,7 +98,7 @@ export class AutoRouter {
     return {
       name: provider,
       reason: 'quality-optimized',
-      quality: this.pricing[provider].quality,
+      quality: this.pricing[provider].quality
     };
   }
 
@@ -115,13 +108,13 @@ export class AutoRouter {
   selectBySpeed(candidates) {
     // Fast tier providers
     const fastProviders = ['groq', 'gemini', 'deepseek'];
-    const fastest = candidates.find(p => fastProviders.includes(p)) || candidates[0];
+    const fastest = candidates.find((p) => fastProviders.includes(p)) || candidates[0];
 
     logger.info(`⚡ Speed-optimized: ${fastest}`);
 
     return {
       name: fastest,
-      reason: 'speed-optimized',
+      reason: 'speed-optimized'
     };
   }
 
@@ -129,15 +122,15 @@ export class AutoRouter {
    * Balanced selection based on complexity and cost
    */
   selectBalanced(candidates, complexity, maxCost) {
-    const scores = candidates.map(provider => {
+    const scores = candidates.map((provider) => {
       const pricing = this.pricing[provider];
       const cost = this.estimateCost(provider, 1000);
 
       // Score formula: quality / (cost * complexity_multiplier)
       const complexityMultiplier = {
-        'simple': 0.5,
-        'moderate': 1.0,
-        'complex': 2.0,
+        simple: 0.5,
+        moderate: 1.0,
+        complex: 2.0
       }[complexity.complexity];
 
       const score = pricing.quality / (cost * complexityMultiplier);
@@ -146,9 +139,7 @@ export class AutoRouter {
     });
 
     // Filter by max cost if specified
-    const filtered = maxCost
-      ? scores.filter(s => s.cost <= maxCost)
-      : scores;
+    const filtered = maxCost ? scores.filter((s) => s.cost <= maxCost) : scores;
 
     if (filtered.length === 0) {
       throw new Error(`No providers within budget: $${maxCost}`);
@@ -163,7 +154,7 @@ export class AutoRouter {
       name: best.provider,
       reason: 'balanced',
       score: best.score,
-      estimatedCost: best.cost,
+      estimatedCost: best.cost
     };
   }
 

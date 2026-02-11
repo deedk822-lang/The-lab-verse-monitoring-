@@ -19,11 +19,11 @@ const envSchema = z.object({
 
   // OTel Sampling Configuration
   OTEL_TRACES_SAMPLER: z.string().default('parentbased_always_on'),
-  OTEL_TRACES_SAMPLER_ARG: z.string().default('1.0'),
+  OTEL_TRACES_SAMPLER_ARG: z.string().default('1.0')
 });
 
 export class Config {
-    static env: z.infer<typeof envSchema>;
+  static env: z.infer<typeof envSchema>;
 
   static load() {
     this.env = envSchema.parse(process.env);

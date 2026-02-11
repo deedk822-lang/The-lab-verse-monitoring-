@@ -79,7 +79,7 @@ describe('Vercel AI SDK Integration (mocked)', () => {
         timeouts.push(id);
       }),
       textStream: (async function* () {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           const id = setTimeout(resolve, 5000);
           timeouts.push(id);
         });
@@ -88,11 +88,10 @@ describe('Vercel AI SDK Integration (mocked)', () => {
     });
 
     try {
-      await expect(generateContent('test', { timeout: 100 }))
-        .rejects.toThrow(/timed out/i);
+      await expect(generateContent('test', { timeout: 100 })).rejects.toThrow(/timed out/i);
     } finally {
       // Clean up any pending timeouts
-      timeouts.forEach(id => clearTimeout(id));
+      timeouts.forEach((id) => clearTimeout(id));
     }
   });
 });

@@ -40,7 +40,7 @@ const requiredEnvVars = [
   'ALIYUN_ACCESS_KEY_SECRET'
 ];
 
-requiredEnvVars.forEach(varName => {
+requiredEnvVars.forEach((varName) => {
   const value = process.env[varName];
   const status = value ? '✅' : '❌';
   const display = value ? `${value.substring(0, 10)}...` : 'NOT SET';
@@ -59,7 +59,7 @@ const mcpEndpoints = [
 ];
 
 console.log('MCP Gateway Endpoints:');
-mcpEndpoints.forEach(endpoint => {
+mcpEndpoints.forEach((endpoint) => {
   console.log(`  • ${endpoint.name}: ${GATEWAY_URL}${endpoint.path}`);
   tests.mcpTools.push({ name: endpoint.name, endpoint: `${GATEWAY_URL}${endpoint.path}` });
 });
@@ -77,7 +77,7 @@ const socialPlatforms = [
 ];
 
 console.log('Supported Social Media Platforms:');
-socialPlatforms.forEach(platform => {
+socialPlatforms.forEach((platform) => {
   const status = platform.supported ? '✅' : '❌';
   console.log(`${status} ${platform.name}`);
   tests.socialMedia.push(platform);
@@ -87,15 +87,23 @@ console.log('\n🔧 Phase 4: API Integration Status\n');
 
 // 4. API Integrations
 const apiIntegrations = [
-  { name: 'Mistral Codestral', key: 'MISTRAL_API_KEY', endpoint: 'https://codestral.mistral.ai/v1/chat/completions' },
-  { name: 'Mistral Agent', key: 'MISTRAL_AGENT_ID', endpoint: 'https://api.mistral.ai/v1/conversations' },
+  {
+    name: 'Mistral Codestral',
+    key: 'MISTRAL_API_KEY',
+    endpoint: 'https://codestral.mistral.ai/v1/chat/completions'
+  },
+  {
+    name: 'Mistral Agent',
+    key: 'MISTRAL_AGENT_ID',
+    endpoint: 'https://api.mistral.ai/v1/conversations'
+  },
   { name: 'HuggingFace', key: 'HF_API_TOKEN', endpoint: 'https://api-inference.huggingface.co' },
   { name: 'Bria AI', key: 'BRIA_API_KEY', endpoint: 'https://platform.bria.ai/labs/fibo' },
   { name: 'Deep Infra', key: 'DEEP_INFRA_API_KEY', endpoint: 'https://api.deepinfra.com' },
   { name: 'Alibaba Cloud', key: 'ALIYUN_ACCESS_KEY_ID', endpoint: 'cn-shanghai' }
 ];
 
-apiIntegrations.forEach(api => {
+apiIntegrations.forEach((api) => {
   const configured = !!process.env[api.key];
   const status = configured ? '✅' : '❌';
   console.log(`${status} ${api.name}`);
@@ -106,20 +114,28 @@ apiIntegrations.forEach(api => {
 console.log('\n📊 Phase 5: Test Summary\n');
 
 // 5. Summary
-const envPassed = tests.environment.filter(t => t.status).length;
+const envPassed = tests.environment.filter((t) => t.status).length;
 const envTotal = tests.environment.length;
-const socialPassed = tests.socialMedia.filter(p => p.supported).length;
+const socialPassed = tests.socialMedia.filter((p) => p.supported).length;
 const socialTotal = tests.socialMedia.length;
-const apiPassed = tests.integrations.filter(i => i.configured).length;
+const apiPassed = tests.integrations.filter((i) => i.configured).length;
 const apiTotal = tests.integrations.length;
 
 console.log('╔════════════════════════════════════════════════════════════════════╗');
 console.log('║                        TEST RESULTS SUMMARY                        ║');
 console.log('╠════════════════════════════════════════════════════════════════════╣');
-console.log(`║ Environment Variables:  ${envPassed}/${envTotal} configured                              ║`);
-console.log(`║ MCP Gateways:          ${tests.mcpTools.length} endpoints available                       ║`);
-console.log(`║ Social Platforms:      ${socialPassed}/${socialTotal} platforms supported                    ║`);
-console.log(`║ API Integrations:      ${apiPassed}/${apiTotal} integrations configured                  ║`);
+console.log(
+  `║ Environment Variables:  ${envPassed}/${envTotal} configured                              ║`
+);
+console.log(
+  `║ MCP Gateways:          ${tests.mcpTools.length} endpoints available                       ║`
+);
+console.log(
+  `║ Social Platforms:      ${socialPassed}/${socialTotal} platforms supported                    ║`
+);
+console.log(
+  `║ API Integrations:      ${apiPassed}/${apiTotal} integrations configured                  ║`
+);
 console.log('╚════════════════════════════════════════════════════════════════════╝\n');
 
 // 6. Recommendations
@@ -127,17 +143,21 @@ console.log('💡 Recommendations:\n');
 
 if (envPassed < envTotal) {
   console.log('⚠️  Some environment variables are missing. Please configure:');
-  tests.environment.filter(t => !t.status).forEach(t => {
-    console.log(`   - ${t.name}`);
-  });
+  tests.environment
+    .filter((t) => !t.status)
+    .forEach((t) => {
+      console.log(`   - ${t.name}`);
+    });
   console.log('');
 }
 
 if (apiPassed < apiTotal) {
   console.log('⚠️  Some API integrations are not configured:');
-  tests.integrations.filter(i => !i.configured).forEach(i => {
-    console.log(`   - ${i.name}`);
-  });
+  tests.integrations
+    .filter((i) => !i.configured)
+    .forEach((i) => {
+      console.log(`   - ${i.name}`);
+    });
   console.log('');
 }
 
@@ -151,19 +171,26 @@ console.log('   5. Deploy to Vercel for production testing\n');
 // Export test results
 const fs = require('fs');
 const resultsPath = path.join(__dirname, 'test-results-mcp-social.json');
-fs.writeFileSync(resultsPath, JSON.stringify({
-  timestamp: new Date().toISOString(),
-  summary: {
-    environment: `${envPassed}/${envTotal}`,
-    mcpGateways: tests.mcpTools.length,
-    socialPlatforms: `${socialPassed}/${socialTotal}`,
-    apiIntegrations: `${apiPassed}/${apiTotal}`
-  },
-  details: tests
-}, null, 2));
+fs.writeFileSync(
+  resultsPath,
+  JSON.stringify(
+    {
+      timestamp: new Date().toISOString(),
+      summary: {
+        environment: `${envPassed}/${envTotal}`,
+        mcpGateways: tests.mcpTools.length,
+        socialPlatforms: `${socialPassed}/${socialTotal}`,
+        apiIntegrations: `${apiPassed}/${apiTotal}`
+      },
+      details: tests
+    },
+    null,
+    2
+  )
+);
 
 console.log(`📄 Test results saved to: ${resultsPath}\n`);
 
 // Exit with appropriate code
-const allPassed = (envPassed === envTotal) && (apiPassed === apiTotal);
+const allPassed = envPassed === envTotal && apiPassed === apiTotal;
 process.exit(allPassed ? 0 : 1);

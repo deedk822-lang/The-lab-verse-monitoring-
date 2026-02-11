@@ -32,6 +32,7 @@ Complete guide for deploying Content Creator AI to various platforms.
 
 1. Open "Secrets" (🔒 icon in left sidebar)
 2. Add your environment variables:
+
    ```
    GOOGLE_API_KEY=your-key
    OPENAI_API_KEY=your-key
@@ -59,33 +60,39 @@ Complete guide for deploying Content Creator AI to various platforms.
 ### Using Docker Compose (Recommended)
 
 1. **Clone the repository**:
+
 ```bash
 git clone <your-repo>
 cd content-creator-ai
 ```
 
 2. **Create .env file**:
+
 ```bash
 cp .env.example .env
 # Edit .env with your API keys
 ```
 
 3. **Start with Docker Compose**:
+
 ```bash
 docker-compose up -d
 ```
 
 This will start:
+
 - Content Creator AI (port 3000)
 - Redis (port 6379)
 - LocalAI (port 8080) - optional
 
 4. **Check logs**:
+
 ```bash
 docker-compose logs -f content-creator
 ```
 
 5. **Stop**:
+
 ```bash
 docker-compose down
 ```
@@ -93,11 +100,13 @@ docker-compose down
 ### Using Docker Only
 
 1. **Build image**:
+
 ```bash
 docker build -t content-creator-ai .
 ```
 
 2. **Run container**:
+
 ```bash
 docker run -d \
   -p 3000:3000 \
@@ -109,6 +118,7 @@ docker run -d \
 ```
 
 3. **View logs**:
+
 ```bash
 docker logs -f content-creator
 ```
@@ -127,17 +137,20 @@ docker logs -f content-creator
 ### Step-by-Step
 
 1. **Install Node.js**:
+
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 2. **Install PM2**:
+
 ```bash
 sudo npm install -g pm2
 ```
 
 3. **Clone and setup**:
+
 ```bash
 git clone <your-repo>
 cd content-creator-ai
@@ -145,12 +158,14 @@ npm install --production
 ```
 
 4. **Configure environment**:
+
 ```bash
 cp .env.example .env
 nano .env  # Edit with your keys
 ```
 
 5. **Start with PM2**:
+
 ```bash
 pm2 start server.js --name content-creator
 pm2 save
@@ -175,7 +190,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
-    
+
     # WebSocket support
     location /socket.io/ {
         proxy_pass http://localhost:3000;
@@ -193,18 +208,21 @@ sudo systemctl reload nginx
 ```
 
 7. **Setup SSL with Let's Encrypt**:
+
 ```bash
 sudo apt-get install certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
 ```
 
 8. **Setup Redis** (optional):
+
 ```bash
 sudo apt-get install redis-server
 sudo systemctl enable redis-server
 ```
 
 Update `.env`:
+
 ```env
 REDIS_ENABLED=true
 REDIS_URL=redis://localhost:6379
@@ -215,17 +233,20 @@ REDIS_URL=redis://localhost:6379
 ## Heroku Deployment
 
 1. **Install Heroku CLI**:
+
 ```bash
 npm install -g heroku
 heroku login
 ```
 
 2. **Create Heroku app**:
+
 ```bash
 heroku create your-app-name
 ```
 
 3. **Set environment variables**:
+
 ```bash
 heroku config:set GOOGLE_API_KEY=your-key
 heroku config:set API_KEY=your-api-key
@@ -234,16 +255,19 @@ heroku config:set NODE_ENV=production
 ```
 
 4. **Deploy**:
+
 ```bash
 git push heroku main
 ```
 
 5. **Scale**:
+
 ```bash
 heroku ps:scale web=1
 ```
 
 6. **Add Redis** (optional):
+
 ```bash
 heroku addons:create heroku-redis:hobby-dev
 # Redis URL is automatically set
@@ -251,6 +275,7 @@ heroku config:set REDIS_ENABLED=true
 ```
 
 7. **View logs**:
+
 ```bash
 heroku logs --tail
 ```
@@ -264,11 +289,13 @@ heroku logs --tail
 If you want to try anyway:
 
 1. Install Vercel CLI:
+
 ```bash
 npm i -g vercel
 ```
 
 2. Create `vercel.json`:
+
 ```json
 {
   "version": 2,
@@ -288,6 +315,7 @@ npm i -g vercel
 ```
 
 3. Deploy:
+
 ```bash
 vercel
 ```
@@ -387,6 +415,7 @@ fi
 ```
 
 Set up cron job:
+
 ```bash
 # Check every 5 minutes
 */5 * * * * /path/to/monitor.sh
@@ -401,11 +430,13 @@ Set up cron job:
 For high traffic, run multiple instances:
 
 1. **With PM2**:
+
 ```bash
 pm2 start server.js -i max  # Use all CPU cores
 ```
 
 2. **With Docker**:
+
 ```bash
 docker-compose up -d --scale content-creator=3
 ```
@@ -415,6 +446,7 @@ docker-compose up -d --scale content-creator=3
 ### Database
 
 Consider adding PostgreSQL/MongoDB for:
+
 - User management
 - Request history
 - Analytics
@@ -423,6 +455,7 @@ Consider adding PostgreSQL/MongoDB for:
 ### External Services
 
 For production at scale:
+
 - **S3/Cloud Storage**: Store generated images/videos
 - **Queue System**: RabbitMQ/Redis Queue for async processing
 - **Separate Redis**: Dedicated Redis instance
@@ -458,6 +491,7 @@ For production at scale:
 ## Support
 
 Need help with deployment?
+
 - Check logs first
 - Review the [README.md](./README.md)
 - Test locally first

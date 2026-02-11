@@ -101,9 +101,12 @@ export class ArgillaMonetization extends EventEmitter {
     this.annotationRevenue += revenue;
 
     // Track metrics
-    metrics.a2aRevenueEarned.inc({
-      type: 'annotation'
-    }, revenue);
+    metrics.a2aRevenueEarned.inc(
+      {
+        type: 'annotation'
+      },
+      revenue
+    );
 
     logger.info('Annotation hours processed', {
       hours,
@@ -151,7 +154,7 @@ export class ArgillaMonetization extends EventEmitter {
 
       // Filter high-quality annotations
       const highQualityAnnotations = annotations.filter(
-        annotation => annotation.overall >= 4 && annotation.confidence >= 0.7
+        (annotation) => annotation.overall >= 4 && annotation.confidence >= 0.7
       );
 
       // Create dataset
@@ -178,7 +181,15 @@ export class ArgillaMonetization extends EventEmitter {
   }
 
   private convertToCSV(dataset: any): string {
-    const headers = ['prompt', 'response_a', 'response_b', 'winner', 'overall_rating', 'issue', 'confidence'];
+    const headers = [
+      'prompt',
+      'response_a',
+      'response_b',
+      'winner',
+      'overall_rating',
+      'issue',
+      'confidence'
+    ];
     const rows = dataset.data.map((annotation: any) => [
       annotation.prompt || '',
       annotation.response_a || '',
@@ -189,20 +200,27 @@ export class ArgillaMonetization extends EventEmitter {
       annotation.confidence || ''
     ]);
 
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
+    return [headers, ...rows].map((row) => row.join(',')).join('\n');
   }
 
   getRevenueReport(): any {
-    const totalRevenue = this.annotationRevenue + this.tuningRevenue +
+    const totalRevenue =
+      this.annotationRevenue +
+      this.tuningRevenue +
       Array.from(this.datasetSales.values()).reduce((sum, sale) => sum + sale.revenue, 0);
 
     return {
       totalRevenue,
       annotationRevenue: this.annotationRevenue,
       tuningRevenue: this.tuningRevenue,
-      datasetRevenue: Array.from(this.datasetSales.values()).reduce((sum, sale) => sum + sale.revenue, 0),
+      datasetRevenue: Array.from(this.datasetSales.values()).reduce(
+        (sum, sale) => sum + sale.revenue,
+        0
+      ),
       datasetSales: this.datasetSales.size,
-      averageDatasetPrice: Array.from(this.datasetSales.values()).reduce((sum, sale) => sum + sale.price, 0) / this.datasetSales.size || 0
+      averageDatasetPrice:
+        Array.from(this.datasetSales.values()).reduce((sum, sale) => sum + sale.price, 0) /
+          this.datasetSales.size || 0
     };
   }
 

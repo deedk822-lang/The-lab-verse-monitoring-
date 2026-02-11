@@ -44,6 +44,7 @@ nano .env.mcp.local
 ```
 
 **Minimum required configuration**:
+
 ```bash
 ASANA_WORKSPACE_ID=your_workspace_gid_here
 NOTION_WORKSPACE_ID=your_workspace_id_here
@@ -62,6 +63,7 @@ GMAIL_SENDER_EMAIL=deedk822@gmail.com
 Select **Option 3: Setup Wizard**
 
 The wizard will:
+
 - ✅ Create Asana projects
 - ✅ Verify Notion connection
 - ✅ Configure Airtable
@@ -95,12 +97,14 @@ The wizard will:
 ```
 
 **What happens**:
+
 1. ✅ Creates record in Airtable
 2. ✅ Creates urgent task in Asana
 3. ✅ Updates Notion dashboard
 4. ✅ Sends email alert
 
 **Check results**:
+
 - Go to your Asana workspace → "Lab-Verse: SEO Recovery" project
 - Check your email for alert
 - View Notion dashboard for metrics
@@ -110,22 +114,27 @@ The wizard will:
 ## 📊 Available Workflows
 
 ### 1. SEO Ranking Drop Response
+
 **Trigger**: Ranking drops > 5 positions  
 **Use**: `orchestrator.handleSEORankingDrop(keyword, prevPos, currPos, url)`
 
 ### 2. High-Performing Content Amplification
+
 **Trigger**: Email CTR > 15%  
 **Use**: `orchestrator.amplifyHighPerformingContent(title, url, ctr, clicks)`
 
 ### 3. Crisis Event Response
+
 **Trigger**: GDELT urgency > 75  
 **Use**: `orchestrator.handleCrisisEvent(description, urgency, regions)`
 
 ### 4. B2B Client Onboarding
+
 **Trigger**: PayPal payment received  
 **Use**: `orchestrator.onboardB2BClient(email, name, product, amount, txnId)`
 
 ### 5. Weekly Performance Report
+
 **Trigger**: Scheduled (Monday 9 AM)  
 **Use**: `orchestrator.generateWeeklyReport()`
 
@@ -144,8 +153,8 @@ await orchestrator.initialize();
 // Example: Handle SEO ranking drop
 await orchestrator.handleSEORankingDrop(
   'african trade policy',
-  3,  // was position 3
-  8,  // now position 8
+  3, // was position 3
+  8, // now position 8
   'https://deedk822.wordpress.com/article'
 );
 
@@ -153,8 +162,8 @@ await orchestrator.handleSEORankingDrop(
 await orchestrator.amplifyHighPerformingContent(
   'Breaking Trade News',
   'https://deedk822.wordpress.com/news',
-  0.18,  // 18% CTR
-  250    // 250 clicks
+  0.18, // 18% CTR
+  250 // 250 clicks
 );
 
 // Example: Generate weekly report
@@ -199,15 +208,19 @@ All should return a list of available tools. If not, authenticate the server.
 ## 🐛 Troubleshooting
 
 ### Issue: "MCP server timeout"
+
 **Solution**: Increase timeout in `src/mcp-orchestrator.js` line 20
 
 ### Issue: "Missing environment variables"
+
 **Solution**: Verify `.env.mcp` is loaded: `source .env.mcp`
 
 ### Issue: "Authentication error"
+
 **Solution**: Re-authenticate MCP server and restart
 
 ### Issue: "Tool not found"
+
 **Solution**: Check tool name spelling and server name
 
 ---
@@ -230,7 +243,7 @@ Your workflow automation system is now running. The system will:
 ✅ Amplify high-performing content  
 ✅ Respond to crisis events  
 ✅ Onboard B2B clients  
-✅ Generate weekly reports  
+✅ Generate weekly reports
 
 All automatically, 24/7!
 

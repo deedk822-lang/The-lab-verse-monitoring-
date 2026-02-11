@@ -31,9 +31,11 @@ const io = socketIo(server, {
 app.io = io;
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false // Allow inline scripts for demo UI
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false // Allow inline scripts for demo UI
+  })
+);
 app.use(cors());
 app.use(compression());
 
@@ -63,9 +65,11 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Routes
 app.get('/', (req, res) => {
-  res.render('index', { 
+  res.render('index', {
     config: {
-      providers: Object.keys(config.providers).filter(p => config.providers[p].enabled || p === 'default')
+      providers: Object.keys(config.providers).filter(
+        (p) => config.providers[p].enabled || p === 'default'
+      )
     }
   });
 });
@@ -78,7 +82,7 @@ app.use('/api', apiKeyAuth, apiRoutes);
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   logger.info(`Client connected: ${socket.id}`);
-  
+
   socket.on('disconnect', () => {
     logger.info(`Client disconnected: ${socket.id}`);
   });

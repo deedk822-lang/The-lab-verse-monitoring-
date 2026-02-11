@@ -5,12 +5,12 @@ const createChallengeSchema = z.object({
   action: z.literal('create-challenge'),
   prompt: z.string(),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  type: z.string().default('ai_analysis'),
+  type: z.string().default('ai_analysis')
 });
 
 const getLeaderboardSchema = z.object({
   action: z.literal('leaderboard'),
-  challengeId: z.string(),
+  challengeId: z.string()
 });
 
 export const coliseumApi = {
@@ -41,5 +41,5 @@ export const coliseumApi = {
     const { challengeId } = parseResult.data;
     const history = coliseumManager.getBattleHistory(challengeId);
     return { status: 200, body: history };
-  },
+  }
 };

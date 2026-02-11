@@ -10,6 +10,7 @@ chmod +x fix-and-verify.sh && ./fix-and-verify.sh
 ```
 
 That's it! The script will:
+
 1. ✅ Apply all fixes automatically
 2. ✅ Set up environment
 3. ✅ Install dependencies
@@ -53,6 +54,7 @@ nano .env  # or use your favorite editor
 ```
 
 **Required (at least ONE)**:
+
 ```env
 COHERE_API_KEY=your_actual_cohere_key
 # OR
@@ -62,6 +64,7 @@ OPENAI_API_KEY=your_actual_openai_key
 ```
 
 **Get Free Keys**:
+
 - Cohere: https://cohere.com (free tier)
 - Groq: https://groq.com (free tier)
 
@@ -129,6 +132,7 @@ vercel dev
 ## 🎯 What Each Script Does
 
 ### `fix-and-verify.sh` (Master Script)
+
 - **Purpose**: One-command fix and verification
 - **What it does**:
   1. Checks prerequisites
@@ -142,6 +146,7 @@ vercel dev
 - **Run**: `./fix-and-verify.sh`
 
 ### `fix-all-issues.sh`
+
 - **Purpose**: Apply all fixes automatically
 - **What it does**:
   1. Updates `.env.example` with Perplexity
@@ -154,6 +159,7 @@ vercel dev
 - **Run**: `./scripts/fix-all-issues.sh`
 
 ### `verify-system-live.py`
+
 - **Purpose**: Comprehensive system verification with real API calls
 - **What it does**:
   1. Tests environment variables
@@ -168,6 +174,7 @@ vercel dev
 - **Run**: `python scripts/verify-system-live.py`
 
 ### `verify-system.sh`
+
 - **Purpose**: Shell wrapper for verification
 - **What it does**:
   1. Sets up environment
@@ -178,6 +185,7 @@ vercel dev
 - **Run**: `./scripts/verify-system.sh`
 
 ### `validate-environment.js`
+
 - **Purpose**: Pre-deployment environment validation
 - **What it does**:
   1. Checks all environment variables
@@ -187,6 +195,7 @@ vercel dev
 - **Run**: `node scripts/validate-environment.js`
 
 ### `fix-dependencies.js`
+
 - **Purpose**: Dependency management and fixing
 - **What it does**:
   1. Checks for security vulnerabilities
@@ -252,6 +261,7 @@ Recommendations:
 ### Issue: "No AI providers available"
 
 **Solution**:
+
 ```bash
 # Check environment
 node scripts/validate-environment.js
@@ -266,6 +276,7 @@ python scripts/verify-system-live.py
 ### Issue: "Module not found"
 
 **Solution**:
+
 ```bash
 # Reinstall dependencies
 pip install -r vaal-ai-empire/requirements.txt
@@ -281,6 +292,7 @@ npm install
 Ollama is optional! System works without it.
 
 To use Ollama:
+
 ```bash
 # Start Ollama in separate terminal
 ollama serve
@@ -298,6 +310,7 @@ python scripts/verify-system-live.py
 Perplexity is optional for keyword research.
 
 To enable:
+
 ```bash
 # Get API key from https://perplexity.ai
 echo "PERPLEXITY_API_KEY=your_key" >> .env
@@ -308,6 +321,7 @@ System works without it - falls back to basic mode.
 ### Issue: "Vercel deployment failed"
 
 **Solution**:
+
 ```bash
 # Ensure GLM4_API_KEY is removed from vercel.json
 grep -q "GLM4_API_KEY" vercel.json && \
@@ -370,11 +384,13 @@ Expected times:
 ## 🎉 Success!
 
 When you see:
+
 ```
 ✓ SYSTEM VERIFICATION PASSED
 ```
 
 You're ready to:
+
 1. Deploy to production
 2. Start automation
 3. Onboard clients

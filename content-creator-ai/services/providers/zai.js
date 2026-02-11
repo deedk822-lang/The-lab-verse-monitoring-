@@ -18,7 +18,10 @@ class ZAIProvider {
 
     try {
       const messages = [
-        { role: 'system', content: 'You are a helpful AI assistant specialized in content creation and research.' },
+        {
+          role: 'system',
+          content: 'You are a helpful AI assistant specialized in content creation and research.'
+        },
         { role: 'user', content: prompt }
       ];
 
@@ -38,7 +41,7 @@ class ZAIProvider {
 
       const response = await axios.post(this.endpoint, requestBody, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
         timeout: 60000
@@ -88,32 +91,39 @@ class ZAIProvider {
         { role: 'user', content: prompt }
       ];
 
-      const response = await axios.post(this.endpoint, {
-        model: this.model,
-        messages,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 4096,
-        stream: true
-      }, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        this.endpoint,
+        {
+          model: this.model,
+          messages,
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 4096,
+          stream: true
         },
-        responseType: 'stream',
-        timeout: 60000
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          responseType: 'stream',
+          timeout: 60000
+        }
+      );
 
       let fullText = '';
 
       return new Promise((resolve, reject) => {
         response.data.on('data', (chunk) => {
-          const lines = chunk.toString().split('\n').filter(line => line.trim() !== '');
-          
+          const lines = chunk
+            .toString()
+            .split('\n')
+            .filter((line) => line.trim() !== '');
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
               if (data === '[DONE]') continue;
-              
+
               try {
                 const parsed = JSON.parse(data);
                 const content = parsed.choices[0]?.delta?.content || '';
@@ -143,13 +153,13 @@ class ZAIProvider {
   async performResearch(query, options = {}) {
     // Use GLM-4.6 with thinking mode for better reasoning
     const researchPrompt = `Research the following topic comprehensively and provide detailed, accurate information:\n\n${query}\n\nProvide:\n1. Overview and context\n2. Key facts and statistics\n3. Recent developments\n4. Important considerations\n\nBe thorough and cite reasoning where applicable.`;
-    
+
     const result = await this.generateText(researchPrompt, {
       ...options,
       thinkingMode: true, // Enable reasoning for research
       maxTokens: 8000
     });
-    
+
     return {
       summary: result.text,
       thinking: result.thinking, // The model's reasoning process
@@ -167,21 +177,28 @@ class ZAIProvider {
     }
 
     try {
-      const response = await axios.post(this.endpoint, {
-        model: this.model,
-        messages: [
-          { role: 'system', content: 'You are an AI agent capable of using tools to complete tasks.' },
-          { role: 'user', content: task }
-        ],
-        tools: tools, // OpenAI-compatible tool definitions
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 8000
-      }, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        this.endpoint,
+        {
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an AI agent capable of using tools to complete tasks.'
+            },
+            { role: 'user', content: task }
+          ],
+          tools: tools, // OpenAI-compatible tool definitions
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 8000
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       return response.data;
     } catch (error) {
@@ -214,16 +231,20 @@ class ZAIProvider {
     }
     try {
       // A simple non-costly operation to check API key validity and connectivity
-      await axios.post(this.endpoint, {
-        model: this.model,
-        messages: [{ role: 'user', content: 'test' }],
-        max_tokens: 1
-      }, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+      await axios.post(
+        this.endpoint,
+        {
+          model: this.model,
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 1
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
       return { healthy: true, message: 'ZAI provider is responding' };
     } catch (error) {
       logger.error('ZAI provider health check failed:', error.response?.data || error.message);

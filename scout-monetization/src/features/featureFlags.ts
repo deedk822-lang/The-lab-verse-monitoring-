@@ -13,14 +13,14 @@ const featureFlagsPlugin = async (fastify: FastifyInstance) => {
   // For demonstration, we'll use an in-memory provider.
   // In a real production environment, this would be a service like Flagsmith, LaunchDarkly, etc.
   const provider = new InMemoryProvider({
-    'pricingV2': {
+    pricingV2: {
       disabled: false,
       variants: {
         on: true,
-        off: false,
+        off: false
       },
-      defaultVariant: 'off',
-    },
+      defaultVariant: 'off'
+    }
   });
 
   await OpenFeature.setProviderAndWait(provider);

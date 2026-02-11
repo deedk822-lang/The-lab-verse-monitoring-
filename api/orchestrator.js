@@ -7,7 +7,7 @@ import { Counter } from 'prom-client';
 const modelRequestCounter = new Counter({
   name: 'model_requests_total',
   help: 'Total number of requests for a specific model',
-  labelNames: ['model'],
+  labelNames: ['model']
 });
 
 function sanitizeInput(input) {
@@ -72,13 +72,13 @@ export default async function handler(req, res) {
     (model_id, location, task, tokens_used, cost_usd, client_id)
     VALUES
     (${model_id}, ${location}, ${task}, ${result.usage.total_tokens},
-     ${result.usage.total_tokens * model.cost_per_1k_tokens / 1000}, ${client_id})
+     ${(result.usage.total_tokens * model.cost_per_1k_tokens) / 1000}, ${client_id})
   `;
 
   res.json({
     model_used: model_id,
     result: result.output,
-    cost_usd: result.usage.total_tokens * model.cost_per_1k_tokens / 1000,
+    cost_usd: (result.usage.total_tokens * model.cost_per_1k_tokens) / 1000,
     human_review_needed: model.capability < 7.0 // Flag if low-confidence
   });
 }
@@ -116,7 +116,7 @@ async function executeOnModel(modelId, payload) {
     const response = await retryWithBackoff(async () => {
       const res = await fetch(model.endpoint, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${process.env[model.api_key_env]}` },
+        headers: { Authorization: `Bearer ${process.env[model.api_key_env]}` },
         body: JSON.stringify({
           model: modelId,
           messages: [{ role: 'user', content: payload.query }],
@@ -171,7 +171,7 @@ async function executeOnModel(modelId, payload) {
       const res = await fetch(model.endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env[model.api_key_env]}`,
+          Authorization: `Bearer ${process.env[model.api_key_env]}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -189,7 +189,9 @@ async function executeOnModel(modelId, payload) {
     return {
       output: response.embeddings,
       usage: {
-        total_tokens: (response?.meta?.billed_units?.input_tokens || 0) + (response?.meta?.billed_units?.output_tokens || 0)
+        total_tokens:
+          (response?.meta?.billed_units?.input_tokens || 0) +
+          (response?.meta?.billed_units?.output_tokens || 0)
       }
     };
   }
@@ -234,49 +236,49 @@ async function executeOnModel(modelId, payload) {
 }
 
 async function checkModelHealth(modelId) {
-    const model = MODEL_CATALOG[modelId];
+  const model = MODEL_CATALOG[modelId];
 
-    if (model.provider === 'LocalAI') {
-        const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
+  if (model.provider === 'LocalAI') {
+    const baseUrl = model.endpoint.replace(/\/v1\/.*$/, '');
+    try {
+      return await retryWithBackoff(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         try {
-            return await retryWithBackoff(async () => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                try {
-                    const r = await fetch(`${baseUrl}/health`, { signal: controller.signal });
-                    if (!r.ok) {
-                        throw new Error(`Health check failed: ${r.status}`);
-                    }
-                    return true;
-                } finally {
-                    clearTimeout(timeoutId);
-                }
-            });
-        } catch {
-            return false;
+          const r = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+          if (!r.ok) {
+            throw new Error(`Health check failed: ${r.status}`);
+          }
+          return true;
+        } finally {
+          clearTimeout(timeoutId);
         }
-    } else {
-        try {
-            return await retryWithBackoff(async () => {
-                const response = await fetch(model.endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env[model.api_key_env]}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: modelId,
-                        messages: [{ role: 'user', content: 'test' }],
-                        max_tokens: 1
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error(`Health check failed: ${response.status}`);
-                }
-                return true;
-            });
-        } catch {
-            return false;
-        }
+      });
+    } catch {
+      return false;
     }
+  } else {
+    try {
+      return await retryWithBackoff(async () => {
+        const response = await fetch(model.endpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env[model.api_key_env]}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [{ role: 'user', content: 'test' }],
+            max_tokens: 1
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`Health check failed: ${response.status}`);
+        }
+        return true;
+      });
+    } catch {
+      return false;
+    }
+  }
 }

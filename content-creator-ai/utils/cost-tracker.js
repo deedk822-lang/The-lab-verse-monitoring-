@@ -17,7 +17,7 @@ class CostTracker {
 
     const inputCost = (inputTokens / 1000) * (pricing.input || 0);
     const outputCost = (outputTokens / 1000) * (pricing.output || 0);
-    
+
     return inputCost + outputCost;
   }
 

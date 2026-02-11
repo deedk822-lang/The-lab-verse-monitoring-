@@ -13,19 +13,19 @@ async function callGLM4(prompt: string, model: string = 'glm-4-plus') {
     }
 
     console.log(`Calling GLM-4 model: ${model}`);
-    
+
     const response = await fetch(GLM4_API_ENDPOINT, {
         method: 'POST',
-        headers: { 
+        headers: {
             'Authorization': `Bearer ${GLM4_API_KEY}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             model: model,
             messages: [
-                { 
-                    role: 'user', 
-                    content: prompt 
+                {
+                    role: 'user',
+                    content: prompt
                 }
             ],
             temperature: 0.7,
@@ -40,17 +40,17 @@ async function callGLM4(prompt: string, model: string = 'glm-4-plus') {
     }
 
     const result = await response.json();
-    
+
     // Extract content from response
     if (result.choices && result.choices.length > 0) {
         const content = result.choices[0].message.content;
-        return { 
-            content: content, 
+        return {
+            content: content,
             source: model,
             usage: result.usage || null
         };
     }
-    
+
     throw new Error('GLM-4 returned empty content.');
 }
 
@@ -68,7 +68,7 @@ export default async function generateArticle(req: VercelRequest, res: VercelRes
     try {
         // Call GLM-4 API
         const result = await callGLM4(prompt, model);
-        
+
         // Return successful result
         return res.status(200).json({
             success: true,
@@ -78,8 +78,8 @@ export default async function generateArticle(req: VercelRequest, res: VercelRes
 
     } catch (error: any) {
         console.error("Content generation failed:", error);
-        
-        return res.status(500).json({ 
+
+        return res.status(500).json({
             success: false,
             error: 'Content generation failed',
             details: error.message,

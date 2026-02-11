@@ -238,7 +238,7 @@ Added:
 
 **Deployment Team**: DevOps & Testing Infrastructure  
 **Tools Used**: Jest, Nock, Node.js, npm, Bash  
-**Methodology**: Test-Driven Infrastructure Deployment  
+**Methodology**: Test-Driven Infrastructure Deployment
 
 ---
 

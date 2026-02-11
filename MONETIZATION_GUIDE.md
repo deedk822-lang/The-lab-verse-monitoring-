@@ -241,13 +241,13 @@ if (user.plan === 'priority') {
     roomName: `support-${userId}`,
     endDate: Date.now() + 3600000
   });
-  
+
   // Notify via Slack
   await slack.postMessage({
     channel: user.slackChannel,
     text: `🚨 Priority: ${message}\nJoin: ${videoLink}`
   });
-  
+
   return { responseTime: '5 minutes', videoLink };
 }
 ```
@@ -296,7 +296,7 @@ await trackUsage(client.id, {
 if (usage > plan.requests) {
   const overage = usage - plan.requests;
   const overageCost = overage * plan.costPerExtraRequest;
-  
+
   await stripe.invoiceItems.create({
     customer: client.stripeId,
     amount: Math.round(overageCost * 100),
@@ -339,7 +339,7 @@ Best,
 **Integration Code:**
 ```html
 <!-- In RankYak dashboard -->
-<iframe 
+<iframe
   src="https://your-gateway.vercel.app/embed/rankyak"
   width="100%"
   height="600px"

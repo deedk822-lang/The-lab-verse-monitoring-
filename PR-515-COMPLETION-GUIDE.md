@@ -76,7 +76,7 @@ gh secret list
    - Secret: `local-ai-key-optional`
    - Click **"Add secret"**
 4. Add second secret:
-   - Name: `LOCALAI_API_KEY`  
+   - Name: `LOCALAI_API_KEY`
    - Secret: `local-ai-key-optional`
    - Click **"Add secret"**
 

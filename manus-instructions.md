@@ -547,7 +547,7 @@ If any step fails:
 
 **END OF INSTRUCTIONS**
 
-*Prepared for: Manus AI*  
-*Date: 2025-11-11*  
-*Version: 1.0.0-production*  
+*Prepared for: Manus AI*
+*Date: 2025-11-11*
+*Version: 1.0.0-production*
 *Domain: snout-lard-jumbo-5158.vercel.app*

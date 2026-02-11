@@ -15,7 +15,7 @@ console.log("🔍 Testing Mistral & LocalAI Integration\n");
 
 async function testLocalAI() {
   console.log("1️⃣ Testing LocalAI connection...");
-  
+
   try {
     const localai = createOpenAI({
       baseURL: process.env.LOCALAI_API_URL || "http://localhost:8080/v1",
@@ -53,7 +53,7 @@ async function testLocalAI() {
 
 async function testMistral() {
   console.log("\n2️⃣ Testing Mistral provider...");
-  
+
   try {
     const mistral = createOpenAI({
       baseURL: process.env.MISTRAL_API_URL || "http://localhost:8080/v1",
@@ -77,7 +77,7 @@ async function testMistral() {
 
 async function testMCPServer() {
   console.log("\n3️⃣ Testing MCP Server...");
-  
+
   try {
     const response = await fetch(`${process.env.MCP_SERVER_URL || "http://localhost:8000"}/health`, {
       method: "GET",
@@ -103,11 +103,11 @@ async function testMCPServer() {
 
 async function testProviderConfig() {
   console.log("\n4️⃣ Testing Provider Configuration...");
-  
+
   try {
     // Import and test the provider configuration
     const { providers, getActiveProvider } = await import("./src/config/providers.js");
-    
+
     console.log("   🔧 Available providers:");
     Object.entries(providers).forEach(([key, config]) => {
       console.log(`      ${key}: ${config.enabled ? '✅' : '❌'} (${config.name})`);

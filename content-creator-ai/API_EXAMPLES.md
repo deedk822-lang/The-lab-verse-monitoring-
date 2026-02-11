@@ -204,16 +204,16 @@ async function generateContent() {
     });
 
     console.log('Success!', response.data);
-    
+
     // Access the content
     console.log('Content:', response.data.content.content);
-    
+
     // Access SEO data
     console.log('SEO Title:', response.data.seo.title);
-    
+
     // Check cost
     console.log('Cost: $', response.data.costs.totalCost);
-    
+
   } catch (error) {
     console.error('Error:', error.response?.data || error.message);
   }
@@ -240,7 +240,7 @@ async function generateContent() {
   });
 
   const data = await response.json();
-  
+
   if (data.success) {
     console.log('Content generated!');
     console.log(data.content.content);
@@ -264,7 +264,7 @@ def generate_content():
         'Content-Type': 'application/json',
         'X-API-Key': 'your-api-key'
     }
-    
+
     data = {
         'topic': 'Introduction to Python',
         'media_type': 'text',
@@ -274,9 +274,9 @@ def generate_content():
         'include_seo': True,
         'include_social': True
     }
-    
+
     response = requests.post(url, headers=headers, json=data)
-    
+
     if response.status_code == 200:
         result = response.json()
         print('Success!')

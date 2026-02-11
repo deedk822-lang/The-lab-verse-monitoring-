@@ -3,7 +3,7 @@
 
 **Target Topic:** G20 Opportunities for South Africa  
 **Output:** Blog post + Multi-platform social media distribution  
-**Estimated Time:** 30-45 minutes  
+**Estimated Time:** 30-45 minutes
 
 ---
 
@@ -57,9 +57,9 @@ for (const topic of researchTopics) {
     },
     body: JSON.stringify({
       model: 'huggingface-research',
-      messages: [{ 
-        role: 'user', 
-        content: `Research and summarize: ${topic}. Focus on concrete opportunities, statistics, and recent developments.` 
+      messages: [{
+        role: 'user',
+        content: `Research and summarize: ${topic}. Focus on concrete opportunities, statistics, and recent developments.`
       }]
     })
   });
@@ -420,26 +420,26 @@ manus-mcp-cli tool call asana_update_task --server asana --input '{
 // Complete automation script for judges
 async function executeG20ContentWorkflow() {
   console.log("🚀 Starting G20 Content Creation Workflow...");
-  
+
   // Phase 1: Research
   const research = await conductResearch();
   await storeInNotion(research);
-  
+
   // Phase 2: Content Creation
   const blogPost = await generateBlogPost(research);
   await publishToWordPress(blogPost);
-  
+
   // Phase 3: Social Content
   const socialPosts = await generateSocialContent(blogPost);
   const visuals = await generateVisuals();
-  
+
   // Phase 4: Distribution
   await distributeSocialContent(socialPosts, visuals);
-  
+
   // Phase 5: Tracking Setup
   await setupAnalyticsTracking();
   await createAsanaProject();
-  
+
   console.log("✅ G20 Content Workflow Complete!");
   console.log("📊 Monitoring dashboard: [Asana Project URL]");
   console.log("📝 Blog post: [WordPress URL]");

@@ -46,7 +46,7 @@ Tests:       5 failed, 19 total
 Time:        91.216s
 Warnings:    11
 
-# After deployment  
+# After deployment
 Test Suites: 4 passed, 4 total
 Tests:       20 passed, 20 total
 Time:        0.659s

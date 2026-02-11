@@ -28,7 +28,7 @@ class SEOGenerator {
   generateTitle(topic, content) {
     // Extract first heading or create from topic
     const headingMatch = content.match(/^#\s+(.+)$/m) || content.match(/^(.+)\n/);
-    
+
     if (headingMatch) {
       return headingMatch[1].trim().substring(0, 60);
     }
@@ -151,11 +151,11 @@ class SEOGenerator {
   countSyllables(word) {
     word = word.toLowerCase();
     if (word.length <= 3) return 1;
-    
+
     word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
     word = word.replace(/^y/, '');
     const matches = word.match(/[aeiouy]{1,2}/g);
-    
+
     return matches ? matches.length : 1;
   }
 }

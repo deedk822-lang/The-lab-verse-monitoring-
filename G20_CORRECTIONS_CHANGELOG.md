@@ -254,7 +254,7 @@ This document tracks all corrections made to G20 blog content to ensure accuracy
 **Version:** 2.0 (CORRECTED)  
 **Previous Version:** 1.0 (CONTAINS UNVERIFIED DATA - DO NOT USE)  
 **Last Updated:** November 29, 2025  
-**Next Review:** December 6, 2025 (Post-G20 Summit)  
+**Next Review:** December 6, 2025 (Post-G20 Summit)
 
 **Approval Status:**
 - [x] Content Team Review

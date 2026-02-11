@@ -131,7 +131,7 @@ Action Type: bulk_complete
 
 **Example output:**
 ```
-🔍 WOULD COMPLETE: Design new homepage - Overdue task  
+🔍 WOULD COMPLETE: Design new homepage - Overdue task
 🔍 WOULD COMPLETE: Update documentation - Has ready tag
 ✅ Would complete: 12 tasks
 ⏭️  Skipped: 5 tasks

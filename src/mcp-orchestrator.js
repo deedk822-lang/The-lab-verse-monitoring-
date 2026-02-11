@@ -1,6 +1,6 @@
 /**
  * MCP Orchestrator - The Lab-Verse Monitoring System
- * 
+ *
  * This is the main orchestration layer that connects all MCP services
  * to create automated workflows for content intelligence and revenue generation.
  */
@@ -25,11 +25,11 @@ class MCPOrchestrator {
       const inputJson = JSON.stringify(input);
       const command = `manus-mcp-cli tool call ${toolName} --server ${server} --input '${inputJson}'`;
       const { stdout, stderr } = await execPromise(command);
-      
+
       if (stderr && !stderr.includes('Warning')) {
         console.error(`MCP Error (${server}/${toolName}):`, stderr);
       }
-      
+
       return JSON.parse(stdout);
     } catch (error) {
       console.error(`Failed to call ${server}/${toolName}:`, error.message);
@@ -361,7 +361,7 @@ class MCPOrchestrator {
 - **Average Email CTR**: ${(avgCTR * 100).toFixed(2)}%
 
 ## Top Performing Content
-${contentPerformance.records.slice(0, 5).map((r, i) => 
+${contentPerformance.records.slice(0, 5).map((r, i) =>
   `${i + 1}. ${r.fields['Title']} - ${(r.fields['Email CTR'] * 100).toFixed(1)}% CTR`
 ).join('\n')}
       `;
@@ -409,7 +409,7 @@ ${contentPerformance.records.slice(0, 5).map((r, i) =>
    */
   async initialize() {
     console.log('🚀 Initializing MCP Orchestrator...');
-    
+
     // Verify environment variables
     const required = [
       'ASANA_WORKSPACE_ID',
@@ -432,7 +432,7 @@ module.exports = MCPOrchestrator;
 // CLI usage
 if (require.main === module) {
   const orchestrator = new MCPOrchestrator();
-  
+
   orchestrator.initialize()
     .then(() => {
       console.log('MCP Orchestrator is ready!');

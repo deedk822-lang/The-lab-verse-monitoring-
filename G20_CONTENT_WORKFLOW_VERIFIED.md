@@ -232,7 +232,7 @@ const contentQualityGate = {
 const verifiedBlogPost = {
   title: "G20 2025 Johannesburg Summit: 5 Verified Opportunities for South African Businesses",
   subtitle: "Fact-Checked Analysis of Real G20 Initiatives and How SA Can Benefit",
-  
+
   sections: [
     {
       heading: "Summit Overview",
@@ -389,7 +389,7 @@ const verifiedBlogPost = {
       verified: true
     }
   ],
-  
+
   metadata: {
     author: "Lab Verse AI Judges - Content Integrity Team",
     publishDate: "2025-11-29",
@@ -584,7 +584,7 @@ const postSummitProtocol = {
     "Monthly": "Update IMF data if revised",
     "Quarterly": "Full content audit and verification"
   },
-  
+
   updateTriggers: [
     "New G20 official announcements",
     "Revised IMF/World Bank projections",
@@ -592,7 +592,7 @@ const postSummitProtocol = {
     "PAPSS performance data updates",
     "CwA investment allocations announced"
   ],
-  
+
   correctionPolicy: {
     minor: "Update content within 24 hours",
     major: "Immediate correction + notification to all platforms",

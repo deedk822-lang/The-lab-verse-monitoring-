@@ -80,7 +80,7 @@ function openWizard() {
     document.body.style.overflow = 'hidden';
     currentStep = 1;
     updateWizardStep();
-    
+
     // Animate modal entrance
     anime({
         targets: '#wizardModal .bg-white',
@@ -110,11 +110,11 @@ function nextStep() {
     if (validateCurrentStep()) {
         currentStep++;
         updateWizardStep();
-        
+
         // Animate step transition
         const currentStepEl = document.querySelector('.wizard-step.active');
         const nextStepEl = document.getElementById(`step${currentStep}`);
-        
+
         anime({
             targets: currentStepEl,
             opacity: [1, 0],
@@ -138,11 +138,11 @@ function previousStep() {
     if (currentStep > 1) {
         currentStep--;
         updateWizardStep();
-        
+
         // Animate step transition
         const currentStepEl = document.querySelector('.wizard-step.active');
         const prevStepEl = document.getElementById(`step${currentStep}`);
-        
+
         anime({
             targets: currentStepEl,
             opacity: [1, 0],
@@ -168,17 +168,17 @@ function updateWizardStep() {
     document.getElementById('progressBar').style.width = `${progress}%`;
     document.getElementById('currentStep').textContent = currentStep;
     document.getElementById('progressPercent').textContent = `${Math.round(progress)}%`;
-    
+
     // Update navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
-    
+
     if (currentStep === 1) {
         prevBtn.classList.add('hidden');
     } else {
         prevBtn.classList.remove('hidden');
     }
-    
+
     if (currentStep === 6) {
         nextBtn.textContent = 'Complete Setup';
         nextBtn.onclick = completeSetup;
@@ -187,7 +187,7 @@ function updateWizardStep() {
         nextBtn.textContent = 'Next Step';
         nextBtn.onclick = nextStep;
     }
-    
+
     // Load step-specific content
     if (currentStep === 4) {
         loadTemplates();
@@ -261,7 +261,7 @@ function selectTemplate(templateId) {
 function updateSelection(stepId, selectedValue) {
     const step = document.getElementById(stepId);
     const cards = step.querySelectorAll('.template-card');
-    
+
     cards.forEach(card => {
         card.classList.remove('selected');
         if (card.onclick.toString().includes(selectedValue)) {
@@ -285,7 +285,7 @@ function loadTemplates() {
     const projectType = wizardData.projectType;
     const templateList = templates[projectType] || [];
     const grid = document.getElementById('templateGrid');
-    
+
     grid.innerHTML = templateList.map(template => `
         <div class="template-card p-4 rounded-xl cursor-pointer" data-template-id="${template.id}" onclick="selectTemplate('${template.id}')">
             <div class="flex items-center mb-3">
@@ -307,11 +307,11 @@ function loadTemplates() {
 function filterTemplates() {
     const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
     const cards = document.querySelectorAll('#templateGrid .template-card');
-    
+
     cards.forEach(card => {
         const templateName = card.querySelector('h4').textContent.toLowerCase();
         const templateDesc = card.querySelector('p').textContent.toLowerCase();
-        
+
         if (templateName.includes(searchTerm) || templateDesc.includes(searchTerm)) {
             card.style.display = 'block';
         } else {
@@ -354,7 +354,7 @@ function generateProjectKey(projectName) {
 
 function generateSummary() {
     const selectedTemplate = templates[wizardData.projectType]?.find(t => t.id === wizardData.template);
-    
+
     const summaryHTML = `
         <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
@@ -382,7 +382,7 @@ function generateSummary() {
             </div>
         </div>
     `;
-    
+
     document.getElementById('summaryContent').innerHTML = summaryHTML;
 }
 
@@ -392,7 +392,7 @@ function completeSetup() {
         ...wizardData,
         completedAt: new Date().toISOString()
     }));
-    
+
     // Show completion animation
     anime({
         targets: '#wizardModal .bg-white',
@@ -400,9 +400,9 @@ function completeSetup() {
         duration: 600,
         easing: 'easeInOutQuad'
     });
-    
+
     showNotification('Setup configuration saved! Check your email for next steps.', 'success');
-    
+
     setTimeout(() => {
         closeWizard();
         // Redirect to checklist page
@@ -420,9 +420,9 @@ function showNotification(message, type = 'info') {
         'bg-blue-500 text-white'
     }`;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     // Animate in
     anime({
         targets: notification,
@@ -431,7 +431,7 @@ function showNotification(message, type = 'info') {
         duration: 300,
         easing: 'easeOutQuad'
     });
-    
+
     // Auto remove
     setTimeout(() => {
         anime({
@@ -473,7 +473,7 @@ function scrollToFeatures() {
 document.addEventListener('DOMContentLoaded', function() {
     const projectNameInput = document.getElementById('projectName');
     const projectKeyInput = document.getElementById('projectKey');
-    
+
     if (projectNameInput && projectKeyInput) {
         projectNameInput.addEventListener('input', function() {
             if (!projectKeyInput.value) {
@@ -488,7 +488,7 @@ document.addEventListener('keydown', function(e) {
     if (document.getElementById('wizardModal').classList.contains('hidden')) {
         return;
     }
-    
+
     if (e.key === 'Escape') {
         closeWizard();
     } else if (e.key === 'ArrowRight' && currentStep < 6) {

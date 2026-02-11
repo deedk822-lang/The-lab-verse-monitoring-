@@ -36,7 +36,7 @@ class SocialMediaDistributor {
     const hashtags = keywords.slice(0, 3).map(k => `#${k}`).join(' ');
     const maxLength = 280 - hashtags.length - cta.length - 10;
     const topicText = topic.substring(0, maxLength);
-    
+
     return {
       platform: 'Twitter/X',
       text: `${topicText}\n\n${cta}\n\n${hashtags}`,
@@ -48,9 +48,9 @@ class SocialMediaDistributor {
   generateLinkedInPost(content, topic, keywords, cta) {
     const summary = content.split('\n\n')[0].substring(0, 200);
     const hashtags = keywords.slice(0, 5).map(k => `#${k}`).join(' ');
-    
+
     const post = `🚀 ${topic}\n\n${summary}\n\n${cta}\n\n${hashtags}\n\n#ContentCreation #AI #DigitalMarketing`;
-    
+
     return {
       platform: 'LinkedIn',
       text: post,
@@ -62,7 +62,7 @@ class SocialMediaDistributor {
   generateFacebookPost(content, topic, cta) {
     const summary = content.split('\n\n')[0].substring(0, 300);
     const post = `${topic}\n\n${summary}\n\n${cta}\n\n👉 Learn more in the full article!`;
-    
+
     return {
       platform: 'Facebook',
       text: post,
@@ -75,7 +75,7 @@ class SocialMediaDistributor {
     const hashtags = keywords.slice(0, 10).map(k => `#${k}`).join(' ');
     const caption = topic.substring(0, 200);
     const post = `${caption}\n\n${cta}\n\n${hashtags}\n\n#ContentCreator #AITools #DigitalContent`;
-    
+
     return {
       platform: 'Instagram',
       text: post,
@@ -89,7 +89,7 @@ class SocialMediaDistributor {
     const hashtags = keywords.slice(0, 3).map(k => `#${k}`).join(' ');
     const maxLength = 500 - hashtags.length - cta.length - 10;
     const text = topic.substring(0, maxLength);
-    
+
     return {
       platform: 'Threads',
       text: `${text}\n\n${cta}\n\n${hashtags}`,
@@ -102,7 +102,7 @@ class SocialMediaDistributor {
     const intro = `Hey everyone! Today we're talking about ${topic}.`;
     const summary = content.split('\n\n')[0].substring(0, 300);
     const outro = `If you found this helpful, don't forget to like, subscribe, and hit that notification bell!`;
-    
+
     return {
       platform: 'YouTube',
       hook: intro,

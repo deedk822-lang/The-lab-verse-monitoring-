@@ -2,7 +2,7 @@
 const config = {
   rootDir: '.',
   testEnvironment: 'jsdom',
-  
+
   // Match all test files across the repository
   testMatch: [
     '<rootDir>/**/*.(test|spec).{js,jsx,ts,tsx}',
@@ -10,9 +10,9 @@ const config = {
     '<rootDir>/tests/**/*.test.{js,ts}',
     '<rootDir>/test-*.js'
   ],
-  
+
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
-  
+
   // Transform configuration for TypeScript and JavaScript
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
@@ -24,12 +24,12 @@ const config = {
     }],
     '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }]
   },
-  
+
   // Transform ES modules in node_modules
   transformIgnorePatterns: [
     'node_modules/(?!(node-fetch|@mswjs/interceptors|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)'
   ],
-  
+
   // Module name mapping for aliases and CSS
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
@@ -39,13 +39,13 @@ const config = {
     '^../services/ProviderFactory.js$': '<rootDir>/src/services/ProviderFactory.js',
     '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js'
   },
-  
+
   // Setup files
   setupFiles: ['<rootDir>/test/setup-nock.js'],
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  
+
   modulePaths: ['<rootDir>/src', '<rootDir>'],
-  
+
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
@@ -53,7 +53,7 @@ const config = {
     '<rootDir>/dist/',
     '<rootDir>/content-creator-ai/test.js'
   ],
-  
+
   // Coverage configuration (optional)
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -61,14 +61,14 @@ const config = {
     '!src/**/*.test.{js,jsx,ts,tsx}',
     '!**/node_modules/**'
   ],
-  
+
   // Error handling
   bail: false,
   verbose: true,
-  
+
   // Timeout for tests
   testTimeout: 30000,
-  
+
   // Clear mocks between tests
   clearMocks: true,
   restoreMocks: true

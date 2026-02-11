@@ -175,21 +175,21 @@ If the setup wizard doesn't work, manually configure `.env.mcp`:
      "name": "Lab-Verse: Content Pipeline",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # SEO Recovery
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",
      "name": "Lab-Verse: SEO Recovery",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # Crisis Response
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",
      "name": "Lab-Verse: Crisis Response",
      "privacy_setting": "public_to_workspace"
    }'
-   
+
    # Client Onboarding
    manus-mcp-cli tool call asana_create_project --server asana --input '{
      "workspace": "YOUR_WORKSPACE_GID",

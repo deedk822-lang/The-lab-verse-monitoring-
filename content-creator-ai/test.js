@@ -134,13 +134,13 @@ async function testStats() {
 
 async function runAllTests() {
   console.log('═══════════════════════════════════════════════════════\n');
-  
+
   const results = [];
-  
+
   results.push(await testHealthCheck());
   results.push(await testTestEndpoint());
   results.push(await testAuthenticationRequired());
-  
+
   // Only run real API tests if explicitly requested
   if (process.env.RUN_FULL_TESTS === 'true') {
     results.push(await testContentGeneration());
@@ -148,14 +148,14 @@ async function runAllTests() {
   } else {
     console.log('ℹ️  Skipping real API tests (set RUN_FULL_TESTS=true to enable)\n');
   }
-  
+
   console.log('═══════════════════════════════════════════════════════');
   console.log('\n📊 Test Results:');
   console.log(`   Passed: ${results.filter(r => r).length}/${results.length}`);
   console.log(`   Failed: ${results.filter(r => !r).length}/${results.length}`);
-  
+
   const allPassed = results.every(r => r);
-  
+
   if (allPassed) {
     console.log('\n✅ All tests passed!\n');
     process.exit(0);

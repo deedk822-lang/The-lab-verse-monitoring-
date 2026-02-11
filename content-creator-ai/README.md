@@ -20,7 +20,7 @@ A full-stack JavaScript application for AI-powered content creation with support
 content-creator-ai/
 ├── config/              # Configuration files
 ├── controllers/         # Request handlers
-├── services/           
+├── services/
 │   └── providers/      # AI provider integrations
 ├── routes/             # API routes
 ├── middlewares/        # Authentication, rate limiting
@@ -383,17 +383,17 @@ interface ContentRequest {
   audience?: string;
   tone?: 'professional' | 'casual' | 'friendly' | 'formal' | 'humorous' | 'technical';
   language?: string;
-  
+
   // Text options
   length?: 'short' | 'medium' | 'long';
   format?: 'markdown' | 'html' | 'plain';
-  
+
   // Media options
   aspect_ratio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
   style?: string;
   duration?: number;
   voice?: string;
-  
+
   // Advanced
   enable_research?: boolean;
   include_seo?: boolean;

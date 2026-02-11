@@ -17,16 +17,16 @@ async function testConnection() {
   console.log('Testing AI Connector...');
   console.log('DASHSCOPE_API_KEY:', process.env.DASHSCOPE_API_KEY ? '✓ Set' : '✗ Missing');
   console.log('MOONSHOT_API_KEY:', process.env.MOONSHOT_API_KEY ? '✓ Set' : '✗ Missing');
-  
+
   const finops = new FinOpsTagger();
   const prompt = 'Analyze this test: win_rate=0.07, cost_per_comp=0.042. Flag anomalies.';
-  
+
   try {
     const result = await connectAI(prompt, finops, {
       artifactId: 'test-' + Date.now(),
       tenantId: 'test-tenant'
     });
-    
+
     console.log('\n✓ CONNECTED - AI Response:');
     console.log('Qwen Analysis:', result.qwen);
     console.log('Kimi Response:', result.kimi);

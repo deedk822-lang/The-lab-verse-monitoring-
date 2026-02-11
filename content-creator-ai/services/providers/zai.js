@@ -108,12 +108,12 @@ class ZAIProvider {
       return new Promise((resolve, reject) => {
         response.data.on('data', (chunk) => {
           const lines = chunk.toString().split('\n').filter(line => line.trim() !== '');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
               if (data === '[DONE]') continue;
-              
+
               try {
                 const parsed = JSON.parse(data);
                 const content = parsed.choices[0]?.delta?.content || '';
@@ -143,13 +143,13 @@ class ZAIProvider {
   async performResearch(query, options = {}) {
     // Use GLM-4.6 with thinking mode for better reasoning
     const researchPrompt = `Research the following topic comprehensively and provide detailed, accurate information:\n\n${query}\n\nProvide:\n1. Overview and context\n2. Key facts and statistics\n3. Recent developments\n4. Important considerations\n\nBe thorough and cite reasoning where applicable.`;
-    
+
     const result = await this.generateText(researchPrompt, {
       ...options,
       thinkingMode: true, // Enable reasoning for research
       maxTokens: 8000
     });
-    
+
     return {
       summary: result.text,
       thinking: result.thinking, // The model's reasoning process

@@ -57,12 +57,12 @@ class OpenAIProvider {
 
   async performResearch(query, options = {}) {
     const researchPrompt = `Research the following topic and provide detailed, accurate information:\n\n${query}\n\nProvide a comprehensive summary with key facts, recent developments, and important considerations.`;
-    
+
     const result = await this.generateText(researchPrompt, {
       ...options,
       maxTokens: 3000
     });
-    
+
     return {
       summary: result.text,
       searchResults: [],
@@ -79,7 +79,7 @@ class OpenAIProvider {
 
     try {
       const size = this.convertAspectRatio(options.aspectRatio || '16:9');
-      
+
       const response = await this.client.images.generate({
         model: 'dall-e-3',
         prompt,

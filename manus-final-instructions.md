@@ -1,4 +1,4 @@
-# Manus AI – Final Live Deployment & 28-Platform Pipeline  
+# Manus AI – Final Live Deployment & 28-Platform Pipeline
 (Real Vercel domain inserted)
 
 ## 1. Install Windsurf on Debian/Ubuntu (real machine)
@@ -127,11 +127,11 @@ Paste verbatim into Windsurf chat:
 
 ```bash
 @wpcom-mcp create post title="Manus AI Live Demo" slug="manus-ai-live-demo" content="<p>Posted via Manus AI control agent.</p>" status="publish" tags=["AI","demo"]
-→ save permalink  
+→ save permalink
 @rankyak-bridge trigger event="api/webhook" data={"title":"Manus AI Live Demo","slug":"manus-ai-live-demo","content":"<p>Posted via Manus AI control agent.</p>","platforms":"twitter,linkedin,facebook,instagram,reddit,medium,devto,hashnode,pinterest,tumblr,telegram,whatsapp","includeEmail":true}
-→ copy run ID  
+→ copy run ID
 @github show me the last commit on main
-→ confirm commit  
+→ confirm commit
 ```
 
 ---

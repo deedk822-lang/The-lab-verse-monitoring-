@@ -1,9 +1,9 @@
 /**
  * Ayrshare Social Media Posting Script
- * 
+ *
  * This script allows you to post content to multiple social media platforms
  * using the Ayrshare API.
- * 
+ *
  * Usage:
  *   node ayrshare/post-to-social.js "Your post content" [platforms] [mediaUrls] [scheduleDate]
  *
@@ -58,7 +58,7 @@ function postToSocial(postContent, platforms = ['twitter', 'facebook', 'linkedin
   console.log('📤 Posting to social media...');
   console.log(`📝 Content: ${postContent}`);
   console.log(`🎯 Platforms: ${platforms.join(', ')}`);
-  
+
   if (mediaUrls.length > 0) {
     console.log(`🖼️  Media: ${mediaUrls.join(', ')}`);
   }
@@ -73,11 +73,11 @@ function postToSocial(postContent, platforms = ['twitter', 'facebook', 'linkedin
     res.on('end', () => {
       try {
         const response = JSON.parse(data);
-        
+
         if (res.statusCode === 200 && response.status === 'success') {
           console.log('\n✅ Successfully posted to social media!');
           console.log('\n📊 Results:');
-          
+
           response.postIds.forEach((result) => {
             if (result.status === 'success') {
               console.log(`\n✓ ${result.platform.toUpperCase()}:`);
@@ -89,12 +89,12 @@ function postToSocial(postContent, platforms = ['twitter', 'facebook', 'linkedin
               console.log(`\n✗ ${result.platform.toUpperCase()}: ${result.status}`);
             }
           });
-          
+
           // Save results to file for GitHub Actions artifact
           const fs = require('fs');
           fs.writeFileSync('ayrshare-post-results.json', JSON.stringify(response, null, 2));
           console.log('\n💾 Results saved to ayrshare-post-results.json');
-          
+
         } else {
           console.error('\n❌ Posting failed:');
           console.error(JSON.stringify(response, null, 2));
@@ -120,7 +120,7 @@ function postToSocial(postContent, platforms = ['twitter', 'facebook', 'linkedin
 // Main execution
 if (require.main === module) {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0) {
     console.log('Usage: node ayrshare/post-to-social.js "Your post content" [platforms] [mediaUrls] [scheduleDate]');
     console.log('\nExamples:');

@@ -89,10 +89,10 @@ After running tests, you'll see:
 ======================================================================
 ✅ JEST: PASSED
    12 tests passed in 2 suites
-   
+
 ✅ PYTEST: PASSED (skipped)
    Reason: pytest-missing
-   
+
 ======================================================================
 
 🎉 All test suites completed successfully!
@@ -115,7 +115,7 @@ describe('authenticate', () => {
     expect(token).toBeDefined();
     expect(typeof token).toBe('string');
   });
-  
+
   it('should throw error for invalid credentials', async () => {
     await expect(
       authenticate('user', 'wrong')

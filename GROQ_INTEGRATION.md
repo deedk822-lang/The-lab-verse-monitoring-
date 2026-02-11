@@ -72,9 +72,9 @@ import { multiProviderGenerate } from './src/providers/multiProviderFallback.js'
 // Automatically tries providers in order until one succeeds
 const result = await multiProviderGenerate(
   'Write a short poem about AI',
-  { 
-    temperature: 0.7, 
-    max_tokens: 200 
+  {
+    temperature: 0.7,
+    max_tokens: 200
   }
 );
 
@@ -127,7 +127,7 @@ console.log(`Fallback attempts: ${result.fallbackAttempts}`);
 ## Available Models
 
 | Model | ID | Best For |
-|-------|----|---------| 
+|-------|----|---------|
 | **Llama 3.1 70B** | `llama-3.1-70b-versatile` | General purpose, high quality |
 | **Llama 3.1 8B** | `llama-3.1-8b-instant` | Fast responses, simple tasks |
 | **Mixtral 8x7B** | `mixtral-8x7b-32768` | Long context (32k tokens) |
@@ -184,7 +184,7 @@ npm run test:ai
 ✅ **Free**: 30 requests/minute on free tier  
 ✅ **Fallback**: Automatic failover to other providers  
 ✅ **Flexible**: Multiple integration options  
-✅ **Production-Ready**: Lazy loading, error handling, streaming support  
+✅ **Production-Ready**: Lazy loading, error handling, streaming support
 
 ## Rate Limits
 

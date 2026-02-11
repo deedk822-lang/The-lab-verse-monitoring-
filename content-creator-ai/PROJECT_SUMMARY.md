@@ -13,13 +13,13 @@ A **production-ready, full-stack JavaScript application** for AI-powered content
   - Imagen 3.0 for images (API ready)
   - Veo 3.1 for videos (API ready)
   - Vision API for image analysis
-  
+
 - ✅ **LocalAI (Self-Hosted)**
   - OpenAI-compatible REST API
   - Support for Llama, Stable Diffusion, Piper TTS
   - 100% private and offline-capable
   - Quick setup with Docker or CLI
-  
+
 - ✅ **Z.AI GLM-4.6**
   - OpenAI-compatible endpoint integration
   - Thinking mode for advanced reasoning
@@ -27,7 +27,7 @@ A **production-ready, full-stack JavaScript application** for AI-powered content
   - Long context (200K tokens)
   - Cost-efficient token consumption
   - Agentic capabilities with tool use
-  
+
 - ✅ **OpenAI**
   - GPT-4 Turbo for text
   - DALL-E 3 for images
@@ -41,22 +41,22 @@ A **production-ready, full-stack JavaScript application** for AI-powered content
   - Multiple formats (Markdown, HTML, plain text)
   - Tone and audience customization
   - Multi-language support
-  
+
 - ✅ **Image Generation**
   - Prompt-based generation
   - Aspect ratio control (1:1, 16:9, 9:16, 4:3, 3:4)
   - Style customization
-  
+
 - ✅ **Video Generation**
   - Prompt-based video creation
   - Duration control
   - Aspect ratio support
-  
+
 - ✅ **Audio/TTS**
   - Text-to-speech generation
   - Multiple voice options
   - Script generation
-  
+
 - ✅ **Multimodal**
   - Combined text + image generation
   - Parallel processing for efficiency

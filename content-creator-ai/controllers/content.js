@@ -13,7 +13,7 @@ const openaiProvider = require('../services/providers/openai');
 class ContentController {
   async createContent(req, res) {
     const requestId = uuidv4();
-    
+
     try {
       logger.info(`Content request received: ${requestId}`, { body: req.body });
 
@@ -126,7 +126,7 @@ class ContentController {
 
     } catch (error) {
       logger.error(`Error processing request ${requestId}:`, error);
-      
+
       if (req.app.io) {
         req.app.io.emit('progress', { requestId, status: 'error', message: error.message });
       }

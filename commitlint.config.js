@@ -1,9 +1,9 @@
 /**
  * Commitlint Configuration
  * Enforces conventional commit message format
- * 
+ *
  * Format: <type>(<scope>): <subject>
- * 
+ *
  * Examples:
  *   feat(api): add new endpoint for user management
  *   fix(auth): resolve token validation issue
@@ -13,7 +13,7 @@
 
 export default {
   extends: ['@commitlint/config-conventional'],
-  
+
   rules: {
     // Enforce type-enum
     'type-enum': [
@@ -35,29 +35,29 @@ export default {
         'hotfix'     // Critical production fix
       ]
     ],
-    
+
     // Enforce max subject length
     'subject-max-length': [2, 'always', 100],
-    
+
     // Subject should not be empty
     'subject-empty': [2, 'never'],
-    
+
     // Type should not be empty
     'type-empty': [2, 'never'],
-    
+
     // Subject should be lowercase
     'subject-case': [2, 'always', 'lower-case'],
-    
+
     // Body should have a blank line before it
     'body-leading-blank': [2, 'always'],
-    
+
     // Footer should have a blank line before it
     'footer-leading-blank': [2, 'always'],
-    
+
     // Scope should be lowercase
     'scope-case': [2, 'always', 'lower-case']
   },
-  
+
   // Ignore patterns
   ignores: [
     (message) => message.startsWith('Merge'),

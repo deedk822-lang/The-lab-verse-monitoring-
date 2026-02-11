@@ -57,9 +57,9 @@ class LocalAIProvider {
   async performResearch(query, options = {}) {
     // LocalAI doesn't have built-in search, so we use the LLM's knowledge
     const researchPrompt = `Research and provide detailed information about: ${query}\n\nProvide a comprehensive summary with key facts and important details.`;
-    
+
     const result = await this.generateText(researchPrompt, options);
-    
+
     return {
       summary: result.text,
       searchResults: [],

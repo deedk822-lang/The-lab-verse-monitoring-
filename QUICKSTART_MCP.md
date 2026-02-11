@@ -230,7 +230,7 @@ Your workflow automation system is now running. The system will:
 ✅ Amplify high-performing content  
 ✅ Respond to crisis events  
 ✅ Onboard B2B clients  
-✅ Generate weekly reports  
+✅ Generate weekly reports
 
 All automatically, 24/7!
 

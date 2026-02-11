@@ -16,7 +16,7 @@
 - **Display Font**: "Inter" - Modern, clean, highly legible for headings
 - **Body Font**: "Inter" - Consistent, readable for all text content
 - **Code Font**: "JetBrains Mono" - Technical content, configurations
-- **Font Sizes**: 
+- **Font Sizes**:
   - Hero: 3.5rem (56px)
   - H1: 2.5rem (40px)
   - H2: 2rem (32px)
@@ -39,15 +39,15 @@
 - **No Overwhelming Effects**: Professional, distraction-free environment
 
 ### Interactive Elements
-- **Buttons**: 
+- **Buttons**:
   - Primary: Teal background with white text, subtle shadow
   - Secondary: White background with teal border and text
   - Hover: Gentle scale transform (1.02x) with deeper shadow
-- **Cards**: 
+- **Cards**:
   - White background with subtle border
   - Hover: Lift effect with increased shadow
   - Selected: Teal border with light teal background
-- **Form Elements**: 
+- **Form Elements**:
   - Clean borders with focus states in teal
   - Smooth transitions for all state changes
 
@@ -62,7 +62,7 @@
 - **Grid System**: 12-column responsive grid with consistent gutters
 - **Spacing Scale**: 8px base unit (8, 16, 24, 32, 48, 64px)
 - **Content Width**: Maximum 1200px with centered alignment
-- **Responsive Breakpoints**: 
+- **Responsive Breakpoints**:
   - Mobile: 320px-768px
   - Tablet: 768px-1024px
   - Desktop: 1024px+

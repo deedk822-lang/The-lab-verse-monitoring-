@@ -537,7 +537,7 @@ def get_user(user_id: int) -> Optional[dict]:
     """Get user by ID with input validation"""
     if not isinstance(user_id, int) or user_id < 0:
         raise ValueError("Invalid user_id")
-    
+
     # Use parameterized query
     db_query = "SELECT * FROM users WHERE id = ?"
     return db.execute(db_query, (user_id,)).fetchone()
@@ -568,4 +568,3 @@ For issues or questions:
 **Last Updated:** 2025-01-17
 
 **Powered by:** [Moonshot AI (Kimi)](https://www.moonshot.cn/)
-

@@ -129,7 +129,7 @@ The `src/config/providers.js` file includes:
 ### Fallback Chain Priority
 
 1. **OpenAI GPT-4** (priority 1)
-2. **Perplexity** (priority 2) 
+2. **Perplexity** (priority 2)
 3. **Mistral (LocalAI)** (priority 3) ⭐ *NEW*
 4. **Gemini Pro** (priority 5)
 5. **Groq Llama** (priority 6)
@@ -347,7 +347,7 @@ MCP_SERVER_URL=https://mcp.your-domain.com
 # LocalAI health
 curl http://localhost:8080/v1/models
 
-# MCP server health  
+# MCP server health
 curl http://localhost:8000/health
 
 # Application health

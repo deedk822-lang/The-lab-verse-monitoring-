@@ -2,15 +2,11 @@
 // test-groq-integration.js
 // Quick validation script for Groq integration
 
-import {
-  multiProviderGenerate,
-  testAllProviders,
-  getAvailableProviders
-} from './src/providers/multiProviderFallback.js';
+import { multiProviderGenerate, testAllProviders, getAvailableProviders } from './src/providers/multiProviderFallback.js';
 import { getProviderStatus } from './src/config/providers.js';
 
 console.log('🧪 Groq Integration Test Suite\n');
-console.log('='.repeat(60));
+console.log('=' .repeat(60));
 
 async function runTests() {
   try {
@@ -58,8 +54,9 @@ async function runTests() {
 
       if (result.errors) {
         console.log(`\nFallback attempts before success:`);
-        result.errors.forEach((e) => console.log(`  ⚠️  ${e.provider}: ${e.error}`));
+        result.errors.forEach(e => console.log(`  ⚠️  ${e.provider}: ${e.error}`));
       }
+
     } catch (error) {
       console.log(`\n❌ FAILED: ${error.message}`);
     }
@@ -69,22 +66,18 @@ async function runTests() {
     console.log('📊 Test Summary');
     console.log('='.repeat(60));
 
-    const configured = availableProviders.filter((p) => p.configured);
-    const groqConfigured = configured.find((p) => p.name === 'Groq');
+    const configured = availableProviders.filter(p => p.configured);
+    const groqConfigured = configured.find(p => p.name === 'Groq');
 
     console.log(`\n✅ Groq SDK installed: Yes`);
     console.log(`✅ Groq provider created: Yes`);
     console.log(`✅ Fallback chain updated: Yes`);
-    console.log(
-      `${groqConfigured ? '✅' : '⚠️'} GROQ_API_KEY configured: ${groqConfigured ? 'Yes' : 'No (set env var to enable)'}`
-    );
+    console.log(`${groqConfigured ? '✅' : '⚠️'} GROQ_API_KEY configured: ${groqConfigured ? 'Yes' : 'No (set env var to enable)'}`);
     console.log(`✅ Total providers configured: ${configured.length}/${availableProviders.length}`);
 
     if (groqConfigured) {
       const groqResult = testResults['Groq'];
-      console.log(
-        `${groqResult?.working ? '✅' : '❌'} Groq API working: ${groqResult?.working ? 'Yes' : groqResult?.error || 'Unknown'}`
-      );
+      console.log(`${groqResult?.working ? '✅' : '❌'} Groq API working: ${groqResult?.working ? 'Yes' : groqResult?.error || 'Unknown'}`);
     }
 
     console.log('\n💡 Usage Example:');
@@ -98,6 +91,7 @@ console.log(\`\${result.provider}: \${result.text}\`);
     console.log('\n💡 To enable Groq:');
     console.log('   export GROQ_API_KEY=gsk_...');
     console.log('   Or add to .env file or Vercel environment variables\n');
+
   } catch (error) {
     console.error('\n❌ Test suite failed:', error);
     process.exit(1);

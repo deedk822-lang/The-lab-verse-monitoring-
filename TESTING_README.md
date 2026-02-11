@@ -26,13 +26,11 @@ For comprehensive testing information:
 ## ✅ What's Tested
 
 ### JavaScript/TypeScript (Jest)
-
 - Unit tests: `*.test.{js,ts,tsx}`
 - Integration tests: `tests/**/*.test.js`
 - Component tests: `**/*.spec.{js,tsx}`
 
 ### Python (pytest) - Optional
-
 - Unit tests: `test_*.py`
 - Integration tests: `tests/**/*_test.py`
 
@@ -41,7 +39,6 @@ For comprehensive testing information:
 ### "Error: no test specified"
 
 **Solution**: You're on an old version. Pull latest changes:
-
 ```bash
 git pull origin feat/vaal-ai-empire-fixes
 npm ci
@@ -51,7 +48,6 @@ npm test
 ### Tests timeout
 
 **Solution**: Tests have 30s timeout. If you need more:
-
 ```bash
 npx jest --testTimeout=60000
 ```
@@ -59,7 +55,6 @@ npx jest --testTimeout=60000
 ### Module not found
 
 **Solution**: Clear cache and reinstall:
-
 ```bash
 npm run lint:fix  # Fix any import issues
 npx jest --clearCache
@@ -72,14 +67,12 @@ npm test
 ### GitHub Actions
 
 Tests run automatically on:
-
 - Push to `main`, `develop`, `feat/*` branches
 - Pull requests to `main`, `develop`
 
 ### Required Setup
 
 No secrets required for basic tests. Optional secrets for integration tests:
-
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
 - `GROQ_API_KEY`
@@ -124,7 +117,9 @@ describe('authenticate', () => {
   });
 
   it('should throw error for invalid credentials', async () => {
-    await expect(authenticate('user', 'wrong')).rejects.toThrow('Invalid credentials');
+    await expect(
+      authenticate('user', 'wrong')
+    ).rejects.toThrow('Invalid credentials');
   });
 });
 ```

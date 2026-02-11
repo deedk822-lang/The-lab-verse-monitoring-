@@ -13,9 +13,9 @@ console.log('╚═════════════════════�
 
 // Sample content from "judges" (AI agents)
 const judgeContent = {
-  topic: 'The Future of AI-Powered Content Creation',
-  keywords: ['AI', 'ContentCreation', 'Automation', 'DigitalMarketing', 'Innovation'],
-  cta: 'Read the full article on our blog →',
+  topic: "The Future of AI-Powered Content Creation",
+  keywords: ["AI", "ContentCreation", "Automation", "DigitalMarketing", "Innovation"],
+  cta: "Read the full article on our blog →",
   content: `
     Artificial Intelligence is revolutionizing how we create, distribute, and optimize content 
     across digital platforms. From automated blog posts to AI-generated social media campaigns, 
@@ -33,10 +33,7 @@ const judgeContent = {
 // Social Media Generator (mimicking the service)
 class SocialMediaDistributor {
   generateTwitterPost(topic, keywords, cta) {
-    const hashtags = keywords
-      .slice(0, 3)
-      .map((k) => `#${k}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 3).map(k => `#${k}`).join(' ');
     const maxLength = 280 - hashtags.length - cta.length - 10;
     const topicText = topic.substring(0, maxLength);
 
@@ -50,10 +47,7 @@ class SocialMediaDistributor {
 
   generateLinkedInPost(content, topic, keywords, cta) {
     const summary = content.split('\n\n')[0].substring(0, 200);
-    const hashtags = keywords
-      .slice(0, 5)
-      .map((k) => `#${k}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 5).map(k => `#${k}`).join(' ');
 
     const post = `🚀 ${topic}\n\n${summary}\n\n${cta}\n\n${hashtags}\n\n#ContentCreation #AI #DigitalMarketing`;
 
@@ -78,10 +72,7 @@ class SocialMediaDistributor {
   }
 
   generateInstagramPost(topic, keywords, cta) {
-    const hashtags = keywords
-      .slice(0, 10)
-      .map((k) => `#${k}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 10).map(k => `#${k}`).join(' ');
     const caption = topic.substring(0, 200);
     const post = `${caption}\n\n${cta}\n\n${hashtags}\n\n#ContentCreator #AITools #DigitalContent`;
 
@@ -95,10 +86,7 @@ class SocialMediaDistributor {
   }
 
   generateThreadsPost(topic, keywords, cta) {
-    const hashtags = keywords
-      .slice(0, 3)
-      .map((k) => `#${k}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 3).map(k => `#${k}`).join(' ');
     const maxLength = 500 - hashtags.length - cta.length - 10;
     const text = topic.substring(0, maxLength);
 
@@ -214,7 +202,7 @@ const summary = {
   totalPlatforms: 6,
   readyToPost: 6,
   timestamp: new Date().toISOString(),
-  platforms: Object.keys(posts).map((key) => ({
+  platforms: Object.keys(posts).map(key => ({
     name: posts[key].platform,
     status: posts[key].status,
     length: posts[key].length || 'N/A'
@@ -226,24 +214,17 @@ console.log(`✅ All posts ready for distribution`);
 console.log(`⏰ Timestamp: ${summary.timestamp}\n`);
 
 console.log('📊 Platform Breakdown:');
-summary.platforms.forEach((p) => {
+summary.platforms.forEach(p => {
   console.log(`   • ${p.name}: ${p.status} (${p.length} chars)`);
 });
 
 // Save results
 const resultsPath = path.join(__dirname, 'social-distribution-results.json');
-fs.writeFileSync(
-  resultsPath,
-  JSON.stringify(
-    {
-      summary,
-      content: judgeContent,
-      posts
-    },
-    null,
-    2
-  )
-);
+fs.writeFileSync(resultsPath, JSON.stringify({
+  summary,
+  content: judgeContent,
+  posts
+}, null, 2));
 
 console.log(`\n📄 Full results saved to: ${resultsPath}`);
 

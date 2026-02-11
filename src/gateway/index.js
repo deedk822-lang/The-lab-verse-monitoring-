@@ -20,23 +20,22 @@ const httpDur = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
 });
 const httpTot = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total HTTP requests',
-  labelNames: ['method', 'route', 'status_code']
+  labelNames: ['method', 'route', 'status_code'],
 });
 register.registerMetric(httpDur);
 register.registerMetric(httpTot);
 
-const createRateLimiter = (win, max) =>
-  rateLimit({
-    store: new RedisStore({ sendCommand: (...a) => redis.call(...a) }),
-    windowMs: win,
-    max,
-    standardHeaders: true
-  });
+const createRateLimiter = (win, max) => rateLimit({
+  store: new RedisStore({ sendCommand: (...a) => redis.call(...a) }),
+  windowMs: win,
+  max,
+  standardHeaders: true,
+});
 
 async function createApp() {
   const app = express();
@@ -60,13 +59,13 @@ async function createApp() {
   app.get('/metrics', (_, res) => res.end(register.metrics()));
 
   const general = createRateLimiter(15 * 60 * 1000, 1000);
-  const strict = createRateLimiter(15 * 60 * 1000, 100);
+  const strict  = createRateLimiter(15 * 60 * 1000, 100);
   app.use(general);
 
   const auth = (await import('../middleware/auth.js')).default;
-  app.use('/api/video', strict, auth, (await import('../routes/video.js')).default);
+  app.use('/api/video',      strict, auth, (await import('../routes/video.js')).default);
   app.use('/api/text-to-speech', strict, auth, (await import('../routes/tts.js')).default);
-  app.use('/api/alerts', (await import('../routes/alerts.js')).default);
+  app.use('/api/alerts',     (await import('../routes/alerts.js')).default);
 
   app.use((err, _req, res, _next) => {
     logger.error(err);

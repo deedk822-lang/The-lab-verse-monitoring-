@@ -90,7 +90,7 @@ const config = {
       google: {
         'gemini-1.5-pro': { input: 0.00125, output: 0.005 }, // per 1K tokens
         'imagen-3.0': { perImage: 0.04 },
-        'veo-3.1': { perSecond: 0.1 }
+        'veo-3.1': { perSecond: 0.10 }
       },
       zai: {
         'glm-4.6': { input: 0.0005, output: 0.0015 } // per 1K tokens (estimated)

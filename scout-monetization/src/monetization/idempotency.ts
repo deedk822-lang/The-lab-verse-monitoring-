@@ -22,10 +22,7 @@ const idempotencyPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =
     }
     const key = req.headers['idempotency-key'] as string;
     if (!key) {
-      throw {
-        statusCode: 400,
-        message: 'Idempotency-Key header is required for POST/PATCH requests'
-      };
+      throw { statusCode: 400, message: 'Idempotency-Key header is required for POST/PATCH requests' };
     }
 
     // Create a consistent hash from the key and body
@@ -45,7 +42,7 @@ const idempotencyPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =
     if (req.idempotency) {
       req.idempotency.cache.set(req.idempotency.hash, {
         body: payload,
-        headers: reply.getHeaders()
+        headers: reply.getHeaders(),
       });
 
       // This is where the usage metric would be emitted.

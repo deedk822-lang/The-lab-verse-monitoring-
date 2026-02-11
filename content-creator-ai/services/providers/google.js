@@ -26,7 +26,7 @@ class GoogleProvider {
         temperature: options.temperature || 0.7,
         topK: options.topK || 40,
         topP: options.topP || 0.95,
-        maxOutputTokens: options.maxTokens || 2048
+        maxOutputTokens: options.maxTokens || 2048,
       };
 
       const result = await model.generateContent({
@@ -40,12 +40,7 @@ class GoogleProvider {
       // Track costs
       const inputTokens = prompt.split(/\s+/).length * 1.3; // Rough estimate
       const outputTokens = text.split(/\s+/).length * 1.3;
-      const cost = costTracker.calculateTokenCost(
-        'google',
-        generationConfig.model || config.providers.google.models.text,
-        inputTokens,
-        outputTokens
-      );
+      const cost = costTracker.calculateTokenCost('google', generationConfig.model || config.providers.google.models.text, inputTokens, outputTokens);
 
       logger.info(`Google Gemini text generated: ${text.length} chars, cost: $${cost.toFixed(4)}`);
 
@@ -196,7 +191,7 @@ class GoogleProvider {
     try {
       // A simple non-costly operation to check API key validity and connectivity
       const model = this.genAI.getGenerativeModel({ model: config.providers.google.models.text });
-      await model.countTokens('test');
+      await model.countTokens("test");
       return { healthy: true, message: 'Google provider is responding' };
     } catch (error) {
       logger.error('Google provider health check failed:', error);

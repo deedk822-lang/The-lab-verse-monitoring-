@@ -2,7 +2,6 @@ import express from 'express';
 import orchestrator from './api/orchestrator.js';
 import provision from './api/models/provision.js';
 import budgetAllocate from './api/hireborderless/budget-allocate.js';
-import { createMiddleware } from '@vercel/analytics/server';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,9 +14,6 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
-
-// Vercel Analytics（可选）
-app.use(createMiddleware());
 
 // API 路由
 app.post('/api/orchestrator', orchestrator);
@@ -47,13 +43,11 @@ app.get('/api/health', (req, res) => {
 
 // Additional readiness check (for container orchestration)
 app.get('/ready', (req, res) => {
-  // Add any service dependencies checks here
   res.status(200).json({ status: 'ready' });
 });
 
 // Additional liveness check (for container orchestration)
 app.get('/live', (req, res) => {
-  // Add any service health checks here
   res.status(200).json({ status: 'alive' });
 });
 

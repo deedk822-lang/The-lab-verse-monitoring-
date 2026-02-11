@@ -29,9 +29,7 @@ class VideoService {
       return JSON.parse(cached);
     }
 
-    const result = await this.model.generateContent(
-      `Create a ${opts.style || 'cinematic'} video: ${prompt}`
-    );
+    const result = await this.model.generateContent(`Create a ${opts.style || 'cinematic'} video: ${prompt}`);
     const url = result.response?.candidates?.[0]?.content?.parts?.[0]?.fileUri;
     if (!url) {
       throw new Error('No video URL returned');

@@ -5,7 +5,6 @@ This guide implements Cohere's keyword research cookbook to enhance content gene
 ## Overview
 
 Combine generative AI with keyword research to create content that:
-
 - Aligns with user search intent
 - Targets high-traffic keywords
 - Groups related keywords into topics
@@ -26,13 +25,11 @@ Keyword Data → Embed (Cohere) → Cluster (KMeans) → Topic Names (Chat) → 
 ## Setup
 
 1. **Install Dependencies**
-
 ```
 pip install cohere pandas numpy scikit-learn
 ```
 
 2. **Set Environment Variables**
-
 ```
 export COHERE_API_KEY="your-api-key-here"
 ```
@@ -48,7 +45,6 @@ See `services/keywordResearchService.py` for the complete implementation.
 ## Usage Examples
 
 ### Python Script
-
 ```
 from services.keywordResearchService import KeywordResearchService
 
@@ -63,7 +59,6 @@ content_ideas = kr_service.generate_content_ideas(results['topic_summary'])
 ```
 
 ### API Endpoint
-
 ```
 curl -X POST http://localhost:3000/api/keyword-research \
   -H "Content-Type: multipart/form-data" \
@@ -83,16 +78,13 @@ curl -X POST http://localhost:3000/api/keyword-research \
 ## API Reference
 
 ### POST `/api/keyword-research`
-
 Upload keywords and get topic clusters
 
 **Request:**
-
 - `file`: CSV file (keyword, volume)
 - `num_topics`: Number of topic clusters (default: 4)
 
 **Response:**
-
 ```
 {
   "topics": [
@@ -117,7 +109,6 @@ Upload keywords and get topic clusters
 ## Integration with Content Creator AI
 
 This module integrates seamlessly with the existing content-creator-ai system:
-
 - Feeds topics into content generation pipeline
 - Prioritizes high-volume keyword topics
 - Enhances SEO optimization

@@ -187,11 +187,11 @@ class OpenAIProvider {
 
   calculateDallE3Cost(size, quality) {
     const pricing = {
-      '1024x1024': { standard: 0.04, hd: 0.08 },
-      '1792x1024': { standard: 0.08, hd: 0.12 },
-      '1024x1792': { standard: 0.08, hd: 0.12 }
+      '1024x1024': { standard: 0.040, hd: 0.080 },
+      '1792x1024': { standard: 0.080, hd: 0.120 },
+      '1024x1792': { standard: 0.080, hd: 0.120 }
     };
-    return pricing[size]?.[quality || 'standard'] || 0.04;
+    return pricing[size]?.[quality || 'standard'] || 0.040;
   }
 
   isEnabled() {

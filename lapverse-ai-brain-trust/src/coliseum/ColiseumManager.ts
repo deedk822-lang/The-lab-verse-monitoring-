@@ -35,16 +35,7 @@ export class ColiseumManager {
     type: string
   ) {
     const id = Math.random().toString(36).substring(7);
-    const challenge = {
-      id,
-      name,
-      prompt,
-      metadata,
-      priority,
-      type,
-      status: 'CREATED',
-      history: []
-    };
+    const challenge = { id, name, prompt, metadata, priority, type, status: 'CREATED', history: [] };
     this.challenges.set(id, challenge);
     logger.info({ challenge }, 'Challenge created');
     return id;
@@ -65,9 +56,7 @@ export class ColiseumManager {
     }
 
     // Simulate a winner
-    const winner = Array.from(this.competitors.keys())[
-      Math.floor(Math.random() * this.competitors.size)
-    ];
+    const winner = Array.from(this.competitors.keys())[Math.floor(Math.random() * this.competitors.size)];
 
     const battleResult: BattleResult = { winner, results };
     challenge.history.push(battleResult);

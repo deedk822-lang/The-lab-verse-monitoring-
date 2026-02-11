@@ -27,7 +27,6 @@ def process_file(filename):
 ```
 
 **Security Issues:**
-
 - ❌ Hardcoded credentials
 - ❌ SQL injection vulnerability
 - ❌ No input validation
@@ -127,7 +126,6 @@ def process_file(filename: str) -> str:
 ```
 
 **Security Improvements:**
-
 - ✅ Credentials from environment variables
 - ✅ Parameterized SQL queries
 - ✅ Type hints and validation
@@ -156,7 +154,6 @@ services:
 ```
 
 **Security Issues:**
-
 - ❌ Using `latest` tag (unpredictable)
 - ❌ Hardcoded passwords
 - ❌ No resource limits
@@ -194,7 +191,7 @@ services:
         memory: 256M
         cpus: '0.25'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -204,7 +201,7 @@ services:
     image: myapp:1.2.3
     environment:
       API_KEY: ${API_KEY}
-    user: '1000:1000'
+    user: "1000:1000"
     read_only: true
     tmpfs:
       - /tmp
@@ -217,7 +214,7 @@ services:
         memory: 256M
         cpus: '0.25'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -228,7 +225,6 @@ services:
 ```
 
 **Security Improvements:**
-
 - ✅ Specific image versions
 - ✅ Environment variable secrets
 - ✅ Non-root users
@@ -257,7 +253,6 @@ CMD ["python", "app.py"]
 ```
 
 **Security Issues:**
-
 - ❌ Using `latest` tag
 - ❌ Running as root
 - ❌ No multi-stage build
@@ -312,7 +307,6 @@ CMD ["python", "app.py"]
 ```
 
 **Security Improvements:**
-
 - ✅ Specific Python version
 - ✅ Multi-stage build
 - ✅ Non-root user
@@ -348,31 +342,26 @@ The GitHub Actions workflows will automatically harden files on every PR:
 ## Security Principles Applied
 
 ### 🔐 Secrets Management
-
 - Remove hardcoded credentials
 - Use environment variables
 - Suggest secret management tools
 
 ### ✅ Input Validation
-
 - Validate all user inputs
 - Sanitize data before use
 - Implement whitelist validation
 
 ### 🛡️ Secure Defaults
-
 - Fail securely by default
 - Principle of least privilege
 - Disable unnecessary features
 
 ### 🚨 Error Handling
-
 - Don't expose sensitive info in errors
 - Log errors securely
 - Implement proper exception handling
 
 ### 🔒 Defense in Depth
-
 - Multiple layers of security
 - Network isolation
 - Resource limits

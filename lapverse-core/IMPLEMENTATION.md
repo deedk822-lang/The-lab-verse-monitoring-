@@ -20,39 +20,33 @@
 ## Key Features
 
 ### 1. Idempotency
-
 - Header-based idempotency keys (`Idempotency-Key`)
 - In-memory cache prevents duplicate processing
 - Returns cached response for duplicate requests
 
 ### 2. Cost Management
-
 - **Pre-request cost estimation** with complexity-based pricing
 - **Margin guardrail** enforcement (70% MRR threshold)
 - **FinOps tagging** for chargeback allocation
 - Multi-tenant cost tracking
 
 ### 3. SLO Enforcement
-
 - Burn-rate tracking across all operations
 - Request rejection when budget exhausted
 - Real-time metrics via Prometheus
 
 ### 4. Circuit Breakers
-
 - **News AI circuit**: 3s timeout, 50 failure threshold
 - **Share API circuit**: 2s timeout, 30 failure threshold
 - Automatic fallback responses
 
 ### 5. Self-Compete Evolution
-
 - Runs 4 variants concurrently: aggressive, conservative, balanced, experimental
 - Scores variants and selects champion
 - Auto-evolves when burn-rate < 1 and win-rate delta > 5%
 - Triggers Kaggle pipeline for model promotion
 
 ### 6. OpenTelemetry Integration
-
 - Distributed tracing for all operations
 - Metrics exported to Prometheus
 - Custom metrics:
@@ -66,16 +60,13 @@
 ## API Endpoints
 
 ### POST /api/v2/tasks
-
 Submit a task for processing with full FinOps tracking.
 
 **Headers:**
-
 - `Idempotency-Key` (required): UUID
 - `X-Tenant-ID` (required): Tenant identifier
 
 **Body:**
-
 ```json
 {
   "type": "ANALYSIS",
@@ -91,7 +82,6 @@ Submit a task for processing with full FinOps tracking.
 ```
 
 **Response (202):**
-
 ```json
 {
   "taskId": "uuid",
@@ -100,23 +90,19 @@ Submit a task for processing with full FinOps tracking.
 ```
 
 **Error Codes:**
-
 - `400`: Missing required fields
 - `402`: Margin guardrail exceeded
 - `404`: Feature not available for tenant
 - `503`: Error budget exhausted
 
 ### POST /api/v2/self-compete
-
 Launch a self-compete evolution round.
 
 **Headers:**
-
 - `Idempotency-Key` (required): UUID
 - `X-Tenant-ID` (required): Tenant identifier
 
 **Body:**
-
 ```json
 {
   "content": "Q3 revenue forecast",
@@ -128,7 +114,6 @@ Launch a self-compete evolution round.
 ```
 
 **Response (202):**
-
 ```json
 {
   "competitionId": "uuid",
@@ -137,11 +122,9 @@ Launch a self-compete evolution round.
 ```
 
 ### GET /api/v2/self-compete/:id
-
 Get competition status.
 
 **Response (200):**
-
 ```json
 {
   "id": "uuid",
@@ -160,11 +143,9 @@ Get competition status.
 ```
 
 ### GET /api/status
-
 System health check.
 
 **Response (200):**
-
 ```json
 {
   "slo": 0.1,
@@ -173,11 +154,9 @@ System health check.
 ```
 
 ### GET /metrics
-
 Prometheus metrics endpoint.
 
 **Response (200):**
-
 ```
 # TYPE lapverse_win_rate gauge
 lapverse_win_rate 0.07
@@ -187,35 +166,29 @@ lapverse_win_rate 0.07
 ## Cost Model
 
 ### Task Pricing
-
 Base cost: $0.01
 Multipliers:
-
 - Simple: 1x ($0.01)
 - Intermediate: 2x ($0.02)
 - Advanced: 4x ($0.04)
 - Expert: 8x ($0.08)
 
 ### Competition Pricing
-
 Per-variant cost × number of competitors
 Default: 4 competitors × $0.02 = $0.08
 
 ### Margin Guardrails
-
 - Forecast must not exceed 70% of tenant MRR
 - Requests rejected with 402 status if exceeded
 
 ## Queue Architecture
 
 ### BullMQ Queues
-
 1. **lapverse-tasks**: Task processing queue
 2. **lapverse-self-compete**: Competition processing queue
 3. **lapverse-kaggle**: Kaggle sync/eval/promote queue
 
 ### Worker Configuration
-
 - Concurrency: 10 workers per queue
 - Retry attempts: 3
 - Backoff: Exponential (1000ms base)
@@ -224,9 +197,7 @@ Default: 4 competitors × $0.02 = $0.08
 ## Security
 
 ### Secure Logging (PII Redaction)
-
 Automatically redacts:
-
 - `*.password`
 - `*.token`
 - `*.email`
@@ -234,13 +205,11 @@ Automatically redacts:
 - `*.ssn`
 
 ### Trace Correlation
-
 Every log includes unique `traceId` for correlation.
 
 ## Deployment
 
 ### Prerequisites
-
 ```bash
 # Redis for queues
 docker run -d -p 6379:6379 redis:7-alpine
@@ -252,7 +221,6 @@ export PORT=3000
 ```
 
 ### Installation
-
 ```bash
 cd lapverse-core
 npm install
@@ -261,7 +229,6 @@ npm start
 ```
 
 ### Development
-
 ```bash
 npm run dev
 ```
@@ -269,7 +236,6 @@ npm run dev
 ## Quick Smoke Test
 
 ### 1. Submit Task
-
 ```bash
 curl -X POST http://localhost:3000/api/v2/tasks \
   -H "Idempotency-Key: $(uuidgen)" \
@@ -286,7 +252,6 @@ curl -X POST http://localhost:3000/api/v2/tasks \
 ```
 
 ### 2. Submit Competition
-
 ```bash
 curl -X POST http://localhost:3000/api/v2/self-compete \
   -H "Idempotency-Key: $(uuidgen)" \
@@ -301,7 +266,6 @@ curl -X POST http://localhost:3000/api/v2/self-compete \
 ```
 
 ### 3. Check Metrics
-
 ```bash
 curl http://localhost:3000/metrics | grep lapverse_win_rate
 ```
@@ -309,7 +273,6 @@ curl http://localhost:3000/metrics | grep lapverse_win_rate
 ## Evolution Loop
 
 When a competition completes:
-
 1. Score all variants by performance
 2. Select champion (highest score)
 3. Calculate win-rate delta
@@ -321,7 +284,6 @@ When a competition completes:
 ## Monitoring
 
 ### Prometheus Metrics
-
 - `lapverse_tasks_total{type, tenant}` - Total tasks processed
 - `lapverse_competitions_total{tenant}` - Total competitions run
 - `lapverse_task_duration_ms{type}` - Task processing latency
@@ -330,13 +292,11 @@ When a competition completes:
 - `lapverse_win_rate` - Latest champion win rate delta
 
 ### Grafana Dashboard
-
 Import `grafana/dashboard.json` for pre-built visualizations.
 
 ## FinOps Tags
 
 Every operation tagged with:
-
 - `application`: lapverse-monitoring
 - `environment`: dev/staging/production
 - `tenantId`: Customer identifier
@@ -347,18 +307,15 @@ Every operation tagged with:
 ## Kaggle Integration
 
 ### Data Sync
-
 - Triggered on competition completion
 - Syncs results to Kaggle dataset
 - Tags resources with FinOps metadata
 
 ### Notebook Evaluation
-
 - Scores notebooks based on feature performance
 - Auto-merges features scoring >= 0.85
 
 ### Model Promotion
-
 - Promotes winning models to production
 - Gated by SLO burn-rate
 - Triggers 10% feature rollout
@@ -366,13 +323,11 @@ Every operation tagged with:
 ## Fault Tolerance
 
 ### Circuit Breaker States
-
 1. **Closed**: Normal operation
 2. **Open**: Fast-fail after threshold
 3. **Half-Open**: Retry after reset timeout
 
 ### Fallback Strategies
-
 - News AI: Return neutral sentiment (0.5 confidence)
 - Share API: Return fallback post ID
 
@@ -382,7 +337,6 @@ Full OpenAPI 3.1 spec available at:
 `openapi/lapverse.yaml`
 
 Includes:
-
 - Complete request/response schemas
 - Header requirements
 - Error response documentation

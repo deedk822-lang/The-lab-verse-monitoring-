@@ -17,10 +17,7 @@ export class ContentPlannerAgent {
    */
   static async handle(payload, context = {}) {
     try {
-      logger.info('🧠 Content Planner Agent started', {
-        topic: payload.topic,
-        intent: payload.intent
-      });
+      logger.info('🧠 Content Planner Agent started', { topic: payload.topic, intent: payload.intent });
 
       // Step 1: Analyze the request and create comprehensive plan
       const contentPlan = await this.createContentPlan(payload);
@@ -57,6 +54,7 @@ export class ContentPlannerAgent {
       });
 
       return result;
+
     } catch (error) {
       logger.error('❌ Content planning failed', {
         error: error.message,
@@ -77,13 +75,7 @@ export class ContentPlannerAgent {
    * @returns {Object} Content plan with all necessary details
    */
   static async createContentPlan(payload) {
-    const {
-      topic,
-      keywords = [],
-      audience = 'tech professionals',
-      tone = 'professional',
-      intent
-    } = payload;
+    const { topic, keywords = [], audience = 'tech professionals', tone = 'professional', intent } = payload;
 
     // Generate slug from topic
     const slug = this.generateSlug(topic);
@@ -155,11 +147,7 @@ export class ContentPlannerAgent {
     costs.imageGeneration = 0.15 * contentPlan.imageRequirements.prompts.length;
 
     // Social media posting costs (Ayrshare)
-    costs.socialPosting =
-      0.01 *
-      contentPlan.channels.filter((c) =>
-        ['twitter', 'linkedin', 'facebook', 'instagram'].includes(c)
-      ).length;
+    costs.socialPosting = 0.01 * contentPlan.channels.filter(c => ['twitter', 'linkedin', 'facebook', 'instagram'].includes(c)).length;
 
     // Email campaign costs (Mailchimp)
     if (contentPlan.channels.includes('email')) {
@@ -229,8 +217,8 @@ export class ContentPlannerAgent {
       });
 
       // Extract results from writer and bria agents
-      const writerResult = results.find((r) => r.agent === 'writer-agent');
-      const briaResult = results.find((r) => r.agent === 'bria-agent');
+      const writerResult = results.find(r => r.agent === 'writer-agent');
+      const briaResult = results.find(r => r.agent === 'bria-agent');
 
       if (!writerResult || !briaResult) {
         throw new Error('Missing required handoff results');
@@ -265,6 +253,7 @@ export class ContentPlannerAgent {
           }
         ]
       };
+
     } catch (error) {
       logger.error('❌ Handoff completion failed', {
         error: error.message,

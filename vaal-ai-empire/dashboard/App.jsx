@@ -1,57 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import {
-  Users,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Send,
-  CheckCircle,
-  AlertCircle,
-  Clock
-} from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Users, DollarSign, TrendingUp, Calendar, Send, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 const VaalDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [clients, setClients] = useState([
-    {
-      id: 'vaal_001',
-      name: 'Smit Butchery',
-      type: 'butchery',
-      revenue: 600,
-      status: 'active',
-      posts: 18
-    },
-    {
-      id: 'vaal_002',
-      name: 'Vaal Motors',
-      type: 'auto_repair',
-      revenue: 2500,
-      status: 'active',
-      posts: 5
-    },
-    {
-      id: 'vaal_003',
-      name: 'Koffie & More',
-      type: 'cafe',
-      revenue: 600,
-      status: 'active',
-      posts: 20
-    }
+    { id: 'vaal_001', name: 'Smit Butchery', type: 'butchery', revenue: 600, status: 'active', posts: 18 },
+    { id: 'vaal_002', name: 'Vaal Motors', type: 'auto_repair', revenue: 2500, status: 'active', posts: 5 },
+    { id: 'vaal_003', name: 'Koffie & More', type: 'cafe', revenue: 600, status: 'active', posts: 20 }
   ]);
 
   const [revenueData, setRevenueData] = useState([
@@ -65,7 +21,7 @@ const VaalDashboard = () => {
   ]);
 
   const totalRevenue = clients.reduce((sum, c) => sum + c.revenue, 0);
-  const activeClients = clients.filter((c) => c.status === 'active').length;
+  const activeClients = clients.filter(c => c.status === 'active').length;
   const totalPosts = clients.reduce((sum, c) => sum + c.posts, 0);
   const monthlyProjection = totalRevenue * 4;
 
@@ -76,13 +32,7 @@ const VaalDashboard = () => {
   ];
 
   const upcomingTasks = [
-    {
-      id: 1,
-      client: 'Smit Butchery',
-      task: 'Generate weekly content',
-      time: '2h',
-      priority: 'high'
-    },
+    { id: 1, client: 'Smit Butchery', task: 'Generate weekly content', time: '2h', priority: 'high' },
     { id: 2, client: 'Vaal Motors', task: 'Schedule 10 posts', time: '4h', priority: 'medium' },
     { id: 3, client: 'Koffie & More', task: 'Send invoice', time: '1d', priority: 'low' }
   ];
@@ -121,7 +71,9 @@ const VaalDashboard = () => {
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         R{client.revenue.toLocaleString()}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.posts} posts</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {client.posts} posts
+      </td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
         <button className="text-green-600 hover:text-green-900">Generate</button>
@@ -158,7 +110,7 @@ const VaalDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {['overview', 'clients', 'revenue', 'automation'].map((tab) => (
+            {['overview', 'clients', 'revenue', 'automation'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -237,7 +189,7 @@ const VaalDashboard = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => `R${entry.value}`}
+                      label={entry => `R${entry.value}`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -257,11 +209,8 @@ const VaalDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Upcoming Tasks</h3>
               <div className="space-y-3">
-                {upcomingTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                  >
+                {upcomingTasks.map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gray-400" />
                       <div>
@@ -271,15 +220,11 @@ const VaalDashboard = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-600">{task.time}</span>
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          task.priority === 'high'
-                            ? 'bg-red-100 text-red-800'
-                            : task.priority === 'medium'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                        }`}
-                      >
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
                         {task.priority}
                       </span>
                     </div>
@@ -319,7 +264,7 @@ const VaalDashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {clients.map((client) => (
+                {clients.map(client => (
                   <ClientRow key={client.id} client={client} />
                 ))}
               </tbody>
@@ -337,12 +282,8 @@ const VaalDashboard = () => {
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <h4 className="text-sm text-gray-600 mb-2">Projected Monthly</h4>
-                <p className="text-3xl font-bold text-gray-900">
-                  R{monthlyProjection.toLocaleString()}
-                </p>
-                <p className="text-sm text-blue-600 mt-2">
-                  {((monthlyProjection / 25000) * 100).toFixed(0)}% of R25k target
-                </p>
+                <p className="text-3xl font-bold text-gray-900">R{monthlyProjection.toLocaleString()}</p>
+                <p className="text-sm text-blue-600 mt-2">{((monthlyProjection / 25000) * 100).toFixed(0)}% of R25k target</p>
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <h4 className="text-sm text-gray-600 mb-2">Avg per Client</h4>

@@ -23,14 +23,14 @@ const metricsPlugin = async (fastify: FastifyInstance) => {
     name: 'scout_tokens_consumed',
     help: 'Number of tokens consumed by a tenant',
     labelNames: ['tenant'],
-    registers: [register]
+    registers: [register],
   });
 
   const pricingV2Exposed = new client.Counter({
     name: 'scout_pricing_v2_exposed_total',
     help: 'Number of times the v2 pricing feature flag was evaluated for a tenant',
     labelNames: ['tenant'],
-    registers: [register]
+    registers: [register],
   });
 
   // Attach the metrics to the Fastify instance
@@ -43,9 +43,9 @@ const metricsPlugin = async (fastify: FastifyInstance) => {
         tokensConsumed.inc(labels, value);
       }
       if (name === 'scout_pricing_v2_exposed') {
-        pricingV2Exposed.inc(labels, value);
+          pricingV2Exposed.inc(labels, value);
       }
-    }
+    },
   });
 
   // Expose the /metrics endpoint

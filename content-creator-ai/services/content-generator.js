@@ -84,18 +84,7 @@ class ContentGenerator {
   }
 
   async generateTextContent(request) {
-    const {
-      topic,
-      audience,
-      tone,
-      language,
-      length,
-      format,
-      enable_research,
-      provider: preferredProvider,
-      temperature,
-      max_tokens
-    } = request;
+    const { topic, audience, tone, language, length, format, enable_research, provider: preferredProvider, temperature, max_tokens } = request;
 
     const provider = this.selectProvider(preferredProvider);
     let totalCost = 0;
@@ -177,10 +166,7 @@ class ContentGenerator {
       throw new Error(`Provider ${preferredProvider} does not support video generation`);
     }
 
-    const result = await provider.generateVideo(videoPrompt, {
-      duration,
-      aspectRatio: aspect_ratio
-    });
+    const result = await provider.generateVideo(videoPrompt, { duration, aspectRatio: aspect_ratio });
 
     return {
       type: 'video',

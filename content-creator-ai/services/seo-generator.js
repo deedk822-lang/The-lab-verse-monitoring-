@@ -35,7 +35,7 @@ class SEOGenerator {
 
     // Create title from topic
     const words = topic.split(' ');
-    const title = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const title = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return title.substring(0, 60);
   }
 
@@ -58,15 +58,14 @@ class SEOGenerator {
     const keywords = [...providedKeywords];
 
     // Extract additional keywords from content
-    const words = content
-      .toLowerCase()
+    const words = content.toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .split(/\s+/)
-      .filter((w) => w.length > 4);
+      .filter(w => w.length > 4);
 
     // Count word frequency
     const wordFreq = {};
-    words.forEach((word) => {
+    words.forEach(word => {
       wordFreq[word] = (wordFreq[word] || 0) + 1;
     });
 
@@ -100,28 +99,28 @@ class SEOGenerator {
     return {
       '@context': 'https://schema.org',
       '@type': 'Article',
-      headline: title,
-      description: this.generateMetaDescription(content, topic),
-      wordCount: wordCount,
-      timeRequired: `PT${readingTime}M`,
-      author: {
+      'headline': title,
+      'description': this.generateMetaDescription(content, topic),
+      'wordCount': wordCount,
+      'timeRequired': `PT${readingTime}M`,
+      'author': {
         '@type': 'Organization',
-        name: 'Content Creator AI'
+        'name': 'Content Creator AI'
       },
-      publisher: {
+      'publisher': {
         '@type': 'Organization',
-        name: 'Content Creator AI'
+        'name': 'Content Creator AI'
       },
-      datePublished: new Date().toISOString(),
-      dateModified: new Date().toISOString()
+      'datePublished': new Date().toISOString(),
+      'dateModified': new Date().toISOString()
     };
   }
 
   calculateReadabilityScore(content) {
     // Simple Flesch Reading Ease approximation
     const text = content.replace(/[^a-zA-Z0-9\s.]/g, '');
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-    const words = text.split(/\s+/).filter((w) => w.length > 0);
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const words = text.split(/\s+/).filter(w => w.length > 0);
     const syllables = words.reduce((sum, word) => sum + this.countSyllables(word), 0);
 
     if (sentences.length === 0 || words.length === 0) {
@@ -131,7 +130,7 @@ class SEOGenerator {
     const avgSentenceLength = words.length / sentences.length;
     const avgSyllablesPerWord = syllables / words.length;
 
-    const score = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
+    const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord);
     const clampedScore = Math.max(0, Math.min(100, score));
 
     let level;

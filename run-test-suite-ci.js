@@ -100,17 +100,13 @@ async function runJest() {
     const failedTests = stdout.match(/FAIL\s+(.+)/g) || [];
     if (failedTests.length > 0) {
       console.error('\n[runner] Failed test files:');
-      failedTests.slice(0, 5).forEach((f) => console.error('  ' + f));
+      failedTests.slice(0, 5).forEach(f => console.error('  ' + f));
       if (failedTests.length > 5) {
         console.error(`  ... and ${failedTests.length - 5} more`);
       }
     }
 
-    return {
-      ok: false,
-      reason: 'jest-tests-failed',
-      details: `${failedTests.length} test file(s) failed`
-    };
+    return { ok: false, reason: 'jest-tests-failed', details: `${failedTests.length} test file(s) failed` };
   }
 
   console.log('\n[runner] ✅ Jest tests completed successfully');
@@ -125,7 +121,11 @@ async function runPytest() {
   console.log('🐍 Python Test Suite (pytest)');
   console.log('='.repeat(70));
 
-  const { code, error, stdout } = await runCommand('pytest', ['-v', '--color=yes', '--tb=short']);
+  const { code, error, stdout } = await runCommand('pytest', [
+    '-v',
+    '--color=yes',
+    '--tb=short'
+  ]);
 
   // If pytest is not installed or not found, treat as a soft skip
   if (error) {
@@ -158,17 +158,13 @@ async function runPytest() {
     const failedTests = stdout.match(/FAILED\s+(.+)\s+-/g) || [];
     if (failedTests.length > 0) {
       console.error('\n[runner] Failed tests:');
-      failedTests.slice(0, 5).forEach((f) => console.error('  ' + f));
+      failedTests.slice(0, 5).forEach(f => console.error('  ' + f));
       if (failedTests.length > 5) {
         console.error(`  ... and ${failedTests.length - 5} more`);
       }
     }
 
-    return {
-      ok: false,
-      reason: 'pytest-tests-failed',
-      details: `${failedTests.length || 'Some'} test(s) failed`
-    };
+    return { ok: false, reason: 'pytest-tests-failed', details: `${failedTests.length || 'Some'} test(s) failed` };
   }
 
   console.log('\n[runner] ✅ Python tests completed successfully');

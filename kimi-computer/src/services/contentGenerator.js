@@ -15,15 +15,12 @@ export async function generateContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7
+      temperature: options.temperature || 0.7,
     });
 
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Request timed out')),
-        options.timeout || 10000
-      );
+      timeoutId = setTimeout(() => reject(new Error('Request timed out')), options.timeout || 10000);
     });
 
     try {
@@ -34,6 +31,7 @@ export async function generateContent(prompt, options = {}) {
       clearTimeout(timeoutId);
       throw error;
     }
+
   } catch (error) {
     console.error('❌ Generation failed:', error.message);
     throw error;
@@ -50,7 +48,7 @@ export async function* streamContent(prompt) {
 
   const { textStream } = streamText({
     model,
-    prompt
+    prompt,
   });
 
   for await (const chunk of textStream) {

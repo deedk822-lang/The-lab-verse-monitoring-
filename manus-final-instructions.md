@@ -1,5 +1,4 @@
 # Manus AI – Final Live Deployment & 28-Platform Pipeline
-
 (Real Vercel domain inserted)
 
 ## 1. Install Windsurf on Debian/Ubuntu (real machine)
@@ -48,13 +47,9 @@ Create `~/.codeium/windsurf/mcp_config.json`:
     "github": {
       "command": "docker",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "-e",
-        "GITHUB_TOOLSETS=repos,pull_requests,actions",
+        "run", "-i", "--rm",
+        "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "-e", "GITHUB_TOOLSETS=repos,pull_requests,actions",
         "ghcr.io/github/github-mcp-server"
       ],
       "env": {

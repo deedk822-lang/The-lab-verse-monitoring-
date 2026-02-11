@@ -15,16 +15,13 @@ const config = {
 
   // Transform configuration for TypeScript and JavaScript
   transform: {
-    '^.+\\.tsx?$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          jsx: 'react',
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true
-        }
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true
       }
-    ],
+    }],
     '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }]
   },
 
@@ -40,8 +37,7 @@ const config = {
     '^@workflow/core$': '<rootDir>/workflows/core',
     '^../../src/gateway.js$': '<rootDir>/src/gateway.js',
     '^../services/ProviderFactory.js$': '<rootDir>/src/services/ProviderFactory.js',
-    '^kimi-computer/src/services/contentGenerator.js$':
-      '<rootDir>/kimi-computer/src/services/contentGenerator.js'
+    '^kimi-computer/src/services/contentGenerator.js$': '<rootDir>/kimi-computer/src/services/contentGenerator.js'
   },
 
   // Setup files

@@ -35,7 +35,7 @@ export class TheLapVerseCore {
 
   private readonly winRateGauge: Gauge = new Gauge({
     name: 'lapverse_win_rate',
-    help: 'Latest self-compete champion win rate delta'
+    help: 'Latest self-compete champion win rate delta',
   });
 
   private readonly redis = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -45,8 +45,8 @@ export class TheLapVerseCore {
       removeOnComplete: 100,
       removeOnFail: 50,
       attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 }
-    }
+      backoff: { type: 'exponential', delay: 1000 },
+    },
   });
   private readonly compQueue = new Queue('lapverse-self-compete', {
     connection: this.redis,
@@ -54,19 +54,19 @@ export class TheLapVerseCore {
       removeOnComplete: 100,
       removeOnFail: 50,
       attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 }
-    }
+      backoff: { type: 'exponential', delay: 1000 },
+    },
   });
 
   private readonly newsBreaker = new CircuitBreaker(this.callNewsAI.bind(this), {
     timeout: 3000,
     errorThreshold: 50,
-    reset: 30000
+    reset: 30000,
   });
   private readonly shareBreaker = new CircuitBreaker(this.callShareAPI.bind(this), {
     timeout: 2000,
     errorThreshold: 30,
-    reset: 15000
+    reset: 15000,
   });
 
   constructor() {
@@ -74,7 +74,7 @@ export class TheLapVerseCore {
       redis: this.redis,
       cost: this.cost,
       slo: this.slo,
-      flags: this.flags
+      flags: this.flags,
     });
     this.healthChecker = new HealthChecker(this.slo, this.cost, new MetricsCollector());
   }
@@ -123,14 +123,14 @@ export class TheLapVerseCore {
         status: 'running',
         champion: 'variant-7',
         cost: 0.042,
-        tags: this.cost.getFinOpsTags({ tenant: req.header('X-Tenant-ID') })
+        tags: this.cost.getFinOpsTags({ tenant: req.header('X-Tenant-ID') }),
       });
     });
 
     app.get('/api/status', (_req, res) =>
       res.json({
         slo: this.slo.getBurnRate(),
-        cost: this.cost.getAllocation()
+        cost: this.cost.getAllocation(),
       })
     );
 
@@ -152,7 +152,7 @@ export class TheLapVerseCore {
           span.setAttributes({
             'artifact.id': job.data.id,
             'artifact.tenant_id': job.data.tenant,
-            'artifact.type': 'task'
+            'artifact.type': 'task',
           });
           return await this.processTask(job.data);
         });
@@ -167,7 +167,7 @@ export class TheLapVerseCore {
           span.setAttributes({
             'artifact.id': job.data.id,
             'artifact.tenant_id': job.data.tenant,
-            'artifact.type': 'competition'
+            'artifact.type': 'competition',
           });
           return await this.runCompetition(job.data);
         });
@@ -184,10 +184,7 @@ export class TheLapVerseCore {
     const span = this.tracer.startSpan(`submit-${type}`);
     const id = randomUUID();
     const tenant =
-      req.header?.('X-Tenant-ID') ||
-      req.headers?.['x-tenant-id'] ||
-      req.body?.tenant ||
-      'anonymous';
+      req.header?.('X-Tenant-ID') || req.headers?.['x-tenant-id'] || req.body?.tenant || 'anonymous';
 
     span.setAttributes({
       'artifact.id': id,
@@ -195,7 +192,7 @@ export class TheLapVerseCore {
       'artifact.evolution_depth': 0, // Initial submission
       'artifact.type': type,
       'finops.cost_center': req.body?.cost_center || 'project-default',
-      'gen_ai.request.model': 'deepseek-r1' // Default model
+      'gen_ai.request.model': 'deepseek-r1', // Default model
     });
 
     return context.with(trace.setSpan(context.active(), span), async () => {
@@ -230,7 +227,7 @@ export class TheLapVerseCore {
           { id, payload: req.body, tenant },
           {
             priority: this.toPriority(req.body?.priority),
-            jobId: id
+            jobId: id,
           }
         );
 
@@ -274,10 +271,12 @@ export class TheLapVerseCore {
       amplification,
       news,
       shares: shares.map((s) =>
-        s.status === 'fulfilled' ? s.value : { error: (s as any).reason?.message || 'share-failed' }
+        s.status === 'fulfilled'
+          ? s.value
+          : { error: (s as any).reason?.message || 'share-failed' }
       ),
       cost: await this.cost.calculate(task),
-      tags: this.cost.getFinOpsTags(task)
+      tags: this.cost.getFinOpsTags(task),
     };
   }
 
@@ -290,7 +289,7 @@ export class TheLapVerseCore {
       'aggressive',
       'conservative',
       'balanced',
-      'experimental'
+      'experimental',
     ];
 
     const results = await Promise.allSettled(
@@ -311,7 +310,7 @@ export class TheLapVerseCore {
     return {
       champion,
       cost,
-      tags: this.cost.getFinOpsTags(payload)
+      tags: this.cost.getFinOpsTags(payload),
     };
   }
 
@@ -326,7 +325,7 @@ export class TheLapVerseCore {
         'artifact.id': artifactId,
         'artifact.tenant_id': tenant,
         'artifact.type': 'variant',
-        'artifact.evolution_depth': (payload.evolution_depth || 0) + 1
+        'artifact.evolution_depth': (payload.evolution_depth || 0) + 1,
       });
 
       const news = await this.newsBreaker.execute(() =>
@@ -357,13 +356,9 @@ export class TheLapVerseCore {
     await this.flags.setRollout('self-compete-evolution', 5);
   }
 
-  private runSpan<T>(
-    name: string,
-    fn: (span: import('@opentelemetry/api').Span) => Promise<T>
-  ): Promise<T> {
+  private runSpan<T>(name: string, fn: (span: import('@opentelemetry/api').Span) => Promise<T>): Promise<T> {
     const span = this.tracer.startSpan(name);
-    return context
-      .with(trace.setSpan(context.active(), span), () => fn(span))
+    return context.with(trace.setSpan(context.active(), span), () => fn(span))
       .finally(() => span.end());
   }
 
@@ -376,7 +371,7 @@ export class TheLapVerseCore {
       span.setAttributes({
         'gen_ai.request.model': 'deepseek-r1',
         'artifact.id': artifactId,
-        'artifact.tenant_id': tenant
+        'artifact.tenant_id': tenant,
       });
       // Simulate LLM call
       const promptTokens = content.length;
@@ -387,19 +382,19 @@ export class TheLapVerseCore {
         artifact_id: artifactId,
         tenant: tenant,
         model: model,
-        operation: 'remix' // Or classify based on context
+        operation: 'remix', // Or classify based on context
       });
 
       span.setAttributes({
         'llm.token_count.prompt': promptTokens,
-        'llm.token_count.completion': completionTokens
+        'llm.token_count.completion': completionTokens,
       });
 
       // Mocked response
       return {
         sentiment: Math.random(),
         confidence: Math.random(),
-        tokensUsed: promptTokens + completionTokens
+        tokensUsed: promptTokens + completionTokens,
       };
     });
   }
@@ -411,8 +406,7 @@ export class TheLapVerseCore {
   private calcAmplification(news: any, shares: PromiseSettledResult<any>[]): number {
     return Math.min(
       100,
-      Number(news?.confidence || 0) * 50 +
-        shares.filter((s) => s.status === 'fulfilled').length * 10
+      Number(news?.confidence || 0) * 50 + shares.filter((s) => s.status === 'fulfilled').length * 10
     );
   }
 }

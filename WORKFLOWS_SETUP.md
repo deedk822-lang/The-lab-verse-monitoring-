@@ -18,19 +18,16 @@ You now have **4 production-ready GitHub workflows** integrated with your Alibab
 **Schedule:** Daily at 6 AM SAST (4 AM UTC)
 
 **Workflow:**
-
 ```
 Notion Content → Judge Verification → BRIA Visuals → CData Enrichment → WordPress Publish → Social Distribution (Ayrshare) → Email (MailChimp) → Ads (Google + Brave)
 ```
 
 **Manual Trigger:**
-
 ```bash
 gh workflow run authority-engine.yml -f notion_page_id=YOUR_PAGE_ID
 ```
 
 **Key Features:**
-
 - ✅ Multi-LLM judge consensus verification
 - ✅ Automated visual generation
 - ✅ WordPress publishing with paywall support
@@ -47,7 +44,6 @@ gh workflow run authority-engine.yml -f notion_page_id=YOUR_PAGE_ID
 **Schedule:** Every 6 hours
 
 **Workflow:**
-
 ```
 GDELT Monitoring → NewsAPI Validation → Judge Consensus → Guardian Article Generation → WordPress Publish → Revenue Tracking → Crypto Aid Deployment
 ```
@@ -55,7 +51,6 @@ GDELT Monitoring → NewsAPI Validation → Judge Consensus → Guardian Article
 **Severity Threshold:** 75+ (0-100 scale)
 
 **Key Features:**
-
 - ✅ Real-time GDELT event monitoring
 - ✅ Multi-source validation (NewsAPI)
 - ✅ AI consensus verification (threshold: 0.8)
@@ -72,18 +67,15 @@ GDELT Monitoring → NewsAPI Validation → Judge Consensus → Guardian Article
 **Schedule:** Monday at midnight SAST (Sunday 22:00 UTC)
 
 **Workflow:**
-
 ```
 Kaggle Download → Data Processing → Databricks Upload → ML Predictions → Report Generation → BRIA Visualizations → Premium WordPress Publish
 ```
 
 **Datasets:**
-
 - World Bank Development Indicators
 - UN Global Commodity Trade Statistics
 
 **Key Features:**
-
 - ✅ Automated Kaggle dataset downloads
 - ✅ Databricks integration for big data processing
 - ✅ Predictive analytics (Q1 2026 forecasts)
@@ -99,19 +91,16 @@ Kaggle Download → Data Processing → Databricks Upload → ML Predictions →
 **Schedule:** Hourly
 
 **Workflow:**
-
 ```
 Alibaba Security Analyzer Query → Finding Classification → Alert Routing → Grafana Dashboard → Datadog Metrics → Asana Tasks
 ```
 
 **Alert Thresholds:**
-
 - 🚨 **CRITICAL:** Immediate Asana task (due today)
 - ⚠️ **HIGH:** Priority task (due tomorrow)
 - 📄 **MEDIUM/LOW:** Logged to Grafana & Datadog
 
 **Key Features:**
-
 - ✅ Real-time security finding detection
 - ✅ Automated alert routing
 - ✅ Multi-platform monitoring (Grafana, Datadog)
@@ -126,24 +115,19 @@ Alibaba Security Analyzer Query → Finding Classification → Alert Routing →
 Go to: [Repository Settings → Secrets and Variables → Actions](https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions)
 
 ### Alibaba Cloud (Security Analyzer)
-
 ```
 ALIBABA_ACCESS_KEY_ID
 ALIBABA_ACCESS_KEY_SECRET
 ```
-
 **How to get:** [Alibaba Cloud Console](https://ram.console.aliyun.com/manage/ak) → AccessKey Management
 
 ### Notion API
-
 ```
 NOTION_API_KEY
 ```
-
 **How to get:** [Notion Integrations](https://www.notion.so/my-integrations) → Create New Integration
 
 ### AI Models
-
 ```
 MISTRAL_API_KEY
 MISTRAL_AGENT_ID
@@ -151,16 +135,13 @@ GROQ_API_KEY
 GEMINI_API_KEY
 BRIA_API_KEY
 ```
-
 **How to get:**
-
 - Mistral: [console.mistral.ai](https://console.mistral.ai/api-keys/)
 - Groq: [console.groq.com](https://console.groq.com/keys)
 - Gemini: [aistudio.google.com](https://aistudio.google.com/app/apikey)
 - BRIA: [platform.bria.ai](https://platform.bria.ai/)
 
 ### WordPress & Distribution
-
 ```
 WORDPRESS_TOKEN
 AYRSHARE_API_KEY
@@ -168,9 +149,7 @@ MAILCHIMP_API_KEY
 GOOGLE_ADS_API_KEY
 BRAVE_ADS_API_KEY
 ```
-
 **How to get:**
-
 - WordPress: [rankyak.africa/wp-admin](https://rankyak.africa/wp-admin) → Applications
 - Ayrshare: [app.ayrshare.com](https://app.ayrshare.com/)
 - MailChimp: [mailchimp.com/api-keys](https://mailchimp.com/api-keys)
@@ -178,58 +157,46 @@ BRAVE_ADS_API_KEY
 - Brave Ads: [ads.brave.com](https://ads.brave.com/)
 
 ### Monitoring & Tasks
-
 ```
 GRAFANA_TOKEN
 ASANA_TOKEN
 ASANA_WORKSPACE_ID
 DATADOG_API_KEY
 ```
-
 **How to get:**
-
 - Grafana: [dimakatsomoleli.grafana.net](https://dimakatsomoleli.grafana.net/) → API Keys
 - Asana: [app.asana.com/0/my-apps](https://app.asana.com/0/my-apps) → Personal Access Token
 - Asana Workspace: Check Asana URL (e.g., `/0/1234567890123/list`)
 - Datadog: [app.datadoghq.com/api-keys](https://app.datadoghq.com/api-keys)
 
 ### Data & Analytics
-
 ```
 DATABRICKS_HOST
 DATABRICKS_TOKEN
 KAGGLE_JSON
 CDATA_LICENSE
 ```
-
 **How to get:**
-
 - Databricks: Your Databricks workspace URL + Personal Access Token
 - Kaggle: [kaggle.com/settings](https://kaggle.com/settings) → Create New API Token
 - CData: Your CData Connect license key
 
 ### News & Events
-
 ```
 NEWS_API_KEY
 GDELT_API_KEY
 ```
-
 **How to get:**
-
 - NewsAPI: [newsapi.org/register](https://newsapi.org/register)
 - GDELT: [blog.gdeltproject.org/gdelt-doc-2-0-api-debuts](https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/)
 
 ### Payment & Crypto
-
 ```
 PAYPAL_CLIENT_ID
 LUNO_API_KEY
 STELLAR_SECRET
 ```
-
 **How to get:**
-
 - PayPal: [developer.paypal.com](https://developer.paypal.com/) → Dashboard
 - Luno: [luno.com/wallet/security/api_keys](https://www.luno.com/wallet/security/api_keys)
 - Stellar: Your Stellar wallet secret key
@@ -278,19 +245,16 @@ gh run download <run-id>
 ## 📊 Monitoring Dashboard
 
 ### Grafana Dashboards
-
 - **URL:** [dimakatsomoleli.grafana.net](https://dimakatsomoleli.grafana.net/)
 - **Annotations:** Real-time workflow events
 - **Metrics:** Security findings, content publications, crisis detections
 
 ### Datadog Metrics
-
 - `security.analyzer.critical_findings`
 - `security.analyzer.high_findings`
 - `security.analyzer.total_findings`
 
 ### Asana Project
-
 - **Workspace:** Dima Katsomoleli workspace
 - **Auto-created tasks:** Critical alerts, publications, weekly reports
 
@@ -307,24 +271,20 @@ gh run download <run-id>
 ### Common Issues
 
 **"Missing ALIBABA_ACCESS_KEY_ID"**
-
 ```bash
 gh secret set ALIBABA_ACCESS_KEY_ID
 # Paste your Alibaba access key ID
 ```
 
 **"Notion API authentication failed"**
-
 - Verify your Notion integration has access to the page
 - Check that the page ID is correct (32-char hex string)
 
 **"Kaggle 401 Unauthorized"**
-
 - Recreate your kaggle.json file from [kaggle.com/settings](https://kaggle.com/settings)
 - Set the entire JSON content as `KAGGLE_JSON` secret
 
 **"Asana workspace not found"**
-
 - Get your workspace ID from Asana URL
 - Should be a long numeric string (e.g., `1234567890123`)
 
@@ -332,19 +292,18 @@ gh secret set ALIBABA_ACCESS_KEY_ID
 
 ## 🔄 Workflow Schedules
 
-| Workflow            | Frequency       | Next Run          |
-| ------------------- | --------------- | ----------------- |
-| Authority Engine    | Daily 6 AM SAST | Check Actions tab |
-| Tax Collector       | Every 6 hours   | Check Actions tab |
+| Workflow | Frequency | Next Run |
+|----------|-----------|----------|
+| Authority Engine | Daily 6 AM SAST | Check Actions tab |
+| Tax Collector | Every 6 hours | Check Actions tab |
 | Kaggle Intelligence | Monday midnight | Check Actions tab |
-| Security Monitoring | Hourly          | Check Actions tab |
+| Security Monitoring | Hourly | Check Actions tab |
 
 ---
 
 ## 📝 Workflow Logs
 
 ### Access Logs
-
 ```bash
 # View latest run
 gh run list --workflow=authority-engine.yml --limit 1
@@ -355,7 +314,6 @@ gh run download --name security-report-*
 ```
 
 ### Log Locations
-
 - **GitHub Actions:** Repository → Actions tab
 - **Grafana:** Annotations on dashboards
 - **Datadog:** Metrics & events
@@ -376,19 +334,16 @@ gh run download --name security-report-*
 ## 📞 Support
 
 **Workflow Issues:**
-
 - Check GitHub Actions logs
 - Review workflow YAML syntax
 - Verify all secrets are set correctly
 
 **API Issues:**
-
 - Check API key validity
 - Verify rate limits
 - Review API documentation
 
 **Integration Issues:**
-
 - Test each service independently
 - Check network connectivity
 - Verify webhook endpoints

@@ -7,7 +7,6 @@
 Go to: `Settings → Secrets and variables → Actions`
 
 **Minimum Required:**
-
 ```bash
 VERCEL_TOKEN=<get from https://vercel.com/account/tokens>
 VERCEL_ORG_ID=<from Vercel project settings>
@@ -37,12 +36,12 @@ Monitor at: `Actions` tab in GitHub
 
 ## Common Issues & Solutions
 
-| Issue              | Solution                        |
-| ------------------ | ------------------------------- |
-| Missing secrets    | Add them in repository Settings |
-| Build fails        | Check package.json scripts      |
-| Tests fail         | Run `npm test` locally first    |
-| Deployment timeout | Increase timeout in workflow    |
+| Issue | Solution |
+|-------|----------|
+| Missing secrets | Add them in repository Settings |
+| Build fails | Check package.json scripts |
+| Tests fail | Run `npm test` locally first |
+| Deployment timeout | Increase timeout in workflow |
 
 ## Next Steps
 

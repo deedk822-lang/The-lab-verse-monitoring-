@@ -42,28 +42,24 @@ class MCPOrchestrator {
    * Triggered when RankYak detects a ranking drop
    */
   async handleSEORankingDrop(keyword, previousPosition, currentPosition, url) {
-    console.log(
-      `🚨 SEO Alert: "${keyword}" dropped from #${previousPosition} to #${currentPosition}`
-    );
+    console.log(`🚨 SEO Alert: "${keyword}" dropped from #${previousPosition} to #${currentPosition}`);
 
     try {
       // 1. Log event in Airtable
       await this.callMCPTool('airtable', 'create_records', {
         base_id: this.airtableBaseId,
         table_id: process.env.AIRTABLE_TABLE_SEO_RANKINGS,
-        records: [
-          {
-            fields: {
-              Keyword: keyword,
-              'Previous Position': previousPosition,
-              'Current Position': currentPosition,
-              'Drop Amount': previousPosition - currentPosition,
-              URL: url,
-              'Detected At': new Date().toISOString(),
-              Status: 'Needs Action'
-            }
+        records: [{
+          fields: {
+            'Keyword': keyword,
+            'Previous Position': previousPosition,
+            'Current Position': currentPosition,
+            'Drop Amount': previousPosition - currentPosition,
+            'URL': url,
+            'Detected At': new Date().toISOString(),
+            'Status': 'Needs Action'
           }
-        ]
+        }]
       });
 
       // 2. Create urgent task in Asana
@@ -80,9 +76,9 @@ class MCPOrchestrator {
         database_id: process.env.NOTION_DATABASE_METRICS,
         properties: {
           'Event Type': { select: { name: 'SEO Ranking Drop' } },
-          Keyword: { title: [{ text: { content: keyword } }] },
-          Severity: { select: { name: 'High' } },
-          Status: { select: { name: 'In Progress' } },
+          'Keyword': { title: [{ text: { content: keyword } }] },
+          'Severity': { select: { name: 'High' } },
+          'Status': { select: { name: 'In Progress' } },
           'Asana Task': { url: task.permalink_url }
         }
       });
@@ -122,18 +118,16 @@ class MCPOrchestrator {
       await this.callMCPTool('airtable', 'create_records', {
         base_id: this.airtableBaseId,
         table_id: process.env.AIRTABLE_TABLE_CONTENT_PERFORMANCE,
-        records: [
-          {
-            fields: {
-              Title: contentTitle,
-              URL: contentUrl,
-              'Email CTR': clickRate,
-              'Total Clicks': totalClicks,
-              Date: new Date().toISOString(),
-              'Amplification Status': 'Queued'
-            }
+        records: [{
+          fields: {
+            'Title': contentTitle,
+            'URL': contentUrl,
+            'Email CTR': clickRate,
+            'Total Clicks': totalClicks,
+            'Date': new Date().toISOString(),
+            'Amplification Status': 'Queued'
           }
-        ]
+        }]
       });
 
       // 2. Create amplification task in Asana
@@ -149,11 +143,11 @@ class MCPOrchestrator {
       await this.callMCPTool('notion', 'create_database_item', {
         database_id: process.env.NOTION_DATABASE_CONTENT,
         properties: {
-          Title: { title: [{ text: { content: contentTitle } }] },
-          URL: { url: contentUrl },
+          'Title': { title: [{ text: { content: contentTitle } }] },
+          'URL': { url: contentUrl },
           'Email CTR': { number: clickRate },
-          Status: { select: { name: 'High Performer' } },
-          Action: { select: { name: 'Amplify' } }
+          'Status': { select: { name: 'High Performer' } },
+          'Action': { select: { name: 'Amplify' } }
         }
       });
 
@@ -191,10 +185,10 @@ class MCPOrchestrator {
       const notionPage = await this.callMCPTool('notion', 'create_page', {
         parent_database_id: process.env.NOTION_DATABASE_CRISIS_EVENTS,
         properties: {
-          Crisis: { title: [{ text: { content: crisisDescription } }] },
+          'Crisis': { title: [{ text: { content: crisisDescription } }] },
           'Urgency Score': { number: urgencyScore },
-          Regions: { multi_select: affectedRegions.map((r) => ({ name: r })) },
-          Status: { select: { name: 'Detected' } }
+          'Regions': { multi_select: affectedRegions.map(r => ({ name: r })) },
+          'Status': { select: { name: 'Detected' } }
         }
       });
 
@@ -211,17 +205,15 @@ class MCPOrchestrator {
       await this.callMCPTool('airtable', 'create_records', {
         base_id: this.airtableBaseId,
         table_id: process.env.AIRTABLE_TABLE_CRISIS_EVENTS,
-        records: [
-          {
-            fields: {
-              Description: crisisDescription,
-              'Urgency Score': urgencyScore,
-              Regions: affectedRegions.join(', '),
-              'Detected At': new Date().toISOString(),
-              Status: 'Validating'
-            }
+        records: [{
+          fields: {
+            'Description': crisisDescription,
+            'Urgency Score': urgencyScore,
+            'Regions': affectedRegions.join(', '),
+            'Detected At': new Date().toISOString(),
+            'Status': 'Validating'
           }
-        ]
+        }]
       });
 
       // 4. Send immediate alert
@@ -258,19 +250,17 @@ class MCPOrchestrator {
       await this.callMCPTool('airtable', 'create_records', {
         base_id: process.env.AIRTABLE_BASE_CLIENTS,
         table_id: process.env.AIRTABLE_TABLE_B2B_CLIENTS,
-        records: [
-          {
-            fields: {
-              'Client Name': clientName,
-              Email: clientEmail,
-              Product: productName,
-              Amount: amount,
-              'Transaction ID': transactionId,
-              Status: 'Active',
-              'Onboarded At': new Date().toISOString()
-            }
+        records: [{
+          fields: {
+            'Client Name': clientName,
+            'Email': clientEmail,
+            'Product': productName,
+            'Amount': amount,
+            'Transaction ID': transactionId,
+            'Status': 'Active',
+            'Onboarded At': new Date().toISOString()
           }
-        ]
+        }]
       });
 
       // 2. Create client page in Notion
@@ -278,10 +268,10 @@ class MCPOrchestrator {
         parent_database_id: process.env.NOTION_DATABASE_CLIENTS,
         properties: {
           'Client Name': { title: [{ text: { content: clientName } }] },
-          Email: { email: clientEmail },
-          Product: { select: { name: productName } },
-          Status: { select: { name: 'Active' } },
-          Revenue: { number: amount }
+          'Email': { email: clientEmail },
+          'Product': { select: { name: productName } },
+          'Status': { select: { name: 'Active' } },
+          'Revenue': { number: amount }
         }
       });
 
@@ -352,15 +342,10 @@ class MCPOrchestrator {
       });
 
       // 2. Calculate key metrics
-      const totalRevenue = adCampaigns.records.reduce(
-        (sum, r) => sum + (r.fields['Revenue'] || 0),
-        0
-      );
+      const totalRevenue = adCampaigns.records.reduce((sum, r) => sum + (r.fields['Revenue'] || 0), 0);
       const totalSpend = adCampaigns.records.reduce((sum, r) => sum + (r.fields['Spend'] || 0), 0);
       const roas = totalSpend > 0 ? (totalRevenue / totalSpend).toFixed(2) : 0;
-      const avgCTR =
-        contentPerformance.records.reduce((sum, r) => sum + (r.fields['Email CTR'] || 0), 0) /
-        contentPerformance.records.length;
+      const avgCTR = contentPerformance.records.reduce((sum, r) => sum + (r.fields['Email CTR'] || 0), 0) / contentPerformance.records.length;
 
       // 3. Create report in Notion
       const reportContent = `
@@ -376,12 +361,9 @@ class MCPOrchestrator {
 - **Average Email CTR**: ${(avgCTR * 100).toFixed(2)}%
 
 ## Top Performing Content
-${contentPerformance.records
-  .slice(0, 5)
-  .map(
-    (r, i) => `${i + 1}. ${r.fields['Title']} - ${(r.fields['Email CTR'] * 100).toFixed(1)}% CTR`
-  )
-  .join('\n')}
+${contentPerformance.records.slice(0, 5).map((r, i) =>
+  `${i + 1}. ${r.fields['Title']} - ${(r.fields['Email CTR'] * 100).toFixed(1)}% CTR`
+).join('\n')}
       `;
 
       await this.callMCPTool('notion', 'create_page', {
@@ -436,7 +418,7 @@ ${contentPerformance.records
       'GMAIL_SENDER_EMAIL'
     ];
 
-    const missing = required.filter((key) => !process.env[key]);
+    const missing = required.filter(key => !process.env[key]);
     if (missing.length > 0) {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
@@ -451,8 +433,7 @@ module.exports = MCPOrchestrator;
 if (require.main === module) {
   const orchestrator = new MCPOrchestrator();
 
-  orchestrator
-    .initialize()
+  orchestrator.initialize()
     .then(() => {
       console.log('MCP Orchestrator is ready!');
       console.log('Available workflows:');
@@ -462,7 +443,7 @@ if (require.main === module) {
       console.log('  4. onboardB2BClient()');
       console.log('  5. generateWeeklyReport()');
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('Failed to initialize:', error);
       process.exit(1);
     });

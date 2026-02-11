@@ -25,7 +25,6 @@ nano .env  # or vim, code, etc.
 ```
 
 **Minimum required configuration**:
-
 ```env
 # Choose your primary provider and add its API key:
 
@@ -58,7 +57,6 @@ npm start
 ```
 
 You should see:
-
 ```
 🚀 Content Creator AI Server Started
 Server running on: http://localhost:3000
@@ -105,7 +103,6 @@ Or visit: http://localhost:3000/api/test in your browser
 ### Enable Caching (Recommended for Production)
 
 1. Install Redis:
-
 ```bash
 # macOS
 brew install redis
@@ -120,7 +117,6 @@ docker run -d -p 6379:6379 redis:alpine
 ```
 
 2. Update .env:
-
 ```env
 REDIS_ENABLED=true
 REDIS_URL=redis://localhost:6379
@@ -129,7 +125,6 @@ REDIS_URL=redis://localhost:6379
 ### Add LocalAI (Free, Self-Hosted)
 
 1. Run LocalAI:
-
 ```bash
 # Quick start with Docker
 docker run -p 8080:8080 --name localai localai/localai:latest-aio-cpu
@@ -140,14 +135,12 @@ local-ai run llama-3.2-1b-instruct
 ```
 
 2. Update .env:
-
 ```env
 LOCALAI_ENABLED=true
 LOCALAI_URL=http://localhost:8080
 ```
 
 3. Test LocalAI provider:
-
 ```bash
 curl -X POST http://localhost:3000/api/content \
   -H "Content-Type: application/json" \
@@ -248,14 +241,12 @@ tail -f logs/combined.log
 ### Server won't start
 
 1. Check if port 3000 is available:
-
 ```bash
 lsof -i :3000  # macOS/Linux
 netstat -ano | findstr :3000  # Windows
 ```
 
 2. Try a different port:
-
 ```env
 PORT=8080
 ```
@@ -269,14 +260,12 @@ PORT=8080
 ### API requests fail
 
 1. Verify your API key is correct:
-
 ```bash
 curl -H "X-API-Key: wrong-key" http://localhost:3000/api/test
 # Should return 403 Forbidden
 ```
 
 2. Check if the provider is working:
-
 ```bash
 curl http://localhost:3000/api/health
 ```

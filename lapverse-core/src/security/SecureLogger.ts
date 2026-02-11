@@ -7,10 +7,6 @@ const logger = pino({
 });
 
 export class SecureLogger {
-  info(obj: any, msg?: string) {
-    logger.info(obj, msg);
-  }
-  error(obj: any, msg?: string) {
-    logger.error(obj, msg);
-  }
+  info(obj: any, msg?: string){ logger.info(obj, msg); }
+  error(obj: any, msg?: string){ logger.error(obj, msg); }
 }

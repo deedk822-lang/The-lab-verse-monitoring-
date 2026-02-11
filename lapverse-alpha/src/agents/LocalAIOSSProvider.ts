@@ -5,14 +5,12 @@ import { metrics } from '../lib/metrics/Metrics';
 import { config } from '../lib/config/Config';
 
 const LocalAIResponseSchema = z.object({
-  choices: z.array(
-    z.object({
-      message: z.object({
-        content: z.string(),
-        role: z.literal('assistant')
-      })
+  choices: z.array(z.object({
+    message: z.object({
+      content: z.string(),
+      role: z.literal('assistant')
     })
-  )
+  }))
 });
 
 export class LocalAIOSSProvider {
@@ -24,14 +22,11 @@ export class LocalAIOSSProvider {
     this.baseURL = config.get().LOCALAI_BASE_URL;
   }
 
-  async callModel(
-    prompt: string,
-    opts: {
-      artifactId?: string;
-      tenantId?: string;
-      model?: string;
-    } = {}
-  ): Promise<string> {
+  async callModel(prompt: string, opts: {
+    artifactId?: string;
+    tenantId?: string;
+    model?: string;
+  } = {}): Promise<string> {
     const model = opts.model || 'gpt-oss-20b';
     const tenantId = opts.tenantId || 'default';
 
@@ -119,9 +114,7 @@ export class LocalAIOSSProvider {
     const current = this.quotaTracker.get(tenantId) || 0;
     this.quotaTracker.set(tenantId, current + cost);
 
-    metrics
-      .gauge('localai_oss_quota_used', 'LocalAI OSS quota used')
-      .set(current + cost, { tenant: tenantId });
+    metrics.gauge('localai_oss_quota_used', 'LocalAI OSS quota used').set(current + cost, { tenant: tenantId });
   }
 
   private isCircuitOpen(tenantId: string): boolean {

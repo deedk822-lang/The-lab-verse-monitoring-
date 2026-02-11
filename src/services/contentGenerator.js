@@ -34,16 +34,13 @@ export async function generateContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7
+      temperature: options.temperature || 0.7,
     });
 
     // Create timeout promise with cleanup
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Request timed out')),
-        options.timeout || 30000
-      );
+      timeoutId = setTimeout(() => reject(new Error('Request timed out')), options.timeout || 30000);
     });
 
     // Race between content generation and timeout
@@ -55,6 +52,7 @@ export async function generateContent(prompt, options = {}) {
       clearTimeout(timeoutId);
       throw error;
     }
+
   } catch (error) {
     console.error('❌ Content generation failed:', error.message);
     throw new Error(`Content generation failed: ${error.message}`);
@@ -68,7 +66,9 @@ export async function generateContent(prompt, options = {}) {
  * @returns {AsyncGenerator} Stream of content chunks
  */
 export async function* streamContent(prompt, options = {}) {
-  const model = options.provider ? getProviderByName(options.provider) : getActiveProvider();
+  const model = options.provider ?
+    getProviderByName(options.provider) :
+    getActiveProvider();
 
   if (!model) {
     throw new Error('No AI provider available');
@@ -79,12 +79,13 @@ export async function* streamContent(prompt, options = {}) {
       model,
       prompt,
       maxTokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7
+      temperature: options.temperature || 0.7,
     });
 
     for await (const chunk of textStream) {
       yield chunk;
     }
+
   } catch (error) {
     console.error('❌ Streaming failed:', error.message);
     throw new Error(`Streaming failed: ${error.message}`);
@@ -93,5 +94,5 @@ export async function* streamContent(prompt, options = {}) {
 
 export default {
   generateContent,
-  streamContent
+  streamContent,
 };

@@ -7,9 +7,8 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 export const providers = {
   // Primary OpenAI provider
   'gpt-4': {
-    model: process.env.OPENAI_API_KEY
-      ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4')
-      : null,
+    model: process.env.OPENAI_API_KEY ?
+      createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4') : null,
     priority: 1,
     enabled: !!process.env.OPENAI_API_KEY,
     name: 'GPT-4',
@@ -17,13 +16,12 @@ export const providers = {
   },
 
   // OpenAI fallback: Perplexity
-  perplexity: {
-    model: process.env.PERPLEXITY_API_KEY
-      ? createOpenAI({
-          baseURL: 'https://api.perplexity.ai/',
-          apiKey: process.env.PERPLEXITY_API_KEY
-        })('llama-3.1-sonar-small-128k-online')
-      : null,
+  'perplexity': {
+    model: process.env.PERPLEXITY_API_KEY ?
+      createOpenAI({
+        baseURL: 'https://api.perplexity.ai/',
+        apiKey: process.env.PERPLEXITY_API_KEY
+      })('llama-3.1-sonar-small-128k-online') : null,
     priority: 2,
     enabled: !!process.env.PERPLEXITY_API_KEY,
     name: 'Perplexity Sonar',
@@ -32,7 +30,8 @@ export const providers = {
 
   // Primary Anthropic provider
   'claude-sonnet': {
-    model: process.env.ANTHROPIC_API_KEY ? anthropic('claude-3-5-sonnet-20241022') : null,
+    model: process.env.ANTHROPIC_API_KEY ?
+      anthropic('claude-3-5-sonnet-20241022') : null,
     priority: 3,
     enabled: !!process.env.ANTHROPIC_API_KEY,
     name: 'Claude Sonnet',
@@ -41,12 +40,11 @@ export const providers = {
 
   // Anthropic fallback 1: Mistral (via OpenAI-compatible API)
   'hermes-2-pro-mistral': {
-    model: process.env.MISTRAL_API_KEY
-      ? createOpenAI({
-          baseURL: 'process.env.MISTRAL_API_URL || "http://localhost:8080/v1"',
-          apiKey: process.env.MISTRAL_API_KEY
-        })('hermes-2-pro-hermes-2-pro-mistral')
-      : null,
+    model: process.env.MISTRAL_API_KEY ?
+      createOpenAI({
+        baseURL: 'process.env.MISTRAL_API_URL || "http://localhost:8080/v1"',
+        apiKey: process.env.MISTRAL_API_KEY
+      })('hermes-2-pro-hermes-2-pro-mistral') : null,
     priority: 3,
     enabled: !!(process.env.MISTRAL_API_URL && process.env.MISTRAL_API_KEY),
     name: 'Mistral (LocalAI)',
@@ -55,11 +53,10 @@ export const providers = {
 
   // Anthropic fallback 2: Gemini
   'gemini-pro': {
-    model: process.env.GOOGLE_GENERATIVE_AI_API_KEY
-      ? createGoogleGenerativeAI({
-          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
-        })('gemini-1.5-pro-latest')
-      : null,
+    model: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?
+      createGoogleGenerativeAI({
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
+      })('gemini-1.5-pro-latest') : null,
     priority: 5,
     enabled: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     name: 'Gemini Pro',
@@ -68,12 +65,11 @@ export const providers = {
 
   // Anthropic fallback 3: Groq
   'groq-llama': {
-    model: process.env.GROQ_API_KEY
-      ? createOpenAI({
-          baseURL: 'https://api.groq.com/openai/v1',
-          apiKey: process.env.GROQ_API_KEY
-        })('llama-3.1-70b-versatile')
-      : null,
+    model: process.env.GROQ_API_KEY ?
+      createOpenAI({
+        baseURL: 'https://api.groq.com/openai/v1',
+        apiKey: process.env.GROQ_API_KEY
+      })('llama-3.1-70b-versatile') : null,
     priority: 6,
     enabled: !!process.env.GROQ_API_KEY,
     name: 'Groq Llama 3.1',
@@ -82,13 +78,11 @@ export const providers = {
 
   // Local fallback (only enabled if explicitly configured)
   'hermes-2-pro-mistral-local': {
-    model:
-      process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY
-        ? createOpenAI({
-            baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
-            apiKey: process.env.LOCALAI_API_KEY || 'localai'
-          })('hermes-2-pro-mistral')
-        : null,
+    model: (process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY) ?
+      createOpenAI({
+        baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
+        apiKey: process.env.LOCALAI_API_KEY || 'localai'
+      })('hermes-2-pro-mistral') : null,
     priority: 10,
     enabled: !!(process.env.LOCALAI_HOST || process.env.LOCALAI_API_KEY),
     name: 'Mistral Local',
@@ -125,8 +119,7 @@ export function getActiveProvider(preferredCategory = null) {
     }
 
     // If primary not available, try fallbacks for that category
-    const fallbackCategory =
-      preferredCategory === 'openai' ? 'openai-fallback' : 'anthropic-fallback';
+    const fallbackCategory = preferredCategory === 'openai' ? 'openai-fallback' : 'anthropic-fallback';
     const fallbackProvider = availableProviders.find(
       ([_, config]) => config.category === fallbackCategory
     );
@@ -198,12 +191,8 @@ export function getAvailableProviders() {
       priority: config.priority,
       enabled: config.enabled,
       available: config.enabled && !!config.model,
-      status:
-        config.enabled && config.model
-          ? '✅ Available'
-          : config.enabled
-            ? '⚠️ Configured but not working'
-            : '❌ Not configured'
+      status: config.enabled && config.model ? '✅ Available' :
+        config.enabled ? '⚠️ Configured but not working' : '❌ Not configured'
     }))
     .sort((a, b) => a.priority - b.priority);
 }
@@ -213,7 +202,7 @@ export function getAvailableProviders() {
  * @returns {boolean} True if at least one provider is available
  */
 export function hasAvailableProvider() {
-  return Object.values(providers).some((config) => config.enabled && config.model);
+  return Object.values(providers).some(config => config.enabled && config.model);
 }
 
 /**
@@ -223,8 +212,8 @@ export function hasAvailableProvider() {
 export function getProviderStatus() {
   const available = getAvailableProviders();
   const total = available.length;
-  const working = available.filter((p) => p.available).length;
-  const configured = available.filter((p) => p.enabled).length;
+  const working = available.filter(p => p.available).length;
+  const configured = available.filter(p => p.enabled).length;
 
   return {
     total,
@@ -243,10 +232,10 @@ export function getProviderStatus() {
 const providersConfig = {
   providers,
   getActiveProvider,
-  getProviderByName,
-  getAvailableProviders,
-  hasAvailableProvider,
-  getProviderStatus
-};
+    getProviderByName,
+    getAvailableProviders,
+    hasAvailableProvider,
+    getProviderStatus
+  };
 
 export default providersConfig;

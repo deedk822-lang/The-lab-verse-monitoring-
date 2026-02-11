@@ -24,7 +24,7 @@ class ContentController {
         return res.status(400).json({
           success: false,
           error: 'Validation failed',
-          details: error.details.map((d) => d.message)
+          details: error.details.map(d => d.message)
         });
       }
 
@@ -40,22 +40,14 @@ class ContentController {
 
       // Emit progress via Socket.IO if available
       if (req.app.io) {
-        req.app.io.emit('progress', {
-          requestId,
-          status: 'started',
-          message: 'Generating content...'
-        });
+        req.app.io.emit('progress', { requestId, status: 'started', message: 'Generating content...' });
       }
 
       // Generate content
       const content = await contentGenerator.generateContent(enhancedRequest);
 
       if (req.app.io) {
-        req.app.io.emit('progress', {
-          requestId,
-          status: 'content_done',
-          message: 'Content generated, creating SEO...'
-        });
+        req.app.io.emit('progress', { requestId, status: 'content_done', message: 'Content generated, creating SEO...' });
       }
 
       // Generate SEO metadata if requested
@@ -69,11 +61,7 @@ class ContentController {
       }
 
       if (req.app.io) {
-        req.app.io.emit('progress', {
-          requestId,
-          status: 'seo_done',
-          message: 'SEO created, generating social posts...'
-        });
+        req.app.io.emit('progress', { requestId, status: 'seo_done', message: 'SEO created, generating social posts...' });
       }
 
       // Generate social posts if requested
@@ -132,11 +120,10 @@ class ContentController {
         timestamp: new Date().toISOString()
       };
 
-      logger.info(
-        `Request ${requestId} completed successfully. Cost: $${content.totalCost.toFixed(4)}`
-      );
+      logger.info(`Request ${requestId} completed successfully. Cost: $${content.totalCost.toFixed(4)}`);
 
       return res.status(200).json(response);
+
     } catch (error) {
       logger.error(`Error processing request ${requestId}:`, error);
 
@@ -163,8 +150,7 @@ class ContentController {
         requestId: uuidv4(),
         content: {
           type: 'text',
-          content:
-            '# Test Article\n\nThis is a test article generated without calling real APIs.\n\nIt demonstrates the structure of the response.',
+          content: '# Test Article\n\nThis is a test article generated without calling real APIs.\n\nIt demonstrates the structure of the response.',
           format: 'markdown',
           research: 'This is mock research data.',
           sources: ['https://example.com'],
@@ -227,11 +213,10 @@ class ContentController {
       };
 
       // Calculate stats by provider
-      Object.values(costs).forEach((cost) => {
+      Object.values(costs).forEach(cost => {
         const provider = cost.provider || 'unknown';
         stats.requestsByProvider[provider] = (stats.requestsByProvider[provider] || 0) + 1;
-        stats.costsByProvider[provider] =
-          (stats.costsByProvider[provider] || 0) + (cost.totalCost || 0);
+        stats.costsByProvider[provider] = (stats.costsByProvider[provider] || 0) + (cost.totalCost || 0);
       });
 
       return res.status(200).json({
@@ -266,17 +251,17 @@ class ContentController {
 
     // Check Google health if enabled
     if (googleProvider.isEnabled()) {
-      health.google = await googleProvider.checkHealth();
+        health.google = await googleProvider.checkHealth();
     }
 
     // Check OpenAI health if enabled
     if (openaiProvider.isEnabled()) {
-      health.openai = await openaiProvider.checkHealth();
+        health.openai = await openaiProvider.checkHealth();
     }
 
     // Check ZAI health if enabled
     if (zaiProvider.isEnabled()) {
-      health.zai = await zaiProvider.checkHealth();
+        health.zai = await zaiProvider.checkHealth();
     }
 
     const providerResults = {
@@ -294,7 +279,7 @@ class ContentController {
       health.status = 'unhealthy';
     }
 
-    const hasAnyProvider = Object.values(health.providers).some((enabled) => enabled);
+    const hasAnyProvider = Object.values(health.providers).some(enabled => enabled);
 
     if (!hasAnyProvider) {
       health.status = 'warning';

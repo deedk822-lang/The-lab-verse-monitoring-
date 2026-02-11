@@ -28,12 +28,7 @@ const API_PATH = '/api/post';
  * @param {string[]} mediaUrls - Optional array of media URLs
  * @param {string} scheduleDate - Optional ISO 8601 date string for scheduling
  */
-function postToSocial(
-  postContent,
-  platforms = ['twitter', 'facebook', 'linkedin'],
-  mediaUrls = [],
-  scheduleDate = null
-) {
+function postToSocial(postContent, platforms = ['twitter', 'facebook', 'linkedin'], mediaUrls = [], scheduleDate = null) {
   if (!AYRSHARE_API_KEY) {
     console.error('❌ Error: AYRSHARE_API_KEY environment variable is not set!');
     console.log('\nTo use this script:');
@@ -54,7 +49,7 @@ function postToSocial(
     path: API_PATH,
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${AYRSHARE_API_KEY}`,
+      'Authorization': `Bearer ${AYRSHARE_API_KEY}`,
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(postData)
     }
@@ -99,6 +94,7 @@ function postToSocial(
           const fs = require('fs');
           fs.writeFileSync('ayrshare-post-results.json', JSON.stringify(response, null, 2));
           console.log('\n💾 Results saved to ayrshare-post-results.json');
+
         } else {
           console.error('\n❌ Posting failed:');
           console.error(JSON.stringify(response, null, 2));
@@ -126,18 +122,12 @@ if (require.main === module) {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log(
-      'Usage: node ayrshare/post-to-social.js "Your post content" [platforms] [mediaUrls] [scheduleDate]'
-    );
+    console.log('Usage: node ayrshare/post-to-social.js "Your post content" [platforms] [mediaUrls] [scheduleDate]');
     console.log('\nExamples:');
     console.log('  node ayrshare/post-to-social.js "Hello World!"');
     console.log('  node ayrshare/post-to-social.js "Check this out!" "twitter,linkedin"');
-    console.log(
-      '  node ayrshare/post-to-social.js "Great news!" "twitter,facebook" "https://example.com/image.jpg"'
-    );
-    console.log(
-      '  node ayrshare/post-to-social.js "Scheduled post" "twitter" "" "2024-12-25T10:00:00Z"'
-    );
+    console.log('  node ayrshare/post-to-social.js "Great news!" "twitter,facebook" "https://example.com/image.jpg"');
+    console.log('  node ayrshare/post-to-social.js "Scheduled post" "twitter" "" "2024-12-25T10:00:00Z"');
     process.exit(1);
   }
 

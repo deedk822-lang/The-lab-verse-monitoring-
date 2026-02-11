@@ -16,43 +16,41 @@ const rateLimitHits = meter.createCounter('rate_limit_hits_total', {
 });
 
 /**
- * Configure security headers
- */
+* Configure security headers
+*/
 export function configureSecurityHeaders(app) {
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", 'https://vercel.live'],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'https://vercel.live', 'https://*.grafana.net'],
-          fontSrc: ["'self'", 'data:'],
-          objectSrc: ["'none'"],
-          mediaSrc: ["'self'"],
-          frameSrc: ["'none'"]
-        }
-      },
-      hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true
-      },
-      referrerPolicy: {
-        policy: 'strict-origin-when-cross-origin'
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://vercel.live'],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https://vercel.live', 'https://*.grafana.net'],
+        fontSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"]
       }
-    })
-  );
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    },
+    referrerPolicy: {
+      policy: 'strict-origin-when-cross-origin'
+    }
+  }));
 
   console.log('✅ Security headers configured');
 }
 
 /**
- * Configure rate limiting
- */
+* Configure rate limiting
+*/
 export function configureRateLimiting(app) {
-  // General API rate limit
+// General API rate limit
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 requests per window
@@ -88,8 +86,8 @@ export function configureRateLimiting(app) {
 }
 
 /**
- * Track suspicious activity
- */
+* Track suspicious activity
+*/
 export function trackSuspiciousActivity(type, details) {
   securityEvents.add(1, {
     event_type: type,
@@ -100,8 +98,8 @@ export function trackSuspiciousActivity(type, details) {
 }
 
 /**
- * Middleware to detect suspicious requests
- */
+* Middleware to detect suspicious requests
+*/
 export function suspiciousActivityDetector(req, res, next) {
   const suspiciousPatterns = [
     /(\.\.|\/etc\/|\/proc\/)/i, // Path traversal
@@ -132,8 +130,8 @@ export function suspiciousActivityDetector(req, res, next) {
 }
 
 /**
- * API key validation middleware
- */
+* API key validation middleware
+*/
 export function validateApiKey(req, res, next) {
   const apiKey = req.headers['x-api-key'];
 
@@ -168,8 +166,8 @@ export function validateApiKey(req, res, next) {
 }
 
 /**
- * CORS configuration
- */
+* CORS configuration
+*/
 export function configureCORS(app) {
   const cors = require('cors');
 
@@ -178,24 +176,22 @@ export function configureCORS(app) {
     'http://localhost:3000'
   ];
 
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          trackSuspiciousActivity('cors_violation', {
-            origin,
-            severity: 'medium'
-          });
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
-    })
-  );
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        trackSuspiciousActivity('cors_violation', {
+          origin,
+          severity: 'medium'
+        });
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+  }));
 
   console.log('✅ CORS configured');
 }

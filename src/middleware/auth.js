@@ -5,9 +5,7 @@ export const validateApiKey = (req, res, next) => {
   const expectedApiKey = process.env.API_KEY;
 
   if (!expectedApiKey) {
-    logger.error(
-      'API_KEY environment variable is not configured. Authentication cannot be skipped.'
-    );
+    logger.error('API_KEY environment variable is not configured. Authentication cannot be skipped.');
     return res.status(500).json({ error: 'Server configuration error: API_KEY missing' });
   }
 
@@ -15,7 +13,7 @@ export const validateApiKey = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'API key required',
-      message: 'Please provide an API key in the x-api-key header or Authorization header'
+      message: 'Please provide an API key in the x-api-key header or Authorization header',
     });
   }
 
@@ -24,7 +22,7 @@ export const validateApiKey = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Invalid API key',
-      message: 'The provided API key is invalid'
+      message: 'The provided API key is invalid',
     });
   }
 
@@ -37,9 +35,7 @@ export const validateWebhookSecret = (req, res, next) => {
   const expectedSecret = process.env.WEBHOOK_SECRET;
 
   if (!expectedSecret) {
-    logger.error(
-      'WEBHOOK_SECRET environment variable is not configured. Webhook validation cannot be skipped.'
-    );
+    logger.error('WEBHOOK_SECRET environment variable is not configured. Webhook validation cannot be skipped.');
     return res.status(500).json({ error: 'Server configuration error: WEBHOOK_SECRET missing' });
   }
 
@@ -47,7 +43,7 @@ export const validateWebhookSecret = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Webhook secret required',
-      message: 'Please provide a webhook secret in the x-webhook-secret header'
+      message: 'Please provide a webhook secret in the x-webhook-secret header',
     });
   }
 
@@ -56,7 +52,7 @@ export const validateWebhookSecret = (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Invalid webhook secret',
-      message: 'The provided webhook secret is invalid'
+      message: 'The provided webhook secret is invalid',
     });
   }
 

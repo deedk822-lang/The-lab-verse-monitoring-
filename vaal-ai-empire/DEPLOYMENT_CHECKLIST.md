@@ -7,7 +7,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ## 📦 Files Created/Updated
 
 ### New Files Created
-
 - [x] `api/groq_api.py` - Groq API integration
 - [x] `api/huggingface_api.py` - HuggingFace API integration
 - [x] `api/image_generation.py` - Real image generation
@@ -19,7 +18,6 @@ Use this checklist to ensure your system is ready for production deployment.
 - [x] `README.md` - Updated comprehensive documentation
 
 ### Files Enhanced (No More Mocks)
-
 - [x] `core/database.py` - Fixed merge conflicts, added monitoring
 - [x] `services/content_generator.py` - Real multi-provider integration
 - [x] `services/whatsapp_bot.py` - Real Twilio integration
@@ -29,14 +27,12 @@ Use this checklist to ensure your system is ready for production deployment.
 ## 🔧 System Requirements Checklist
 
 ### Operating System
-
 - [ ] Ubuntu 20.04+ / Debian 11+ / macOS / Windows 10+ with WSL2
 - [ ] Python 3.8 or higher installed
 - [ ] 8GB RAM minimum (16GB recommended)
 - [ ] 20GB free disk space
 
 ### Network Requirements
-
 - [ ] Stable internet connection
 - [ ] Firewall configured (ports 80, 443 open for web)
 - [ ] Domain name (optional but recommended for production)
@@ -44,7 +40,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ## 🔑 API Keys & Credentials
 
 ### Essential (Required)
-
 - [ ] **Cohere API Key** (https://cohere.com)
   - Get free tier or paid subscription
   - Set in .env: `COHERE_API_KEY=`
@@ -58,7 +53,6 @@ Use this checklist to ensure your system is ready for production deployment.
   - Direct platform APIs (Twitter, Facebook)
 
 ### Recommended
-
 - [ ] **Groq API** (https://groq.com) - Fast inference
   - `GROQ_API_KEY=`
 - [ ] **HuggingFace Token** (https://huggingface.co)
@@ -69,7 +63,6 @@ Use this checklist to ensure your system is ready for production deployment.
   - HuggingFace (uses token above, free but rate-limited)
 
 ### Optional
-
 - [ ] **MailChimp** - `MAILCHIMP_API_KEY=`
 - [ ] **Asana** - `ASANA_ACCESS_TOKEN=`
 - [ ] **Direct Social APIs**:
@@ -79,7 +72,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ## 🛠️ Installation Steps
 
 ### 1. Initial Setup
-
 ```bash
 - [ ] Clone repository
 - [ ] Run: chmod +x scripts/setup_production.sh
@@ -90,7 +82,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ```
 
 ### 2. Environment Configuration
-
 ```bash
 - [ ] Edit .env file
 - [ ] Add all required API keys
@@ -100,7 +91,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ```
 
 ### 3. AI Model Setup
-
 ```bash
 - [ ] Activate environment: source venv/bin/activate
 - [ ] Run: python scripts/setup_models.py
@@ -112,7 +102,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ```
 
 ### 4. System Testing
-
 ```bash
 - [ ] Run: python scripts/quick_test.py
 - [ ] Verify: All core components import successfully
@@ -125,7 +114,6 @@ Use this checklist to ensure your system is ready for production deployment.
 ### 5. Component Verification
 
 #### Test Content Generation
-
 ```python
 - [ ] Run test script:
 from services.content_generator import ContentFactory
@@ -139,7 +127,6 @@ print(f"Generated {len(pack['posts'])} posts")
 ```
 
 #### Test WhatsApp Bot
-
 ```python
 - [ ] Run test script:
 from services.whatsapp_bot import WhatsAppBot
@@ -153,7 +140,6 @@ print(result)
 ```
 
 #### Test Social Media Posting
-
 ```python
 - [ ] Run test script:
 from services.social_poster import SocialPoster
@@ -170,7 +156,6 @@ print(result)
 ```
 
 #### Test Image Generation
-
 ```python
 - [ ] Run test script:
 from api.image_generation import ImageGenerator
@@ -184,7 +169,6 @@ print(f"Image: {result['image_path']}")
 ```
 
 ### 6. Database Verification
-
 ```bash
 - [ ] Check database exists: ls -la data/vaal_empire.db
 - [ ] Run health check:
@@ -205,7 +189,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ```
 
 ### 7. System Health Check
-
 ```bash
 - [ ] Run: python -c "from core.system_monitor import get_monitor; import json; print(json.dumps(get_monitor().generate_health_report(), indent=2))"
 
@@ -217,7 +200,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ## 🚀 Production Deployment
 
 ### 8. Service Installation (Linux)
-
 ```bash
 - [ ] Copy service file: sudo cp vaal-ai-empire.service /etc/systemd/system/
 - [ ] Reload systemd: sudo systemctl daemon-reload
@@ -228,7 +210,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ```
 
 ### 9. Web Server Setup (Optional)
-
 ```bash
 - [ ] Install nginx: sudo apt install nginx
 - [ ] Copy config: sudo cp nginx-vaal-ai.conf /etc/nginx/sites-available/
@@ -238,7 +219,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ```
 
 ### 10. SSL Certificate (Production)
-
 ```bash
 - [ ] Install certbot: sudo apt install certbot python3-certbot-nginx
 - [ ] Get certificate: sudo certbot --nginx -d your-domain.com
@@ -246,7 +226,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ```
 
 ### 11. Firewall Configuration
-
 ```bash
 - [ ] Enable firewall: sudo ufw enable
 - [ ] Allow SSH: sudo ufw allow 22/tcp
@@ -258,7 +237,6 @@ sqlite3 data/vaal_empire.db ".tables"
 ## 🧪 End-to-End Testing
 
 ### 12. Full Workflow Test
-
 ```bash
 - [ ] Test client onboarding:
 python scripts/client_onboarding.py demo +27821234567 "Test Business" butchery
@@ -274,7 +252,6 @@ sqlite3 data/vaal_empire.db "SELECT * FROM clients;"
 ```
 
 ### 13. Content Generation Test
-
 ```bash
 - [ ] Generate content pack:
 python -c "
@@ -293,7 +270,6 @@ print('Success!')
 ```
 
 ### 14. Automation Test
-
 ```bash
 - [ ] Run automation once:
 python scripts/daily_automation.py &
@@ -307,7 +283,6 @@ python scripts/daily_automation.py &
 ## 📊 Monitoring Setup
 
 ### 15. Log Monitoring
-
 ```bash
 - [ ] Verify log directory: ls -la logs/
 - [ ] Check log rotation: logrotate config
@@ -318,7 +293,6 @@ python -c "import logging; logging.basicConfig(filename='logs/test.log'); loggin
 ```
 
 ### 16. Cost Tracking
-
 ```bash
 - [ ] Check cost tracking:
 python -c "
@@ -333,7 +307,6 @@ print(f'Total cost: ${summary[\"total_cost\"]:.2f}')
 ```
 
 ### 17. Health Monitoring
-
 ```bash
 - [ ] Set up health check cron (optional):
 echo "*/15 * * * * cd /path/to/vaal-ai-empire && venv/bin/python -c 'from core.system_monitor import get_monitor; m=get_monitor(); r=m.generate_health_report(); print(r[\"summary\"][\"overall_health\"])' >> logs/health.log" | crontab -
@@ -344,7 +317,6 @@ echo "*/15 * * * * cd /path/to/vaal-ai-empire && venv/bin/python -c 'from core.s
 ## 🔔 Alert Configuration (Optional)
 
 ### 18. Webhook Alerts
-
 ```bash
 - [ ] Get webhook URL (Slack, Discord, etc.)
 - [ ] Add to .env: ALERT_WEBHOOK_URL=your_webhook_url
@@ -361,7 +333,6 @@ alerts.send_alert('info', 'test', 'Test alert')
 ## ✅ Final Verification
 
 ### 19. Production Readiness
-
 - [ ] All API keys configured and working
 - [ ] At least one AI provider operational
 - [ ] Image generation working (real or simulated)
@@ -378,7 +349,6 @@ alerts.send_alert('info', 'test', 'Test alert')
 - [ ] Monitoring alerts set up
 
 ### 20. Performance Baseline
-
 ```bash
 - [ ] Measure content generation time (should be < 30s for 10 posts)
 - [ ] Measure image generation time (should be < 60s per image)
@@ -400,19 +370,16 @@ alerts.send_alert('info', 'test', 'Test alert')
 ## 🆘 Emergency Contacts
 
 **System Issues:**
-
 - Check logs: `tail -f logs/daily_automation.log`
 - Health check: `python -c "from core.system_monitor import get_monitor; print(get_monitor().generate_health_report())"`
 - Restart service: `sudo systemctl restart vaal-ai-empire`
 
 **API Issues:**
-
 - Verify keys: `python scripts/setup_models.py verify`
 - Check quotas in provider dashboards
 - Review usage logs in database
 
 **Database Issues:**
-
 - Health check: `python -c "from core.database import Database; print(Database().health_check())"`
 - Backup: `cp data/vaal_empire.db data/vaal_empire_backup_$(date +%Y%m%d).db`
 - Repair: `sqlite3 data/vaal_empire.db "PRAGMA integrity_check;"`
@@ -420,21 +387,18 @@ alerts.send_alert('info', 'test', 'Test alert')
 ## 📝 Post-Deployment
 
 ### After 24 Hours
-
 - [ ] Review logs for errors
 - [ ] Check cost accumulation
 - [ ] Verify automated tasks ran
 - [ ] Confirm client communications sent
 
 ### After 1 Week
-
 - [ ] Review system health trends
 - [ ] Optimize provider selection based on costs
 - [ ] Adjust automation schedules if needed
 - [ ] Backup database
 
 ### Monthly
-
 - [ ] Review and optimize costs
 - [ ] Update models/dependencies
 - [ ] Review and act on health recommendations

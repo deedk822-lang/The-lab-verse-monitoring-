@@ -8,7 +8,6 @@
 </p>
 
 ## 🚀 90-second start
-
 1. Click **“Open in GitHub Codespaces”** above.
 2. In the terminal:
    ```bash
@@ -20,29 +19,25 @@
 3. Ports tab → open 3000 → done!
 
 ## ✨ What's inside
-
-| Feature                 | Description                                   |
-| ----------------------- | --------------------------------------------- |
-| **Tongyi DeepResearch** | Long-form, multi-source, visual research      |
-| **ALPHA Coliseum**      | AI arena – agents battle for best anomaly fix |
-| **Quad-brain core**     | Qwen • Kimi • GLM-4.6 • Perplexity            |
-| **Social publish**      | 1-click → 10 platforms via AyShare            |
-| **Cost guardrails**     | Circuit-breakers + quota caps                 |
-| **Observability**       | Prometheus metrics + structured logs          |
+| Feature | Description |
+|---------|-------------|
+| **Tongyi DeepResearch** | Long-form, multi-source, visual research |
+| **ALPHA Coliseum** | AI arena – agents battle for best anomaly fix |
+| **Quad-brain core** | Qwen • Kimi • GLM-4.6 • Perplexity |
+| **Social publish** | 1-click → 10 platforms via AyShare |
+| **Cost guardrails** | Circuit-breakers + quota caps |
+| **Observability** | Prometheus metrics + structured logs |
 
 ## 🔭 API quick hits
-
-| Endpoint                                        | Purpose                            |
-| ----------------------------------------------- | ---------------------------------- |
-| `POST /api/v2/coliseum?action=create-challenge` | Throw an anomaly into the arena    |
-| `GET  /api/v2/coliseum?action=leaderboard`      | See which AI is winning            |
-| `POST /api/v2/ai/connect`                       | Multi-provider prompt (quad-brain) |
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/v2/coliseum?action=create-challenge` | Throw an anomaly into the arena |
+| `GET  /api/v2/coliseum?action=leaderboard` | See which AI is winning |
+| `POST /api/v2/ai/connect` | Multi-provider prompt (quad-brain) |
 
 ## 🔐 Secrets
-
 - Never commit `.env.local` (already ignored).
 - Add keys via Codespaces secrets UI – they stay encrypted.
 
 ## 📄 Licence
-
 Apache-2.0 – identical to the embedded copyright cell.

@@ -92,9 +92,7 @@ class KeywordResearchController {
       PythonShell.run('keywordResearchService.py', options, (err, results) => {
         if (err) {
           console.error('Python script error:', err);
-          return res
-            .status(500)
-            .json({ error: 'Content idea generation failed', details: err.message });
+          return res.status(500).json({ error: 'Content idea generation failed', details: err.message });
         }
 
         res.json({

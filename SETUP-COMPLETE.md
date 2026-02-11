@@ -42,14 +42,12 @@ I've successfully completed the LocalAI and Mistral integration for your reposit
 ### 1. Add GitHub Secrets (Required for CI)
 
 **Option A: Using GitHub CLI**
-
 ```bash
 gh secret set MISTRAL_API_KEY --body "local-ai-key-optional"
 gh secret set LOCALAI_API_KEY --body "local-ai-key-optional"
 ```
 
 **Option B: Using GitHub Web Interface**
-
 1. Go to: https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions
 2. Click "New repository secret"
 3. Add:
@@ -138,11 +136,10 @@ gh secret list
 
 ```yaml
 ports:
-  - '8081:8080' # Use 8081 instead
+  - "8081:8080"  # Use 8081 instead
 ```
 
 Then update `.env`:
-
 ```env
 LOCALAI_API_URL=http://localhost:8081/v1
 MISTRAL_API_URL=http://localhost:8081/v1
@@ -176,7 +173,6 @@ wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/
 If you encounter any issues:
 
 1. **Check the logs**:
-
    ```bash
    docker-compose -f docker-compose.localai.yml logs -f
    ```
@@ -208,7 +204,6 @@ Your repository now has:
 **All tasks completed!** 🎉
 
 Your only remaining action:
-
 1. Add GitHub secrets (2 minutes)
 2. Review and merge PR #515
 

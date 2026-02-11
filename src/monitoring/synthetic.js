@@ -18,12 +18,7 @@ export class SyntheticMonitor {
   constructor(config = {}) {
     this.endpoints = config.endpoints || [
       { name: 'health', url: 'http://localhost:3001/health', method: 'GET' },
-      {
-        name: 'api',
-        url: 'http://localhost:3001/api/research',
-        method: 'POST',
-        body: { q: 'test' }
-      }
+      { name: 'api', url: 'http://localhost:3001/api/research', method: 'POST', body: { q: 'test' } }
     ];
     this.interval = config.interval || 60000; // 1 minute
     this.timeout = config.timeout || 10000; // 10 seconds
@@ -32,8 +27,8 @@ export class SyntheticMonitor {
   }
 
   /**
-   * Start synthetic monitoring
-   */
+* Start synthetic monitoring
+*/
   start() {
     if (this.running) {
       console.warn('Synthetic monitoring already running');
@@ -53,8 +48,8 @@ export class SyntheticMonitor {
   }
 
   /**
-   * Stop synthetic monitoring
-   */
+* Stop synthetic monitoring
+*/
   stop() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -64,16 +59,16 @@ export class SyntheticMonitor {
   }
 
   /**
-   * Run all checks
-   */
+* Run all checks
+*/
   async runChecks() {
-    const promises = this.endpoints.map((endpoint) => this.checkEndpoint(endpoint));
+    const promises = this.endpoints.map(endpoint => this.checkEndpoint(endpoint));
     await Promise.allSettled(promises);
   }
 
   /**
-   * Check a single endpoint
-   */
+* Check a single endpoint
+*/
   async checkEndpoint(endpoint) {
     const startTime = Date.now();
 
@@ -114,6 +109,7 @@ export class SyntheticMonitor {
       }
 
       return { success, duration, status: response.status };
+
     } catch (error) {
       const duration = (Date.now() - startTime) / 1000;
 
@@ -140,8 +136,8 @@ export class SyntheticMonitor {
   }
 
   /**
-   * Get current status
-   */
+* Get current status
+*/
   getStatus() {
     const status = {};
 
@@ -156,10 +152,9 @@ export class SyntheticMonitor {
   }
 
   /**
-   * Get uptime percentage
-   */
-  getUptimePercentage(endpointName, _period = 3600000) {
-    // Default 1 hour
+* Get uptime percentage
+*/
+  getUptimePercentage(endpointName, _period = 3600000) { // Default 1 hour
     // This would need to store historical data
     // For now, return current status
     const result = this.results.get(endpointName);

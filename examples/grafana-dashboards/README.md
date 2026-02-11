@@ -17,7 +17,6 @@ Enterprise-grade Grafana dashboard for monitoring Model Arbitrage AI Gateway.
 ### 2. Configure Data Source
 
 The dashboard expects a Prometheus datasource with:
-
 - **Name**: `Prometheus` or use your datasource UID
 - **URL**: Your Prometheus server (e.g., `http://prometheus:9090`)
 - **Scrape interval**: 15s
@@ -27,7 +26,6 @@ The dashboard expects a Prometheus datasource with:
 ## Dashboard Structure
 
 ### Sections
-
 1. **Header** - Overview with SLO targets
 2. **Gateway KPIs** - Request rate, errors, latency, uptime
 3. **Model Arbitrage** - Distribution across AI agents

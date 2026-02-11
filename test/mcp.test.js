@@ -19,6 +19,7 @@ app.get('/api/mcp', (req, res) => {
   res.status(405).json({ error: 'Method not allowed' });
 });
 
+
 describe('MCP Server', () => {
   let mockStdout;
   let mockStderr;
@@ -55,6 +56,10 @@ describe('MCP Server', () => {
       .post('/api/mcp')
       .send({ command: 'test', args: ['arg1', 'arg2'] });
 
-    expect(spawn).toHaveBeenCalledWith(mcpPath, ['test', 'arg1', 'arg2']);
+    expect(spawn).toHaveBeenCalledWith(mcpPath, [
+      'test',
+      'arg1',
+      'arg2'
+    ]);
   });
 });

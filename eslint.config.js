@@ -12,7 +12,8 @@ export default [
       '**/build/**',
       '**/.next/**',
       '**/coverage/**',
-      '**/.cache/**'
+      '**/.cache/**',
+      '**/vaal-ai-empire/**'
     ]
   },
   js.configs.recommended,

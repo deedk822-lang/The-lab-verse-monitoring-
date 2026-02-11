@@ -16,11 +16,8 @@ export class OpenApiValidator {
     }
 
     const isV2 = req.baseUrl?.includes('/api/v2') || req.originalUrl?.includes('/api/v2');
-    const isTasks =
-      req.method === 'POST' && (req.path.endsWith('/tasks') || req.url.endsWith('/tasks'));
-    const isComp =
-      req.method === 'POST' &&
-      (req.path.endsWith('/self-compete') || req.url.endsWith('/self-compete'));
+    const isTasks = req.method === 'POST' && (req.path.endsWith('/tasks') || req.url.endsWith('/tasks'));
+    const isComp = req.method === 'POST' && (req.path.endsWith('/self-compete') || req.url.endsWith('/self-compete'));
 
     if (this.requireTenantHeader && isV2 && (isTasks || isComp)) {
       const idk = req.header('Idempotency-Key');

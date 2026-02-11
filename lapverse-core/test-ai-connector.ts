@@ -1,4 +1,4 @@
-main;
+ main
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -63,21 +63,17 @@ async function testEngine(name: string, url?: string, key?: string) {
   }
   try {
     // Generic JSON echo-style test; adapt as needed per provider
-    const resp = await axios.post(
-      url,
-      {
-        messages: [{ role: 'user', content: 'ping' }],
-        model: process.env[`${name.toUpperCase()}_MODEL`] || 'auto',
-        stream: false
+    const resp = await axios.post(url, {
+      messages: [{ role: 'user', content: 'ping' }],
+      model: process.env[`${name.toUpperCase()}_MODEL`] || 'auto',
+      stream: false
+    }, {
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json'
       },
-      {
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      }
-    );
+      timeout: 10000
+    });
     const ok = resp.status >= 200 && resp.status < 300;
     console.log(`[ok] ${name}: status=${resp.status}`);
     return ok;
@@ -95,6 +91,6 @@ async function testEngine(name: string, url?: string, key?: string) {
     console.log('CONNECTED');
     process.exit(0);
   }
-  process.exit(qwenOk || kimiOk ? 0 : 1);
+  process.exit((qwenOk || kimiOk) ? 0 : 1);
 })();
-cursor / the - lap - verse - core - service - polish - ae35;
+ cursor/the-lap-verse-core-service-polish-ae35

@@ -43,7 +43,6 @@ The following packages were added to support the AI connectivity layer:
 ### 4. Code Fixes Applied
 
 **FinOpsTagger.ts Import Fix:**
-
 - Changed `import { hotShots } from 'hot-shots'` → `import { StatsD } from 'hot-shots'`
 - Updated instantiation: `new hotShots()` → `new StatsD()`
 
@@ -158,13 +157,11 @@ A test script (`test-ai-connector.ts`) was created to validate the configuration
 ## API Endpoints Available
 
 ### 1. Health Check with AI Analysis
-
 ```http
 GET /api/v2/health
 ```
 
 **Response Example:**
-
 ```json
 {
   "status": "healthy",
@@ -183,19 +180,16 @@ GET /api/v2/health
 ```
 
 ### 2. Task Submission
-
 ```http
 POST /api/v2/tasks
 ```
 
 ### 3. Self-Competition
-
 ```http
 POST /api/v2/self-compete
 ```
 
 ### 4. Metrics Export
-
 ```http
 GET /metrics
 ```
@@ -212,7 +206,6 @@ npm run dev
 ```
 
 **Expected Output:**
-
 ```
 ♛ TheLapVerseCore live on port 3000
 ```
@@ -254,14 +247,13 @@ NODE_ENV=production
 
 Based on the free tier limits:
 
-| Service                      | Free Tier            | Estimated Cost (After Free) |
-| ---------------------------- | -------------------- | --------------------------- |
-| Alibaba DashScope (Qwen-Max) | 1M tokens/day        | $0.002/1K tokens            |
-| MoonShot (Kimi-K2)           | 10K queries/day      | $0.003/1K tokens            |
-| **Per AI Call**              | Free (within limits) | **~$0.005**                 |
+| Service | Free Tier | Estimated Cost (After Free) |
+|---------|-----------|----------------------------|
+| Alibaba DashScope (Qwen-Max) | 1M tokens/day | $0.002/1K tokens |
+| MoonShot (Kimi-K2) | 10K queries/day | $0.003/1K tokens |
+| **Per AI Call** | Free (within limits) | **~$0.005** |
 
 **Daily Capacity (Free Tier):**
-
 - ~2,000 health checks/day (500 tokens each)
 - ~10,000 Kimi evolutions/day
 
@@ -274,7 +266,6 @@ Based on the free tier limits:
 **Symptom:** `Error: getaddrinfo ENOTFOUND dashscope.aliyuncs.com`
 
 **Solutions:**
-
 1. Verify internet connectivity
 2. Check firewall/proxy settings
 3. Ensure API keys are valid (test in Alibaba/MoonShot dashboards)
@@ -285,7 +276,6 @@ Based on the free tier limits:
 **Symptom:** `ZodError: Invalid response schema`
 
 **Solutions:**
-
 1. Check API response format changes
 2. Update `QwenResponseSchema` or `KimiResponseSchema` in `Connector.ts`
 3. Enable debug logging to inspect raw responses
@@ -295,7 +285,6 @@ Based on the free tier limits:
 **Symptom:** No metrics in `/metrics` endpoint
 
 **Solutions:**
-
 1. Verify StatsD client configuration
 2. Check if Prometheus is scraping the endpoint
 3. Ensure `emitUsage()` is being called

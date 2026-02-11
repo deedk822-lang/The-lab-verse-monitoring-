@@ -27,7 +27,6 @@ npm run test:integration
 ### Test Orchestrator (`run-test-suite-ci.js`)
 
 The main test runner that:
-
 - Executes Jest and pytest in sequence
 - Handles missing dependencies gracefully
 - Provides detailed error reporting
@@ -36,19 +35,16 @@ The main test runner that:
 ### Error Handling Features
 
 #### 1. **Missing Dependencies**
-
 - **Jest not found**: Fails with clear installation instructions
 - **pytest not found**: Treats as skip (Python tests optional)
 - **No tests found**: Passes (not an error)
 
 #### 2. **Test Failures**
-
 - Captures and displays failed test files
 - Shows first 5 failures with details
 - Provides summary with exit code 1
 
 #### 3. **Exit Codes**
-
 ```
 0 = All tests passed (some may be skipped)
 1 = Test failures or critical errors
@@ -59,7 +55,6 @@ The main test runner that:
 ### Test Patterns
 
 Jest will find tests matching:
-
 ```
 **/*.(test|spec).{js,jsx,ts,tsx}
 test/**/*.test.{js,ts}
@@ -100,7 +95,6 @@ python_functions = test_*
 ### Graceful Handling
 
 The test orchestrator treats Python tests as optional:
-
 - **Missing pytest**: Warns and continues
 - **No Python tests**: Treats as success
 - **Python test failures**: Reports and fails CI
@@ -117,7 +111,6 @@ Your workflows should simply call:
 ```
 
 The orchestrator handles:
-
 - ✅ Running both test suites
 - ✅ Proper exit codes
 - ✅ Colored output in CI
@@ -199,7 +192,6 @@ npx jest --watch
 ### Issue: "Jest not found"
 
 **Solution**: Install dependencies
-
 ```bash
 npm ci  # or npm install
 ```
@@ -207,15 +199,13 @@ npm ci  # or npm install
 ### Issue: "Tests timing out"
 
 **Solution**: Increase timeout in jest.config.js
-
 ```javascript
-testTimeout: 60000; // 60 seconds
+testTimeout: 60000  // 60 seconds
 ```
 
 ### Issue: "Module not found"
 
 **Solution**: Check moduleNameMapper in jest.config.js
-
 ```javascript
 moduleNameMapper: {
   '^@/(.*)$': '<rootDir>/src/$1'
@@ -225,9 +215,10 @@ moduleNameMapper: {
 ### Issue: "ES module errors"
 
 **Solution**: Add to transformIgnorePatterns
-
 ```javascript
-transformIgnorePatterns: ['node_modules/(?!(your-esm-package)/)'];
+transformIgnorePatterns: [
+  'node_modules/(?!(your-esm-package)/)'
+]
 ```
 
 ### Issue: "Python tests fail but should skip"
@@ -250,7 +241,6 @@ open coverage/lcov-report/index.html
 ### Coverage Configuration
 
 Edit `jest.config.js`:
-
 ```javascript
 collectCoverage: true,
 collectCoverageFrom: [
@@ -293,13 +283,11 @@ npx jest --clearCache
 ## Best Practices
 
 ### 1. **Isolate Tests**
-
 - Each test should be independent
 - Use `beforeEach` and `afterEach` for setup/teardown
 - Don't rely on test execution order
 
 ### 2. **Mock External Dependencies**
-
 ```javascript
 jest.mock('./api', () => ({
   fetchData: jest.fn().mockResolvedValue({ data: 'mock' })
@@ -307,7 +295,6 @@ jest.mock('./api', () => ({
 ```
 
 ### 3. **Use Descriptive Names**
-
 ```javascript
 // ❌ Bad
 it('works', () => {});
@@ -317,14 +304,12 @@ it('should return user data when given valid ID', () => {});
 ```
 
 ### 4. **Test Edge Cases**
-
 - Empty inputs
 - Null/undefined values
 - Error conditions
 - Boundary values
 
 ### 5. **Keep Tests Fast**
-
 - Avoid real network calls (use mocks)
 - Minimize file I/O
 - Use test doubles for expensive operations
@@ -340,31 +325,31 @@ name: CI Tests
 
 on:
   push:
-    branches: [main, develop, feat/*]
+    branches: [ main, develop, feat/* ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, develop ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Run tests
-        run: npm test
-        env:
-          NODE_ENV: test
-          CI: true
+    - name: Run tests
+      run: npm test
+      env:
+        NODE_ENV: test
+        CI: true
 ```
 
 ### Matrix Testing (Optional)

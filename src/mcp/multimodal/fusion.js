@@ -7,7 +7,7 @@ export class MultiModalFusion {
     this.processors = {
       vision: this.processVision.bind(this),
       audio: this.processAudio.bind(this),
-      text: this.processText.bind(this)
+      text: this.processText.bind(this),
     };
   }
 
@@ -21,7 +21,9 @@ export class MultiModalFusion {
 
     try {
       // Load image
-      const imageData = typeof image === 'string' ? fs.readFileSync(image) : image;
+      const imageData = typeof image === 'string'
+        ? fs.readFileSync(image)
+        : image;
 
       // Call vision API based on provider
       let result;
@@ -38,8 +40,9 @@ export class MultiModalFusion {
         type: 'vision',
         provider,
         result: result.description,
-        metadata: result.metadata
+        metadata: result.metadata,
       };
+
     } catch (error) {
       logger.error('Vision processing failed:', error);
       throw error;
@@ -69,8 +72,9 @@ export class MultiModalFusion {
         type: 'audio',
         provider,
         mode,
-        result
+        result,
       };
+
     } catch (error) {
       logger.error('Audio processing failed:', error);
       throw error;
@@ -89,7 +93,7 @@ export class MultiModalFusion {
     return {
       type: 'text',
       provider,
-      result: text
+      result: text,
     };
   }
 
@@ -101,12 +105,12 @@ export class MultiModalFusion {
 
     const fused = {
       timestamp: new Date().toISOString(),
-      modalities: results.map((r) => r.type),
-      results: {}
+      modalities: results.map(r => r.type),
+      results: {},
     };
 
     // Organize by type
-    results.forEach((result) => {
+    results.forEach(result => {
       fused.results[result.type] = result.result;
     });
 
@@ -124,7 +128,7 @@ export class MultiModalFusion {
   createCombinedOutput(results) {
     const parts = [];
 
-    results.forEach((result) => {
+    results.forEach(result => {
       switch (result.type) {
         case 'vision':
           parts.push(`[Image Analysis]: ${result.result}`);
@@ -154,23 +158,21 @@ export class MultiModalFusion {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: 'Describe this image in detail' },
-                { inline_data: { mime_type: 'image/jpeg', data: base64Image } }
-              ]
-            }
-          ]
-        })
-      }
+          contents: [{
+            parts: [
+              { text: 'Describe this image in detail' },
+              { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
+            ],
+          }],
+        }),
+      },
     );
 
     const data = await response.json();
 
     return {
       description: data.candidates[0].content.parts[0].text,
-      metadata: { model: 'gemini-pro-vision' }
+      metadata: { model: 'gemini-pro-vision' },
     };
   }
 
@@ -189,17 +191,17 @@ export class MultiModalFusion {
     const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'multipart/form-data'
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData
+      body: formData,
     });
 
     const buffer = await response.buffer();
 
     return {
       audio: buffer.toString('base64'),
-      metadata: { model: 'elevenlabs' }
+      metadata: { model: 'elevenlabs' },
     };
   }
 
@@ -210,7 +212,7 @@ export class MultiModalFusion {
     // Placeholder for Whisper API call
     return {
       text: 'Transcription result',
-      metadata: { model: 'whisper' }
+      metadata: { model: 'whisper' },
     };
   }
 
@@ -221,7 +223,7 @@ export class MultiModalFusion {
     // Placeholder for OpenAI Vision API call
     return {
       description: 'OpenAI Vision description',
-      metadata: { model: 'gpt-4-vision' }
+      metadata: { model: 'gpt-4-vision' },
     };
   }
 
@@ -232,7 +234,7 @@ export class MultiModalFusion {
     // Placeholder for Qwen Vision API call
     return {
       description: 'Qwen Vision description',
-      metadata: { model: 'qwen-vl' }
+      metadata: { model: 'qwen-vl' },
     };
   }
 }

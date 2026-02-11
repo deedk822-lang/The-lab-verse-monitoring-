@@ -15,12 +15,12 @@ export type RiskThresholds = z.infer<typeof RiskThresholdsSchema>;
 export const EscalationRulesSchema = z.record(
   z.string(),
   z.union([
-    z.literal('immediate'),
-    z.literal('within_15_minutes'),
-    z.literal('within_30_minutes'),
-    z.literal('within_1_hour'),
-    z.literal('within_2_hours'),
-    z.literal('within_4_hours')
+    z.literal("immediate"),
+    z.literal("within_15_minutes"),
+    z.literal("within_30_minutes"),
+    z.literal("within_1_hour"),
+    z.literal("within_2_hours"),
+    z.literal("within_4_hours")
   ])
 );
 export type EscalationRules = z.infer<typeof EscalationRulesSchema>;
@@ -213,9 +213,7 @@ export class EnterpriseConfigLoader {
       const validated = EnterpriseConfigSchema.parse(parsed);
       this.config = validated;
       console.log(`✅ Enterprise config loaded. Version: ${validated.version}`);
-      console.log(
-        `🏢 Enterprise Features: Multi-cloud=${validated.multi_cloud_deployment.enabled}, Chaos=${validated.chaos_engineering.enabled}, Mobile=${validated.mobile_integration.push_notifications}`
-      );
+      console.log(`🏢 Enterprise Features: Multi-cloud=${validated.multi_cloud_deployment.enabled}, Chaos=${validated.chaos_engineering.enabled}, Mobile=${validated.mobile_integration.push_notifications}`);
     } catch (err) {
       console.error('❌ Enterprise config validation failed:', err);
       throw err;
@@ -240,13 +238,8 @@ export class EnterpriseConfigLoader {
     if (typeof value === 'boolean') {
       return value;
     }
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      'enabled' in value &&
-      typeof value.enabled === 'boolean'
-    ) {
-      return value.enabled;
+    if (typeof value === 'object' && value !== null && 'enabled' in value && typeof value.enabled === 'boolean') {
+        return value.enabled;
     }
     return false;
   }

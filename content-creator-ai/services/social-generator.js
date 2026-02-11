@@ -19,10 +19,7 @@ class SocialGenerator {
   }
 
   generateTwitterPost(topic, keywords, cta) {
-    const hashtags = keywords
-      .slice(0, 3)
-      .map((k) => `#${k.replace(/\s+/g, '')}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 3).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
     const maxLength = 280 - hashtags.length - cta.length - 10;
 
     const topicText = this.truncateText(topic, maxLength);
@@ -36,10 +33,7 @@ class SocialGenerator {
   generateLinkedInPost(content, topic, keywords, cta) {
     // Extract first paragraph or create summary
     const summary = this.extractSummary(content, 200);
-    const hashtags = keywords
-      .slice(0, 5)
-      .map((k) => `#${k.replace(/\s+/g, '')}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 5).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
 
     const post = `🚀 ${topic}\n\n${summary}\n\n${cta}\n\n${hashtags}\n\n#ContentCreation #AI #DigitalMarketing`;
 
@@ -61,10 +55,7 @@ class SocialGenerator {
   }
 
   generateInstagramPost(topic, keywords, cta) {
-    const hashtags = keywords
-      .slice(0, 10)
-      .map((k) => `#${k.replace(/\s+/g, '')}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 10).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
     const maxCaptionLength = 200;
 
     const caption = this.truncateText(topic, maxCaptionLength);
@@ -80,10 +71,7 @@ class SocialGenerator {
 
   generateThreadsPost(topic, keywords, cta) {
     // Similar to Instagram but optimized for Threads
-    const hashtags = keywords
-      .slice(0, 3)
-      .map((k) => `#${k.replace(/\s+/g, '')}`)
-      .join(' ');
+    const hashtags = keywords.slice(0, 3).map(k => `#${k.replace(/\s+/g, '')}`).join(' ');
     const maxLength = 500 - hashtags.length - cta.length - 10;
 
     const text = this.truncateText(topic, maxLength);

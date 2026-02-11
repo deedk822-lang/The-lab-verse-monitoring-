@@ -163,7 +163,6 @@ python3 scripts/security/secure_file.py config.py config.secure.py
 ```
 
 **What it does:**
-
 - Removes hardcoded credentials
 - Adds input validation
 - Implements secure defaults
@@ -189,7 +188,6 @@ python3 scripts/security/bulk_harden.py . --workers 8
 ```
 
 **Files targeted:**
-
 - `*.py` - Python files
 - `*.yml`, `*.yaml` - YAML configs
 - `Dockerfile*` - Docker files
@@ -200,7 +198,6 @@ python3 scripts/security/bulk_harden.py . --workers 8
 - `*.conf`, `*.config` - Configuration files
 
 **Excluded:**
-
 - `.env` files (actual secrets)
 - `node_modules/`, `.git/`, etc.
 - Lock files (`package-lock.json`, etc.)
@@ -218,7 +215,6 @@ bash scripts/security/harden_pr.sh
 ```
 
 **Use cases:**
-
 - Before creating a PR
 - In CI/CD pipeline
 - After making changes to security-critical files
@@ -245,16 +241,16 @@ python3 scripts/security/generate_artifact.py trivy-scan --output ./custom/path.
 
 **Available artifacts:**
 
-| Type                 | Output File                          | Description                      |
-| -------------------- | ------------------------------------ | -------------------------------- |
-| `trivy-scan`         | `.github/workflows/trivy-scan.yml`   | Trivy security scanning workflow |
-| `secret-rotation`    | `scripts/security/rotate-secrets.sh` | Secret rotation script           |
-| `k8s-security`       | `k8s/security-policies.yaml`         | Kubernetes security policies     |
-| `docker-security`    | `.dockerignore`                      | Docker security ignore file      |
-| `security-checklist` | `SECURITY_CHECKLIST.md`              | Security checklist               |
-| `dependabot`         | `.github/dependabot.yml`             | Dependabot config                |
-| `pre-commit`         | `.pre-commit-config.yaml`            | Pre-commit hooks                 |
-| `security-policy`    | `SECURITY.md`                        | Security policy document         |
+| Type | Output File | Description |
+|------|-------------|-------------|
+| `trivy-scan` | `.github/workflows/trivy-scan.yml` | Trivy security scanning workflow |
+| `secret-rotation` | `scripts/security/rotate-secrets.sh` | Secret rotation script |
+| `k8s-security` | `k8s/security-policies.yaml` | Kubernetes security policies |
+| `docker-security` | `.dockerignore` | Docker security ignore file |
+| `security-checklist` | `SECURITY_CHECKLIST.md` | Security checklist |
+| `dependabot` | `.github/dependabot.yml` | Dependabot config |
+| `pre-commit` | `.pre-commit-config.yaml` | Pre-commit hooks |
+| `security-policy` | `SECURITY.md` | Security policy document |
 
 ---
 
@@ -269,19 +265,16 @@ Two workflows are included:
 Automatically hardens changed files in PRs.
 
 **Triggers:**
-
 - Pull requests to `main`, `master`, `develop`
 - Manual workflow dispatch
 
 **What it does:**
-
 - Detects changed security-critical files
 - Hardens them using Moonshot AI
 - Commits changes back to the PR
 - Posts summary comment on PR
 
 **Setup:**
-
 1. Add `MOONSHOT_API_KEY` to repository secrets
 2. Workflow runs automatically on PRs
 
@@ -290,19 +283,16 @@ Automatically hardens changed files in PRs.
 Full repository security audit on a schedule.
 
 **Triggers:**
-
 - Weekly (Monday 9 AM UTC)
 - Manual workflow dispatch
 
 **What it does:**
-
 - Scans entire repository
 - Hardens all security-critical files
 - Creates PR with changes
 - Generates audit report
 
 **Setup:**
-
 1. Add `MOONSHOT_API_KEY` to repository secrets
 2. Workflow runs automatically weekly
 
@@ -322,16 +312,16 @@ bash scripts/security/harden_pr.sh
 
 Complete reference of security automation commands:
 
-| Command                              | Description                                   |
-| ------------------------------------ | --------------------------------------------- |
-| `make secure FILE=<path>`            | Harden a single file                          |
-| `make secure-bulk`                   | Harden all security-critical files            |
-| `make secure-bulk-dry`               | Dry-run bulk hardening                        |
-| `make secure-pr`                     | Harden changed files in current branch        |
-| `make generate-artifact TYPE=<type>` | Generate specific security artifact           |
-| `make generate-all-artifacts`        | Generate all security artifacts               |
-| `make list-artifacts`                | List available artifacts                      |
-| `make security-setup`                | Complete security setup (artifacts + dry-run) |
+| Command | Description |
+|---------|-------------|
+| `make secure FILE=<path>` | Harden a single file |
+| `make secure-bulk` | Harden all security-critical files |
+| `make secure-bulk-dry` | Dry-run bulk hardening |
+| `make secure-pr` | Harden changed files in current branch |
+| `make generate-artifact TYPE=<type>` | Generate specific security artifact |
+| `make generate-all-artifacts` | Generate all security artifacts |
+| `make list-artifacts` | List available artifacts |
+| `make security-setup` | Complete security setup (artifacts + dry-run) |
 
 ---
 
@@ -372,7 +362,6 @@ Complete reference of security automation commands:
 Each file type gets a **context-aware security prompt**:
 
 **Python files:**
-
 - Remove hardcoded credentials
 - Add input validation
 - Use parameterized queries
@@ -380,7 +369,6 @@ Each file type gets a **context-aware security prompt**:
 - Use secure random generation
 
 **YAML/Docker Compose:**
-
 - Remove hardcoded passwords
 - Use Docker secrets
 - Set resource limits
@@ -388,7 +376,6 @@ Each file type gets a **context-aware security prompt**:
 - Enable health checks
 
 **Dockerfiles:**
-
 - Use specific image versions
 - Run as non-root user
 - Multi-stage builds
@@ -396,7 +383,6 @@ Each file type gets a **context-aware security prompt**:
 - Proper file permissions
 
 **Shell scripts:**
-
 - Validate inputs
 - Quote variables
 - Use `set -euo pipefail`
@@ -420,31 +406,26 @@ with ThreadPoolExecutor(max_workers=8) as executor:
 All hardening follows these principles:
 
 ### 🔐 **Secrets Management**
-
 - Remove hardcoded credentials
 - Use environment variables
 - Suggest secret management tools
 
 ### ✅ **Input Validation**
-
 - Validate all user inputs
 - Sanitize data before use
 - Implement whitelist validation
 
 ### 🛡️ **Secure Defaults**
-
 - Fail securely by default
 - Principle of least privilege
 - Disable unnecessary features
 
 ### 🚨 **Error Handling**
-
 - Don't expose sensitive info in errors
 - Log errors securely
 - Implement proper exception handling
 
 ### 🔒 **Defense in Depth**
-
 - Multiple layers of security
 - Network isolation
 - Resource limits
@@ -458,7 +439,6 @@ All hardening follows these principles:
 **Problem:** `MOONSHOT_API_KEY environment variable not set`
 
 **Solution:**
-
 ```bash
 export MOONSHOT_API_KEY="sk-your-key-here"
 ```
@@ -480,7 +460,6 @@ export MOONSHOT_API_KEY="sk-your-key-here"
 **Problem:** `Permission denied` when writing files
 
 **Solution:**
-
 ```bash
 chmod +w path/to/file
 # Or run with sudo (not recommended)
@@ -491,7 +470,6 @@ chmod +w path/to/file
 **Problem:** Bulk hardening takes too long
 
 **Solution:** Increase workers:
-
 ```bash
 python3 scripts/security/bulk_harden.py . --workers 16
 ```
@@ -501,7 +479,6 @@ python3 scripts/security/bulk_harden.py . --workers 16
 **Problem:** GitHub Actions workflow doesn't trigger
 
 **Solution:**
-
 1. Check that `MOONSHOT_API_KEY` is set in repository secrets
 2. Ensure workflow file is in `.github/workflows/`
 3. Check workflow permissions in repository settings
@@ -513,7 +490,6 @@ python3 scripts/security/bulk_harden.py . --workers 16
 ### Example 1: Harden Docker Compose
 
 **Before:**
-
 ```yaml
 services:
   db:
@@ -523,7 +499,6 @@ services:
 ```
 
 **After:**
-
 ```yaml
 services:
   db:
@@ -543,7 +518,6 @@ services:
 ### Example 2: Harden Python Script
 
 **Before:**
-
 ```python
 import os
 API_KEY = "sk-1234567890"
@@ -551,7 +525,6 @@ db_query = f"SELECT * FROM users WHERE id = {user_id}"
 ```
 
 **After:**
-
 ```python
 import os
 from typing import Optional

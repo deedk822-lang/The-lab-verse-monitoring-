@@ -1,5 +1,4 @@
 # G20 Blog Post Creation & Distribution Workflow
-
 ## Judge System Content Creation Pipeline
 
 **Target Topic:** G20 Opportunities for South Africa  
@@ -41,11 +40,11 @@ manus-mcp-cli tool call notion-create-database --server notion --input '{
 ```javascript
 // Use HuggingFace gateway for research
 const researchTopics = [
-  'G20 economic opportunities South Africa',
-  'G20 trade agreements South Africa benefits',
-  'G20 infrastructure development South Africa',
-  'G20 digital transformation South Africa',
-  'G20 sustainable development goals South Africa'
+  "G20 economic opportunities South Africa",
+  "G20 trade agreements South Africa benefits",
+  "G20 infrastructure development South Africa",
+  "G20 digital transformation South Africa",
+  "G20 sustainable development goals South Africa"
 ];
 
 // Call HuggingFace gateway for each topic
@@ -54,16 +53,14 @@ for (const topic of researchTopics) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.GATEWAY_API_KEY}`
+      'Authorization': `Bearer ${process.env.GATEWAY_API_KEY}`
     },
     body: JSON.stringify({
       model: 'huggingface-research',
-      messages: [
-        {
-          role: 'user',
-          content: `Research and summarize: ${topic}. Focus on concrete opportunities, statistics, and recent developments.`
-        }
-      ]
+      messages: [{
+        role: 'user',
+        content: `Research and summarize: ${topic}. Focus on concrete opportunities, statistics, and recent developments.`
+      }]
     })
   });
 }
@@ -113,7 +110,7 @@ await fetch('https://codestral.mistral.ai/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`
+    'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`
   },
   body: JSON.stringify({
     model: 'codestral-latest',
@@ -177,8 +174,8 @@ manus-mcp-cli tool call wpcom_create_post --server wpcom --input '{
 // Use the social media generator
 const socialContent = {
   topic: "South Africa's G20 Opportunities: 5 Game-Changing Benefits",
-  keywords: ['G20', 'SouthAfrica', 'EconomicGrowth', 'Investment', 'Trade'],
-  cta: 'Read the full analysis on our blog →',
+  keywords: ["G20", "SouthAfrica", "EconomicGrowth", "Investment", "Trade"],
+  cta: "Read the full analysis on our blog →",
   content: `
     The G20 summit presents unprecedented opportunities for South Africa's economic growth.
     From enhanced trade partnerships to infrastructure development, discover how SA can
@@ -195,11 +192,11 @@ const posts = generateAllSocialPosts(socialContent);
 ```javascript
 // Generate images for social media posts
 const imagePrompts = {
-  twitter: 'Modern infographic showing G20 benefits for South Africa, professional design',
-  linkedin: 'Business professionals at G20 summit, South African flag visible',
-  instagram: 'Vibrant graphic showing SA economic growth statistics from G20',
-  facebook: 'Collage of G20 opportunities: trade, investment, infrastructure',
-  youtube: 'Thumbnail: G20 logo with SA map highlighting opportunities'
+  twitter: "Modern infographic showing G20 benefits for South Africa, professional design",
+  linkedin: "Business professionals at G20 summit, South African flag visible",
+  instagram: "Vibrant graphic showing SA economic growth statistics from G20",
+  facebook: "Collage of G20 opportunities: trade, investment, infrastructure",
+  youtube: "Thumbnail: G20 logo with SA map highlighting opportunities"
 };
 
 // Call Bria AI for each image
@@ -207,12 +204,12 @@ for (const [platform, prompt] of Object.entries(imagePrompts)) {
   await fetch('https://platform.bria.ai/labs/fibo', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.BRIA_API_KEY}`,
+      'Authorization': `Bearer ${process.env.BRIA_API_KEY}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       prompt: prompt,
-      style: 'professional',
+      style: "professional",
       aspect_ratio: platform === 'instagram' ? '1:1' : '16:9'
     })
   });
@@ -299,15 +296,7 @@ const youtubeScript = {
     
     #G20 #SouthAfrica #EconomicGrowth #Investment #Trade
   `,
-  tags: [
-    'G20',
-    'South Africa',
-    'Economic Development',
-    'Trade',
-    'Investment',
-    'Africa',
-    'Global Economy'
-  ]
+  tags: ["G20", "South Africa", "Economic Development", "Trade", "Investment", "Africa", "Global Economy"]
 };
 ```
 
@@ -407,7 +396,6 @@ manus-mcp-cli tool call asana_update_task --server asana --input '{
 ## 🎯 **Success Metrics & KPIs**
 
 ### Content Performance Targets
-
 - **Blog Post:** 5,000+ views in first week
 - **Social Media:** 15,000+ total reach across platforms
 - **Engagement:** 3%+ average engagement rate
@@ -415,15 +403,14 @@ manus-mcp-cli tool call asana_update_task --server asana --input '{
 - **Share Rate:** 2%+ of viewers sharing content
 
 ### Platform-Specific Goals
-
-| Platform      | Primary Metric          | Target         |
-| ------------- | ----------------------- | -------------- |
-| **Blog**      | Page Views              | 5,000+         |
-| **LinkedIn**  | Professional Engagement | 8%+            |
-| **Twitter**   | Retweets & Replies      | 100+           |
-| **Facebook**  | Shares & Comments       | 50+            |
-| **Instagram** | Likes & Saves           | 500+           |
-| **YouTube**   | Watch Time              | 70%+ retention |
+| Platform | Primary Metric | Target |
+|----------|----------------|--------|
+| **Blog** | Page Views | 5,000+ |
+| **LinkedIn** | Professional Engagement | 8%+ |
+| **Twitter** | Retweets & Replies | 100+ |
+| **Facebook** | Shares & Comments | 50+ |
+| **Instagram** | Likes & Saves | 500+ |
+| **YouTube** | Watch Time | 70%+ retention |
 
 ---
 
@@ -432,7 +419,7 @@ manus-mcp-cli tool call asana_update_task --server asana --input '{
 ```javascript
 // Complete automation script for judges
 async function executeG20ContentWorkflow() {
-  console.log('🚀 Starting G20 Content Creation Workflow...');
+  console.log("🚀 Starting G20 Content Creation Workflow...");
 
   // Phase 1: Research
   const research = await conductResearch();
@@ -453,10 +440,10 @@ async function executeG20ContentWorkflow() {
   await setupAnalyticsTracking();
   await createAsanaProject();
 
-  console.log('✅ G20 Content Workflow Complete!');
-  console.log('📊 Monitoring dashboard: [Asana Project URL]');
-  console.log('📝 Blog post: [WordPress URL]');
-  console.log('📱 Social posts scheduled for next 24 hours');
+  console.log("✅ G20 Content Workflow Complete!");
+  console.log("📊 Monitoring dashboard: [Asana Project URL]");
+  console.log("📝 Blog post: [WordPress URL]");
+  console.log("📱 Social posts scheduled for next 24 hours");
 }
 
 // Execute the workflow
@@ -468,21 +455,18 @@ executeG20ContentWorkflow();
 ## 📋 **Judge Checklist**
 
 ### Pre-Execution
-
 - [ ] Verify all API keys are configured
 - [ ] Confirm social media accounts are connected
 - [ ] Check WordPress.com site access
 - [ ] Ensure Notion workspace is set up
 
 ### During Execution
-
 - [ ] Monitor research quality and relevance
 - [ ] Review generated content for accuracy
 - [ ] Approve social media posts before scheduling
 - [ ] Verify image generation results
 
 ### Post-Execution
-
 - [ ] Set up performance monitoring alerts
 - [ ] Schedule follow-up content for next week
 - [ ] Document lessons learned

@@ -7,14 +7,12 @@ Your AI SDK test suite is now fully configured and ready to execute. All necessa
 ## ✅ What's Been Set Up
 
 ### 1. Test Configuration Files Created
-
 - **`jest.config.js`** - Jest configuration for ES modules support
 - **`babel.config.js`** - Babel transpilation for test environment
 - **`package.json`** - Updated with Jest dependencies and test scripts
 - **`run-test-suite.js`** - Comprehensive test runner for validation and live workflow
 
 ### 2. Existing Test Files Verified
-
 - **`test/ai-sdk.test.js`** ✅ Present and ready
 - **`src/services/contentGenerator.js`** ✅ Present and configured
 - **`src/config/providers.js`** ✅ Present with Mistral, GPT-4, and Claude providers
@@ -22,7 +20,6 @@ Your AI SDK test suite is now fully configured and ready to execute. All necessa
 ## 🚀 How to Execute the Tests
 
 ### Option 1: Run the Complete Test Suite (Recommended)
-
 ```bash
 # Install Jest dependencies first
 npm install
@@ -32,7 +29,6 @@ node run-test-suite.js
 ```
 
 ### Option 2: Run Individual Test Commands
-
 ```bash
 # Run all tests
 npm test
@@ -50,13 +46,11 @@ npx jest test/ai-sdk.test.js
 ## 🔧 Provider Configuration
 
 Your system supports these AI providers (in priority order):
-
 1. **Mistral Local** (Priority 1) - LocalAI compatible
 2. **GPT-4** (Priority 2) - OpenAI
 3. **Claude Sonnet** (Priority 3) - Anthropic
 
 ### Environment Variables Needed
-
 ```bash
 # Add to your .env file:
 LOCALAI_HOST=http://localhost:8080/v1
@@ -68,7 +62,6 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 ## 📊 What the Tests Will Verify
 
 ### Automated Test Suite (`test/ai-sdk.test.js`)
-
 - ✅ Provider availability and selection
 - ✅ Content generation functionality
 - ✅ Streaming content generation
@@ -77,7 +70,6 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 - ✅ Missing prompt validation
 
 ### Live Workflow (`run-test-suite.js`)
-
 - 🔍 Provider availability check with detailed logging
 - 📝 Real content generation with performance metrics
 - 🔄 Live streaming test with chunk counting
@@ -88,7 +80,6 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 ## 🎯 Expected Outcomes
 
 ### If Providers Are Configured:
-
 - All tests pass ✅
 - Content generates successfully ✅
 - Streaming works correctly ✅
@@ -96,7 +87,6 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 - Performance metrics displayed ✅
 
 ### If No Providers Configured:
-
 - Tests skip gracefully ⏭️
 - Clear guidance provided on setup ℹ️
 - No failures or crashes ✅
@@ -104,7 +94,6 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 ## 🚨 Troubleshooting
 
 ### Common Issues:
-
 1. **Module Import Errors**
    - Ensure Node.js >= 18
    - Verify `"type": "module"` in package.json

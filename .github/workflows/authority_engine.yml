@@ -5,32 +5,32 @@ on:
     branches: [main]
   schedule:
     - cron: '0 6 * * *' # Run Daily at 6 AM SAST (04:00 UTC)
-  workflow_dispatch: # Allows manual trigger button
+  workflow_dispatch:    # Allows manual trigger button
 
 jobs:
   # JOB 1: THE AI WORKFORCE (Real Execution)
   empire_operations:
     runs-on: ubuntu-latest
-    name: 'Execute Tax Agent & Titans'
+    name: "Execute Tax Agent & Titans"
 
     # 1. MAP THE KEYS (The Nervous System)
     # These inject your Repository Secrets into the Python Runtime
     env:
       # ALIBABA & TITAN BRAINS
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }} # Qwen
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # DeepSeek / Kimi
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }} # Aya Vision / RAG
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}   # Qwen
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         # DeepSeek / Kimi
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}         # Aya Vision / RAG
 
       # WORKER APIS
       HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }} # Content Factory
-      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }} # Writing Dept
+      MISTRAL_API_KEY: ${{ secrets.MISTRALAI_API_KEY }}       # Writing Dept
 
       # DATA & MEMORY
       OSS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
       OSS_ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
       OSS_ENDPOINT: https://oss-eu-west-1.aliyuncs.com
       OSS_BUCKET: vaal-vault
-      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }} # Internal Data
+      GLEAN_API_KEY: ${{ secrets.GLEAN_API_KEY }}           # Internal Data
       GLEAN_API_ENDPOINT: ${{ secrets.GLEAN_API_ENDPOINT }}
 
     steps:

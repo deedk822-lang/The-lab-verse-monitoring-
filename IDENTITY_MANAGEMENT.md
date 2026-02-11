@@ -15,18 +15,15 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 **Purpose:** Content publishing & SEO
 
 **Services:**
-
 - WordPress blog publishing
 - Content distribution
 - SEO optimization
 
 **GitHub Secrets Required:**
-
 - `WORDPRESS_USER` = `deedk822@gmail.com`
 - `WORDPRESS_PASSWORD` = WordPress Application Password
 
 **Workflows Using This Identity:**
-
 - `.github/workflows/authority-engine.yml`
 - `.github/workflows/content-pipeline.yml`
 
@@ -39,18 +36,15 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 **Purpose:** Dataset intelligence gathering
 
 **Services:**
-
 - Kaggle dataset discovery
 - Market research data collection
 - Competitive intelligence
 
 **GitHub Secrets Required:**
-
 - `KAGGLE_USERNAME` = `lungeloluda`
 - `KAGGLE_API_KEY` = Kaggle API Token
 
 **Workflows Using This Identity:**
-
 - `.github/workflows/kaggle-intelligence.yml`
 
 ---
@@ -62,19 +56,16 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 **Purpose:** Task tracking & workflow management
 
 **Services:**
-
 - Jira ticket creation
 - Project tracking
 - Workflow automation
 
 **GitHub Secrets Required:**
-
 - `JIRA_USER_EMAIL` = `dimakatsomoleli@gmail.com`
 - `JIRA_API_TOKEN` = Jira API Token
 - `JIRA_API_TOKEN` = Jira API Token
 
 **Workflows Using This Identity:**
-
 - `.github/workflows/kaggle-intelligence.yml` (creates tickets)
 - `.github/workflows/authority-engine.yml` (logs work)
 
@@ -86,33 +77,30 @@ The Vaal AI Empire uses **three separate identities** to prevent authentication 
 
 Go to: `https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secrets/actions`
 
-| Secret Name          | Value                       | Used By             |
-| -------------------- | --------------------------- | ------------------- |
-| `WORDPRESS_USER`     | `deedk822@gmail.com`        | Authority Engine    |
-| `WORDPRESS_PASSWORD` | WordPress App Password      | Authority Engine    |
-| `KAGGLE_USERNAME`    | `lungeloluda`               | Kaggle Intelligence |
-| `KAGGLE_API_KEY`     | Kaggle API Token            | Kaggle Intelligence |
-| `JIRA_USER_EMAIL`    | `dimakatsomoleli@gmail.com` | Multiple Workflows  |
-| `JIRA_LINK`          | Jira API Token              | Multiple Workflows  |
+| Secret Name | Value | Used By |
+|-------------|-------|----------|
+| `WORDPRESS_USER` | `deedk822@gmail.com` | Authority Engine |
+| `WORDPRESS_PASSWORD` | WordPress App Password | Authority Engine |
+| `KAGGLE_USERNAME` | `lungeloluda` | Kaggle Intelligence |
+| `KAGGLE_API_KEY` | Kaggle API Token | Kaggle Intelligence |
+| `JIRA_USER_EMAIL` | `dimakatsomoleli@gmail.com` | Multiple Workflows |
+| `JIRA_LINK` | Jira API Token | Multiple Workflows |
 
 ### How to Get API Tokens
 
 **WordPress Application Password:**
-
 1. Log in to WordPress.com as `deedk822@gmail.com`
 2. Go to Settings → Security → Application Passwords
 3. Create new password named "GitHub Actions"
 4. Copy the generated password
 
 **Kaggle API Key:**
-
 1. Log in to Kaggle.com as `lungeloluda`
 2. Go to Account → API → Create New Token
 3. Download `kaggle.json`
 4. Use the `key` value from the JSON file
 
 **Jira API Token:**
-
 1. Log in to Atlassian as `dimakatsomoleli@gmail.com`
 2. Go to Account Settings → Security → API Tokens
 3. Create token named "Vaal AI Empire"
@@ -126,16 +114,16 @@ Go to: `https://github.com/deedk822-lang/The-lab-verse-monitoring-/settings/secr
 
 ```yaml
 # BAD - Using wrong email for Kaggle
-KAGGLE_USERNAME: deedk822@gmail.com # WRONG!
+KAGGLE_USERNAME: deedk822@gmail.com  # WRONG!
 ```
 
 ### ✅ DO: Use Correct Identity per Service
 
 ```yaml
 # GOOD - Correct identity mapping
-KAGGLE_USERNAME: lungeloluda # Lungelo Luda
-JIRA_USER_EMAIL: dimakatsomoleli@gmail.com # Dimakatso
-WORDPRESS_USER: deedk822@gmail.com # Deedk822
+KAGGLE_USERNAME: lungeloluda        # Lungelo Luda
+JIRA_USER_EMAIL: dimakatsomoleli@gmail.com  # Dimakatso
+WORDPRESS_USER: deedk822@gmail.com  # Deedk822
 ```
 
 ---
@@ -147,7 +135,6 @@ WORDPRESS_USER: deedk822@gmail.com # Deedk822
 **Cause:** Wrong identity used for service
 
 **Fix:**
-
 1. Check which service is failing (WordPress, Kaggle, or Jira)
 2. Verify the correct email/username is in GitHub Secrets
 3. Confirm API token is still valid
@@ -157,7 +144,6 @@ WORDPRESS_USER: deedk822@gmail.com # Deedk822
 **Cause:** Using `dimakatsomoleli@gmail.com` as Kaggle username
 
 **Fix:**
-
 ```yaml
 # Change from:
 KAGGLE_USERNAME: ${{ secrets.JIRA_USER_EMAIL }}  # WRONG
@@ -171,22 +157,21 @@ KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}  # CORRECT (lungeloluda)
 **Cause:** Using Jira/Kaggle credentials for WordPress
 
 **Fix:**
-
 ```yaml
 # Ensure WordPress uses its own identity:
-WORDPRESS_USER: deedk822@gmail.com # NOT dimakatsomoleli@gmail.com
+WORDPRESS_USER: deedk822@gmail.com  # NOT dimakatsomoleli@gmail.com
 ```
 
 ---
 
 ## 📊 Identity Usage Matrix
 
-| Service       | Email                     | Username      | Password/Token       |
-| ------------- | ------------------------- | ------------- | -------------------- |
-| **WordPress** | deedk822@gmail.com        | N/A           | Application Password |
-| **Kaggle**    | dimakatsomoleli@gmail.com | lungeloluda   | API Key              |
-| **Jira**      | dimakatsomoleli@gmail.com | N/A           | API Token            |
-| **OSS**       | N/A                       | Access Key ID | Secret Key           |
+| Service | Email | Username | Password/Token |
+|---------|-------|----------|----------------|
+| **WordPress** | deedk822@gmail.com | N/A | Application Password |
+| **Kaggle** | dimakatsomoleli@gmail.com | lungeloluda | API Key |
+| **Jira** | dimakatsomoleli@gmail.com | N/A | API Token |
+| **OSS** | N/A | Access Key ID | Secret Key |
 
 ---
 
@@ -218,17 +203,14 @@ Before running workflows, verify:
 ### When to Update Credentials
 
 **WordPress Password:**
-
 - Every 90 days (security best practice)
 - Immediately if compromised
 
 **Kaggle API Key:**
-
 - When changing Kaggle account settings
 - If key is leaked or compromised
 
 **Jira API Token:**
-
 - Every 6 months (Atlassian recommendation)
 - When team members change
 

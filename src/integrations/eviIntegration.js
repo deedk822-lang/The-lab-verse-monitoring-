@@ -36,8 +36,8 @@ export class EviIntegration {
         'content_generation',
         'streaming_response',
         'multi_provider_fallback',
-        'error_handling'
-      ]
+        'error_handling',
+      ],
     };
   }
 
@@ -52,7 +52,7 @@ export class EviIntegration {
         maxTokens: options.maxTokens || 1000,
         temperature: options.temperature || 0.8,
         timeout: this.timeout,
-        provider: options.provider
+        provider: options.provider,
       });
 
       return {
@@ -61,9 +61,10 @@ export class EviIntegration {
           provider: options.provider || 'auto-selected',
           tokens: result.length,
           timestamp: new Date().toISOString(),
-          enhanced: true
-        }
+          enhanced: true,
+        },
       };
+
     } catch (error) {
       console.error('❌ Enhanced generation failed:', error.message);
       throw error;
@@ -73,7 +74,7 @@ export class EviIntegration {
   /**
    * Streaming with Evi enhancements
    */
-  async *enhancedStream(prompt, options = {}) {
+  async* enhancedStream(prompt, options = {}) {
     const enhancedPrompt = this.enhancePrompt(prompt, options);
     let chunkCount = 0;
     let totalContent = '';
@@ -88,8 +89,8 @@ export class EviIntegration {
           metadata: {
             chunkIndex: chunkCount,
             totalLength: totalContent.length,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
 
@@ -98,9 +99,10 @@ export class EviIntegration {
         summary: {
           totalChunks: chunkCount,
           totalLength: totalContent.length,
-          completed: true
-        }
+          completed: true,
+        },
       };
+
     } catch (error) {
       console.error('❌ Enhanced streaming failed:', error.message);
       throw error;
@@ -111,14 +113,7 @@ export class EviIntegration {
    * Multi-provider workflow with intelligent fallback
    */
   async multiProviderGenerate(prompt, options = {}) {
-    const providers = [
-      'gpt-4',
-      'groq-llama',
-      'perplexity',
-      'claude-sonnet',
-      'gemini-pro',
-      'mistral'
-    ];
+    const providers = ['gpt-4', 'groq-llama', 'perplexity', 'claude-sonnet', 'gemini-pro', 'mistral'];
     let lastError = null;
 
     for (const provider of providers) {
@@ -128,20 +123,18 @@ export class EviIntegration {
 
         const result = await this.enhancedGenerate(prompt, {
           ...options,
-          provider
+          provider,
         });
 
         end({ status: 'success' });
-        tokenCounter.inc(
-          { provider: provider, model: 'default' },
-          Math.ceil(result.content.length / 4)
-        );
+        tokenCounter.inc({ provider: provider, model: 'default' }, Math.ceil(result.content.length / 4));
         console.log(`✅ Success with provider: ${provider}`);
         return {
           ...result,
           providerUsed: provider,
-          fallbackAttempts: providers.indexOf(provider)
+          fallbackAttempts: providers.indexOf(provider),
         };
+
       } catch (error) {
         end({ status: 'error' });
         errorCounter.inc({ provider: provider, code: error.status || 500 });
@@ -176,8 +169,9 @@ export class EviIntegration {
       enhancements.push(`Format: ${options.format}`);
     }
 
-    const enhancedPrompt =
-      enhancements.length > 0 ? `${enhancements.join('\n')}\n\nUser Request: ${prompt}` : prompt;
+    const enhancedPrompt = enhancements.length > 0
+      ? `${enhancements.join('\n')}\n\nUser Request: ${prompt}`
+      : prompt;
 
     if (this.debug) {
       console.log('🔍 Enhanced prompt:', enhancedPrompt);
@@ -193,21 +187,22 @@ export class EviIntegration {
     try {
       const testResult = await generateContent('Test message: respond with "OK"', {
         maxTokens: 10,
-        timeout: 5000
+        timeout: 5000,
       });
 
       return {
         status: 'healthy',
         response: testResult,
         timestamp: new Date().toISOString(),
-        providers: hasAvailableProvider()
+        providers: hasAvailableProvider(),
       };
+
     } catch (error) {
       return {
         status: 'unhealthy',
         error: error.message,
         timestamp: new Date().toISOString(),
-        providers: hasAvailableProvider()
+        providers: hasAvailableProvider(),
       };
     }
   }

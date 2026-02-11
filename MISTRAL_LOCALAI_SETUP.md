@@ -54,7 +54,6 @@ node test-mistral-localai.js
 #### Docker Compose Setup
 
 The `docker-compose.yml` includes:
-
 - **LocalAI container**: OpenAI-compatible API server
 - **Health checks**: Automatic monitoring
 - **Model mounting**: Models stored in `./models/` directory
@@ -62,7 +61,6 @@ The `docker-compose.yml` includes:
 #### Model Configuration
 
 The Mistral model is configured via `models/hermes-2-pro-mistral.yaml`:
-
 ```yaml
 name: hermes-2-pro-mistral
 parameters:
@@ -88,7 +86,6 @@ cd mcp-server
 #### Environment Configuration
 
 Add these to your `.env`:
-
 ```bash
 MCP_SERVER_URL=http://localhost:8000
 CONNECTOR_MOD=cdata.postgresql
@@ -133,10 +130,10 @@ The `src/config/providers.js` file includes:
 
 1. **OpenAI GPT-4** (priority 1)
 2. **Perplexity** (priority 2)
-3. **Mistral (LocalAI)** (priority 3) ⭐ _NEW_
+3. **Mistral (LocalAI)** (priority 3) ⭐ *NEW*
 4. **Gemini Pro** (priority 5)
 5. **Groq Llama** (priority 6)
-6. **Mistral Local** (priority 10) ⭐ _NEW_
+6. **Mistral Local** (priority 10) ⭐ *NEW*
 
 ## 🧪 Testing
 
@@ -174,7 +171,6 @@ node test-mistral-localai.js
 ```
 
 Expected output:
-
 ```
 🔍 Testing Mistral & LocalAI Integration
 
@@ -212,7 +208,6 @@ Expected output:
 ### Common Issues
 
 #### LocalAI Not Starting
-
 ```bash
 # Check Docker logs
 docker logs localai
@@ -225,7 +220,6 @@ docker compose restart localai
 ```
 
 #### Model Not Loading
-
 ```bash
 # Check model files
 ls -la models/
@@ -238,7 +232,6 @@ docker logs localai | grep -i model
 ```
 
 #### Connection Refused
-
 ```bash
 # Verify LocalAI is running
 curl http://localhost:8080/v1/models
@@ -254,7 +247,6 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 ```
 
 #### MCP Server Issues
-
 ```bash
 # Check Python version
 python3 --version
@@ -273,13 +265,11 @@ print('✅ Connector available')
 ### Performance Optimization
 
 #### Model Loading
-
 - Model downloads once (~6GB) and caches locally
 - Subsequent starts are much faster
 - Consider SSD for better performance
 
 #### Resource Allocation
-
 ```yaml
 # In docker-compose.yml, adjust for your system:
 localai:
@@ -294,24 +284,22 @@ localai:
 ```
 
 #### Batch Requests
-
 ```javascript
 // Use streaming for better performance
 const stream = await localai.chat.completions.create({
-  model: 'hermes-2-pro-mistral',
-  messages: [{ role: 'user', content: 'Generate a long response' }],
-  stream: true
+  model: "hermes-2-pro-mistral",
+  messages: [{ role: "user", content: "Generate a long response" }],
+  stream: true,
 });
 
 for await (const chunk of stream) {
-  process.stdout.write(chunk.choices[0]?.delta?.content || '');
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
 }
 ```
 
 ## 🚀 Production Deployment
 
 ### Docker Deployment
-
 ```bash
 # Build and deploy
 docker compose -f docker-compose.prod.yml up -d
@@ -321,7 +309,6 @@ docker compose up -d --scale localai=3
 ```
 
 ### Environment Variables for Production
-
 ```bash
 # Security
 LOCALAI_API_KEY=your-secure-api-key
@@ -336,7 +323,6 @@ MCP_SERVER_URL=https://mcp.your-domain.com
 ```
 
 ### CI/CD Integration
-
 ```yaml
 # .github/workflows/test.yml
 - name: Start LocalAI
@@ -357,7 +343,6 @@ MCP_SERVER_URL=https://mcp.your-domain.com
 ## 📊 Monitoring
 
 ### Health Checks
-
 ```bash
 # LocalAI health
 curl http://localhost:8080/v1/models
@@ -370,7 +355,6 @@ curl http://localhost:3000/api/health
 ```
 
 ### Metrics
-
 ```javascript
 // Add to your monitoring
 const metrics = {

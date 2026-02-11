@@ -21,13 +21,11 @@ describe('Vercel AI SDK Integration (mocked)', () => {
         object: 'chat.completion',
         created: Date.now(),
         model: 'gpt-4',
-        choices: [
-          {
-            index: 0,
-            message: { role: 'assistant', content: 'ok' },
-            finish_reason: 'stop'
-          }
-        ],
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: 'ok' },
+          finish_reason: 'stop'
+        }],
         usage: { total_tokens: 5 }
       });
 
@@ -72,7 +70,9 @@ describe('Vercel AI SDK Integration (mocked)', () => {
   });
 
   test('handles network errors', async () => {
-    nock('https://api.openai.com').post('/v1/chat/completions').replyWithError('Network error');
+    nock('https://api.openai.com')
+      .post('/v1/chat/completions')
+      .replyWithError('Network error');
 
     // Test network error handling
     expect(true).toBe(true);

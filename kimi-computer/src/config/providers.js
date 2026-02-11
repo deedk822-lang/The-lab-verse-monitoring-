@@ -5,7 +5,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 // LocalAI (Mistral-7B) - OpenAI-compatible
 export const mistralLocal = createOpenAI({
   baseURL: process.env.LOCALAI_HOST || 'http://localhost:8080/v1',
-  apiKey: process.env.LOCALAI_API_KEY || 'localai'
+  apiKey: process.env.LOCALAI_API_KEY || 'localai',
 });
 
 // Cloud providers (optional fallbacks)

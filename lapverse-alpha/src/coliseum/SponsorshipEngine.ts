@@ -13,19 +13,19 @@ const SponsorshipSchema = z.object({
   brand: z.object({
     logo: z.string().url(),
     colors: z.array(z.string()),
-    message: z.string()
+    message: z.string(),
   }),
   targeting: z.object({
     demographics: z.array(z.string()),
     interests: z.array(z.string()),
-    geolocation: z.array(z.string()).optional()
+    geolocation: z.array(z.string()).optional(),
   }),
   metrics: z.object({
     impressions: z.number().default(0),
     clicks: z.number().default(0),
     conversions: z.number().default(0),
-    engagement: z.number().default(0)
-  })
+    engagement: z.number().default(0),
+  }),
 });
 
 export type Sponsorship = z.infer<typeof SponsorshipSchema>;
@@ -35,27 +35,9 @@ export class SponsorshipEngine {
   private sponsorshipTiers = {
     bronze: { price: 500, impressions: 10000, features: ['logo_placement'] },
     silver: { price: 2000, impressions: 50000, features: ['logo_placement', 'featured_battle'] },
-    gold: {
-      price: 5000,
-      impressions: 150000,
-      features: ['logo_placement', 'featured_battle', 'brand_integration']
-    },
-    platinum: {
-      price: 10000,
-      impressions: 500000,
-      features: ['logo_placement', 'featured_battle', 'brand_integration', 'exclusive_content']
-    },
-    diamond: {
-      price: 25000,
-      impressions: 2000000,
-      features: [
-        'logo_placement',
-        'featured_battle',
-        'brand_integration',
-        'exclusive_content',
-        'ai_model_sponsorship'
-      ]
-    }
+    gold: { price: 5000, impressions: 150000, features: ['logo_placement', 'featured_battle', 'brand_integration'] },
+    platinum: { price: 10000, impressions: 500000, features: ['logo_placement', 'featured_battle', 'brand_integration', 'exclusive_content'] },
+    diamond: { price: 25000, impressions: 2000000, features: ['logo_placement', 'featured_battle', 'brand_integration', 'exclusive_content', 'ai_model_sponsorship'] }
   };
 
   async createSponsorship(sponsorData: Omit<Sponsorship, 'id' | 'metrics'>): Promise<string> {
@@ -66,7 +48,7 @@ export class SponsorshipEngine {
         impressions: 0,
         clicks: 0,
         conversions: 0,
-        engagement: 0
+        engagement: 0,
       }
     };
 
@@ -97,13 +79,10 @@ export class SponsorshipEngine {
     }, 60000); // Update every minute
 
     // Auto-expire after duration
-    setTimeout(
-      () => {
-        this.expireSponsorship(sponsorship.id);
-        clearInterval(trackingInterval);
-      },
-      sponsorship.duration * 24 * 60 * 60 * 1000
-    );
+    setTimeout(() => {
+      this.expireSponsorship(sponsorship.id);
+      clearInterval(trackingInterval);
+    }, sponsorship.duration * 24 * 60 * 60 * 1000);
 
     // Trigger viral promotion
     await this.promoteSponsorship(sponsorship);
@@ -172,19 +151,13 @@ export class SponsorshipEngine {
     sponsorship.metrics.engagement = (clicks / impressions) * 100;
 
     // Update metrics
-    metrics.argillaRecordsLogged.inc(
-      {
-        dataset: 'sponsorship_impressions'
-      },
-      sponsorship.metrics.impressions
-    );
+    metrics.argillaRecordsLogged.inc({
+      dataset: 'sponsorship_impressions'
+    }, sponsorship.metrics.impressions);
 
-    metrics.argillaRecordsLogged.inc(
-      {
+    metrics.argillaRecordsLogged.inc({
         dataset: 'sponsorship_clicks'
-      },
-      sponsorship.metrics.clicks
-    );
+    }, sponsorship.metrics.clicks);
   }
 
   private expireSponsorship(sponsorshipId: string): void {
@@ -240,7 +213,7 @@ export class SponsorshipEngine {
       tierBreakdown: {} as Record<string, number>
     };
 
-    this.activeSponsorships.forEach((sponsorship) => {
+    this.activeSponsorships.forEach(sponsorship => {
       analytics.totalRevenue += sponsorship.investment;
       analytics.totalImpressions += sponsorship.metrics.impressions;
       analytics.averageCTR += sponsorship.metrics.engagement;

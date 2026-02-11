@@ -16,10 +16,10 @@ export class ViralLoopEngine extends EventEmitter {
 
   private initializeViralMechanics(): void {
     // Set base viral coefficients
-    this.viralCoefficients.set('github', 0.3); // 30% conversion
+    this.viralCoefficients.set('github', 0.3);  // 30% conversion
     this.viralCoefficients.set('twitter', 0.25);
     this.viralCoefficients.set('linkedin', 0.2);
-    this.viralCoefficients.set('coliseum', 0.4); // Highest conversion
+    this.viralCoefficients.set('coliseum', 0.4);  // Highest conversion
 
     logger.info('Viral loop engine initialized');
   }
@@ -65,14 +65,14 @@ export class ViralLoopEngine extends EventEmitter {
 
   private calculateViralImpact(source: string, action: string): number {
     const baseImpact = {
-      github_star: 50,
-      github_fork: 100,
-      twitter_share: 25,
-      linkedin_post: 40,
-      coliseum_win: 200,
-      referral_signup: 150,
-      affiliate_click: 30,
-      premium_upgrade: 500
+      'github_star': 50,
+      'github_fork': 100,
+      'twitter_share': 25,
+      'linkedin_post': 40,
+      'coliseum_win': 200,
+      'referral_signup': 150,
+      'affiliate_click': 30,
+      'premium_upgrade': 500
     };
 
     return baseImpact[action as keyof typeof baseImpact] || 10;
@@ -125,12 +125,9 @@ export class ViralLoopEngine extends EventEmitter {
         metrics.a2aTasksCreated.inc({ category: 'viral_distribution' });
 
         // Simulate viral spread
-        setTimeout(
-          () => {
-            this.simulateViralSpread(platform, userId);
-          },
-          Math.random() * 5000 + 1000
-        );
+        setTimeout(() => {
+          this.simulateViralSpread(platform, userId);
+        }, Math.random() * 5000 + 1000);
       }
     }
   }
@@ -141,8 +138,7 @@ export class ViralLoopEngine extends EventEmitter {
     metrics.a2aTasksCreated.inc({ category: 'viral_spread' });
 
     // Trigger secondary actions
-    if (Math.random() > 0.7) {
-      // 30% chance
+    if (Math.random() > 0.7) { // 30% chance
       this.triggerViralCascade(userId, 'viral_share');
     }
   }
@@ -150,9 +146,8 @@ export class ViralLoopEngine extends EventEmitter {
   getViralMetrics(): any {
     return {
       totalSocialProof: Object.fromEntries(this.socialProof),
-      averageViralCoefficient:
-        Array.from(this.viralCoefficients.values()).reduce((a, b) => a + b, 0) /
-        this.viralCoefficients.size,
+      averageViralCoefficient: Array.from(this.viralCoefficients.values())
+        .reduce((a, b) => a + b, 0) / this.viralCoefficients.size,
       activeReferralCodes: this.referralCodes.size
     };
   }

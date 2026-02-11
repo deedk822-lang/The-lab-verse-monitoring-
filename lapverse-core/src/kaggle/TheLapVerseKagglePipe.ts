@@ -39,7 +39,7 @@ export class TheLapVerseKagglePipe {
 
   private async evalNotebook(nbId: string) {
     const features = (await this.deps.engine?.featureStore?.evaluateNotebookFeatures?.(nbId)) || {
-      score: 0.5
+      score: 0.5,
     };
     if (features.score >= 0.85) await this.deps.engine?.featureStore?.mergeTopFeatures?.([nbId]);
     return features;

@@ -7,7 +7,6 @@ An enterprise-grade AI automation system for managing social media content, What
 ## ✨ Features
 
 ### 🤖 AI Content Generation
-
 - **Multi-Provider Support**: Cohere, Groq, Mistral (Ollama), HuggingFace, Kimi
 - **Automatic Fallback**: Seamlessly switches between providers if one fails
 - **Bilingual**: Generates content in Afrikaans and English
@@ -18,14 +17,12 @@ An enterprise-grade AI automation system for managing social media content, What
 This system now supports multimodal inputs (images and text) using the `CohereLabs/aya-vision-32b` model.
 
 **Special Installation Note:** This model requires a specific version of the `transformers` library. Install it directly from GitHub:
-
 ```bash
 pip uninstall -y transformers
 pip install 'git+https://github.com/huggingface/transformers.git@v4.49.0-AyaVision'
 ```
 
 **To test this feature**, run the demonstration script:
-
 ```bash
 python vaal-ai-empire/scripts/test_aya_vision.py
 ```
@@ -33,7 +30,6 @@ python vaal-ai-empire/scripts/test_aya_vision.py
 # Kimi Linear Setup Guide (Production-Ready)
 
 ## Quick Start
-
 ```bash
 # 1. Install
 pip install vllm>=0.4.0
@@ -50,13 +46,11 @@ python test_client.py
 ```
 
 ## Requirements
-
 - 4x A100 80GB GPUs
 - Python 3.10+
 - CUDA 12.1+
 
 ## Client Example
-
 ```python
 from openai import OpenAI
 import os
@@ -73,14 +67,12 @@ response = client.chat.completions.create(
 ```
 
 ### 🖼️ Real Image Generation
-
 - **Multiple Providers**: Stable Diffusion, DALL-E, Replicate, HuggingFace
 - **Local & Cloud**: Support for both local and API-based generation
 - **Business-Specific**: Customized prompts for different business types
 - **Fallback System**: Automatically tries alternative providers on failure
 
 ### 📱 WhatsApp Automation (Twilio)
-
 - **Real Implementation**: Full Twilio integration (no mocks)
 - **Automated Outreach**: Send personalized messages to prospects
 - **Invoice Delivery**: Automated payment notifications
@@ -88,21 +80,18 @@ response = client.chat.completions.create(
 - **Webhook Support**: Receive and process incoming messages
 
 ### 📊 Social Media Management
-
 - **Multi-Platform Posting**: Facebook, Instagram, Twitter, LinkedIn
 - **Provider Options**: Ayrshare, SocialPilot, or direct API integration
 - **Scheduled Publishing**: Queue and automate post delivery
 - **Analytics Tracking**: Monitor post performance
 
 ### 💼 Client Management
-
 - **Complete CRM**: Track clients, subscriptions, and payments
 - **Revenue Tracking**: Monitor income and costs
 - **Usage Analytics**: Track API usage and expenses
 - **Health Monitoring**: System-wide health checks
 
 ### 🎯 Automation
-
 - **Scheduled Tasks**: Weekly content generation, daily posting
 - **Error Recovery**: Automatic retry with exponential backoff
 - **Fallback Logic**: Never fail - always has a backup plan
@@ -166,7 +155,6 @@ chmod +x scripts/setup_production.sh
 ```
 
 This script will:
-
 - ✅ Check Python version
 - ✅ Create virtual environment
 - ✅ Install all dependencies
@@ -188,7 +176,6 @@ AYRSHARE_API_KEY=your_key_here
 ```
 
 **Get API Keys:**
-
 - Cohere: https://cohere.com (free tier available)
 - Twilio: https://twilio.com (WhatsApp sandbox free for testing)
 - Ayrshare: https://ayrshare.com (14-day free trial)
@@ -201,7 +188,6 @@ python scripts/setup_models.py
 ```
 
 This will:
-
 - Install Ollama (for local models)
 - Download Mistral models
 - Setup HuggingFace models
@@ -335,14 +321,12 @@ for service, health in status['services'].items():
 The system automatically selects providers in this order:
 
 **Text Generation:**
-
 1. Groq (fastest, paid) - $0.27/M tokens
 2. Cohere (high quality, paid) - $0.15/M input tokens
 3. Mistral via Ollama (local, free)
 4. HuggingFace (fallback, free but rate-limited)
 
 **Image Generation:**
-
 1. Replicate ($0.005/image)
 2. HuggingFace (free, rate-limited)
 3. Stability AI ($0.02/image)
@@ -387,11 +371,9 @@ ASANA_ACCESS_TOKEN=
 ## 🐛 Troubleshooting
 
 ### "No providers available"
-
 **Solution**: Configure at least one AI provider (Cohere recommended)
 
 ### "Ollama connection failed"
-
 ```bash
 # Start Ollama server
 ollama serve
@@ -401,18 +383,15 @@ curl http://localhost:11434
 ```
 
 ### "Image generation unavailable"
-
 - Configure REPLICATE_API_TOKEN for easiest setup
 - Or set HUGGINGFACE_TOKEN for free (rate-limited)
 - Or install local Stable Diffusion
 
 ### "WhatsApp simulation mode"
-
 - System works without Twilio (simulation mode)
 - To enable real WhatsApp: Configure Twilio credentials
 
 ### Check System Status
-
 ```bash
 python -c "
 from core.system_monitor import get_monitor
@@ -426,7 +405,6 @@ for rec in report['recommendations']:
 ## 📊 Monitoring
 
 ### View Logs
-
 ```bash
 # Application logs
 tail -f logs/daily_automation.log
@@ -436,7 +414,6 @@ sudo journalctl -u vaal-ai-empire -f
 ```
 
 ### Track Costs
-
 ```python
 from core.database import Database
 
@@ -449,7 +426,6 @@ for api, data in summary['api_costs'].items():
 ```
 
 ### Revenue Tracking
-
 ```python
 from core.database import Database
 
@@ -553,7 +529,6 @@ Proprietary - Vaal AI Empire
 ## ✅ What's Been Fixed
 
 ### ❌ Before (Issues):
-
 - Mock implementations everywhere
 - Placeholder images
 - Simulated WhatsApp messages
@@ -564,7 +539,6 @@ Proprietary - Vaal AI Empire
 - No fallback strategies
 
 ### ✅ After (Production-Ready):
-
 - Real AI provider integrations (Cohere, Groq, Mistral, HuggingFace)
 - Real image generation (Replicate, Stability AI, Local SD)
 - Real WhatsApp via Twilio
@@ -581,7 +555,6 @@ Proprietary - Vaal AI Empire
 ## 🎉 Ready for Production!
 
 The system is now fully functional with:
-
 - ✅ No mock-ups or simulations
 - ✅ Real API integrations
 - ✅ Automatic fallbacks

@@ -2,374 +2,291 @@
 // Global variables
 let currentStep = 1;
 let wizardData = {
-  instanceType: '',
-  managementType: '',
-  projectType: '',
-  template: '',
-  projectName: '',
-  projectKey: '',
-  teamMembers: []
+    instanceType: '',
+    managementType: '',
+    projectType: '',
+    template: '',
+    projectName: '',
+    projectKey: '',
+    teamMembers: []
 };
 
 // Template data
 const templates = {
-  software: [
-    {
-      id: 'scrum',
-      name: 'Scrum',
-      description: 'Agile development with sprints and backlogs',
-      category: 'Development'
-    },
-    {
-      id: 'kanban',
-      name: 'Kanban',
-      description: 'Continuous flow development',
-      category: 'Development'
-    },
-    {
-      id: 'bug-tracking',
-      name: 'Bug Tracking',
-      description: 'Track and manage software bugs',
-      category: 'Development'
-    },
-    {
-      id: 'devops',
-      name: 'DevOps',
-      description: 'Development and operations workflow',
-      category: 'Development'
-    }
-  ],
-  service: [
-    {
-      id: 'it-support',
-      name: 'IT Support',
-      description: 'Internal IT service management',
-      category: 'Service'
-    },
-    {
-      id: 'help-desk',
-      name: 'Help Desk',
-      description: 'Customer support and ticketing',
-      category: 'Service'
-    },
-    {
-      id: 'facilities',
-      name: 'Facilities',
-      description: 'Facilities management requests',
-      category: 'Service'
-    },
-    {
-      id: 'hr-service',
-      name: 'HR Service',
-      description: 'Human resources service requests',
-      category: 'Service'
-    }
-  ],
-  work: [
-    {
-      id: 'project-management',
-      name: 'Project Management',
-      description: 'General project tracking and management',
-      category: 'Business'
-    },
-    {
-      id: 'task-tracking',
-      name: 'Task Tracking',
-      description: 'Simple task and to-do management',
-      category: 'Business'
-    },
-    {
-      id: 'marketing',
-      name: 'Marketing',
-      description: 'Marketing campaign management',
-      category: 'Business'
-    },
-    {
-      id: 'event-planning',
-      name: 'Event Planning',
-      description: 'Event coordination and planning',
-      category: 'Business'
-    }
-  ],
-  discovery: [
-    {
-      id: 'product-roadmap',
-      name: 'Product Roadmap',
-      description: 'Product strategy and roadmap planning',
-      category: 'Product'
-    },
-    {
-      id: 'idea-management',
-      name: 'Idea Management',
-      description: 'Collect and prioritize ideas',
-      category: 'Product'
-    },
-    {
-      id: 'competitive-analysis',
-      name: 'Competitive Analysis',
-      description: 'Track competitors and market analysis',
-      category: 'Product'
-    },
-    {
-      id: 'user-research',
-      name: 'User Research',
-      description: 'Manage user feedback and research',
-      category: 'Product'
-    }
-  ]
+    software: [
+        { id: 'scrum', name: 'Scrum', description: 'Agile development with sprints and backlogs', category: 'Development' },
+        { id: 'kanban', name: 'Kanban', description: 'Continuous flow development', category: 'Development' },
+        { id: 'bug-tracking', name: 'Bug Tracking', description: 'Track and manage software bugs', category: 'Development' },
+        { id: 'devops', name: 'DevOps', description: 'Development and operations workflow', category: 'Development' }
+    ],
+    service: [
+        { id: 'it-support', name: 'IT Support', description: 'Internal IT service management', category: 'Service' },
+        { id: 'help-desk', name: 'Help Desk', description: 'Customer support and ticketing', category: 'Service' },
+        { id: 'facilities', name: 'Facilities', description: 'Facilities management requests', category: 'Service' },
+        { id: 'hr-service', name: 'HR Service', description: 'Human resources service requests', category: 'Service' }
+    ],
+    work: [
+        { id: 'project-management', name: 'Project Management', description: 'General project tracking and management', category: 'Business' },
+        { id: 'task-tracking', name: 'Task Tracking', description: 'Simple task and to-do management', category: 'Business' },
+        { id: 'marketing', name: 'Marketing', description: 'Marketing campaign management', category: 'Business' },
+        { id: 'event-planning', name: 'Event Planning', description: 'Event coordination and planning', category: 'Business' }
+    ],
+    discovery: [
+        { id: 'product-roadmap', name: 'Product Roadmap', description: 'Product strategy and roadmap planning', category: 'Product' },
+        { id: 'idea-management', name: 'Idea Management', description: 'Collect and prioritize ideas', category: 'Product' },
+        { id: 'competitive-analysis', name: 'Competitive Analysis', description: 'Track competitors and market analysis', category: 'Product' },
+        { id: 'user-research', name: 'User Research', description: 'Manage user feedback and research', category: 'Product' }
+    ]
 };
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function () {
-  initializeAnimations();
-  loadWizardState();
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAnimations();
+    loadWizardState();
 });
 
 // Animation initialization
 function initializeAnimations() {
-  // Animate feature cards on scroll
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  };
+    // Animate feature cards on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        anime({
-          targets: entry.target,
-          opacity: [0, 1],
-          translateY: [20, 0],
-          duration: 600,
-          easing: 'easeOutQuad'
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                anime({
+                    targets: entry.target,
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 600,
+                    easing: 'easeOutQuad'
+                });
+            }
         });
-      }
-    });
-  }, observerOptions);
+    }, observerOptions);
 
-  // Observe all feature cards
-  document.querySelectorAll('.card-hover').forEach((card) => {
-    card.style.opacity = '0';
-    observer.observe(card);
-  });
+    // Observe all feature cards
+    document.querySelectorAll('.card-hover').forEach(card => {
+        card.style.opacity = '0';
+        observer.observe(card);
+    });
 }
 
 // Wizard functionality
 function openWizard() {
-  document.getElementById('wizardModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  currentStep = 1;
-  updateWizardStep();
+    document.getElementById('wizardModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    currentStep = 1;
+    updateWizardStep();
 
-  // Animate modal entrance
-  anime({
-    targets: '#wizardModal .bg-white',
-    scale: [0.8, 1],
-    opacity: [0, 1],
-    duration: 300,
-    easing: 'easeOutBack'
-  });
+    // Animate modal entrance
+    anime({
+        targets: '#wizardModal .bg-white',
+        scale: [0.8, 1],
+        opacity: [0, 1],
+        duration: 300,
+        easing: 'easeOutBack'
+    });
 }
 
 function closeWizard() {
-  anime({
-    targets: '#wizardModal .bg-white',
-    scale: [1, 0.8],
-    opacity: [1, 0],
-    duration: 200,
-    easing: 'easeInQuad',
-    complete: () => {
-      document.getElementById('wizardModal').classList.add('hidden');
-      document.body.style.overflow = 'auto';
-    }
-  });
-  saveWizardState();
+    anime({
+        targets: '#wizardModal .bg-white',
+        scale: [1, 0.8],
+        opacity: [1, 0],
+        duration: 200,
+        easing: 'easeInQuad',
+        complete: () => {
+            document.getElementById('wizardModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    });
+    saveWizardState();
 }
 
 function nextStep() {
-  if (validateCurrentStep()) {
-    currentStep++;
-    updateWizardStep();
+    if (validateCurrentStep()) {
+        currentStep++;
+        updateWizardStep();
 
-    // Animate step transition
-    const currentStepEl = document.querySelector('.wizard-step.active');
-    const nextStepEl = document.getElementById(`step${currentStep}`);
+        // Animate step transition
+        const currentStepEl = document.querySelector('.wizard-step.active');
+        const nextStepEl = document.getElementById(`step${currentStep}`);
 
-    anime({
-      targets: currentStepEl,
-      opacity: [1, 0],
-      translateX: [-20, 0],
-      duration: 200,
-      complete: () => {
-        currentStepEl.classList.remove('active');
-        nextStepEl.classList.add('active');
         anime({
-          targets: nextStepEl,
-          opacity: [0, 1],
-          translateX: [20, 0],
-          duration: 300
+            targets: currentStepEl,
+            opacity: [1, 0],
+            translateX: [-20, 0],
+            duration: 200,
+            complete: () => {
+                currentStepEl.classList.remove('active');
+                nextStepEl.classList.add('active');
+                anime({
+                    targets: nextStepEl,
+                    opacity: [0, 1],
+                    translateX: [20, 0],
+                    duration: 300
+                });
+            }
         });
-      }
-    });
-  }
+    }
 }
 
 function previousStep() {
-  if (currentStep > 1) {
-    currentStep--;
-    updateWizardStep();
+    if (currentStep > 1) {
+        currentStep--;
+        updateWizardStep();
 
-    // Animate step transition
-    const currentStepEl = document.querySelector('.wizard-step.active');
-    const prevStepEl = document.getElementById(`step${currentStep}`);
+        // Animate step transition
+        const currentStepEl = document.querySelector('.wizard-step.active');
+        const prevStepEl = document.getElementById(`step${currentStep}`);
 
-    anime({
-      targets: currentStepEl,
-      opacity: [1, 0],
-      translateX: [20, 0],
-      duration: 200,
-      complete: () => {
-        currentStepEl.classList.remove('active');
-        prevStepEl.classList.add('active');
         anime({
-          targets: prevStepEl,
-          opacity: [0, 1],
-          translateX: [-20, 0],
-          duration: 300
+            targets: currentStepEl,
+            opacity: [1, 0],
+            translateX: [20, 0],
+            duration: 200,
+            complete: () => {
+                currentStepEl.classList.remove('active');
+                prevStepEl.classList.add('active');
+                anime({
+                    targets: prevStepEl,
+                    opacity: [0, 1],
+                    translateX: [-20, 0],
+                    duration: 300
+                });
+            }
         });
-      }
-    });
-  }
+    }
 }
 
 function updateWizardStep() {
-  // Update progress bar
-  const progress = (currentStep / 6) * 100;
-  document.getElementById('progressBar').style.width = `${progress}%`;
-  document.getElementById('currentStep').textContent = currentStep;
-  document.getElementById('progressPercent').textContent = `${Math.round(progress)}%`;
+    // Update progress bar
+    const progress = (currentStep / 6) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    document.getElementById('currentStep').textContent = currentStep;
+    document.getElementById('progressPercent').textContent = `${Math.round(progress)}%`;
 
-  // Update navigation buttons
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
+    // Update navigation buttons
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
 
-  if (currentStep === 1) {
-    prevBtn.classList.add('hidden');
-  } else {
-    prevBtn.classList.remove('hidden');
-  }
+    if (currentStep === 1) {
+        prevBtn.classList.add('hidden');
+    } else {
+        prevBtn.classList.remove('hidden');
+    }
 
-  if (currentStep === 6) {
-    nextBtn.textContent = 'Complete Setup';
-    nextBtn.onclick = completeSetup;
-    generateSummary();
-  } else {
-    nextBtn.textContent = 'Next Step';
-    nextBtn.onclick = nextStep;
-  }
+    if (currentStep === 6) {
+        nextBtn.textContent = 'Complete Setup';
+        nextBtn.onclick = completeSetup;
+        generateSummary();
+    } else {
+        nextBtn.textContent = 'Next Step';
+        nextBtn.onclick = nextStep;
+    }
 
-  // Load step-specific content
-  if (currentStep === 4) {
-    loadTemplates();
-  }
+    // Load step-specific content
+    if (currentStep === 4) {
+        loadTemplates();
+    }
 }
 
 function validateCurrentStep() {
-  switch (currentStep) {
-    case 1:
-      if (!wizardData.instanceType) {
-        showNotification('Please select an instance type', 'warning');
-        return false;
-      }
-      break;
-    case 2:
-      if (!wizardData.managementType) {
-        showNotification('Please select a management type', 'warning');
-        return false;
-      }
-      break;
-    case 3:
-      if (!wizardData.projectType) {
-        showNotification('Please select a project type', 'warning');
-        return false;
-      }
-      break;
-    case 4:
-      if (!wizardData.template) {
-        showNotification('Please select a template', 'warning');
-        return false;
-      }
-      break;
-    case 5:
-      const projectName = document.getElementById('projectName').value;
-      if (!projectName.trim()) {
-        showNotification('Please enter a project name', 'warning');
-        return false;
-      }
-      wizardData.projectName = projectName;
-      wizardData.projectKey =
-        document.getElementById('projectKey').value || generateProjectKey(projectName);
-      break;
-  }
-  return true;
+    switch (currentStep) {
+        case 1:
+            if (!wizardData.instanceType) {
+                showNotification('Please select an instance type', 'warning');
+                return false;
+            }
+            break;
+        case 2:
+            if (!wizardData.managementType) {
+                showNotification('Please select a management type', 'warning');
+                return false;
+            }
+            break;
+        case 3:
+            if (!wizardData.projectType) {
+                showNotification('Please select a project type', 'warning');
+                return false;
+            }
+            break;
+        case 4:
+            if (!wizardData.template) {
+                showNotification('Please select a template', 'warning');
+                return false;
+            }
+            break;
+        case 5:
+            const projectName = document.getElementById('projectName').value;
+            if (!projectName.trim()) {
+                showNotification('Please enter a project name', 'warning');
+                return false;
+            }
+            wizardData.projectName = projectName;
+            wizardData.projectKey = document.getElementById('projectKey').value || generateProjectKey(projectName);
+            break;
+    }
+    return true;
 }
 
 // Selection functions
 function selectInstanceType(type) {
-  wizardData.instanceType = type;
-  updateSelection('step1', type);
-  setTimeout(() => nextStep(), 500);
+    wizardData.instanceType = type;
+    updateSelection('step1', type);
+    setTimeout(() => nextStep(), 500);
 }
 
 function selectManagementType(type) {
-  wizardData.managementType = type;
-  updateSelection('step2', type);
-  setTimeout(() => nextStep(), 500);
+    wizardData.managementType = type;
+    updateSelection('step2', type);
+    setTimeout(() => nextStep(), 500);
 }
 
 function selectProjectType(type) {
-  wizardData.projectType = type;
-  updateSelection('step3', type);
-  setTimeout(() => nextStep(), 500);
+    wizardData.projectType = type;
+    updateSelection('step3', type);
+    setTimeout(() => nextStep(), 500);
 }
 
 function selectTemplate(templateId) {
-  wizardData.template = templateId;
-  updateTemplateSelection(templateId);
-  setTimeout(() => nextStep(), 500);
+    wizardData.template = templateId;
+    updateTemplateSelection(templateId);
+    setTimeout(() => nextStep(), 500);
 }
 
 function updateSelection(stepId, selectedValue) {
-  const step = document.getElementById(stepId);
-  const cards = step.querySelectorAll('.template-card');
+    const step = document.getElementById(stepId);
+    const cards = step.querySelectorAll('.template-card');
 
-  cards.forEach((card) => {
-    card.classList.remove('selected');
-    if (card.onclick.toString().includes(selectedValue)) {
-      card.classList.add('selected');
-    }
-  });
+    cards.forEach(card => {
+        card.classList.remove('selected');
+        if (card.onclick.toString().includes(selectedValue)) {
+            card.classList.add('selected');
+        }
+    });
 }
 
 function updateTemplateSelection(templateId) {
-  const cards = document.querySelectorAll('#templateGrid .template-card');
-  cards.forEach((card) => {
-    card.classList.remove('selected');
-    if (card.dataset.templateId === templateId) {
-      card.classList.add('selected');
-    }
-  });
+    const cards = document.querySelectorAll('#templateGrid .template-card');
+    cards.forEach(card => {
+        card.classList.remove('selected');
+        if (card.dataset.templateId === templateId) {
+            card.classList.add('selected');
+        }
+    });
 }
 
 // Template management
 function loadTemplates() {
-  const projectType = wizardData.projectType;
-  const templateList = templates[projectType] || [];
-  const grid = document.getElementById('templateGrid');
+    const projectType = wizardData.projectType;
+    const templateList = templates[projectType] || [];
+    const grid = document.getElementById('templateGrid');
 
-  grid.innerHTML = templateList
-    .map(
-      (template) => `
+    grid.innerHTML = templateList.map(template => `
         <div class="template-card p-4 rounded-xl cursor-pointer" data-template-id="${template.id}" onclick="selectTemplate('${template.id}')">
             <div class="flex items-center mb-3">
                 <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
@@ -384,33 +301,31 @@ function loadTemplates() {
             </div>
             <p class="text-sm text-gray-600">${template.description}</p>
         </div>
-    `
-    )
-    .join('');
+    `).join('');
 }
 
 function filterTemplates() {
-  const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
-  const cards = document.querySelectorAll('#templateGrid .template-card');
+    const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
+    const cards = document.querySelectorAll('#templateGrid .template-card');
 
-  cards.forEach((card) => {
-    const templateName = card.querySelector('h4').textContent.toLowerCase();
-    const templateDesc = card.querySelector('p').textContent.toLowerCase();
+    cards.forEach(card => {
+        const templateName = card.querySelector('h4').textContent.toLowerCase();
+        const templateDesc = card.querySelector('p').textContent.toLowerCase();
 
-    if (templateName.includes(searchTerm) || templateDesc.includes(searchTerm)) {
-      card.style.display = 'block';
-    } else {
-      card.style.display = 'none';
-    }
-  });
+        if (templateName.includes(searchTerm) || templateDesc.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
 
 // Team management
 function addTeamMember() {
-  const container = document.querySelector('#step5 .space-y-2');
-  const newMember = document.createElement('div');
-  newMember.className = 'flex items-center space-x-2';
-  newMember.innerHTML = `
+    const container = document.querySelector('#step5 .space-y-2');
+    const newMember = document.createElement('div');
+    newMember.className = 'flex items-center space-x-2';
+    newMember.innerHTML = `
         <input type="email" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" placeholder="teammate@company.com">
         <select class="px-4 py-2 border border-gray-300 rounded-lg">
             <option>Admin</option>
@@ -423,29 +338,24 @@ function addTeamMember() {
             </svg>
         </button>
     `;
-  container.insertBefore(newMember, container.lastElementChild);
+    container.insertBefore(newMember, container.lastElementChild);
 }
 
 function removeTeamMember(button) {
-  button.closest('.flex').remove();
+    button.closest('.flex').remove();
 }
 
 // Utility functions
 function generateProjectKey(projectName) {
-  return (
-    projectName
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '')
-      .substring(0, 5) || 'PROJ'
-  );
+    return projectName.toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 5) || 'PROJ';
 }
 
 function generateSummary() {
-  const selectedTemplate = templates[wizardData.projectType]?.find(
-    (t) => t.id === wizardData.template
-  );
+    const selectedTemplate = templates[wizardData.projectType]?.find(t => t.id === wizardData.template);
 
-  const summaryHTML = `
+    const summaryHTML = `
         <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -454,7 +364,7 @@ function generateSummary() {
                 </div>
                 <div>
                     <h5 class="font-semibold text-gray-700">Management Type</h5>
-                    <p class="text-gray-600">${wizardData.managementType.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</p>
+                    <p class="text-gray-600">${wizardData.managementType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                 </div>
                 <div>
                     <h5 class="font-semibold text-gray-700">Project Type</h5>
@@ -473,146 +383,137 @@ function generateSummary() {
         </div>
     `;
 
-  document.getElementById('summaryContent').innerHTML = summaryHTML;
+    document.getElementById('summaryContent').innerHTML = summaryHTML;
 }
 
 function completeSetup() {
-  // Save setup completion
-  localStorage.setItem(
-    'jiraSetupComplete',
-    JSON.stringify({
-      ...wizardData,
-      completedAt: new Date().toISOString()
-    })
-  );
+    // Save setup completion
+    localStorage.setItem('jiraSetupComplete', JSON.stringify({
+        ...wizardData,
+        completedAt: new Date().toISOString()
+    }));
 
-  // Show completion animation
-  anime({
-    targets: '#wizardModal .bg-white',
-    scale: [1, 1.05, 1],
-    duration: 600,
-    easing: 'easeInOutQuad'
-  });
+    // Show completion animation
+    anime({
+        targets: '#wizardModal .bg-white',
+        scale: [1, 1.05, 1],
+        duration: 600,
+        easing: 'easeInOutQuad'
+    });
 
-  showNotification('Setup configuration saved! Check your email for next steps.', 'success');
+    showNotification('Setup configuration saved! Check your email for next steps.', 'success');
 
-  setTimeout(() => {
-    closeWizard();
-    // Redirect to checklist page
-    window.location.href = 'checklist.html';
-  }, 2000);
+    setTimeout(() => {
+        closeWizard();
+        // Redirect to checklist page
+        window.location.href = 'checklist.html';
+    }, 2000);
 }
 
 // Notification system
 function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-    type === 'success'
-      ? 'bg-green-500 text-white'
-      : type === 'warning'
-        ? 'bg-yellow-500 text-white'
-        : type === 'error'
-          ? 'bg-red-500 text-white'
-          : 'bg-blue-500 text-white'
-  }`;
-  notification.textContent = message;
+    const notification = document.createElement('div');
+    notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
 
-  document.body.appendChild(notification);
+    document.body.appendChild(notification);
 
-  // Animate in
-  anime({
-    targets: notification,
-    translateX: [300, 0],
-    opacity: [0, 1],
-    duration: 300,
-    easing: 'easeOutQuad'
-  });
-
-  // Auto remove
-  setTimeout(() => {
+    // Animate in
     anime({
-      targets: notification,
-      translateX: [0, 300],
-      opacity: [1, 0],
-      duration: 300,
-      easing: 'easeInQuad',
-      complete: () => notification.remove()
+        targets: notification,
+        translateX: [300, 0],
+        opacity: [0, 1],
+        duration: 300,
+        easing: 'easeOutQuad'
     });
-  }, 4000);
+
+    // Auto remove
+    setTimeout(() => {
+        anime({
+            targets: notification,
+            translateX: [0, 300],
+            opacity: [1, 0],
+            duration: 300,
+            easing: 'easeInQuad',
+            complete: () => notification.remove()
+        });
+    }, 4000);
 }
 
 // State management
 function saveWizardState() {
-  localStorage.setItem(
-    'jiraWizardState',
-    JSON.stringify({
-      currentStep,
-      wizardData
-    })
-  );
+    localStorage.setItem('jiraWizardState', JSON.stringify({
+        currentStep,
+        wizardData
+    }));
 }
 
 function loadWizardState() {
-  const saved = localStorage.getItem('jiraWizardState');
-  if (saved) {
-    const state = JSON.parse(saved);
-    wizardData = state.wizardData;
-    // Don't restore step, always start from beginning
-  }
+    const saved = localStorage.getItem('jiraWizardState');
+    if (saved) {
+        const state = JSON.parse(saved);
+        wizardData = state.wizardData;
+        // Don't restore step, always start from beginning
+    }
 }
 
 // Scroll functionality
 function scrollToFeatures() {
-  document.getElementById('features').scrollIntoView({
-    behavior: 'smooth'
-  });
+    document.getElementById('features').scrollIntoView({
+        behavior: 'smooth'
+    });
 }
 
 // Project key auto-generation
-document.addEventListener('DOMContentLoaded', function () {
-  const projectNameInput = document.getElementById('projectName');
-  const projectKeyInput = document.getElementById('projectKey');
+document.addEventListener('DOMContentLoaded', function() {
+    const projectNameInput = document.getElementById('projectName');
+    const projectKeyInput = document.getElementById('projectKey');
 
-  if (projectNameInput && projectKeyInput) {
-    projectNameInput.addEventListener('input', function () {
-      if (!projectKeyInput.value) {
-        projectKeyInput.value = generateProjectKey(this.value);
-      }
-    });
-  }
+    if (projectNameInput && projectKeyInput) {
+        projectNameInput.addEventListener('input', function() {
+            if (!projectKeyInput.value) {
+                projectKeyInput.value = generateProjectKey(this.value);
+            }
+        });
+    }
 });
 
 // Keyboard navigation
-document.addEventListener('keydown', function (e) {
-  if (document.getElementById('wizardModal').classList.contains('hidden')) {
-    return;
-  }
+document.addEventListener('keydown', function(e) {
+    if (document.getElementById('wizardModal').classList.contains('hidden')) {
+        return;
+    }
 
-  if (e.key === 'Escape') {
-    closeWizard();
-  } else if (e.key === 'ArrowRight' && currentStep < 6) {
-    nextStep();
-  } else if (e.key === 'ArrowLeft' && currentStep > 1) {
-    previousStep();
-  }
+    if (e.key === 'Escape') {
+        closeWizard();
+    } else if (e.key === 'ArrowRight' && currentStep < 6) {
+        nextStep();
+    } else if (e.key === 'ArrowLeft' && currentStep > 1) {
+        previousStep();
+    }
 });
 
 // Analytics and tracking (placeholder)
 function trackEvent(eventName, properties = {}) {
-  // Placeholder for analytics tracking
-  console.log('Track Event:', eventName, properties);
+    // Placeholder for analytics tracking
+    console.log('Track Event:', eventName, properties);
 }
 
 // Export for use in other modules
 window.JiraSetupGuide = {
-  openWizard,
-  closeWizard,
-  nextStep,
-  previousStep,
-  selectInstanceType,
-  selectManagementType,
-  selectProjectType,
-  selectTemplate,
-  showNotification,
-  trackEvent
+    openWizard,
+    closeWizard,
+    nextStep,
+    previousStep,
+    selectInstanceType,
+    selectManagementType,
+    selectProjectType,
+    selectTemplate,
+    showNotification,
+    trackEvent
 };

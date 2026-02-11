@@ -6,6 +6,7 @@ import { redis } from '../utils/redis.js';
  * Routes tasks to the specific "Judge" based on the Blueprint.
  */
 export class MCPHandoffRouter {
+
   static async route(payload, options = {}) {
     const requestId = options.requestId || `req_${Date.now()}`;
     const { topic, intent, evidenceUrl } = payload;
@@ -51,6 +52,7 @@ export class MCPHandoffRouter {
         result,
         timestamp: new Date().toISOString()
       };
+
     } catch (error) {
       logger.error(`❌ ${judge} failed execution`, error);
       return { status: 'failed', error: error.message };

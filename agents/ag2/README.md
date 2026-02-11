@@ -4,7 +4,6 @@
 This directory contains the AG2-powered multi-agent orchestration for the Vaal AI Empire. AG2 (formerly AutoGen) enables sophisticated collaboration between specialized AI agents.
 
 🏗️ **Architecture**
-
 ```
 User Request
      ↓
@@ -27,10 +26,9 @@ User Request
 
 🔥 **Agents**
 **1. Financial Sentinel Agent**
-_File: `financial_sentinel_agent.py`_
+*File: `financial_sentinel_agent.py`*
 
 **Capabilities:**
-
 - ✅ Query SARS regulations (semantic search)
 - ✅ Calculate Section 12H learnership allowances
 - ✅ Calculate ETI (Employment Tax Incentive)
@@ -38,13 +36,11 @@ _File: `financial_sentinel_agent.py`_
 - ✅ Provide tax-saving recommendations
 
 **Tools:**
-
 - `query_sars_regulations(query)` - Search SARS knowledge base
 - `calculate_section_12h(learnerships_json)` - Calculate Section 12H recovery
 - `calculate_eti(employees_json)` - Calculate ETI savings
 
 **Example:**
-
 ```python
 from agents.ag2.financial_sentinel_agent import FinancialSentinelAgent
 from autogen import LLMConfig
@@ -62,23 +58,20 @@ response = sentinel.agent.run(
 ```
 
 **2. Guardian Engine Agent**
-_File: `guardian_engine_agent.py`_
+*File: `guardian_engine_agent.py`*
 
 **Capabilities:**
-
 - ✅ Assess load-shedding risk (color-coded alerts)
 - ✅ Query crisis intelligence
 - ✅ Get business impact by sector
 - ✅ Provide proactive recommendations
 
 **Tools:**
-
 - `assess_loadshedding_risk(eaf, unplanned_outages_mw, coal_stockpile_days)` - Risk assessment
 - `query_crisis_intelligence(query)` - Search crisis database
 - `get_business_impact(sector, stage)` - Sector-specific impact
 
 **Example:**
-
 ```python
 from agents.ag2.guardian_engine_agent import GuardianEngineAgent
 
@@ -93,17 +86,15 @@ response = guardian.agent.run(
 ```
 
 **3. Orchestrator**
-_File: `orchestrator.py`_
+*File: `orchestrator.py`*
 
 **Capabilities:**
-
 - ✅ AutoPattern (automatic agent selection)
 - ✅ Sequential workflows (Financial → Guardian → Human)
 - ✅ Tax recovery + crisis analysis workflow
 - ✅ Human-in-the-loop approvals
 
 **Usage:**
-
 ```python
 from agents.ag2.orchestrator import VaalAIEmpireOrchestrator
 
@@ -127,7 +118,6 @@ result = await orchestrator.tax_recovery_workflow({
 ```
 
 🚀 **Quick Start**
-
 1. **Install Dependencies**
    ```bash
    pip install ag2[openai] cohere-ai hnswlib-node
@@ -147,13 +137,10 @@ result = await orchestrator.tax_recovery_workflow({
    COHERE_API_KEY=your_cohere_api_key
    ```
 3. **Run Test**
-
    ```bash
    python agents/ag2/orchestrator.py
    ```
-
    Expected output:
-
    ```
    [Orchestrator] 🔥 Initializing Vaal AI Empire...
    [Financial Sentinel] Initializing SARS knowledge base...
@@ -181,7 +168,6 @@ result = await orchestrator.tax_recovery_workflow({
 
 🎯 **Workflows**
 **AutoPattern Workflow**
-
 ```python
 # AG2 automatically routes to best agent
 result = await orchestrator.auto_pattern(
@@ -190,31 +176,25 @@ result = await orchestrator.auto_pattern(
     max_rounds=15
 )
 ```
-
 **Flow:**
-
 1. AG2 analyzes task
 2. Routes to Financial Sentinel for ETI calculation
 3. Routes to Guardian Engine for load-shedding check
 4. Combines insights into final recommendation
 
 **Sequential Workflow**
-
 ```python
 result = await orchestrator.sequential_workflow(
     task="Calculate tax recovery for my company",
     workflow_steps=['financial_sentinel', 'guardian_engine', 'human']
 )
 ```
-
 **Flow:**
-
 1. Financial Sentinel → Calculates tax recovery
 2. Guardian Engine → Checks crisis risks
 3. Human → Approves final recommendation
 
 **Tax Recovery + Crisis Workflow**
-
 ```python
 result = await orchestrator.tax_recovery_workflow({
     'learnerships': [
@@ -228,9 +208,7 @@ result = await orchestrator.tax_recovery_workflow({
     'current_eaf': 58.2
 })
 ```
-
 **Output:**
-
 ```json
 {
   "tax_recovery": "Total Recovery: R60,000 | Tax Saving: R16,800",
@@ -242,53 +220,47 @@ result = await orchestrator.tax_recovery_workflow({
 🛠️ **Tools Reference**
 **Financial Sentinel Tools**
 
-| Tool                     | Input                    | Output                                 |
-| ------------------------ | ------------------------ | -------------------------------------- |
-| `query_sars_regulations` | `query: str`             | SARS regulations with relevance scores |
-| `calculate_section_12h`  | `learnerships_json: str` | Total recovery + tax savings           |
-| `calculate_eti`          | `employees_json: str`    | Monthly ETI + annual ETI               |
+| Tool                      | Input                   | Output                                 |
+| ------------------------- | ----------------------- | -------------------------------------- |
+| `query_sars_regulations`  | `query: str`            | SARS regulations with relevance scores |
+| `calculate_section_12h`   | `learnerships_json: str`| Total recovery + tax savings           |
+| `calculate_eti`           | `employees_json: str`   | Monthly ETI + annual ETI               |
 
 **Guardian Engine Tools**
 
-| Tool                        | Input                                                                 | Output                                    |
-| --------------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
-| `assess_loadshedding_risk`  | `eaf: float`, `unplanned_outages_mw: int`, `coal_stockpile_days: int` | Color-coded risk alert + recommendations  |
-| `query_crisis_intelligence` | `query: str`                                                          | Crisis intelligence with relevance scores |
-| `get_business_impact`       | `sector: str`, `stage: int`                                           | Business impact + mitigation strategies   |
+| Tool                          | Input                                                     | Output                                              |
+| ----------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
+| `assess_loadshedding_risk`    | `eaf: float`, `unplanned_outages_mw: int`, `coal_stockpile_days: int` | Color-coded risk alert + recommendations        |
+| `query_crisis_intelligence`   | `query: str`                                              | Crisis intelligence with relevance scores         |
+| `get_business_impact`         | `sector: str`, `stage: int`                               | Business impact + mitigation strategies           |
 
 🔐 **Human-in-the-Loop**
 **When to use:**
-
 - Payment approvals (>R10,000)
 - SARS submission confirmations
 - Contract signing
 - Compliance decisions
 
 **Example:**
-
 ```python
 result = await orchestrator.auto_pattern(
     task="Submit R50,000 tax claim to SARS",
     require_human_approval=True  # ← Human must approve
 )
 ```
-
 **Flow:**
-
 1. Financial Sentinel calculates R50,000 recovery
 2. Human Proxy Agent prompts: "APPROVED or REJECT?"
 3. User types: `APPROVED`
 4. Guardian Engine monitors SARS response time
 
 📊 **Performance**
-
 - **Initialization time:** ~10-15 seconds (embeddings generation)
 - **Query latency:** 2-5 seconds (Cohere semantic search + rerank)
 - **Tool execution:** <1 second (local calculations)
 - **AG2 routing:** <500ms (LLM decides which agent)
 
 🧪 **Testing**
-
 ```bash
 # Test individual agents
 python -c "
@@ -310,7 +282,6 @@ python agents/ag2/orchestrator.py
 ```
 
 🎯 **Next Steps**
-
 - Add Talent Accelerator Agent - Skills assessment + job matching
 - Express API Integration - Expose agents via REST endpoints
 - Caching Layer - Redis for repeated queries
@@ -318,7 +289,6 @@ python agents/ag2/orchestrator.py
 - A/B Testing - Compare AG2 vs. manual orchestration
 
 ---
-
-_Built in the Vaal Triangle. Powered by AG2. Verified by SARS._
+*Built in the Vaal Triangle. Powered by AG2. Verified by SARS.*
 
 © 2025 Vaal AI Empire

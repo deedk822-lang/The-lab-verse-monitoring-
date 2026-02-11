@@ -25,15 +25,15 @@ export class HealthChecker {
 
     try {
       const { qwen, kimi } = await connectAI(prompt, this.finops, {
-        artifactId: 'health-check-' + Date.now(), // Traceable
+        artifactId: 'health-check-' + Date.now(),  // Traceable
         tenantId: (req as any).user?.tenantId || 'global'
       });
 
       res.json({
         status: 'healthy',
         metrics,
-        qwen_analysis: qwen, // Structured health summary
-        kimi_evolutions: kimi.evolutions || [] // AI-suggested fixes
+        qwen_analysis: qwen,  // Structured health summary
+        kimi_evolutions: kimi.evolutions || []  // AI-suggested fixes
       });
     } catch (e: any) {
       console.error('AI Health Check Failed:', e);

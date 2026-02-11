@@ -49,11 +49,11 @@ function updateProgress(data) {
   progressMessage.textContent = message;
 
   const progressMap = {
-    started: 20,
-    content_done: 60,
-    seo_done: 80,
-    completed: 100,
-    error: 100
+    'started': 20,
+    'content_done': 60,
+    'seo_done': 80,
+    'completed': 100,
+    'error': 100
   };
 
   const progress = progressMap[status] || 0;
@@ -89,12 +89,8 @@ form.addEventListener('submit', async (e) => {
   const data = {};
 
   formData.forEach((value, key) => {
-    if (
-      key === 'enable_research' ||
-      key === 'include_seo' ||
-      key === 'include_social' ||
-      key === 'thinking_mode'
-    ) {
+    if (key === 'enable_research' || key === 'include_seo' ||
+        key === 'include_social' || key === 'thinking_mode') {
       data[key] = true;
     } else if (key === 'temperature') {
       data[key] = parseFloat(value);
@@ -104,7 +100,7 @@ form.addEventListener('submit', async (e) => {
   });
 
   // Add unchecked checkboxes as false
-  ['enable_research', 'include_seo', 'include_social', 'thinking_mode'].forEach((field) => {
+  ['enable_research', 'include_seo', 'include_social', 'thinking_mode'].forEach(field => {
     if (!data[field]) data[field] = false;
   });
 

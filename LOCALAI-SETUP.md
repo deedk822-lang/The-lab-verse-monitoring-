@@ -218,7 +218,6 @@ node scripts/validate-api-keys.js
 ```
 
 Expected output:
-
 ```
 🔍 API Key Validation Results:
 ================================
@@ -249,11 +248,10 @@ Anthropic Chain: ❌ Claude → ✅ Mistral → ✅ Gemini → ✅ Groq
 
 ```yaml
 ports:
-  - '8081:8080' # Use 8081 instead
+  - "8081:8080"  # Use 8081 instead
 ```
 
 Then update your `.env`:
-
 ```env
 LOCALAI_API_URL=http://localhost:8081/v1
 MISTRAL_API_URL=http://localhost:8081/v1
@@ -274,9 +272,8 @@ wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/
 **Solution**: Use a smaller quantization or reduce context size:
 
 In `models/mistral-7b-instruct.yaml`:
-
 ```yaml
-context_size: 2048 # Reduce from 4096
+context_size: 2048  # Reduce from 4096
 ```
 
 Or download a smaller model (Q3 or Q2 quantization).

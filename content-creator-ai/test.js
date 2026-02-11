@@ -17,13 +17,10 @@ async function testHealthCheck() {
     const response = await axios.get(`${BASE_URL}/api/health`);
     console.log('   ✅ Health check passed');
     console.log('   Status:', response.data.status);
-    console.log(
-      '   Enabled providers:',
-      Object.entries(response.data.providers)
-        .filter(([_, enabled]) => enabled)
-        .map(([name]) => name)
-        .join(', ')
-    );
+    console.log('   Enabled providers:', Object.entries(response.data.providers)
+      .filter(([_, enabled]) => enabled)
+      .map(([name]) => name)
+      .join(', '));
     console.log('');
     return true;
   } catch (error) {
@@ -74,25 +71,21 @@ async function testAuthenticationRequired() {
 async function testContentGeneration() {
   try {
     console.log('4️⃣  Testing content generation with API key...');
-    const response = await axios.post(
-      `${BASE_URL}/api/content`,
-      {
-        topic: 'Test topic for automated testing',
-        media_type: 'text',
-        length: 'short',
-        provider: 'auto',
-        enable_research: false,
-        include_seo: false,
-        include_social: false
+    const response = await axios.post(`${BASE_URL}/api/content`, {
+      topic: 'Test topic for automated testing',
+      media_type: 'text',
+      length: 'short',
+      provider: 'auto',
+      enable_research: false,
+      include_seo: false,
+      include_social: false
+    }, {
+      headers: {
+        'X-API-Key': API_KEY,
+        'Content-Type': 'application/json'
       },
-      {
-        headers: {
-          'X-API-Key': API_KEY,
-          'Content-Type': 'application/json'
-        },
-        timeout: 60000 // 60 second timeout
-      }
-    );
+      timeout: 60000 // 60 second timeout
+    });
 
     if (response.data.success) {
       console.log('   ✅ Content generation successful');
@@ -158,10 +151,10 @@ async function runAllTests() {
 
   console.log('═══════════════════════════════════════════════════════');
   console.log('\n📊 Test Results:');
-  console.log(`   Passed: ${results.filter((r) => r).length}/${results.length}`);
-  console.log(`   Failed: ${results.filter((r) => !r).length}/${results.length}`);
+  console.log(`   Passed: ${results.filter(r => r).length}/${results.length}`);
+  console.log(`   Failed: ${results.filter(r => !r).length}/${results.length}`);
 
-  const allPassed = results.every((r) => r);
+  const allPassed = results.every(r => r);
 
   if (allPassed) {
     console.log('\n✅ All tests passed!\n');

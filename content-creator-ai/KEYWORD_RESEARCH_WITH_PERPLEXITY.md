@@ -22,14 +22,12 @@ Perplexity Deep Search → Content Insights → SEO Strategy
 ## Setup
 
 1. **Environment Variables**
-
 ```
 COHERE_API_KEY=your-cohere-api-key
 PERPLEXITY_API_KEY=your-perplexity-api-key
 ```
 
 2. **Install Dependencies**
-
 ```
 pip install cohere pandas numpy scikit-learn requests
 ```
@@ -37,7 +35,6 @@ pip install cohere pandas numpy scikit-learn requests
 ## Usage
 
 ### Basic Keyword Research with Deep Search
-
 ```
 from services.keywordResearchWithPerplexity import EnhancedKeywordResearchService
 
@@ -61,7 +58,6 @@ for topic in results['enriched_topics']:
 ```
 
 ### API Endpoint
-
 ```
 curl -X POST http://localhost:3000/api/keyword-research/deep-search \
   -H "Content-Type: multipart/form-data" \
@@ -73,25 +69,21 @@ curl -X POST http://localhost:3000/api/keyword-research/deep-search \
 ## Perplexity Deep Search Capabilities
 
 ### 1. Topic Trend Analysis
-
 - Current search trends and interest
 - Emerging subtopics
 - Seasonal patterns
 
 ### 2. Content Gap Analysis
-
 - What competitors are missing
 - Underserved user questions
 - Fresh angle opportunities
 
 ### 3. Search Intent Mapping
-
 - Informational vs transactional intent
 - User pain points
 - Common questions
 
 ### 4. Competitive Landscape
-
 - Top-ranking content analysis
 - Content formats that work
 - Authority sources
@@ -147,7 +139,6 @@ curl -X POST http://localhost:3000/api/keyword-research/deep-search \
 ## Integration Examples
 
 ### Content Calendar Generation
-
 ```
 calendar = service.generate_content_calendar(
     results['enriched_topics'],
@@ -156,7 +147,6 @@ calendar = service.generate_content_calendar(
 ```
 
 ### SEO Brief Export
-
 ```
 service.export_seo_briefs(
     results['enriched_topics'],

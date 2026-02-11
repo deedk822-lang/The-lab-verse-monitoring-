@@ -190,22 +190,18 @@ const axios = require('axios');
 
 async function generateContent() {
   try {
-    const response = await axios.post(
-      'http://localhost:3000/api/content',
-      {
-        topic: 'Getting started with Docker',
-        media_type: 'text',
-        provider: 'google',
-        length: 'medium',
-        include_seo: true
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': 'your-api-key'
-        }
+    const response = await axios.post('http://localhost:3000/api/content', {
+      topic: 'Getting started with Docker',
+      media_type: 'text',
+      provider: 'google',
+      length: 'medium',
+      include_seo: true
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'your-api-key'
       }
-    );
+    });
 
     console.log('Success!', response.data);
 
@@ -217,6 +213,7 @@ async function generateContent() {
 
     // Check cost
     console.log('Cost: $', response.data.costs.totalCost);
+
   } catch (error) {
     console.error('Error:', error.response?.data || error.message);
   }

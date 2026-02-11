@@ -17,7 +17,11 @@ const consoleFormat = printf(({ level, message, timestamp, ...metadata }) => {
 // Create logger instance
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: combine(errors({ stack: true }), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), json()),
+  format: combine(
+    errors({ stack: true }),
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    json()
+  ),
   defaultMeta: {
     service: 'ai-provider-monitoring',
     environment: process.env.NODE_ENV,
@@ -26,7 +30,10 @@ export const logger = winston.createLogger({
   transports: [
     // Console transport
     new winston.transports.Console({
-      format: combine(colorize(), consoleFormat)
+      format: combine(
+        colorize(),
+        consoleFormat
+      )
     }),
 
     // File transport for errors
@@ -50,26 +57,23 @@ export const logger = winston.createLogger({
 if (process.env.LOKI_URL) {
   const LokiTransport = require('winston-loki');
 
-  logger.add(
-    new LokiTransport({
-      host: process.env.LOKI_URL,
-      labels: {
-        app: 'ai-provider-monitoring',
-        environment: process.env.NODE_ENV
-      },
-      json: true,
-      format: json(),
-      replaceTimestamp: true,
-      onConnectionError: (err) => console.error('Loki connection error:', err)
-    })
-  );
+  logger.add(new LokiTransport({
+    host: process.env.LOKI_URL,
+    labels: {
+      app: 'ai-provider-monitoring',
+      environment: process.env.NODE_ENV
+    },
+    json: true,
+    format: json(),
+    replaceTimestamp: true,
+    onConnectionError: (err) => console.error('Loki connection error:', err)
+  }));
 }
 
 // Helper functions
 export const log = {
   info: (message, meta = {}) => logger.info(message, meta),
-  error: (message, error, meta = {}) =>
-    logger.error(message, { error: error.message, stack: error.stack, ...meta }),
+  error: (message, error, meta = {}) => logger.error(message, { error: error.message, stack: error.stack, ...meta }),
   warn: (message, meta = {}) => logger.warn(message, meta),
   debug: (message, meta = {}) => logger.debug(message, meta),
 

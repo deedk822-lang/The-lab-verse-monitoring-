@@ -1,7 +1,6 @@
 # LabVerse Monitoring & AI Project Manager — Comprehensive Architecture
 
 ## Runtime Architecture
-
 ```mermaid
 flowchart LR
     %% Networks
@@ -60,7 +59,6 @@ flowchart LR
 ```
 
 ## Repository Map (Monorepo)
-
 ```mermaid
 flowchart TB
   repo[[The-lab-verse-monitoring-]]
@@ -105,7 +103,6 @@ flowchart TB
 ```
 
 ### Notes
-
 - Runtime diagram derived from `docker-compose.yml` and `docker-compose.kimi.yml` plus Makefile targets.
 - Repo map shows major modules, not every file. Both `scout-monetization/` (root) and `src/scout-monetization/` exist and are shown.
 - `lapverse-core/openapi/lapverse.yaml` documents core API contracts; `Cardinality Guardian` enforces metrics hygiene for Prometheus.

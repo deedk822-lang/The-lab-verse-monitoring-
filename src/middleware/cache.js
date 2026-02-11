@@ -25,9 +25,8 @@ export const cacheMiddleware = async (req, res, next) => {
     // Override res.json to cache the response
     res.json = function (data) {
       // Cache the response
-      redis
-        .setex(cacheKey, CACHE_TTL, JSON.stringify(data))
-        .catch((err) => logger.error('Cache set failed:', err));
+      redis.setex(cacheKey, CACHE_TTL, JSON.stringify(data))
+        .catch(err => logger.error('Cache set failed:', err));
 
       // Call original json method
       return originalJson.call(this, data);

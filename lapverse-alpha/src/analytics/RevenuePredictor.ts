@@ -29,11 +29,10 @@ export class RevenuePredictor {
     const organicGrowth = this.predictOrganicGrowth(days);
 
     const basePrediction = this.predictions.get(`day_${days}`) || 0;
-    const viralMultiplier = 1 + viralCoefficient * 0.5;
-    const sponsorshipMultiplier = 1 + sponsorshipRevenue / 10000;
+    const viralMultiplier = 1 + (viralCoefficient * 0.5);
+    const sponsorshipMultiplier = 1 + (sponsorshipRevenue / 10000);
 
-    const predictedRevenue =
-      basePrediction * viralMultiplier * sponsorshipMultiplier + organicGrowth;
+    const predictedRevenue = basePrediction * viralMultiplier * sponsorshipMultiplier + organicGrowth;
 
     // Update metrics
     metrics.a2aRevenueEarned.inc({ type: 'prediction' }, predictedRevenue);

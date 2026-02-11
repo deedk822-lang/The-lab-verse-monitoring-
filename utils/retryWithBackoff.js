@@ -17,7 +17,7 @@ export async function retryWithBackoff(fn, maxRetries = 3, delay = 1000, maxDela
       lastError = error;
       if (i < maxRetries - 1) {
         const backoffDelay = Math.min(delay * 2 ** i, maxDelay);
-        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
       }
     }
   }

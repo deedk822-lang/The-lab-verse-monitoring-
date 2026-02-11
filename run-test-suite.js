@@ -2,11 +2,7 @@
 // run-test-suite.js - Execute the AI SDK test suite and live workflow
 
 import { generateContent, streamContent } from './src/services/contentGenerator.js';
-import {
-  getActiveProvider,
-  hasAvailableProvider,
-  getAvailableProviders
-} from './src/config/providers.js';
+import { getActiveProvider, hasAvailableProvider, getAvailableProviders } from './src/config/providers.js';
 import { config } from 'dotenv';
 
 // Load environment variables
@@ -14,7 +10,7 @@ config();
 
 async function runTestSuite() {
   console.log('🚀 Starting AI SDK Test Suite and Live Workflow');
-  console.log('='.repeat(60));
+  console.log('=' .repeat(60));
 
   // 1. Check Provider Availability
   console.log('\n📋 STEP 1: Checking Provider Availability');
@@ -29,7 +25,7 @@ async function runTestSuite() {
 
     const availableProviders = getAvailableProviders();
     console.log(`✓ Available providers:`);
-    availableProviders.forEach((provider) => {
+    availableProviders.forEach(provider => {
       console.log(`  - ${provider.displayName} (priority: ${provider.priority})`);
     });
   } else {
@@ -123,7 +119,7 @@ async function runTestSuite() {
   // Final Summary
   console.log('\n' + '='.repeat(60));
   console.log('🎉 AI SDK Test Suite and Live Workflow Complete!');
-  console.log('='.repeat(60));
+  console.log('=' .repeat(60));
 
   if (hasProviders) {
     console.log('✅ All systems operational - ready for production use');

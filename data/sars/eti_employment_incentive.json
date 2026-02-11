@@ -1,7 +1,10 @@
 {
   "title": "SARS Employment Tax Incentive (ETI)",
   "effective_date": "2025-04-01",
-  "sources": ["SARS ETI Official Page", "SARS ETI Changes 2025"],
+  "sources": [
+    "SARS ETI Official Page",
+    "SARS ETI Changes 2025"
+  ],
   "monthly_allowances": {
     "first_12_months": {
       "0-2000": 1500,

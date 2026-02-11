@@ -3,7 +3,6 @@
 This is a test markdown file created to trigger the GitHub Actions workflow that processes AI content.
 
 ## Test Details
-
 - **Purpose**: Verify the workflow triggers correctly
 - **Expected Outcome**: Zapier webhook should receive this content
 - **Timestamp**: October 24, 2025, 11:59 PM SAST

@@ -6,8 +6,8 @@ export class FinOpsTagger {
     port: 8125,
     prefix: 'lapverse.',
     globalTags: {
-      env: process.env.NODE_ENV || 'development'
-    }
+      env: process.env.NODE_ENV || 'development',
+    },
   });
 
   trackLlmUsage(
@@ -29,7 +29,7 @@ export class FinOpsTagger {
       simple: 1,
       intermediate: 2,
       advanced: 4,
-      expert: 8
+      expert: 8,
     };
     const level = task.requirements?.complexity || 'simple';
     return base * (complexity[level] || 1);
@@ -40,12 +40,12 @@ export class FinOpsTagger {
       'aggressive',
       'conservative',
       'balanced',
-      'experimental'
+      'experimental',
     ];
     const perVariant = await this.estimate({
       requirements: {
-        complexity: payload?.requirements?.complexity || 'intermediate'
-      }
+        complexity: payload?.requirements?.complexity || 'intermediate',
+      },
     });
     return competitors.length * perVariant;
   }
@@ -59,11 +59,11 @@ export class FinOpsTagger {
     try {
       this.client.increment('usage.events', 1, {
         tenant: meta.tenant || 'unknown',
-        source: meta.source || 'unknown'
+        source: meta.source || 'unknown',
       });
       if (typeof meta.forecastCost === 'number') {
         this.client.gauge('usage.forecast_cost_usd', meta.forecastCost, {
-          tenant: meta.tenant || 'unknown'
+          tenant: meta.tenant || 'unknown',
         });
       }
     } catch {
@@ -78,7 +78,7 @@ export class FinOpsTagger {
       tenantId: task.tenant || 'unknown',
       costCenter: task.costCenter || 'lapverse-core',
       owner: 'data-team',
-      version: '2.0.0'
+      version: '2.0.0',
     };
   }
 
@@ -95,8 +95,8 @@ export class FinOpsTagger {
     return {
       'project-default': {
         used: 100,
-        limit: 1000
-      }
+        limit: 1000,
+      },
     };
   }
 }

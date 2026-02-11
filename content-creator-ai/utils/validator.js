@@ -3,14 +3,10 @@ const Joi = require('joi');
 const contentRequestSchema = Joi.object({
   topic: Joi.string().min(3).max(500).required(),
   audience: Joi.string().min(2).max(200).default('general audience'),
-  tone: Joi.string()
-    .valid('professional', 'casual', 'friendly', 'formal', 'humorous', 'technical')
-    .default('professional'),
+  tone: Joi.string().valid('professional', 'casual', 'friendly', 'formal', 'humorous', 'technical').default('professional'),
   language: Joi.string().min(2).max(10).default('en'),
   media_type: Joi.string().valid('text', 'image', 'video', 'audio', 'multimodal').required(),
-  provider: Joi.string()
-    .valid('openai', 'google', 'localai', 'zai', 'anthropic', 'perplexity', 'auto')
-    .default('auto'),
+  provider: Joi.string().valid('openai', 'google', 'localai', 'zai', 'anthropic', 'perplexity', 'auto').default('auto'),
 
   // Text-specific options
   length: Joi.when('media_type', {

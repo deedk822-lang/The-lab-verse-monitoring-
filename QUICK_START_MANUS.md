@@ -5,7 +5,6 @@
 **Main Instructions:** `manus-instructions.md` (553 lines)
 
 This file contains everything Manus AI needs to:
-
 1. Install Windsurf on Debian/Ubuntu
 2. Configure 3 MCP servers
 3. Execute 28-platform pipeline
@@ -41,13 +40,11 @@ OUTPUT: Full metrics report showing:
 ## 📋 What Manus Needs
 
 ### Required Information
-
 - GitHub Personal Access Token (classic, with `repo` scope)
 - RankYak webhook secret
 - WordPress.com account credentials (for OAuth)
 
 ### System Requirements
-
 - Debian/Ubuntu machine
 - Node.js 18+
 - Docker installed
@@ -115,7 +112,6 @@ Manus knows it's working when:
 ## 🚨 If Something Fails
 
 Manus should:
-
 1. Check `/tmp/windsurf.log` for errors
 2. Verify prerequisites are installed
 3. Confirm Vercel deployment is live:
@@ -153,7 +149,6 @@ npm list -g --depth=0 | grep http-mcp-server
 ## 🎊 Final Checklist for Manus
 
 Before starting, verify:
-
 - [ ] Have GitHub PAT ready
 - [ ] Have RankYak webhook secret ready
 - [ ] Machine is Debian/Ubuntu
@@ -162,7 +157,6 @@ Before starting, verify:
 - [ ] Internet connection is stable
 
 After completion, verify:
-
 - [ ] WordPress post exists and is published
 - [ ] Inngest dashboard shows completed run
 - [ ] 28 platforms show in results
@@ -215,6 +209,6 @@ Successful completion demonstrates:
 
 ---
 
-_Generated: 2025-11-11_
-_Domain: snout-lard-jumbo-5158.vercel.app_
-_Status: ✅ PRODUCTION READY_
+*Generated: 2025-11-11*
+*Domain: snout-lard-jumbo-5158.vercel.app*
+*Status: ✅ PRODUCTION READY*

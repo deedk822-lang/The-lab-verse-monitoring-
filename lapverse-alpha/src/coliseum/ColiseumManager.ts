@@ -24,12 +24,7 @@ export class ColiseumManager extends EventEmitter {
     super();
   }
 
-  async createBattle(
-    competitors: string[],
-    prompt: string,
-    category: string,
-    severity: string
-  ): Promise<string> {
+  async createBattle(competitors: string[], prompt: string, category: string, severity: string): Promise<string> {
     const battleId = `battle-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
     const battle: Battle = {
@@ -40,7 +35,7 @@ export class ColiseumManager extends EventEmitter {
       status: 'pending',
       createdAt: new Date(),
       category,
-      severity
+      severity,
     };
 
     this.battles.set(battleId, battle);
@@ -93,7 +88,7 @@ export class ColiseumManager extends EventEmitter {
       prompt,
       content: `Response from ${competitor} to: ${prompt}`,
       confidence: Math.random() * 0.5 + 0.5,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -120,7 +115,7 @@ export class ColiseumManager extends EventEmitter {
   }
 
   getActiveBattles(): Battle[] {
-    return Array.from(this.activeBattles).map((id) => this.battles.get(id)!);
+    return Array.from(this.activeBattles).map(id => this.battles.get(id)!);
   }
 }
 

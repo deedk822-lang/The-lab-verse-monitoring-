@@ -195,8 +195,7 @@ export class PerformanceMonitor {
   /**
    * Get performance statistics
    */
-  getStats(period = 3600000) {
-    // Default 1 hour
+  getStats(period = 3600000) { // Default 1 hour
     const since = Date.now() - period;
 
     const filterByTime = (m) => new Date(m.timestamp).getTime() >= since;
@@ -210,7 +209,7 @@ export class PerformanceMonitor {
         return { count: 0, avgDuration: 0, p50: 0, p95: 0, p99: 0 };
       }
 
-      const durations = arr.map((m) => m.duration).sort((a, b) => a - b);
+      const durations = arr.map(m => m.duration).sort((a, b) => a - b);
       const sum = durations.reduce((a, b) => a + b, 0);
 
       return {
@@ -234,18 +233,14 @@ export class PerformanceMonitor {
    * Get slowest metrics
    */
   getSlowest(type, count = 10) {
-    return [...this.metrics[type]].sort((a, b) => b.duration - a.duration).slice(0, count);
+    return [...this.metrics[type]]
+      .sort((a, b) => b.duration - a.duration)
+      .slice(0, count);
   }
 
-  getSlowestRequests(count = 10) {
-    return this.getSlowest('requests', count);
-  }
-  getSlowestQueries(count = 10) {
-    return this.getSlowest('queries', count);
-  }
-  getSlowestApiCalls(count = 10) {
-    return this.getSlowest('apiCalls', count);
-  }
+  getSlowestRequests(count = 10) { return this.getSlowest('requests', count); }
+  getSlowestQueries(count = 10) { return this.getSlowest('queries', count); }
+  getSlowestApiCalls(count = 10) { return this.getSlowest('apiCalls', count); }
 
   /**
    * Get system statistics
@@ -275,8 +270,8 @@ export class PerformanceMonitor {
    */
   formatUptime(seconds) {
     const d = Math.floor(seconds / (3600 * 24));
-    const h = Math.floor((seconds % (3600 * 24)) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
+    const h = Math.floor(seconds % (3600 * 24) / 3600);
+    const m = Math.floor(seconds % 3600 / 60);
 
     return `${d}d ${h}h ${m}m`;
   }

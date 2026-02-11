@@ -1,14 +1,12 @@
 # Enhanced Deployment Recovery Plan for The-lab-verse-monitoring
 
 ## Current Status Summary
-
 - **Preview Deployments**: ✅ Healthy (returning 401 - authentication layer functioning as expected)
 - **Production Deployment**: ❌ Failing (returning 500 - likely due to missing environment variables or dependency issue)
 
 ## Phase 1: Immediate Rollback and Verification
 
 ### 1. Emergency Rollback
-
 Roll back the production deployment to the last known stable version.
 
 ```bash
@@ -47,7 +45,6 @@ curl -I https://the-lab-verse-monitoring.vercel.app/
 ## Phase 2: Root Cause Analysis and Fix Implementation
 
 ### 1. Dependency Installation
-
 Ensure all necessary dependencies are installed locally.
 
 ```bash
@@ -59,7 +56,6 @@ npm install # NOTE: Ensure this is run in the correct project directory.
 ```
 
 ### 2. Temporary Authentication Bypass (For Testing Only)
-
 Temporarily bypass authentication to isolate the issue from the authentication layer. **WARNING: Remove this before final production deployment.**
 
 ```javascript
@@ -75,7 +71,6 @@ const authMiddleware = (req, res, next) => {
 ```
 
 ### 3. Implement Fix
-
 Apply the fix for the 500 error (e.g., missing dependency, incorrect API call).
 
 ```bash
@@ -86,7 +81,6 @@ npm install @octokit/rest
 ## Phase 3: Configuration and Final Testing
 
 ### 1. Local Testing
-
 Test the fix locally with the temporary bypass enabled.
 
 ```bash
@@ -95,7 +89,6 @@ npm run dev
 ```
 
 ### 2. Environment Variables Configuration
-
 Set required environment variables in Vercel. **NOTE: Redeploying is required after adding/updating environment variables in Vercel.**
 
 ```bash
@@ -105,7 +98,6 @@ vercel env add ANOTHER_SECRET production
 ```
 
 ### 3. Health Check Endpoint
-
 Ensure a simple health check endpoint is available.
 
 ```javascript
@@ -116,7 +108,6 @@ app.get('/api/health', (req, res) => {
 ```
 
 ### 4. Authentication Middleware
-
 Review and secure the authentication middleware. **NOTE: Consider storing the JWT securely on the client-side (e.g., using `httpOnly` cookies or secure local storage).**
 
 ```javascript
@@ -140,15 +131,12 @@ const authMiddleware = (req, res, next) => {
 ## Phase 4: Final Deployment and Verification
 
 ### 1. Remove Bypass
-
 **CRITICAL**: Remove the temporary authentication bypass from the code.
 
 ### 2. Deploy to Production
-
 Merge the fix branch and deploy to production.
 
 ### 3. Verification Checklist
-
 - [ ] Production deployment is successful (HTTP 200 on root).
 - [ ] Health check endpoint returns `200 OK`.
 - [ ] Protected endpoints return `401 Unauthorized` without a token.

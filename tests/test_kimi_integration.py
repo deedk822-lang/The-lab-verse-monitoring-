@@ -306,13 +306,15 @@ class TestKimiIntegration:
         from aiohttp.test_utils import make_mocked_request
 
         # Test health endpoint
-        request = make_mocked_request('GET', '/health')
+        app = web.Application()
+        app['kimi'] = kimi_service.kimi
+        request = make_mocked_request('GET', '/health', app=app)
         response = await kimi_service.health(request)
 
         assert response.status == 200
 
         # Test status endpoint
-        request = make_mocked_request('GET', '/status')
+        request = make_mocked_request('GET', '/status', app=app)
         with patch.object(kimi_service.kimi, 'get_status_report', new_callable=AsyncMock) as mock_status:
             mock_status.return_value = {
                 'task_summary': {'total': 0, 'completed': 0, 'completion_percentage': 0},
@@ -337,7 +339,9 @@ class TestKimiIntegration:
             'priority': 'high'
         }
 
-        request = make_mocked_request('POST', '/tasks')
+        app = web.Application()
+        app['kimi'] = kimi_service.kimi
+        request = make_mocked_request('POST', '/tasks', app=app)
         request.json = AsyncMock(return_value=task_data)
 
         response = await kimi_service.create_task(request)

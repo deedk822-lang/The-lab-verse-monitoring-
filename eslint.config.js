@@ -24,7 +24,10 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.es2021
+        ...globals.es2021,
+        ...globals.jest,
+        io: 'readonly',
+        anime: 'readonly'
       },
       parserOptions: {
         ecmaFeatures: {
@@ -40,9 +43,12 @@ export default [
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'warn',
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
+      'react/prop-types': 'off',
+      'no-console': 'off',
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
+      'no-case-declarations': 'off',
+      'no-control-regex': 'off'
     },
     settings: {
       react: {

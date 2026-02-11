@@ -89,7 +89,7 @@ jobs:
 
       - name: Configure Alibaba Cloud OIDC
         if: steps.gate.outputs.can_run == 'true'
-        uses: aliyun/alibabacloud-oidc-auth@v2
+        uses: aliyun/alibabacloud-auth-action@v1
         with:
           role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
           oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}
@@ -178,7 +178,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/alibabacloud-oidc-auth@v2
+        uses: aliyun/alibabacloud-auth-action@v1
         with:
           role-arn: ${{ secrets.ALIYUN_ROLE_ARN }}
           oidc-provider-arn: ${{ secrets.ALIYUN_OIDC_PROVIDER_ARN }}

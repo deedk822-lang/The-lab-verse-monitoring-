@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import httpx
 import openlit
@@ -65,7 +65,7 @@ class RainmakerOrchestrator:
         await self.client.aclose()
         logger.info("Orchestrator HTTP client closed")
 
-    @track(name="judge_call")
+    @track(name="judge_call")  # type: ignore
     async def _call_judge(self, judge_role: str, context: str) -> Dict[str, Any]:
         """
         Selects an appropriate judge model for the given role, sends the provided context as a chat completion prompt, and returns the parsed JSON response from the judge API.
@@ -90,12 +90,12 @@ class RainmakerOrchestrator:
 
         # Priority: Z.ai (GLM) -> Mistral (Role-specific)
         if zai_key:
-            api_key: str = zai_key
-            api_base: str = self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4"
-            model: str = "glm-4.7"
+            api_key = zai_key
+            api_base = str(self.config.get("ZAI_API_BASE") or "https://api.z.ai/api/paas/v4")
+            model = "glm-4.7"
         else:
-            api_key = mistral_key
-            api_base = self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1"
+            api_key = str(mistral_key)
+            api_base = str(self.config.get("MISTRAL_API_BASE") or "https://api.mistral.ai/v1")
             model = JUDGE_MODELS.get(judge_role, "mistral-large-latest")
 
         headers: Dict[str, str] = {
@@ -119,12 +119,13 @@ class RainmakerOrchestrator:
             response: httpx.Response = await self.client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             logger.info(f"Judge call successful: {judge_role}")
-            return response.json()
+            result: Dict[str, Any] = cast(Dict[str, Any], response.json())
+            return result
         except httpx.HTTPError as e:
             logger.error(f"Judge API error ({judge_role}): {str(e)}")
             raise
 
-    @track(name="authority_flow")
+    @track(name="authority_flow")  # type: ignore
     async def run_authority_flow(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the 4-Judge Authority Flow to produce audit, strategy, and implementation outputs for a lead.
@@ -157,12 +158,13 @@ class RainmakerOrchestrator:
             )
 
             logger.info("Authority Flow completed successfully")
-            return {
+            result: Dict[str, Any] = {
                 "status": "success",
-                "audit": audit_res["choices"][0]["message"]["content"],
-                "strategy": vision_res["choices"][0]["message"]["content"],
-                "implementation": op_res["choices"][0]["message"]["content"],
+                "audit": str(audit_res["choices"][0]["message"]["content"]),
+                "strategy": str(vision_res["choices"][0]["message"]["content"]),
+                "implementation": str(op_res["choices"][0]["message"]["content"]),
             }
+            return result
         except Exception as e:
             logger.error(f"Authority Flow error: {str(e)}")
             return {"status": "error", "message": str(e)}

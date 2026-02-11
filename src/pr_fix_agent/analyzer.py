@@ -132,12 +132,36 @@ class PRErrorAnalyzer:
     def parse_github_actions_log(self, log_content: str) -> Dict[str, List[str]]:
         """Parse log to extract errors and warnings."""
         errors = []
+        warnings = []
+        warning_patterns = [r"Warning: (.+)", r"WARN: (.+)", r"DeprecationWarning: (.+)"]
+
         for line in log_content.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            is_error = False
             for pattern in self.error_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
-                    errors.append(line.strip())
+                    errors.append(line)
+                    is_error = True
                     break
-        return {"errors": errors, "warnings": []}
+            if not is_error:
+                for pattern in warning_patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        warnings.append(line)
+                        break
+        return {"errors": errors, "warnings": warnings}
+
+    def get_error_severity(self, error: str) -> str:
+        """Determine severity of an error message."""
+        error_lower = error.lower()
+        if any(p in error_lower for p in ['fatal', 'critical', 'panic']):
+            return 'critical'
+        if any(p in error_lower for p in ['error', 'failed', 'exception']):
+            return 'high'
+        if any(p in error_lower for p in ['warning', 'warn', 'deprecated']):
+            return 'low'
+        return 'medium'
 
     def analyze_error(self, error: str) -> Dict[str, str]:
         """Analyze error with prompt injection defenses."""
@@ -166,10 +190,14 @@ class PRErrorAnalyzer:
     def categorize_error(self, error: str) -> str:
         """Categorize error type."""
         error_lower = error.lower()
-        if 'not found' in error_lower or 'no such file' in error_lower: return 'missing_file'
-        if 'no module named' in error_lower or 'importerror' in error_lower: return 'missing_module'
-        if 'syntaxerror' in error_lower: return 'syntax_error'
-        if 'submodule' in error_lower: return 'submodule_error'
+        if any(p in error_lower for p in ['not found', 'no such file', 'cannot find']):
+            return 'missing_file'
+        if any(p in error_lower for p in ['no module named', 'importerror', 'modulenotfounderror']):
+            return 'missing_module'
+        if any(p in error_lower for p in ['syntaxerror', 'invalid syntax', 'unexpected eof']):
+            return 'syntax_error'
+        if 'submodule' in error_lower:
+            return 'submodule_error'
         return 'unknown'
 
     def _extract_root_cause(self, analysis: str) -> str:
@@ -241,6 +269,35 @@ class PRErrorFixer:
                 with open(req_file, 'a') as f:
                     f.write(f"\n{validated_module}\n")
                 return f"Added {validated_module} to requirements.txt"
+        return None
+
+    def fix_submodule_error(self, error: str) -> Optional[str]:
+        """Fix submodule issues by removing broken entries from .gitmodules."""
+        # Pattern for submodule path in error messages
+        match = re.search(r"submodule path '([^']+)'", error)
+        if not match:
+            return None
+        submodule_path = match.group(1)
+
+        # Basic path traversal protection for submodule path
+        if ".." in submodule_path or submodule_path.startswith("/"):
+            return None
+
+        gitmodules = self.repo_path / ".gitmodules"
+        if not gitmodules.exists():
+            return None
+
+        content = gitmodules.read_text()
+
+        # Simple parser to remove the submodule section
+        # Finds [submodule "path"] up to the next [submodule or EOF
+        pattern = rf'\[submodule "{re.escape(submodule_path)}"\][^\[]*'
+        new_content = re.sub(pattern, "", content, flags=re.MULTILINE)
+
+        if new_content != content:
+            gitmodules.write_text(new_content.strip() + "\n")
+            return f"Removed broken submodule '{submodule_path}' from .gitmodules"
+
         return None
 
     def _parse_requirements(self, req_file: Path) -> set:

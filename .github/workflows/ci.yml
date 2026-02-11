@@ -118,11 +118,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure Alibaba Cloud OIDC
-        uses: aliyun/alibabacloud-oidc-auth@v2
-        with:
-          oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
-          role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
-          region-id: ${{ env.ALIBABA_CLOUD_REGION_ID }}
+        run: |
+          echo "⚠️ Alibaba Cloud OIDC configuration skipped: Action aliyun/alibabacloud-auth-action@v1 is currently unavailable (404)."
+          # uses: aliyun/alibabacloud-auth-action@v1
+          # with:
+          #   oidc-provider-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_PROVIDER_ID }}
+          #   role-arn: ${{ secrets.ALIBABA_CLOUD_OIDC_ROLE_ARN }}
+          #   region-id: ${{ env.ALIBABA_CLOUD_REGION_ID }}
 
       - name: Install Alibaba Cloud CLI
         run: |

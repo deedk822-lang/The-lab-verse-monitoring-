@@ -51,8 +51,8 @@ class SecurityValidator:
         # Check if it's within repo
         try:
             target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        except ValueError as ve:
+            raise SecurityError(f"Path traversal detected: {user_path}") from ve
 
         return target_path
 
@@ -132,7 +132,7 @@ class InputValidator:
         try:
             json.loads(data)
             return True
-        except:
+        except (json.JSONDecodeError, TypeError):
             return False
 
     @staticmethod
@@ -146,11 +146,7 @@ class InputValidator:
             r"exec\s*\(",
         ]
 
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-
-        return True
+        return all(not re.search(pattern, data) for pattern in dangerous_patterns)
 
     @staticmethod
     def validate_url(url: str) -> bool:

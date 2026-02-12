@@ -10,7 +10,10 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from pr_fix_agent.core.config import Settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pr_fix_agent.core.config import Settings
 
 
 def initialize_tracing(settings: Settings) -> None:

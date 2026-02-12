@@ -33,13 +33,11 @@ class AuditLogger:
         # ✅ FIX: Check for existing handlers to prevent duplicates
         existing_handler = None
         for handler in self.logger.handlers:
-            if isinstance(handler, logging.FileHandler):
-                # Check if it's the same file
-                if hasattr(handler, "baseFilename") and handler.baseFilename == str(
-                    self.log_path.resolve()
-                ):
-                    existing_handler = handler
-                    break
+            if isinstance(handler, logging.FileHandler) and hasattr(
+                handler, "baseFilename"
+            ) and handler.baseFilename == str(self.log_path.resolve()):
+                existing_handler = handler
+                break
 
         # ✅ FIX: Only add handler if it doesn't exist
         if existing_handler is None:

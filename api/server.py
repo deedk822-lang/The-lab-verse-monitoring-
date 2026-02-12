@@ -115,7 +115,7 @@ async def hubspot_webhook(
         return {"status": "accepted", "message": "Authority Flow queued"}
     except Exception as e:
         logger.error(f"Webhook processing error: {e!s}")
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
+        raise HTTPException(status_code=500, detail="Webhook processing failed") from e
 
 
 @app.post("/execute", tags=["Tasks"])
@@ -138,7 +138,7 @@ async def execute(payload: ExecuteTaskPayload, request: Request) -> dict:
         return result
     except ValueError as ve:
         logger.warning(f"Validation error: {ve!s}")
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as e:
         logger.error(f"Execution failed: {e!s}")
-        raise HTTPException(status_code=500, detail="Task execution failed")
+        raise HTTPException(status_code=500, detail="Task execution failed") from e

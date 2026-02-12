@@ -164,7 +164,7 @@ class GLMIntegration:
         Assess provided text for security vulnerabilities, compliance issues, risk factors, and remediation recommendations.
 
         Returns:
-            dict: Parsed JSON containing the keys "vulnerabilities", "compliance_issues", "risk_factors", "recommendations", and "overall_risk_score" (0–10). If the model response cannot be parsed as JSON, returns {"analysis": <raw_response>}.
+            dict: Parsed JSON containing the keys "vulnerabilities", "compliance_issues", "risk_factors", "recommendations", and "overall_risk_score" (0-10). If the model response cannot be parsed as JSON, returns {"analysis": <raw_response>}.
         """
         prompt = f"""
         Analyze the following content for potential security issues:

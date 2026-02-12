@@ -145,7 +145,8 @@ class HuggingFaceProvider(LLMProvider):
         self._model = None
         self._tokenizer = None
         self._device = config.device
-        self._model_path = config.model_path or os.path.expanduser("~/.cache/huggingface")
+        from pathlib import Path
+        self._model_path = config.model_path or str(Path("~/.cache/huggingface").expanduser())
         self._current_model_name = None
         self._use_auth_token = config.use_auth_token
 
@@ -444,22 +445,24 @@ class LLMProviderFactory:
 
 
 # Global provider instance
-_global_provider: LLMProvider | None = None
+class GlobalLLMProvider:
+    provider: LLMProvider | None = None
+
+_global_provider_container = GlobalLLMProvider()
 
 
 def set_global_provider(provider: LLMProvider):
     """Set global LLM provider."""
-    global _global_provider
-    _global_provider = provider
+    _global_provider_container.provider = provider
 
 
 def get_global_provider() -> LLMProvider:
     """Get global LLM provider."""
-    if _global_provider is None:
+    if _global_provider_container.provider is None:
         raise RuntimeError(
             "No global LLM provider set. Call set_global_provider() or initialize_from_env() first."
         )
-    return _global_provider
+    return _global_provider_container.provider
 
 
 def initialize_from_env() -> LLMProvider:
@@ -498,9 +501,10 @@ def initialize_from_env() -> LLMProvider:
                 "Get your token from: https://huggingface.co/settings/tokens"
             )
 
+        from pathlib import Path
         config = LLMConfig(
             api_key=hf_token,
-            model_path=os.getenv("HF_MODEL_PATH", os.path.expanduser("~/.cache/huggingface")),
+            model_path=os.getenv("HF_MODEL_PATH", str(Path("~/.cache/huggingface").expanduser())),
             device=os.getenv("HF_DEVICE", "cpu"),
             use_auth_token=True,
         )

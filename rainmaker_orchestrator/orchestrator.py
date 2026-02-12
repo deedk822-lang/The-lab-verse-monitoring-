@@ -185,9 +185,9 @@ class RainmakerOrchestrator:
         task_type: str = task.get("type", "unknown")
 
         if task_type == "authority_task":
-            return await self.run_authority_flow(task)
+            return await self.run_authority_flow(task)  # type: ignore[no-any-return]
         if task_type == "coding_task" and task.get("output_filename"):
-            return await self._run_self_healing(task)
+            return await self._run_self_healing(task)  # type: ignore[no-any-return]
 
         logger.warning(f"Unsupported task type: {task_type}")
         return {"status": "error", "message": f"Task type '{task_type}' not supported"}

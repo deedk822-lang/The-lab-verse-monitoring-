@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 import os
 import time
 from typing import Any
@@ -11,7 +11,7 @@ from pr_fix_agent.ollama_agent import OllamaAgent
 from pr_fix_agent.security.secure_requests import create_ssrf_safe_session
 
 
-class ProviderPolicy(str, Enum):
+class ProviderPolicy(StrEnum):
     """Provider selection strategies."""
 
     AUTO = "auto"

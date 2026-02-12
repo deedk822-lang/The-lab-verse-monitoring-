@@ -187,7 +187,7 @@ async def autoglm_health_check(current_user: User = Depends(get_current_user)):
         and settings.ALIBABA_CLOUD_ACCESS_KEY_ID
     ):
         try:
-            async with create_autoglm_orchestrator() as autoglm:
+            async with create_autoglm_orchestrator():
                 # Just test initialization - don't run full analysis for health check
                 health_status["services"]["autoglm"] = {"status": "operational"}
         except Exception as e:

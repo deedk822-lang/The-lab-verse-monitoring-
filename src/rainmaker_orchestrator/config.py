@@ -9,7 +9,8 @@ class ConfigManager:
 
     def __init__(self, config_file: str = ".env") -> None:
         self.config_file: str = config_file
-        if os.path.exists(config_file):
+        from pathlib import Path
+        if Path(config_file).exists():
             try:
                 from dotenv import load_dotenv
 

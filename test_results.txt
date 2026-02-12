@@ -1,0 +1,54 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests/test_main.py .....                                                 [ 15%]
+tests/test_security.py .........................../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/coverage/control.py:958: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.13.4/messages.html#warning-no-data-collected
+  self._warn("No data was collected.", slug="no-data-collected")
+
+ERROR: Coverage failure: total of 0.00 is less than fail-under=25.00
+                                                                         [100%]
+
+=============================== warnings summary ===============================
+../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: timeout
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.12-final-0 _______________
+
+Name                                           Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------
+src/pr_fix_agent/__init__.py                       9      9  0.00%   6-31
+src/pr_fix_agent/__version__.py                    1      1  0.00%   1
+src/pr_fix_agent/agents/__init__.py                2      2  0.00%   1-3
+src/pr_fix_agent/agents/huggingface.py            94     94  0.00%   1-217
+src/pr_fix_agent/analyzer.py                     165    165  0.00%   6-282
+src/pr_fix_agent/cli.py                          100    100  0.00%   7-211
+src/pr_fix_agent/models.py                        27     27  0.00%   6-152
+src/pr_fix_agent/observability.py                  6      6  0.00%   6-31
+src/pr_fix_agent/observability/__init__.py        42     42  0.00%   5-128
+src/pr_fix_agent/observability/logging.py         12     12  0.00%   5-48
+src/pr_fix_agent/observability/metrics.py         10     10  0.00%   5-49
+src/pr_fix_agent/observability/tracing.py         16     16  0.00%   5-44
+src/pr_fix_agent/ollama_agent.py                 115    115  0.00%   7-282
+src/pr_fix_agent/orchestrator.py                 203    203  0.00%   6-400
+src/pr_fix_agent/production.py                    26     26  0.00%   7-43
+src/pr_fix_agent/security.py                      77     77  0.00%   6-202
+src/pr_fix_agent/security/__init__.py             69     69  0.00%   5-118
+src/pr_fix_agent/security/audit.py                36     36  0.00%   1-113
+src/pr_fix_agent/security/middleware.py           41     41  0.00%   5-113
+src/pr_fix_agent/security/redis_client.py         31     31  0.00%   1-74
+src/pr_fix_agent/security/secure_requests.py      72     72  0.00%   1-165
+----------------------------------------------------------------------------
+TOTAL                                           1154   1154  0.00%
+Coverage HTML written to dir htmlcov
+Coverage XML written to file coverage.xml
+FAIL Required test coverage of 25% not reached. Total coverage: 0.00%
+======================== 32 passed, 1 warning in 4.34s =========================

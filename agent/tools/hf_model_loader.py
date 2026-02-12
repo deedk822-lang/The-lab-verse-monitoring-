@@ -19,7 +19,8 @@ class HuggingFaceModelLoader:
         self.tokenizers: dict[str, object] = {}
         self.pipelines: dict[str, object] = {}
 
-        os.makedirs(config.hf.hf_cache_dir, exist_ok=True)
+        from pathlib import Path
+        Path(config.hf.hf_cache_dir).mkdir(parents=True, exist_ok=True)
         logger.info("✅ HF model cache initialized: %s", config.hf.hf_cache_dir)
 
     async def load_model(self, model_id: str, task: str) -> object:

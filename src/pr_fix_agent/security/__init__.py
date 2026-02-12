@@ -30,8 +30,8 @@ class SecurityValidator:
 
         try:
             target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        except ValueError as ve:
+            raise SecurityError(f"Path traversal detected: {user_path}") from ve
 
         return target_path
 
@@ -86,10 +86,7 @@ class InputValidator:
             r"eval\s*\(",
             r"exec\s*\(",
         ]
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-        return True
+        return all(not re.search(pattern, data) for pattern in dangerous_patterns)
 
     @staticmethod
     def validate_url(url: str) -> bool:

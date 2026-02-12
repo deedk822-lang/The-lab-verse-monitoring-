@@ -44,8 +44,8 @@ class SecurityValidator:
         # Check if it's within repo
         try:
             target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        except ValueError as ve:
+            raise SecurityError(f"Path traversal detected: {user_path}") from ve
 
         return target_path
 

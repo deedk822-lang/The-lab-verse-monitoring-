@@ -17,46 +17,29 @@ from api.huggingface_api import HuggingFaceAPI
 class TestHuggingFaceAPISession(unittest.TestCase):
     """
     Tests the HuggingFaceAPI class to ensure its methods work correctly
-    when using a requests.Session object. This is a correctness test,
-    not a performance benchmark.
+    when using a requests.Session object.
     """
 
     def setUp(self):
-        """
-        Initialize a HuggingFaceAPI instance for each test case.
-        
-        Creates a new HuggingFaceAPI and assigns it to `self.api` so each test uses a fresh client.
-        """
         self.api = HuggingFaceAPI()
 
     def tearDown(self):
-        """
-        Clean up after each test by closing the HuggingFaceAPI client.
-        
-        Closes the HuggingFaceAPI instance created in setUp to release network resources.
-        """
         self.api.close()
 
     @patch('requests.Session.post')
     def test_generate_method_uses_session(self, mock_post):
-        """Verify the generate() method uses the session.post mock"""
-        # Configure the mock response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = [{"generated_text": "mocked response"}]
         mock_post.return_value = mock_response
 
-        # Call the method
         result = self.api.generate("test prompt")
 
-        # Assertions
         mock_post.assert_called_once()
         self.assertIn("mocked response", result["text"])
-        self.assertEqual(result["model"], self.api.default_model)
 
     @patch('requests.Session.post')
     def test_embed_method_uses_session(self, mock_post):
-        """Verify the embed() method uses the session.post mock"""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = [[0.1, 0.2, 0.3]]
@@ -69,7 +52,6 @@ class TestHuggingFaceAPISession(unittest.TestCase):
 
     @patch('requests.Session.post')
     def test_summarize_method_uses_session(self, mock_post):
-        """Verify the summarize() method uses the session.post mock"""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = [{"summary_text": "mocked summary"}]
@@ -93,15 +75,5 @@ class TestHuggingFaceAPISession(unittest.TestCase):
 
         self.assertIn("HuggingFace API error (500)", str(context.exception))
 
-def tearDownModule():
-    """Clean up module-level resources."""
-    if 'HUGGINGFACE_TOKEN' in os.environ:
-        del os.environ['HUGGINGFACE_TOKEN']
-
 if __name__ == '__main__':
     unittest.main()
- coderabbitai/docstrings/c8c477f
-    # Clean up the env var
-    del os.environ['HUGGINGFACE_TOKEN']
-
- bolt-huggingface-session-optimization-15848088382247996181

@@ -4,8 +4,8 @@ VAAL AI Empire - Credit Protection Dashboard
 Real-time monitoring dashboard for credit usage
 """
 
-import sys
 from datetime import datetime
+import sys
 
 from credit_manager import CreditManager
 
@@ -25,6 +25,7 @@ def print_bar(percentage: float, width: int = 30) -> str:
     reset = "\033[0m"
     return f"{color}{bar}{reset} {percentage:.1f}%"
 
+
 def get_status_emoji(percentage: float) -> str:
     """Get status emoji based on percentage"""
     if percentage >= 95:
@@ -35,6 +36,7 @@ def get_status_emoji(percentage: float) -> str:
         return "🟡"
     else:
         return "🟢"
+
 
 def main():
     """Main dashboard function"""
@@ -72,7 +74,7 @@ def main():
     print()
 
     # Circuit breaker status
-    if summary['circuit_breaker']['active']:
+    if summary["circuit_breaker"]["active"]:
         print("🔴 CIRCUIT BREAKER: ACTIVE")
         print(f"   Reason: {summary['circuit_breaker']['reason']}")
         print()
@@ -85,20 +87,20 @@ def main():
     print("DAILY USAGE:")
     print("-" * 70)
 
-    daily = summary['daily']
+    daily = summary["daily"]
 
     # Requests
-    req_pct = daily['percentages']['requests']
+    req_pct = daily["percentages"]["requests"]
     print(f"Requests: {daily['usage']['requests']:3d} / {daily['limits']['requests']:3d}  ", end="")
     print(print_bar(req_pct))
 
     # Tokens
-    tok_pct = daily['percentages']['tokens']
+    tok_pct = daily["percentages"]["tokens"]
     print(f"Tokens:   {daily['usage']['tokens']:6d} / {daily['limits']['tokens']:6d}  ", end="")
     print(print_bar(tok_pct))
 
     # Cost
-    cost_pct = daily['percentages']['cost']
+    cost_pct = daily["percentages"]["cost"]
     print(f"Cost:     ${daily['usage']['cost']:6.4f} / ${daily['limits']['cost']:5.2f}  ", end="")
     print(print_bar(cost_pct))
     print()
@@ -124,7 +126,7 @@ def main():
     print("HOURLY USAGE:")
     print("-" * 70)
 
-    hourly = summary['hourly']
+    hourly = summary["hourly"]
     print(f"Requests:   {hourly['usage']['requests']:3d} / {hourly['limits']['requests']:3d}")
     print(f"Tokens:     {hourly['usage']['tokens']:6d} / {hourly['limits']['tokens']:6d}")
     print(f"Cost:       ${hourly['usage']['cost']:6.4f} / ${hourly['limits']['cost']:5.2f}")
@@ -146,6 +148,7 @@ def main():
     print(f"Data directory: {data_dir}")
     print("Run: python credit_dashboard.py [tier] [data_dir]")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     main()

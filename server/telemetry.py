@@ -5,7 +5,6 @@ to an actual Prometheus/OTLP exporter if desired.
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
@@ -19,7 +18,7 @@ class Counter:
     name: str
     _value: int = 0
 
-    def add(self, increment: int, labels: Dict[str, str] | None = None) -> None:
+    def add(self, increment: int, labels: dict[str, str] | None = None) -> None:
         """
         Increment the counter value.
 

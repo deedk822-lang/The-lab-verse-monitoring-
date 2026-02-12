@@ -8,11 +8,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Dict, Iterable
+from typing import Any
 
-import ollama
 from fastapi import HTTPException, status
 
+import ollama
 from server.telemetry import msg_sent_counter
 from server.utils import resolve_local_model
 
@@ -26,7 +26,7 @@ MODEL_NAME = resolve_local_model(DEFAULT_MODEL)
 log.info("Using Ollama model: %s", MODEL_NAME)
 
 
-def _ollama_stream(prompt: str) -> Dict[str, Any]:
+def _ollama_stream(prompt: str) -> dict[str, Any]:
     """
     Synchronous helper that drives ollama.generate and collects
     the streamed tokens.
@@ -62,7 +62,7 @@ def _ollama_stream(prompt: str) -> Dict[str, Any]:
 async def stream_agent_response(
     query: str,
     session_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Public, async wrapper that requests a response from the local Ollama model.
     It offloads the blocking I/O to a thread-pool, measures latency,

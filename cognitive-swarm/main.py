@@ -2,37 +2,41 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
+from openai import AsyncOpenAI
 import openlit
 import redis.asyncio as redis
 import yaml
-from openai import AsyncOpenAI
 
 openlit.init()
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 class CognitiveSwarmOrchestrator:
     """
     Listens for events, uses a Supervisor Agent to create a plan,
     and executes the plan with a swarm of specialized AI agents.
     """
-    def __init__(self, config: Dict[str, Any]):
+
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.redis_client = redis.from_url(
             f"redis://{config['redis']['host']}:{config['redis']['port']}/{config['redis']['db']}",
-            decode_responses=True
+            decode_responses=True,
         )
         # This client is configured via environment variables for security
-        self.ai_client = AsyncOpenAI(timeout=config['ai_client']['timeout'])
-        self.agent_model_map = config['agent_model_map']
+        self.ai_client = AsyncOpenAI(timeout=config["ai_client"]["timeout"])
+        self.agent_model_map = config["agent_model_map"]
 
     async def _send_slack_notification(self, message: str):
         """Sends a final report to a Slack webhook."""
-        if not self.config['notifications']['slack']['enabled']:
+        if not self.config["notifications"]["slack"]["enabled"]:
             return
 
         webhook_url = os.getenv("SLACK_WEBHOOK_URL")
@@ -49,7 +53,7 @@ class CognitiveSwarmOrchestrator:
         except aiohttp.ClientError as e:
             logger.error(f"Failed to send Slack notification: {e}")
 
-    async def _run_supervisor_agent(self, event_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_supervisor_agent(self, event_payload: dict[str, Any]) -> dict[str, Any]:
         """Generates a strategic plan using the Supervisor Agent."""
         logger.info("Activating Supervisor Agent to generate plan...")
 
@@ -73,7 +77,7 @@ class CognitiveSwarmOrchestrator:
 
         try:
             response = await self.ai_client.chat.completions.create(
-                model=self.agent_model_map['supervisor'],
+                model=self.agent_model_map["supervisor"],
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=0.2,
@@ -85,18 +89,20 @@ class CognitiveSwarmOrchestrator:
             logger.error(f"Supervisor Agent failed: {e}")
             raise
 
-    async def _execute_agent_task(self, task: Dict[str, Any], context: Dict[str, Any]) -> str:
+    async def _execute_agent_task(self, task: dict[str, Any], context: dict[str, Any]) -> str:
         """Executes a single step of the plan with a specialized agent."""
-        agent_type = task['agent_type']
+        agent_type = task["agent_type"]
         model = self.agent_model_map.get(agent_type)
         if not model:
             raise ValueError(f"Invalid agent_type: {agent_type}. No model mapped in config.")
 
-        logger.info(f"Executing Step {task['step']} ('{task['goal']}') with Agent '{agent_type}' ({model})...")
+        logger.info(
+            f"Executing Step {task['step']} ('{task['goal']}') with Agent '{agent_type}' ({model})..."
+        )
 
         # The context provides all prior results to the current agent
         prompt = f"""
-        You are an AI agent of type '{agent_type}'. Your goal is: "{task['goal']}".
+        You are an AI agent of type '{agent_type}'. Your goal is: "{task["goal"]}".
 
         Here is the full context of the mission so far, including the strategic question and results from previous steps:
         ```json
@@ -137,28 +143,28 @@ class CognitiveSwarmOrchestrator:
             "original_event": event_payload,
             "strategic_question": plan_data.get("strategic_question"),
             "execution_plan": plan_data.get("execution_plan"),
-            "step_results": {}
+            "step_results": {},
         }
 
         # Execute plan steps sequentially
-        for task in sorted(context["execution_plan"], key=lambda x: x['step']):
+        for task in sorted(context["execution_plan"], key=lambda x: x["step"]):
             step_result = await self._execute_agent_task(task, context)
             context["step_results"][f"step_{task['step']}"] = {
-                "goal": task['goal'],
-                "result": step_result
+                "goal": task["goal"],
+                "result": step_result,
             }
 
         final_report = f"""
         **Cognitive Swarm Mission Report**
         --------------------------------------
-        **Strategic Question:** {context['strategic_question']}
+        **Strategic Question:** {context["strategic_question"]}
         --------------------------------------
 
         **Final Analysis & Recommendation:**
-        {context['step_results'][f'step_{len(context["execution_plan"])}']['result']}
+        {context["step_results"][f"step_{len(context["execution_plan"])}"]["result"]}
 
         ---
-        *Source Event: {context['original_event']['source']} - {context['original_event']['event_type']}*
+        *Source Event: {context["original_event"]["source"]} - {context["original_event"]["event_type"]}*
         """
 
         logger.info("Mission complete. Final report generated.")
@@ -172,20 +178,23 @@ class CognitiveSwarmOrchestrator:
         """Connects to Redis and listens for events to trigger the swarm."""
         logger.info("Cognitive Swarm Orchestrator is online. Listening for events...")
         pubsub = self.redis_client.pubsub()
-        await pubsub.subscribe(self.config['redis']['events_channel'])
+        await pubsub.subscribe(self.config["redis"]["events_channel"])
 
         while True:
             try:
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=60)
                 if message:
-                    logger.info(f"Received event on channel '{message['channel']}'. Triggering swarm...")
+                    logger.info(
+                        f"Received event on channel '{message['channel']}'. Triggering swarm..."
+                    )
                     # Run handler in the background to not block the listener
-                    asyncio.create_task(self._handle_event(message['data']))
-            except asyncio.TimeoutError:
+                    asyncio.create_task(self._handle_event(message["data"]))
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"Error in event listener loop: {e}")
-                await asyncio.sleep(5) # Avoid rapid-fire errors
+                await asyncio.sleep(5)  # Avoid rapid-fire errors
+
 
 async def main():
     # Load configuration
@@ -203,15 +212,15 @@ async def main():
 
     # Run services concurrently
     logger.info("Starting all services...")
-    await asyncio.gather(
-        orchestrator.listen_for_events(),
-        github_sensor.run()
-    )
+    await asyncio.gather(orchestrator.listen_for_events(), github_sensor.run())
+
 
 if __name__ == "__main__":
     # Ensure required environment variables are set
     if not os.getenv("OPENAI_API_KEY") or not os.getenv("OPENAI_API_BASE"):
-        logger.error("FATAL: OPENAI_API_KEY and OPENAI_API_BASE must be set as environment variables.")
+        logger.error(
+            "FATAL: OPENAI_API_KEY and OPENAI_API_BASE must be set as environment variables."
+        )
         exit(1)
 
     try:

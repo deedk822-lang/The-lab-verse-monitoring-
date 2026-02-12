@@ -5,8 +5,8 @@ Ensures tests import from correct source path.
 """
 
 import os
-import sys
 from pathlib import Path
+import sys
 
 import pytest
 from pytest import fixture
@@ -20,6 +20,7 @@ if str(src_path) not in sys.path:
 # Also add root to path for local imports like server/
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
+
 
 @fixture(scope="session")
 def repo_root_path():
@@ -51,5 +52,7 @@ def configure_env():
 def client():
     """Fixture to provide the test client"""
     from fastapi.testclient import TestClient
+
     from app.main import app
+
     return TestClient(app)

@@ -1,32 +1,30 @@
-from typing import Optional
-
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # AI Models
-    COHERE_API_KEY: Optional[str] = None
-    GROQ_API_KEY: Optional[str] = None
-    MISTRAL_API_KEY: Optional[str] = None
-    HUGGINGFACE_TOKEN: Optional[str] = None
+    COHERE_API_KEY: str | None = None
+    GROQ_API_KEY: str | None = None
+    MISTRAL_API_KEY: str | None = None
+    HUGGINGFACE_TOKEN: str | None = None
 
     # Social Media
-    AYRSHARE_API_KEY: Optional[str] = None
-    SOCIALPILOT_API_KEY: Optional[str] = None
-    TWITTER_BEARER_TOKEN: Optional[str] = None
+    AYRSHARE_API_KEY: str | None = None
+    SOCIALPILOT_API_KEY: str | None = None
+    TWITTER_BEARER_TOKEN: str | None = None
 
     # MailChimp
-    MAILCHIMP_API_KEY: Optional[str] = None
+    MAILCHIMP_API_KEY: str | None = None
     MAILCHIMP_SERVER_PREFIX: str = "us10"
 
     # Asana
-    ASANA_ACCESS_TOKEN: Optional[str] = None
-    ASANA_WORKSPACE_GID: Optional[str] = None
+    ASANA_ACCESS_TOKEN: str | None = None
+    ASANA_WORKSPACE_GID: str | None = None
 
     # Jira
-    JIRA_API_TOKEN: Optional[str] = None
-    JIRA_EMAIL: Optional[str] = None
-    JIRA_BASE_URL: Optional[str] = None
+    JIRA_API_TOKEN: str | None = None
+    JIRA_EMAIL: str | None = None
+    JIRA_BASE_URL: str | None = None
 
     # Application
     APP_NAME: str = "Vaal AI Empire"
@@ -36,5 +34,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+
 
 settings = Settings()

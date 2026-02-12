@@ -5,7 +5,7 @@ Database Session Management
 from __future__ import annotations
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
@@ -41,7 +41,9 @@ async def get_async_db_engine(settings: Settings | None = None):
     if _async_engine is None:
         if settings is None:
             settings = get_settings()
-        async_url = str(settings.database_url).replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+        async_url = str(settings.database_url).replace(
+            "postgresql+psycopg2://", "postgresql+asyncpg://"
+        )
         _async_engine = create_async_engine(
             async_url,
             pool_size=settings.db_pool_size,

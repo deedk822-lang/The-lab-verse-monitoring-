@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from functools import lru_cache
 
 import redis.asyncio as aioredis
 from redis.asyncio import Redis

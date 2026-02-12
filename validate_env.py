@@ -12,6 +12,7 @@ from openai import OpenAI
 # Load environment
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -29,21 +30,16 @@ def validate_zai():
         return False, "ZAI_API_KEY missing"
 
     try:
-        client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.z.ai/api/paas/v4/"
-        )
+        client = OpenAI(api_key=api_key, base_url="https://api.z.ai/api/paas/v4/")
 
         response = client.chat.completions.create(
-            model="glm-4.7",
-            messages=[{"role": "user", "content": "test"}],
-            max_tokens=10
+            model="glm-4.7", messages=[{"role": "user", "content": "test"}], max_tokens=10
         )
 
         return True, f"Z.ai Connected (model: {response.model})"
 
     except Exception as e:
-        return False, f"Z.ai Failed: {str(e)}"
+        return False, f"Z.ai Failed: {e!s}"
 
 
 def validate_perplexity():
@@ -53,21 +49,16 @@ def validate_perplexity():
         return False, "PERPLEXITY_API_KEY missing"
 
     try:
-        client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.perplexity.ai"
-        )
+        client = OpenAI(api_key=api_key, base_url="https://api.perplexity.ai")
 
         client.chat.completions.create(
-            model="sonar-pro",
-            messages=[{"role": "user", "content": "test"}],
-            max_tokens=10
+            model="sonar-pro", messages=[{"role": "user", "content": "test"}], max_tokens=10
         )
 
         return True, "Perplexity Connected (sonar-pro)"
 
     except Exception as e:
-        return False, f"Perplexity Failed: {str(e)}"
+        return False, f"Perplexity Failed: {e!s}"
 
 
 def main():

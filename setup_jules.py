@@ -78,22 +78,24 @@ Jules will **block auto-merge** if:
 3. Protected Paths: 🛡️ **Untouched**
 """
 
+
 # --- File Generation Logic ---
 def create_file(path, content):
     """Create a file with the given content, creating directories as needed."""
-    os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
+    os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"✅ Created: {path}")
+
 
 def main():
     """Main setup function."""
     print("🤖 Initializing Jules Agent Structure...")
-    print("="*50)
+    print("=" * 50)
 
     try:
         # Check if we're in a git repository
-        if not os.path.exists('.git'):
+        if not os.path.exists(".git"):
             print("❌ Error: Not in a git repository root!")
             print("   Please run this script from the repository root.")
             sys.exit(1)
@@ -103,7 +105,7 @@ def main():
         create_file("AGENTS.md", AGENTS_MD)
         create_file(".jules/logs/.gitkeep", "")
 
-        print("="*50)
+        print("=" * 50)
         print("\n🎉 Jules setup complete!")
         print("\n📋 Next steps:")
         print("   1. Review generated files")
@@ -119,6 +121,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error during setup: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

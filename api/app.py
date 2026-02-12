@@ -14,7 +14,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await orchestrator.aclose()
 
+
 app = FastAPI(title="Rainmaker Orchestrator API", lifespan=lifespan)
+
 
 @app.get("/health")
 async def health_check():

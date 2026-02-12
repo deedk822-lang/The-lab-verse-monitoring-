@@ -14,10 +14,11 @@ def run_command(cmd):
         print(f"Error: {result.stderr}")
         return None
 
+
 def main():
     print("🚀 Starting AutoGLM setup for Hisense HLTE270E...")
 
-    with open('hisense_config.json') as f:
+    with open("hisense_config.json") as f:
         config = json.load(f)
 
     print(f"Device: {config['device_model']} ({config['device_variant']})")
@@ -38,9 +39,12 @@ def main():
 
     print("🤖 Starting AutoGLM...")
     os.chdir("Open-AutoGLM")
-    run_command("python3 main.py --base-url http://localhost:8000/v1 --model 'autoglm-phone-9b-multilingual'")
+    run_command(
+        "python3 main.py --base-url http://localhost:8000/v1 --model 'autoglm-phone-9b-multilingual'"
+    )
 
     print("🎉 AutoGLM setup completed!")
+
 
 if __name__ == "__main__":
     main()

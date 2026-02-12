@@ -1,26 +1,37 @@
-import time
 import logging
-import sys
 import os
-import concurrent.futures
+import sys
+import time
 
 # Add the project root to sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
 
 # Mock providers to simulate latency
 class MockProvider:
     def __init__(self, name, latency=1.0):
         self.name = name
         self.latency = latency
+
     def generate(self, *args, **kwargs):
         time.sleep(self.latency)
-        return {"text": f"Mock text from {self.name}", "cost_usd": 0.01, "usage": {"completion_tokens": 10, "total_tokens": 20}}
+        return {
+            "text": f"Mock text from {self.name}",
+            "cost_usd": 0.01,
+            "usage": {"completion_tokens": 10, "total_tokens": 20},
+        }
+
     def generate_content(self, *args, **kwargs):
         time.sleep(self.latency)
-        return {"text": f"Mock text from {self.name}", "usage": {"output_tokens": 10, "cost_usd": 0.01}}
+        return {
+            "text": f"Mock text from {self.name}",
+            "usage": {"output_tokens": 10, "cost_usd": 0.01},
+        }
+
     def generate_for_business(self, *args, **kwargs):
         time.sleep(self.latency)
         return [{"image_url": "mock_url", "cost_usd": 0.01}]
+
 
 def test_performance():
     print("=" * 60)
@@ -28,6 +39,7 @@ def test_performance():
     print("=" * 60)
 
     from services.content_generator import ContentFactory
+
     factory = ContentFactory()
 
     # Mock the providers
@@ -58,6 +70,7 @@ def test_performance():
         print("\n✓ SUCCESS: Parallelization confirmed (Time < 1.5s)")
     else:
         print("\n❌ FAILURE: Still looks sequential")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)

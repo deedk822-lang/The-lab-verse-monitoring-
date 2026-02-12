@@ -20,11 +20,13 @@ def initialize_tracing(settings: Settings) -> None:
     if not settings.otel_enabled or not settings.otel_exporter_otlp_endpoint:
         return
 
-    resource = Resource.create({
-        "service.name": settings.otel_service_name,
-        "service.version": settings.version,
-        "deployment.environment": settings.environment,
-    })
+    resource = Resource.create(
+        {
+            "service.name": settings.otel_service_name,
+            "service.version": settings.version,
+            "deployment.environment": settings.environment,
+        }
+    )
 
     provider = TracerProvider(resource=resource)
 

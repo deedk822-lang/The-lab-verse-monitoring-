@@ -20,10 +20,10 @@ async def run_diagnostic(state):
     logger.info("🔍 Diagnosing pipeline run_id=%s", getattr(state, "run_id", "unknown"))
 
     # Sanitize inputs to prevent prompt injection
-    repo_name = sanitize_prompt(str(getattr(state, 'repo_full_name', 'unknown')), max_length=200)
-    branch = sanitize_prompt(str(getattr(state, 'branch', 'unknown')), max_length=200)
-    workflow = sanitize_prompt(str(getattr(state, 'workflow_name', 'unknown')), max_length=200)
-    error_msg = sanitize_prompt(str(getattr(state, 'error_message', 'unknown')), max_length=1000)
+    repo_name = sanitize_prompt(str(getattr(state, "repo_full_name", "unknown")), max_length=200)
+    branch = sanitize_prompt(str(getattr(state, "branch", "unknown")), max_length=200)
+    workflow = sanitize_prompt(str(getattr(state, "workflow_name", "unknown")), max_length=200)
+    error_msg = sanitize_prompt(str(getattr(state, "error_message", "unknown")), max_length=1000)
 
     diagnostic_prompt = f"""Analyze this pipeline failure and provide structured JSON analysis:
 
@@ -40,8 +40,7 @@ Error: {error_msg}
     # Sanitize failed jobs and logs
     sanitized_failed_jobs = sanitize_prompt(json.dumps(failed_jobs, indent=2), max_length=2000)
     sanitized_logs = sanitize_prompt(
-        logs[:2000] if isinstance(logs, str) else str(logs)[:2000],
-        max_length=2000
+        logs[:2000] if isinstance(logs, str) else str(logs)[:2000], max_length=2000
     )
 
     diagnostic_prompt += f"""Failed Jobs:

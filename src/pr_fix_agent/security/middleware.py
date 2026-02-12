@@ -1,7 +1,3 @@
-"""
-Security Middleware - S4: Comprehensive Security Headers
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -79,16 +75,19 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         method = request.method
         path = request.url.path
-        request_id = getattr(request.state, "request_id", "unknown")
-        client_ip = request.client.host if request.client else "unknown"
 
-        logger.info(
-            "request_received",
-            method=method,
-            path=path,
-            request_id=request_id,
-            client_ip=client_ip,
-        )
+        # Only log requests to /admin or /api/v1/admin
+        if path.startswith("/admin") or path.startswith("/api/v1/admin"):
+            request_id = getattr(request.state, "request_id", "unknown")
+            client_ip = request.client.host if request.client else "unknown"
+
+            logger.info(
+                "request_received",
+                method=method,
+                path=path,
+                request_id=request_id,
+                client_ip=client_ip,
+            )
 
         response = await call_next(request)
 

@@ -84,5 +84,5 @@ async def health_check():
         "status": "healthy",
         "service": "rainmaker-orchestrator",
         "version": settings.VERSION,
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }

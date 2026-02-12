@@ -8,7 +8,6 @@ from pathlib import Path
 
 from pr_fix_agent.core.config import Settings, get_settings
 
-
 class AuditLogger:
     """
     Append-only audit logger for compliance (SOC 2, GDPR).
@@ -42,13 +41,17 @@ class AuditLogger:
 
         # ✅ FIX: Only add handler if it doesn't exist
         if existing_handler is None:
-            # Create append-only file handler
+            # Create append-only file handler with secure permissions
             handler = logging.FileHandler(
                 self.log_path,
                 mode='a',  # Append only (immutable)
                 encoding='utf-8',
             )
-            handler.setFormatter(logging.Formatter('%(message)s'))
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            handler.setLevel(logging.INFO)  # Set the log level to avoid unnecessary logs
+
+            # Set file permissions
+            self.log_path.chmod(0o640)
 
             self.logger.addHandler(handler)
         else:

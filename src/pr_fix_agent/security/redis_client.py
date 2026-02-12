@@ -48,11 +48,7 @@ async def get_redis_client(settings: Settings | None = None) -> Redis:
         if _redis_client is not None:
             return _redis_client
 
-        # Create client
-        if settings is None:
-            settings = get_settings()
-
-        # ✅ FIX: aioredis.from_url is synchronous - don't await it
+        # Create client without awaiting, as aioredis.from_url is synchronous
         _redis_client = aioredis.from_url(
             str(settings.redis_url),
             encoding="utf-8",

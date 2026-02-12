@@ -4,7 +4,6 @@ from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
 
-
 class ConfigManager:
     """Centralized configuration management with environment variable support."""
 
@@ -41,3 +40,34 @@ class ConfigManager:
         if value in ("false", "0", "no", "off"):
             return False
         return default
+
+    def decrypt_value(self, encrypted_value: str, key_name: str) -> str:
+        # Implement a secure method to decrypt the encrypted value using a secure algorithm (e.g., AES)
+        # This is just a placeholder and should be replaced with actual decryption logic
+        pass
+
+    def get_decrypted_int(self, key: str, default: int = 0) -> int:
+        encrypted_value: str | None = self.get(key)
+        if encrypted_value is not None:
+            decrypted_value = self.decrypt_value(encrypted_value, key)
+            try:
+                return int(decrypted_value)
+            except ValueError:
+                logger.warning("Invalid integer config after decryption: %s=%s, using default=%d", key, decrypted_value, default)
+                return default
+        else:
+            return default
+
+    def get_decrypted_bool(self, key: str, default: bool = False) -> bool:
+        encrypted_value: str | None = self.get(key)
+        if encrypted_value is not None:
+            decrypted_value = self.decrypt_value(encrypted_value, key)
+            if decrypted_value in ("true", "1", "yes", "on"):
+                return True
+            elif decrypted_value in ("false", "0", "no", "off"):
+                return False
+            else:
+                logger.warning("Invalid boolean config after decryption: %s=%s, using default=%s", key, decrypted_value, default)
+                return default
+        else:
+            return default

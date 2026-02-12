@@ -27,7 +27,7 @@ def main():
         return 0
 
     repo_path = Path(args.repo_path).resolve()
-    if not repo_path.exists() or not repo_path.is_dir():
+    if not repo_path.is_dir() or not repo_path.exists():
         print(f"❌ Error: Repository path invalid: {repo_path}")
         return 2
 
@@ -35,7 +35,7 @@ def main():
 
     # Initialize components
     agent = OllamaAgent(model=args.model)
-    validator = SecurityValidator(repo_path)
+    validator = SecurityValidator(repo_path=repo_path)
     analyzer = PRErrorAnalyzer(agent=agent)
     fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path), validator=validator)
 

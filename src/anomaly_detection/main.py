@@ -16,10 +16,6 @@ from src.anomaly_detection.enhanced_alerting import (
     EnhancedAlertingSystem,
 )
 
-from src.anomaly_detection.explainability import (
-    AdvancedExplainabilityEngine,
-)
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,14 +34,15 @@ cloud_detector = MultiCloudAnomalyDetector(
     cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
 )
 alerting_system = EnhancedAlertingSystem()
-explainer = None
 
+# Initialize the Explainability engine only if not running tests
+if not os.environ.get("PYTEST_RUNNING"):
+    explainer = None
 
 # --- Lifecycle Events ---
 @app.on_event("startup")
 async def startup_event():
     """Actions to take on application startup."""
-    global explainer
     logger.info("Anomaly Detection Service is starting up.")
     if not os.environ.get("PYTEST_RUNNING"):
         background_data = np.random.rand(10, 10, 1)
@@ -61,7 +58,6 @@ async def startup_event():
 async def shutdown_event():
     """Actions to take on application shutdown."""
     logger.info("Anomaly Detection Service is shutting down.")
-
 
 # --- API Endpoints ---
 @app.get("/health", summary="Health Check", tags=["Infrastructure"])

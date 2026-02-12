@@ -48,7 +48,21 @@ class LLMCost:
 
 class BudgetExceededError(Exception):
     """Raised when LLM usage exceeds budget"""
-    pass
+
+    def __init__(self, message, last_costs=None):
+        super().__init__(message)
+        self.last_costs = last_costs if last_costs else []
+
+    def get_summary(self):
+        """Get cost summary"""
+        return {
+            "total_spent_usd": self.total_spent,
+            "budget_usd": self.budget_usd,
+            "remaining_usd": self.budget_usd - self.total_spent,
+            "calls": len(self.costs),
+            "total_tokens": sum(c.total_tokens for c in self.costs),
+            "costs": [asdict(c) for c in self.costs],
+        }
 
 
 class CostTracker:
@@ -108,7 +122,8 @@ class CostTracker:
 
         if self.total_spent > self.budget_usd:
             raise BudgetExceededError(
-                f"Budget exceeded: ${self.total_spent:.4f} > ${self.budget_usd:.4f}"
+                "Budget exceeded: ${:.4f} > ${:.4f}".format(self.total_spent, self.budget_usd),
+                last_costs=self.costs[-5:],  # Include the last 5 costs for audit
             )
 
         return cost
@@ -126,7 +141,7 @@ class CostTracker:
 
 
 __all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
+    "BudgetExceededError",
+    "CostTracker",
+    "LLMCost",
 ]

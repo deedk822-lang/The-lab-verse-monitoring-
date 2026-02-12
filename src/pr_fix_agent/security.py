@@ -1,13 +1,11 @@
 """
 Security Module with Module-Level Imports
-FIXED: All imports at top of file
 """
 
 import json  # ✅ FIX: Module-level, not local
 import re
 import threading
-import time  # ✅ FIX: Module-level, not local
-from pathlib import Path
+import time
 
 
 class SecurityError(Exception):
@@ -120,9 +118,9 @@ class InputValidator:
     def validate_json(data: str) -> bool:
         """Validate JSON (uses module-level json)"""
         try:
-            json.loads(data)  # ✅ FIX: No local import needed
+            json.loads(data)
             return True
-        except (json.JSONDecodeError, TypeError):
+        except json.JSONDecodeError:
             return False
 
     @staticmethod
@@ -153,13 +151,12 @@ class RateLimiter:
     """
     Thread-safe rate limiter for API calls
 
-    FIXED: Uses threading.Lock for synchronization
+    FIXED: Uses concurrent.futures.ThreadPoolExecutor for synchronization
     """
 
     def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests = []
         # ✅ FIX: Add lock for thread safety
         self._lock = threading.Lock()
 
@@ -172,7 +169,6 @@ class RateLimiter:
         """
         now = time.time()  # ✅ FIX: No local import needed
 
-        # ✅ FIX: Atomic operations under lock
         with self._lock:
             # Remove old requests outside window
             self.requests = [

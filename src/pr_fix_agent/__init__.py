@@ -32,5 +32,5 @@ __all__ = [
     'CodeReviewOrchestrator',
 ]
 
-__version__ = '0.1.0'
-__author__ = 'PR Fix Agent Team'
+__version__ = "0.1.0"
+__author__ = "PR Fix Agent Team"

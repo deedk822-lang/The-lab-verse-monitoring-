@@ -1,6 +1,5 @@
 """
 Unified CLI Entry Point
-FIXES: Entry point documentation mismatch
 PROVIDES: Single pr-fix-agent command with subcommands
 """
 
@@ -202,9 +201,12 @@ def main():
     # fix command
     # ========================================================================
 
-    fix_parser = subparsers.add_parser(
-        'fix',
-        help='Run production error fixing'
+    fix_parser = subparsers.add_parser("fix", help="Run production error fixing")
+
+    fix_parser.add_argument(
+        "--repo-path",
+        default=".",
+        help="Path to repository (default: current directory)",
     )
 
     fix_parser.add_argument(

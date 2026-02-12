@@ -13,7 +13,8 @@ from typing import List, Optional
 
 import structlog
 
-from pr_fix_agent.ollama_agent import CostTracker, OllamaAgent
+from pr_fix_agent.observability import ObservableOllamaAgent
+from pr_fix_agent.ollama_agent import CostTracker
 
 logger = structlog.get_logger()
 
@@ -86,12 +87,12 @@ class CodeReviewOrchestrator:
         self.cost_tracker = cost_tracker or CostTracker(budget_usd=10.0)
 
         # Initialize agents
-        self.reasoning_agent = OllamaAgent(
+        self.reasoning_agent = ObservableOllamaAgent(
             model=reasoning_model,
             cost_tracker=self.cost_tracker
         )
 
-        self.coding_agent = OllamaAgent(
+        self.coding_agent = ObservableOllamaAgent(
             model=coding_model,
             cost_tracker=self.cost_tracker
         )
@@ -212,8 +213,6 @@ Snippet: {finding.code_snippet}
                 f.write(body)
         else:
             print(body)
-
-    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

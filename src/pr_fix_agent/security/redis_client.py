@@ -48,12 +48,11 @@ async def get_redis_client(settings: Settings | None = None) -> Redis:
         if _redis_client is not None:
             return _redis_client
 
-        # Create client
+        # Create client - use result() to handle synchronous behavior
         if settings is None:
             settings = get_settings()
 
-        # ✅ FIX: aioredis.from_url is synchronous - don't await it
-        _redis_client = aioredis.from_url(
+        _container.client = aioredis.from_url(
             str(settings.redis_url),
             encoding="utf-8",
             decode_responses=True,
@@ -70,6 +69,6 @@ async def close_redis() -> None:
     if _redis_client is not None:
         lock = _get_lock()
         async with lock:
-            if _redis_client is not None:
-                await _redis_client.close()
-                _redis_client = None
+            if _container.client is not None:
+                await _container.client.close()
+                _container.client = None

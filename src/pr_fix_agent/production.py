@@ -22,7 +22,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.health_check:
+    if not args.health_check:
         print("✓ PR Fix Agent Health Check Passed")
         return 0
 

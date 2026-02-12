@@ -4,16 +4,14 @@ from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
 
-
 class ConfigManager:
     """Centralized configuration management with environment variable support."""
 
-    def __init__(self, config_file: str = ".env") -> None:
-        self.config_file: str = config_file
-        if os.path.exists(config_file):
+    def __init__(self, config_file: str | None = None) -> None:
+        self.config_file: str | None = config_file
+        from pathlib import Path
+        if Path(config_file).exists():
             try:
-                from dotenv import load_dotenv
-                load_dotenv(config_file)
                 logger.info("Configuration loaded from %s", config_file)
             except ImportError:
                 logger.warning("python-dotenv not available, using environment variables only")
@@ -41,3 +39,11 @@ class ConfigManager:
         if value in ("false", "0", "no", "off"):
             return False
         return default
+
+# Example usage
+config_manager = ConfigManager()
+api_key = config_manager.get("API_KEY")
+if api_key:
+    print(f"API Key: {api_key}")
+else:
+    print("API Key not configured.")

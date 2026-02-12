@@ -16,10 +16,6 @@ from src.anomaly_detection.enhanced_alerting import (
     EnhancedAlertingSystem,
 )
 
-from src.anomaly_detection.explainability import (
-    AdvancedExplainabilityEngine,
-)
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,12 +30,6 @@ app = FastAPI(
 # --- Global Components (Initialize on startup) ---
 lstm_model = LSTMAnomalyDetector()
 transformer_model = TransformerAnomalyDetector()
-cloud_detector = MultiCloudAnomalyDetector(
-    cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
-)
-alerting_system = EnhancedAlertingSystem()
-explainer = None
-
 
 # --- Lifecycle Events ---
 @app.on_event("startup")

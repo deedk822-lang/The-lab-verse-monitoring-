@@ -30,7 +30,7 @@ def initialize_tracing(settings: Settings) -> None:
 
     otlp_exporter = OTLPSpanExporter(
         endpoint=settings.otel_exporter_otlp_endpoint,
-        insecure=True,
+        insecure=False,  # Use secure HTTPS connection
     )
 
     processor = BatchSpanProcessor(otlp_exporter)

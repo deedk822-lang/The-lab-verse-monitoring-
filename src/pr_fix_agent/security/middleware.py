@@ -14,7 +14,6 @@ import structlog
 
 logger = structlog.get_logger()
 
-
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     S4: Add comprehensive security headers to all responses.
@@ -32,12 +31,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: https:; "
-            "font-src 'self'; "
-            "connect-src 'self'; "
+            "default-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' https://example.com/; "
+            "style-src 'self' 'unsafe-inline' https://example.com/; "
+            "img-src 'self' data: https://example.com/ https://trusted-image.example.com/; "
+            "font-src 'self' https://example.com/; "
+            "connect-src 'self' https://api.example.com/; "
             "frame-ancestors 'none';"
         )
 
@@ -60,7 +59,11 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Response]
     ) -> Response:
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        try:
+            request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        except Exception as e:
+            logger.error("Error generating request ID", exception=str(e))
+            request_id = "unknown"
         request.state.request_id = request_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
@@ -107,15 +110,18 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
         if is_privileged:
             from pr_fix_agent.security.audit import get_audit_logger
             audit_logger = get_audit_logger()
-            audit_logger.log_event(
-                event_type="api_access",
-                actor_id=getattr(request.state, "user_id", "anonymous"),
-                actor_ip=client_ip,
-                resource=path,
-                action=method,
-                result="success" if response.status_code < 400 else "failure",
-                request_id=request_id,
-                metadata={"status_code": response.status_code},
-            )
+            try:
+                audit_logger.log_event(
+                    event_type="api_access",
+                    actor_id=getattr(request.state, "user_id", "anonymous"),
+                    actor_ip=client_ip,
+                    resource=path,
+                    action=method,
+                    result="success" if response.status_code < 400 else "failure",
+                    request_id=request_id,
+                    metadata={"status_code": response.status_code},
+                )
+            except Exception as e:
+                logger.error("Error logging event", exception=str(e))
 
         return response

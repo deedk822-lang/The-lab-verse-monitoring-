@@ -115,18 +115,19 @@ class CostTracker:
 
     def get_summary(self) -> Dict[str, Any]:
         """Get cost summary"""
-        return {
+        sensitive_info = {
             "total_spent_usd": self.total_spent,
             "budget_usd": self.budget_usd,
             "remaining_usd": self.budget_usd - self.total_spent,
             "calls": len(self.costs),
             "total_tokens": sum(c.total_tokens for c in self.costs),
-            "costs": [asdict(c) for c in self.costs]
         }
+
+        return sensitive_info
 
 
 __all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
+    "BudgetExceededError",
+    "CostTracker",
+    "LLMCost",
 ]

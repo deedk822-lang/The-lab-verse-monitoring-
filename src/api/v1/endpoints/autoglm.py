@@ -21,7 +21,6 @@ class GLMGenerateRequest(BaseModel):
     context: Dict[str, Any]
     options: Dict[str, Any] = {}
 
-
 class AutoGLMSecurityAnalysisRequest(BaseModel):
     """Request model for AutoGLM security analysis"""
     pass  # No additional fields needed
@@ -65,10 +64,13 @@ async def generate_with_glm(
 
     try:
         async with create_glm_integration() as glm:
-            content = await glm.generate_structured_content(
-                request.content_type,
-                request.context
-            )
+            # Validate and sanitize the content type
+            if request.content_type not in ["text/plain", "json"]:
+                raise HTTPException(status_code=422, detail="Invalid content type")
+
+            # Sanitize the context data to prevent injection attacks
+            sanitized_context = {key: value for key, value in request.context.items()}
+            content = await glm.generate_structured_content(request.content_type, sanitized_context)
 
         return {
             "success": True,

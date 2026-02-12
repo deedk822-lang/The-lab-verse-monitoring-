@@ -1,0 +1,97 @@
+# 🤖 Automated Code Review Fixes
+
+Tests: ✅ PASSED
+- Total: 0
+- Passed: 0
+- Failed: 0
+
+## Fixes Proposed
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/analyzer.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/explainability.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/anomaly_detection/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/api/v1/endpoints/autoglm.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/kimi_instruct/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/kimi_instruct/mcp/confidence.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/kimi_instruct/mcp/self_reflection.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/orchestrators/autoglm.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/agents/huggingface.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/analyzer.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/api/main.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/cli.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/db/session.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/models.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/logging.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/logging.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/logging.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/observability/tracing.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/ollama_agent.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/ollama_agent.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/orchestrator.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/production.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/production.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/audit.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/middleware.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/middleware.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/middleware.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/middleware.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/redis_client.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/pr_fix_agent/security/redis_client.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/__init__.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/config.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/rainmaker_orchestrator/config.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py: Potential security issue
+- /home/runner/work/The-lab-verse-monitoring-/The-lab-verse-monitoring-/src/security.py: Potential security issue
+- src/pr_fix_agent/orchestrator.py: Consider possible security implications associated with the subprocess module.
+- src/pr_fix_agent/orchestrator.py: Starting a process with a partial executable path
+- src/pr_fix_agent/orchestrator.py: subprocess call - check for execution of untrusted input.
+
+---
+*Generated by PR Fix Agent*

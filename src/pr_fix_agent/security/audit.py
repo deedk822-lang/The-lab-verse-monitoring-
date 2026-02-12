@@ -17,11 +17,17 @@ class AuditLogger:
     - Prevents duplicate handlers
     - Disables propagation to avoid root logger interference
     - Thread-safe singleton pattern
+    - Added security measures: input validation and error handling for log file path
     """
 
     def __init__(self, log_path: Path):
-        self.log_path = log_path
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.log_path = log_path.resolve()  # Resolve the path to ensure it's an absolute path
+
+        if not log_path.is_file():
+            raise ValueError(f"Log file {log_path} does not exist")
+
+        if log_path.stat().st_mode & 0o777 != 0o644:
+            raise ValueError("Log file must be readable and writable by the owner")
 
         # Get logger
         self.logger = logging.getLogger("audit")

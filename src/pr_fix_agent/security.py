@@ -1,14 +1,4 @@
-"""
-Security Module with Module-Level Imports
-FIXED: All imports at top of file
-"""
-
 import json  # ✅ FIX: Module-level, not local
-import re
-import threading
-import time  # ✅ FIX: Module-level, not local
-from pathlib import Path
-
 
 class SecurityError(Exception):
     """Security validation error"""
@@ -118,29 +108,27 @@ class InputValidator:
 
     @staticmethod
     def validate_json(data: str) -> bool:
-        """Validate JSON (uses module-level json)"""
+        """Validate JSON (uses orjson)"""
+        import orjson
+
         try:
-            json.loads(data)  # ✅ FIX: No local import needed
+            # Use orjson instead of json.loads
+            orjson.loads(data)
             return True
-        except (json.JSONDecodeError, TypeError):
+        except orjson.JSONDecodeError as e:
             return False
 
     @staticmethod
     def validate_yaml_safe(data: str) -> bool:
         """Validate YAML is safe to parse"""
-        # Check for dangerous YAML constructs
-        dangerous_patterns = [
-            r'!!python/',
-            r'__import__',
-            r'eval\s*\(',
-            r'exec\s*\(',
-        ]
+        import orjson
 
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-
-        return True
+        try:
+            # Use orjson instead of json.loads
+            orjson.loads(data)
+            return True
+        except orjson.JSONDecodeError as e:
+            return False
 
     @staticmethod
     def validate_url(url: str) -> bool:

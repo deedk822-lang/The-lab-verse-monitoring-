@@ -6,7 +6,6 @@ Issue Fixed: #21: Budget-aware model selection
 from dataclasses import dataclass
 from typing import List, Optional
 
-
 @dataclass
 class ModelSpec:
     """Model specification"""
@@ -17,7 +16,6 @@ class ModelSpec:
     speed_score: int  # 1-10
     context_window: int
     specialization: str  # reasoning, coding, general
-
 
 class ModelSelector:
     """
@@ -114,8 +112,7 @@ class ModelSelector:
 
         # Filter by budget
         affordable = [
-            m for m in candidates
-            if m.cost_per_million_tokens <= budget_remaining or m.cost_per_million_tokens == 0.0
+            m for m in candidates if m.cost_per_million_tokens <= budget_remaining or m.cost_per_million_tokens == 0.0
         ]
 
         if not affordable:
@@ -152,7 +149,4 @@ class ModelSelector:
         candidates = self.MODELS.get(task, [])
 
         # Sort: free models first, then by quality
-        return sorted(
-            candidates,
-            key=lambda m: (m.cost_per_million_tokens > 0, -m.quality_score)
-        )
+        return sorted(candidates, key=lambda m: (m.cost_per_million_tokens > 0, -m.quality_score))

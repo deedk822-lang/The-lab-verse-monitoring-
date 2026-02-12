@@ -16,34 +16,32 @@ def configure_logging(settings: Settings) -> None:
     """
     Configure structured logging with structlog.
     """
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=getattr(logging, settings.log_level),
-    )
 
-    shared_processors = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-    ]
+    # Use a safer format string
+    formatter = structlog.stdlib.TextFormatter(fmt="%(message)s")
 
-    if settings.log_format == "json":
-        processors = shared_processors + [
-            structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer(),
-        ]
-    else:
-        processors = shared_processors + [
-            structlog.processors.format_exc_info,
-            structlog.dev.ConsoleRenderer(),
-        ]
+    # Validate the log level before setting it
+    valid_levels = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+    }
+    if settings.log_level not in valid_levels:
+        raise ValueError(f"Invalid log level: {settings.log_level}")
 
+    # Configure the logger
     structlog.configure(
-        processors=processors,
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            formatter,  # Use the configured formatter
+        ],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

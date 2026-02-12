@@ -5,8 +5,8 @@ Main entry point for automated PR error fixing
 """
 
 import argparse
-import sys
 from pathlib import Path
+import sys
 
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .ollama_agent import OllamaAgent

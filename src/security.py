@@ -3,12 +3,13 @@ Core Security and Validation Components
 Proper library structure for reusable components
 """
 
-import re
 from pathlib import Path
+import re
 
 
 class SecurityError(Exception):
     """Security validation error"""
+
     pass
 
 
@@ -35,11 +36,11 @@ class SecurityValidator:
         if len(user_path) > 1000:
             raise SecurityError(f"Path too long: {len(user_path)}")
 
-        if '\\' in user_path:
+        if "\\" in user_path:
             raise SecurityError(f"Windows-style separators not allowed: {user_path}")
 
-        if user_path.startswith('/') or user_path.startswith('C:'):
-             raise SecurityError(f"Absolute paths not allowed: {user_path}")
+        if user_path.startswith("/") or user_path.startswith("C:"):
+            raise SecurityError(f"Absolute paths not allowed: {user_path}")
 
         # Resolve the path
         try:
@@ -50,8 +51,8 @@ class SecurityValidator:
         # Check if it's within repo
         try:
             target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        except ValueError as ve:
+            raise SecurityError(f"Path traversal detected: {user_path}") from ve
 
         return target_path
 
@@ -69,7 +70,7 @@ class SecurityValidator:
             SecurityError: If module name is invalid or dangerous
         """
         # Check for shell metacharacters
-        dangerous_chars = [';', '&', '|', '$', '`', '(', ')', '<', '>', '\n', '\r', '\x00']
+        dangerous_chars = [";", "&", "|", "$", "`", "(", ")", "<", ">", "\n", "\r", "\x00"]
         if any(char in module_name for char in dangerous_chars):
             raise SecurityError(f"Dangerous characters in module name: {module_name}")
 
@@ -78,7 +79,7 @@ class SecurityValidator:
             raise SecurityError(f"Module name too long: {len(module_name)} chars")
 
         # Validate format (alphanumeric, dash, underscore, dot)
-        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', module_name):
+        if not re.match(r"^[a-zA-Z0-9_\-\.]+$", module_name):
             raise SecurityError(f"Invalid module name format: {module_name}")
 
         return module_name
@@ -93,7 +94,7 @@ class SecurityValidator:
         Returns:
             True if extension is allowed
         """
-        allowed = ['.py', '.txt', '.md', '.yml', '.yaml', '.json', '.toml', '.cfg', '.ini']
+        allowed = [".py", ".txt", ".md", ".yml", ".yaml", ".json", ".toml", ".cfg", ".ini"]
         return any(filename.endswith(ext) for ext in allowed)
 
     def sanitize_input(self, user_input: str, max_length: int = 1000) -> str:
@@ -114,7 +115,7 @@ class SecurityValidator:
             raise SecurityError(f"Input too long: {len(user_input)} > {max_length}")
 
         # Remove null bytes
-        if '\x00' in user_input:
+        if "\x00" in user_input:
             raise SecurityError("Null byte in input")
 
         return user_input.strip()
@@ -127,10 +128,11 @@ class InputValidator:
     def validate_json(data: str) -> bool:
         """Validate JSON structure"""
         import json
+
         try:
             json.loads(data)
             return True
-        except:
+        except (json.JSONDecodeError, TypeError):
             return False
 
     @staticmethod
@@ -138,22 +140,18 @@ class InputValidator:
         """Validate YAML is safe to parse"""
         # Check for dangerous YAML constructs
         dangerous_patterns = [
-            r'!!python/',
-            r'__import__',
-            r'eval\s*\(',
-            r'exec\s*\(',
+            r"!!python/",
+            r"__import__",
+            r"eval\s*\(",
+            r"exec\s*\(",
         ]
 
-        for pattern in dangerous_patterns:
-            if re.search(pattern, data):
-                return False
-
-        return True
+        return all(not re.search(pattern, data) for pattern in dangerous_patterns)
 
     @staticmethod
     def validate_url(url: str) -> bool:
         """Validate URL format"""
-        url_pattern = r'^https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(/.*)?$'
+        url_pattern = r"^https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(/.*)?$"
         return bool(re.match(url_pattern, url))
 
 

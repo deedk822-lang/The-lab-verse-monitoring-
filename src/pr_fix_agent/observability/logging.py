@@ -9,7 +9,10 @@ import sys
 
 import structlog
 
-from pr_fix_agent.core.config import Settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pr_fix_agent.core.config import Settings
 
 
 def configure_logging(settings: Settings) -> None:

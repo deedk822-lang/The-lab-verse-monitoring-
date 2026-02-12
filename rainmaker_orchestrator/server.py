@@ -3,11 +3,21 @@ Standalone server module for rainmaker orchestrator.
 This file maintains backward compatibility with existing deployments.
 For new implementations, use api/server.py instead.
 """
+
 import logging
+from typing import Any
 
 from fastapi import FastAPI
+from pydantic_settings import BaseSettings
 
 logger: logging.Logger = logging.getLogger("server")
+
+
+class Settings(BaseSettings):
+    workspace_path: str = "./workspace"
+
+
+settings = Settings()
 
 app: FastAPI = FastAPI(
     title="Rainmaker Orchestrator Legacy Server",
@@ -17,10 +27,10 @@ app: FastAPI = FastAPI(
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, Any]:
     """
     Provide a legacy-compatibility health response for the server.
-    
+
     Returns:
         health (dict): A dictionary with keys:
             - "status": the string "legacy"

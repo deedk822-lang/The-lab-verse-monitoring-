@@ -4,13 +4,12 @@ Runs scheduled tasks for quota resets, alerts, and health checks.
 """
 
 import asyncio
-import logging
-import os
-import smtplib
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Optional
+import logging
+import os
+import smtplib
 
 import httpx
 
@@ -23,26 +22,21 @@ class AlertService:
     """Service for sending alerts about quota usage."""
 
     def __init__(self):
-        self.email_enabled = os.getenv('ALERT_EMAIL_ENABLED', 'false').lower() == 'true'
-        self.webhook_enabled = os.getenv('ALERT_WEBHOOK_ENABLED', 'false').lower() == 'true'
+        self.email_enabled = os.getenv("ALERT_EMAIL_ENABLED", "false").lower() == "true"
+        self.webhook_enabled = os.getenv("ALERT_WEBHOOK_ENABLED", "false").lower() == "true"
 
         # Email config
-        self.email_to = os.getenv('ALERT_EMAIL_TO', '')
-        self.email_from = os.getenv('ALERT_EMAIL_FROM', '')
-        self.smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-        self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
-        self.smtp_user = os.getenv('SMTP_USER', '')
-        self.smtp_password = os.getenv('SMTP_PASSWORD', '')
+        self.email_to = os.getenv("ALERT_EMAIL_TO", "")
+        self.email_from = os.getenv("ALERT_EMAIL_FROM", "")
+        self.smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_user = os.getenv("SMTP_USER", "")
+        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
 
         # Webhook config
-        self.webhook_url = os.getenv('ALERT_WEBHOOK_URL', '')
+        self.webhook_url = os.getenv("ALERT_WEBHOOK_URL", "")
 
-    async def send_alert(
-        self,
-        subject: str,
-        message: str,
-        level: str = "warning"
-    ):
+    async def send_alert(self, subject: str, message: str, level: str = "warning"):
         """Send alert via configured channels."""
         if self.email_enabled:
             await self._send_email_alert(subject, message)
@@ -57,10 +51,10 @@ class AlertService:
             return
 
         try:
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"[VAAL AI Empire] {subject}"
-            msg['From'] = self.email_from
-            msg['To'] = self.email_to
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"[VAAL AI Empire] {subject}"
+            msg["From"] = self.email_from
+            msg["To"] = self.email_to
 
             # Create HTML version
             html_body = f"""
@@ -75,7 +69,7 @@ class AlertService:
             </html>
             """
 
-            part = MIMEText(html_body, 'html')
+            part = MIMEText(html_body, "html")
             msg.attach(part)
 
             # Send email
@@ -104,17 +98,13 @@ class AlertService:
                         "color": self._get_color_for_level(level),
                         "text": message,
                         "footer": "VAAL AI Empire Credit Protection",
-                        "ts": int(datetime.now().timestamp())
+                        "ts": int(datetime.now().timestamp()),
                     }
-                ]
+                ],
             }
 
             async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.webhook_url,
-                    json=payload,
-                    timeout=10.0
-                )
+                response = await client.post(self.webhook_url, json=payload, timeout=10.0)
                 response.raise_for_status()
 
             logger.info(f"Webhook alert sent: {subject}")
@@ -128,7 +118,7 @@ class AlertService:
             "critical": "#ff0000",
             "error": "#ff6600",
             "warning": "#ffcc00",
-            "info": "#00ccff"
+            "info": "#00ccff",
         }
         return colors.get(level, colors["info"])
 
@@ -159,7 +149,7 @@ class CreditMonitorService:
             self._hourly_reset_task(),
             self._daily_reset_task(),
             self._usage_monitor_task(),
-            return_exceptions=True
+            return_exceptions=True,
         )
 
     async def stop(self):
@@ -173,9 +163,7 @@ class CreditMonitorService:
             try:
                 # Wait until next hour
                 now = datetime.now()
-                next_hour = (now + timedelta(hours=1)).replace(
-                    minute=0, second=0, microsecond=0
-                )
+                next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
                 wait_seconds = (next_hour - now).total_seconds()
 
                 logger.info(f"Next hourly reset in {wait_seconds:.0f} seconds")
@@ -195,9 +183,7 @@ class CreditMonitorService:
             try:
                 # Wait until midnight
                 now = datetime.now()
-                tomorrow = datetime.combine(
-                    now.date(), datetime.min.time()
-                ) + timedelta(days=1)
+                tomorrow = datetime.combine(now.date(), datetime.min.time()) + timedelta(days=1)
                 wait_seconds = (tomorrow - now).total_seconds()
 
                 logger.info(f"Next daily reset in {wait_seconds:.0f} seconds")
@@ -215,7 +201,7 @@ class CreditMonitorService:
                 await self.alert_service.send_alert(
                     subject="Daily Usage Reset",
                     message="Daily credit usage counters have been reset.",
-                    level="info"
+                    level="info",
                 )
 
             except Exception as e:
@@ -227,13 +213,13 @@ class CreditMonitorService:
         while self.running:
             try:
                 usage = self.credit_manager.get_usage_summary()
-                daily = usage['daily']
+                daily = usage["daily"]
 
                 # Check usage percentages
                 max_usage_percent = max(
-                    daily['usage_percent']['requests'],
-                    daily['usage_percent']['tokens'],
-                    daily['usage_percent']['cost']
+                    daily["usage_percent"]["requests"],
+                    daily["usage_percent"]["tokens"],
+                    daily["usage_percent"]["cost"],
                 )
 
                 # Critical alert (90%+)
@@ -251,7 +237,7 @@ class CreditMonitorService:
                                 f"({max_usage_percent:.1f}%).\n"
                                 f"All LLM requests will be blocked for 60 minutes."
                             ),
-                            level="critical"
+                            level="critical",
                         )
 
                 # Warning alert (70%+)
@@ -268,7 +254,7 @@ class CreditMonitorService:
 
     async def _send_warning_alert(self, usage: dict):
         """Send warning alert when usage reaches threshold."""
-        daily = usage['daily']
+        daily = usage["daily"]
 
         message = f"""
 ⚠️  Credit Usage Warning
@@ -276,22 +262,20 @@ class CreditMonitorService:
 Your daily credit usage has reached the warning threshold.
 
 Current Usage:
-- Requests: {daily['requests']} / {daily['limits']['requests']} \
-({daily['usage_percent']['requests']:.1f}%)
-- Tokens: {daily['tokens']:,} / {daily['limits']['tokens']:,} \
-({daily['usage_percent']['tokens']:.1f}%)
-- Cost: ${daily['cost_usd']:.4f} / ${daily['limits']['cost_usd']:.2f} \
-({daily['usage_percent']['cost']:.1f}%)
+- Requests: {daily["requests"]} / {daily["limits"]["requests"]} \
+({daily["usage_percent"]["requests"]:.1f}%)
+- Tokens: {daily["tokens"]:,} / {daily["limits"]["tokens"]:,} \
+({daily["usage_percent"]["tokens"]:.1f}%)
+- Cost: ${daily["cost_usd"]:.4f} / ${daily["limits"]["cost_usd"]:.2f} \
+({daily["usage_percent"]["cost"]:.1f}%)
 
-Tier: {usage['tier'].upper()}
+Tier: {usage["tier"].upper()}
 
 Please monitor your usage to avoid hitting daily limits.
         """
 
         await self.alert_service.send_alert(
-            subject="⚠️  Credit Usage Warning (70% threshold)",
-            message=message,
-            level="warning"
+            subject="⚠️  Credit Usage Warning (70% threshold)", message=message, level="warning"
         )
 
         log_msg = f"Usage warning sent: {daily['usage_percent']['requests']:.1f}% of daily limit"
@@ -299,7 +283,7 @@ Please monitor your usage to avoid hitting daily limits.
 
     async def _send_critical_alert(self, usage: dict):
         """Send critical alert when usage nears limit."""
-        daily = usage['daily']
+        daily = usage["daily"]
 
         message = f"""
 🚨 CRITICAL: Credit Usage Alert
@@ -307,14 +291,14 @@ Please monitor your usage to avoid hitting daily limits.
 Your daily credit usage is approaching the limit!
 
 Current Usage:
-- Requests: {daily['requests']} / {daily['limits']['requests']} \
-({daily['usage_percent']['requests']:.1f}%)
-- Tokens: {daily['tokens']:,} / {daily['limits']['tokens']:,} \
-({daily['usage_percent']['tokens']:.1f}%)
-- Cost: ${daily['cost_usd']:.4f} / ${daily['limits']['cost_usd']:.2f} \
-({daily['usage_percent']['cost']:.1f}%)
+- Requests: {daily["requests"]} / {daily["limits"]["requests"]} \
+({daily["usage_percent"]["requests"]:.1f}%)
+- Tokens: {daily["tokens"]:,} / {daily["limits"]["tokens"]:,} \
+({daily["usage_percent"]["tokens"]:.1f}%)
+- Cost: ${daily["cost_usd"]:.4f} / ${daily["limits"]["cost_usd"]:.2f} \
+({daily["usage_percent"]["cost"]:.1f}%)
 
-Tier: {usage['tier'].upper()}
+Tier: {usage["tier"].upper()}
 
 ⚠️  WARNING: Circuit breaker may activate at 95% usage.
 New requests will be blocked to prevent cost overruns.
@@ -328,7 +312,7 @@ Consider:
         await self.alert_service.send_alert(
             subject="🚨 CRITICAL: Credit Usage Alert (90% threshold)",
             message=message,
-            level="critical"
+            level="critical",
         )
 
         log_msg = f"Critical usage alert sent: {daily['usage_percent']['requests']:.1f}% limit"
@@ -336,7 +320,7 @@ Consider:
 
 
 # Global service instance
-_monitor_service: Optional[CreditMonitorService] = None
+_monitor_service: CreditMonitorService | None = None
 
 
 def get_monitor_service() -> CreditMonitorService:
@@ -358,8 +342,7 @@ async def start_monitor_service():
 if __name__ == "__main__":
     # Run as standalone service
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     asyncio.run(start_monitor_service())

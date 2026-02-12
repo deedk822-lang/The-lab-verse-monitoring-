@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
-import logging
 from datetime import datetime
 from functools import lru_cache
+import json
+import logging
 from pathlib import Path
 
-from pr_fix_agent.core.config import Settings, get_settings
+from pr_fix_agent.core.config import get_settings
 
 
 class AuditLogger:
@@ -33,22 +33,21 @@ class AuditLogger:
         # ✅ FIX: Check for existing handlers to prevent duplicates
         existing_handler = None
         for handler in self.logger.handlers:
-            if isinstance(handler, logging.FileHandler):
-                # Check if it's the same file
-                if hasattr(handler, 'baseFilename') and \
-                   handler.baseFilename == str(self.log_path.resolve()):
-                    existing_handler = handler
-                    break
+            if isinstance(handler, logging.FileHandler) and hasattr(
+                handler, "baseFilename"
+            ) and handler.baseFilename == str(self.log_path.resolve()):
+                existing_handler = handler
+                break
 
         # ✅ FIX: Only add handler if it doesn't exist
         if existing_handler is None:
             # Create append-only file handler
             handler = logging.FileHandler(
                 self.log_path,
-                mode='a',  # Append only (immutable)
-                encoding='utf-8',
+                mode="a",  # Append only (immutable)
+                encoding="utf-8",
             )
-            handler.setFormatter(logging.Formatter('%(message)s'))
+            handler.setFormatter(logging.Formatter("%(message)s"))
 
             self.logger.addHandler(handler)
         else:

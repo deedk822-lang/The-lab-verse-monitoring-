@@ -4,26 +4,29 @@ VAAL AI Empire - Live Demo
 Shows the system actually working in real-time
 """
 
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 # Demo data directory
 DEMO_DIR = "/tmp/vaal_demo"
 Path(DEMO_DIR).mkdir(parents=True, exist_ok=True)
 
+
 def print_step(num, text):
     """Print demo step"""
     print(f"\n{'=' * 70}")
     print(f"STEP {num}: {text}")
-    print('=' * 70)
+    print("=" * 70)
+
 
 def wait(seconds=2):
     """Wait with countdown"""
     for i in range(seconds, 0, -1):
-        print(f"⏳ {i}...", end='\r')
+        print(f"⏳ {i}...", end="\r")
         time.sleep(1)
     print("✅ Done!   ")
+
 
 def main():
     print("\n")
@@ -43,15 +46,22 @@ def main():
     print("  - $0.25/day max")
 
     from credit_manager import CreditManager
+
     manager = CreditManager(tier="free", data_dir=DEMO_DIR)
     print("✅ Manager initialized")
     wait()
 
     print_step(2, "Check Initial Usage")
     summary = manager.get_usage_summary()
-    print(f"Daily requests: {summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']}")
-    print(f"Daily tokens: {summary['daily']['usage']['tokens']}/{summary['daily']['limits']['tokens']}")
-    print(f"Daily cost: ${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']:.2f}")
+    print(
+        f"Daily requests: {summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']}"
+    )
+    print(
+        f"Daily tokens: {summary['daily']['usage']['tokens']}/{summary['daily']['limits']['tokens']}"
+    )
+    print(
+        f"Daily cost: ${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']:.2f}"
+    )
     print("✅ Starting fresh")
     wait()
 
@@ -61,15 +71,17 @@ def main():
         allowed, reason, _ = manager.can_make_request(1000, "kimi")
         if allowed:
             manager.record_usage(1000, "kimi")
-            print(f"  Request {i+1}: ✅ Allowed (1000 tokens, $0.01)")
+            print(f"  Request {i + 1}: ✅ Allowed (1000 tokens, $0.01)")
         else:
-            print(f"  Request {i+1}: ❌ Blocked - {reason}")
+            print(f"  Request {i + 1}: ❌ Blocked - {reason}")
         time.sleep(0.5)
 
     summary = manager.get_usage_summary()
     print("\nUsage after 5 requests:")
     print(f"  Requests: {summary['daily']['usage']['requests']}/50")
-    print(f"  Cost: ${summary['daily']['usage']['cost']:.4f}/$0.25 ({summary['daily']['percentages']['cost']:.1f}%)")
+    print(
+        f"  Cost: ${summary['daily']['usage']['cost']:.4f}/$0.25 ({summary['daily']['percentages']['cost']:.1f}%)"
+    )
     wait()
 
     print_step(4, "Test Per-Request Limit")
@@ -96,10 +108,10 @@ def main():
         allowed, reason, _ = manager.can_make_request(100, "kimi")
         if allowed:
             manager.record_usage(100, "kimi")
-            print(f"  Request {i+1}: ✅", end='\r')
+            print(f"  Request {i + 1}: ✅", end="\r")
         else:
             blocked_at = i + 1
-            print(f"  Request {i+1}: ❌ BLOCKED")
+            print(f"  Request {i + 1}: ❌ BLOCKED")
             print(f"  Reason: {reason}")
             break
         time.sleep(0.2)
@@ -123,7 +135,7 @@ def main():
         current_cost += 0.005
 
     summary = manager.get_usage_summary()
-    pct = summary['daily']['percentages']['cost']
+    pct = summary["daily"]["percentages"]["cost"]
     print(f"  Current usage: {pct:.1f}%")
     print(f"  Cost: ${summary['daily']['usage']['cost']:.4f}/$0.25")
 
@@ -136,11 +148,11 @@ def main():
     print("Pushing usage to 95% to trigger circuit breaker...")
 
     # Add more usage
-    while summary['daily']['percentages']['cost'] < 95:
+    while summary["daily"]["percentages"]["cost"] < 95:
         manager.record_usage(100, "kimi")
         summary = manager.get_usage_summary()
 
-    pct = summary['daily']['percentages']['cost']
+    pct = summary["daily"]["percentages"]["cost"]
     print(f"  Usage: {pct:.1f}%")
 
     # Try to make request
@@ -161,7 +173,7 @@ def main():
     print("Attempting to make requests while circuit breaker is active...")
     for i in range(3):
         allowed, reason, _ = manager.can_make_request(100, "kimi")
-        print(f"  Request {i+1}: ❌ Blocked - Circuit breaker active")
+        print(f"  Request {i + 1}: ❌ Blocked - Circuit breaker active")
         time.sleep(0.5)
     print("  ✅ All requests blocked as expected")
     wait()
@@ -209,6 +221,7 @@ def main():
     print("free tier from ANY runaway costs or API limit overruns.")
     print()
     print("=" * 70)
+
 
 if __name__ == "__main__":
     try:

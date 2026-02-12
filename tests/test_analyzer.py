@@ -3,9 +3,9 @@ CORRECTED Test File - Uses Actual Package Name
 Issue Fixed: Package name is pr_fix_agent, not src
 """
 
-import pytest
 from unittest.mock import Mock
-from pathlib import Path
+
+import pytest
 
 # ✅ CORRECT: Import from pr_fix_agent (the actual package name)
 from pr_fix_agent.analyzer import PRErrorAnalyzer
@@ -19,9 +19,11 @@ class TestPRErrorAnalyzerReal:
         """Mock agent to avoid HTTP calls"""
         agent = Mock()
         # Mocking query method to return a string response as expected by PRErrorAnalyzer
-        agent.query = Mock(return_value="""Root cause: Missing dependency
+        agent.query = Mock(
+            return_value="""Root cause: Missing dependency
 Suggested fix: Install the required package
-Code changes: Add to requirements.txt""")
+Code changes: Add to requirements.txt"""
+        )
         return agent
 
     @pytest.fixture

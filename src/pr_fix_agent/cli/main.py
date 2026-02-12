@@ -4,10 +4,9 @@ CLI interface for PR Fix Agent.
 
 from __future__ import annotations
 
-from typing import Optional
-import typer
 from rich.console import Console
 from rich.table import Table
+import typer
 
 from pr_fix_agent.__version__ import __version__
 from pr_fix_agent.core.config import get_settings
@@ -42,11 +41,11 @@ def health_check():
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
-    mode: Optional[str] = typer.Option(None, "--mode"),
-    findings: Optional[str] = typer.Option(None, "--findings"),
-    proposals: Optional[str] = typer.Option(None, "--proposals"),
-    test_results: Optional[str] = typer.Option(None, "--test-results"),
-    output: Optional[str] = typer.Option(None, "--output"),
+    mode: str | None = typer.Option(None, "--mode"),
+    findings: str | None = typer.Option(None, "--findings"),
+    proposals: str | None = typer.Option(None, "--proposals"),
+    test_results: str | None = typer.Option(None, "--test-results"),
+    output: str | None = typer.Option(None, "--output"),
     apply: bool = typer.Option(False, "--apply"),
 ):
     if ctx.invoked_subcommand is not None:

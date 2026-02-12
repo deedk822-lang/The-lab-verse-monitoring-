@@ -19,8 +19,8 @@ class SelfHealingAgent:
         """
         Receives Prometheus Alert Manager Webhook
         """
-        error_log = alert_payload.get('description')
-        service_name = alert_payload.get('service')
+        error_log = alert_payload.get("description")
+        service_name = alert_payload.get("service")
 
         prompt = f"""
         CRITICAL ALERT in service: {service_name}

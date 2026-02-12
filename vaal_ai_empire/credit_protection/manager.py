@@ -3,20 +3,20 @@ Credit Protection Manager for Alibaba Cloud + Kimi CLI + HuggingFace
 Prevents runaway costs on free tier instances with multi-layer safeguards.
 """
 
-import json
-import logging
-import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+import json
+import logging
+import os
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class TierLevel(Enum):
     """Cost tier levels."""
+
     FREE = "free"
     ECONOMY = "economy"
     STANDARD = "standard"
@@ -25,6 +25,7 @@ class TierLevel(Enum):
 
 class ProviderType(Enum):
     """Provider types for tracking."""
+
     KIMI = "kimi"
     HUGGINGFACE = "huggingface"
     QWEN = "qwen"
@@ -35,6 +36,7 @@ class ProviderType(Enum):
 @dataclass
 class UsageQuota:
     """Usage quota configuration."""
+
     # Daily limits
     daily_requests: int = 100
     daily_tokens: int = 50000
@@ -59,6 +61,7 @@ class UsageQuota:
 @dataclass
 class UsageRecord:
     """Usage tracking record."""
+
     timestamp: str
     provider: str
     request_tokens: int
@@ -67,7 +70,7 @@ class UsageRecord:
     estimated_cost: float
     duration_ms: int
     status: str
-    metadata: Dict
+    metadata: dict
 
 
 class CreditProtectionManager:
@@ -86,7 +89,7 @@ class CreditProtectionManager:
         self,
         quota: UsageQuota,
         storage_path: str = "/var/lib/vaal/credit_protection",
-        tier: TierLevel = TierLevel.FREE
+        tier: TierLevel = TierLevel.FREE,
     ):
         self.quota = quota
         self.storage_path = Path(storage_path)
@@ -94,13 +97,13 @@ class CreditProtectionManager:
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
         # Usage tracking
-        self.daily_usage: Dict[str, int] = {}
-        self.hourly_usage: Dict[str, int] = {}
+        self.daily_usage: dict[str, int] = {}
+        self.hourly_usage: dict[str, int] = {}
         self.request_count = 0
 
         # Circuit breaker state
         self.circuit_open = False
-        self.circuit_open_until: Optional[datetime] = None
+        self.circuit_open_until: datetime | None = None
 
         # Load existing usage data
         self._load_usage()
@@ -132,15 +135,15 @@ class CreditProtectionManager:
         hourly_file = self._get_usage_file("hourly")
 
         try:
-            with open(daily_file, 'w') as f:
+            with open(daily_file, "w") as f:
                 json.dump(self.daily_usage, f)
 
-            with open(hourly_file, 'w') as f:
+            with open(hourly_file, "w") as f:
                 json.dump(self.hourly_usage, f)
         except Exception as e:
             logger.error(f"Error saving usage data: {e}")
 
-    def _get_current_usage(self, period: str = "daily") -> Dict:
+    def _get_current_usage(self, period: str = "daily") -> dict:
         """Get current usage statistics."""
         usage = self.daily_usage if period == "daily" else self.hourly_usage
 
@@ -148,15 +151,10 @@ class CreditProtectionManager:
             "requests": usage.get("requests", 0),
             "tokens": usage.get("tokens", 0),
             "cost_usd": usage.get("cost_usd", 0.0),
-            "timestamp": usage.get("last_update", datetime.now().isoformat())
+            "timestamp": usage.get("last_update", datetime.now().isoformat()),
         }
 
-    def _update_usage(
-        self,
-        tokens: int,
-        cost: float,
-        period: str = "daily"
-    ):
+    def _update_usage(self, tokens: int, cost: float, period: str = "daily"):
         """Update usage statistics."""
         usage = self.daily_usage if period == "daily" else self.hourly_usage
 
@@ -167,11 +165,7 @@ class CreditProtectionManager:
 
         self._save_usage()
 
-    def check_quota(
-        self,
-        estimated_tokens: int,
-        estimated_cost: float
-    ) -> Tuple[bool, str]:
+    def check_quota(self, estimated_tokens: int, estimated_cost: float) -> tuple[bool, str]:
         """
         Check if request is within quota limits.
 
@@ -188,10 +182,16 @@ class CreditProtectionManager:
 
         # Check per-request limits
         if estimated_tokens > self.quota.max_request_tokens:
-            return False, f"Request tokens ({estimated_tokens}) exceeds limit ({self.quota.max_request_tokens})"
+            return (
+                False,
+                f"Request tokens ({estimated_tokens}) exceeds limit ({self.quota.max_request_tokens})",
+            )
 
         if estimated_cost > self.quota.max_request_cost_usd:
-            return False, f"Request cost (${estimated_cost:.4f}) exceeds limit (${self.quota.max_request_cost_usd:.4f})"
+            return (
+                False,
+                f"Request cost (${estimated_cost:.4f}) exceeds limit (${self.quota.max_request_cost_usd:.4f})",
+            )
 
         # Check daily limits
         daily = self._get_current_usage("daily")
@@ -222,7 +222,7 @@ class CreditProtectionManager:
         cost: float,
         duration_ms: int,
         status: str = "success",
-        metadata: Optional[Dict] = None
+        metadata: dict | None = None,
     ):
         """Record actual usage."""
         total_tokens = request_tokens + response_tokens
@@ -241,13 +241,13 @@ class CreditProtectionManager:
             estimated_cost=cost,
             duration_ms=duration_ms,
             status=status,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Append to log file
         log_file = self.storage_path / f"usage_log_{datetime.now().strftime('%Y-%m')}.jsonl"
-        with open(log_file, 'a') as f:
-            f.write(json.dumps(asdict(record)) + '\n')
+        with open(log_file, "a") as f:
+            f.write(json.dumps(asdict(record)) + "\n")
 
         logger.info(f"Usage recorded: {total_tokens} tokens, ${cost:.4f}")
 
@@ -260,14 +260,17 @@ class CreditProtectionManager:
 
         # Write circuit breaker file
         breaker_file = self.storage_path / "circuit_breaker.json"
-        with open(breaker_file, 'w') as f:
-            json.dump({
-                "open": True,
-                "until": self.circuit_open_until.isoformat(),
-                "reason": "Automatic protection triggered"
-            }, f)
+        with open(breaker_file, "w") as f:
+            json.dump(
+                {
+                    "open": True,
+                    "until": self.circuit_open_until.isoformat(),
+                    "reason": "Automatic protection triggered",
+                },
+                f,
+            )
 
-    def get_usage_summary(self) -> Dict:
+    def get_usage_summary(self) -> dict:
         """Get comprehensive usage summary."""
         daily = self._get_current_usage("daily")
         hourly = self._get_current_usage("hourly")
@@ -281,13 +284,19 @@ class CreditProtectionManager:
                 "limits": {
                     "requests": self.quota.daily_requests,
                     "tokens": self.quota.daily_tokens,
-                    "cost_usd": self.quota.daily_cost_usd
+                    "cost_usd": self.quota.daily_cost_usd,
                 },
                 "usage_percent": {
-                    "requests": (daily["requests"] / self.quota.daily_requests) * 100 if self.quota.daily_requests > 0 else 0,
-                    "tokens": (daily["tokens"] / self.quota.daily_tokens) * 100 if self.quota.daily_tokens > 0 else 0,
-                    "cost": (daily["cost_usd"] / self.quota.daily_cost_usd) * 100 if self.quota.daily_cost_usd > 0 else 0
-                }
+                    "requests": (daily["requests"] / self.quota.daily_requests) * 100
+                    if self.quota.daily_requests > 0
+                    else 0,
+                    "tokens": (daily["tokens"] / self.quota.daily_tokens) * 100
+                    if self.quota.daily_tokens > 0
+                    else 0,
+                    "cost": (daily["cost_usd"] / self.quota.daily_cost_usd) * 100
+                    if self.quota.daily_cost_usd > 0
+                    else 0,
+                },
             },
             "hourly": {
                 "requests": hourly["requests"],
@@ -296,13 +305,13 @@ class CreditProtectionManager:
                 "limits": {
                     "requests": self.quota.hourly_requests,
                     "tokens": self.quota.hourly_tokens,
-                    "cost_usd": self.quota.hourly_cost_usd
-                }
+                    "cost_usd": self.quota.hourly_cost_usd,
+                },
             },
             "circuit_breaker": {
                 "open": self.circuit_open,
-                "until": self.circuit_open_until.isoformat() if self.circuit_open_until else None
-            }
+                "until": self.circuit_open_until.isoformat() if self.circuit_open_until else None,
+            },
         }
 
     def reset_hourly_usage(self):
@@ -324,7 +333,7 @@ class ResourceMonitor:
     def __init__(self, quota: UsageQuota):
         self.quota = quota
 
-    def check_resources(self) -> Tuple[bool, str]:
+    def check_resources(self) -> tuple[bool, str]:
         """
         Check if instance resources are within limits.
 
@@ -342,12 +351,18 @@ class ResourceMonitor:
             # Check Memory
             memory = psutil.virtual_memory()
             if memory.percent > self.quota.max_memory_percent:
-                return False, f"Memory usage high: {memory.percent:.1f}% > {self.quota.max_memory_percent}%"
+                return (
+                    False,
+                    f"Memory usage high: {memory.percent:.1f}% > {self.quota.max_memory_percent}%",
+                )
 
             # Check Disk
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             if disk.percent > self.quota.max_disk_percent:
-                return False, f"Disk usage high: {disk.percent:.1f}% > {self.quota.max_disk_percent}%"
+                return (
+                    False,
+                    f"Disk usage high: {disk.percent:.1f}% > {self.quota.max_disk_percent}%",
+                )
 
             return True, "Resources healthy"
 
@@ -370,7 +385,7 @@ TIER_QUOTAS = {
         hourly_cost_usd=0.05,
         max_request_tokens=2000,
         max_response_tokens=1000,
-        max_request_cost_usd=0.02
+        max_request_cost_usd=0.02,
     ),
     TierLevel.ECONOMY: UsageQuota(
         daily_requests=100,
@@ -381,7 +396,7 @@ TIER_QUOTAS = {
         hourly_cost_usd=0.10,
         max_request_tokens=4000,
         max_response_tokens=2000,
-        max_request_cost_usd=0.05
+        max_request_cost_usd=0.05,
     ),
     TierLevel.STANDARD: UsageQuota(
         daily_requests=300,
@@ -392,7 +407,7 @@ TIER_QUOTAS = {
         hourly_cost_usd=0.35,
         max_request_tokens=8000,
         max_response_tokens=4000,
-        max_request_cost_usd=0.15
+        max_request_cost_usd=0.15,
     ),
     TierLevel.PREMIUM: UsageQuota(
         daily_requests=500,
@@ -403,8 +418,8 @@ TIER_QUOTAS = {
         hourly_cost_usd=0.75,
         max_request_tokens=16000,
         max_response_tokens=8000,
-        max_request_cost_usd=0.30
-    )
+        max_request_cost_usd=0.30,
+    ),
 }
 
 
@@ -413,20 +428,13 @@ def get_credit_manager(tier: str = "free") -> CreditProtectionManager:
     tier_level = TierLevel(tier.lower())
     quota = TIER_QUOTAS[tier_level]
 
-    storage_path = os.getenv(
-        'CREDIT_PROTECTION_PATH',
-        '/var/lib/vaal/credit_protection'
-    )
+    storage_path = os.getenv("CREDIT_PROTECTION_PATH", "/var/lib/vaal/credit_protection")
 
-    return CreditProtectionManager(
-        quota=quota,
-        storage_path=storage_path,
-        tier=tier_level
-    )
+    return CreditProtectionManager(quota=quota, storage_path=storage_path, tier=tier_level)
 
 
 # Global instance
-_global_manager: Optional[CreditProtectionManager] = None
+_global_manager: CreditProtectionManager | None = None
 
 
 def get_manager() -> CreditProtectionManager:
@@ -434,7 +442,7 @@ def get_manager() -> CreditProtectionManager:
     global _global_manager
 
     if _global_manager is None:
-        tier = os.getenv('CREDIT_TIER', 'free')
+        tier = os.getenv("CREDIT_TIER", "free")
         _global_manager = get_credit_manager(tier)
 
     return _global_manager

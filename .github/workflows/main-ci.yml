@@ -88,7 +88,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install security tools
-        run: pip install safety bandit pip-audit semgrep
+        run: pip install safety bandit pip-audit
 
       - name: Run Safety
         run: safety check --json
@@ -107,12 +107,17 @@ jobs:
           fi
 
       - name: Run Semgrep
-        run: |
-          semgrep scan \
-            --config auto \
-            --sarif \
-            --output semgrep.sarif \
-            --metrics=off
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/python
+          generateSarif: "1"
+
+      - name: Rename semgrep results
+        run: mv semgrep.sarif semgrep.sarif.old && cp semgrep.sarif.old semgrep.sarif || true
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
@@ -256,7 +261,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: npm ci || echo "No package.json found, skipping npm install"
+        run: npm install || echo "No package.json found, skipping npm install"
 
       - name: Build application
         run: npm run build || echo "No build script found"

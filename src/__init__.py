@@ -8,14 +8,14 @@ from .security import InputValidator, RateLimiter, SecurityError, SecurityValida
 
 __all__ = [
     # Security
-    'SecurityError',
-    'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
+    "SecurityError",
+    "SecurityValidator",
+    "InputValidator",
+    "RateLimiter",
     # Analysis
-    'PRErrorAnalyzer',
-    'ErrorStatistics',
+    "PRErrorAnalyzer",
+    "ErrorStatistics",
 ]
 
-__version__ = '1.0.0'
-__author__ = 'PR Fix Agent Team'
+__version__ = "1.0.0"
+__author__ = "PR Fix Agent Team"

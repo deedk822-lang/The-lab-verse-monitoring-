@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     jwt_public_key_path: Path = Field(default=Path("/secrets/jwt-public-key.pem"))
 
     # Database
-    database_url: str = Field(default="postgresql+psycopg2://prfixagent:password@localhost:5432/pr_fix_agent")
+    database_url: str = Field(
+        default="postgresql+psycopg2://prfixagent:password@localhost:5432/pr_fix_agent"
+    )
     db_ssl_ca: Path | None = None
     db_pool_size: int = 20
     db_max_overflow: int = 10

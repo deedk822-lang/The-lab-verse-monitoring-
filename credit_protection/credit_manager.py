@@ -4,15 +4,15 @@ VAAL AI Empire - Credit Protection Manager
 Real working implementation for Alibaba Cloud free tier protection
 """
 
+from datetime import datetime, timedelta
 import json
 import logging
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Tuple
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class CreditManager:
     """Production credit management system"""
@@ -27,7 +27,7 @@ class CreditManager:
             "hourly_max_tokens": 5000,
             "hourly_max_cost": 0.05,
             "max_tokens_per_request": 2000,
-            "max_cost_per_request": 0.02
+            "max_cost_per_request": 0.02,
         },
         "economy": {
             "daily_max_requests": 100,
@@ -37,7 +37,7 @@ class CreditManager:
             "hourly_max_tokens": 10000,
             "hourly_max_cost": 0.10,
             "max_tokens_per_request": 4000,
-            "max_cost_per_request": 0.04
+            "max_cost_per_request": 0.04,
         },
         "standard": {
             "daily_max_requests": 300,
@@ -47,7 +47,7 @@ class CreditManager:
             "hourly_max_tokens": 25000,
             "hourly_max_cost": 0.25,
             "max_tokens_per_request": 8000,
-            "max_cost_per_request": 0.10
+            "max_cost_per_request": 0.10,
         },
         "premium": {
             "daily_max_requests": 500,
@@ -57,8 +57,8 @@ class CreditManager:
             "hourly_max_tokens": 50000,
             "hourly_max_cost": 0.50,
             "max_tokens_per_request": 16000,
-            "max_cost_per_request": 0.20
-        }
+            "max_cost_per_request": 0.20,
+        },
     }
 
     def __init__(self, tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
@@ -79,7 +79,7 @@ class CreditManager:
 
         logger.info(f"CreditManager initialized: tier={tier}, data_dir={data_dir}")
 
-    def _load_usage(self, filepath: Path) -> Dict:
+    def _load_usage(self, filepath: Path) -> dict:
         """Load usage data from file"""
         if filepath.exists():
             try:
@@ -88,18 +88,13 @@ class CreditManager:
             except Exception as e:
                 logger.error(f"Error loading {filepath}: {e}")
 
-        return {
-            "requests": 0,
-            "tokens": 0,
-            "cost": 0.0,
-            "last_updated": datetime.now().isoformat()
-        }
+        return {"requests": 0, "tokens": 0, "cost": 0.0, "last_updated": datetime.now().isoformat()}
 
-    def _save_usage(self, filepath: Path, data: Dict):
+    def _save_usage(self, filepath: Path, data: dict):
         """Save usage data to file"""
         data["last_updated"] = datetime.now().isoformat()
         try:
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving {filepath}: {e}")
@@ -112,16 +107,16 @@ class CreditManager:
             "tokens": tokens,
             "cost": cost,
             "allowed": allowed,
-            "reason": reason
+            "reason": reason,
         }
 
         try:
-            with open(self.log_file, 'a') as f:
-                f.write(json.dumps(log_entry) + '\n')
+            with open(self.log_file, "a") as f:
+                f.write(json.dumps(log_entry) + "\n")
         except Exception as e:
             logger.error(f"Error logging request: {e}")
 
-    def check_circuit_breaker(self) -> Tuple[bool, str]:
+    def check_circuit_breaker(self) -> tuple[bool, str]:
         """Check if circuit breaker is active"""
         if not self.circuit_file.exists():
             return False, ""
@@ -151,11 +146,11 @@ class CreditManager:
             "triggered_at": datetime.now().isoformat(),
             "reason": reason,
             "cooldown_minutes": cooldown_minutes,
-            "tier": self.tier
+            "tier": self.tier,
         }
 
         try:
-            with open(self.circuit_file, 'w') as f:
+            with open(self.circuit_file, "w") as f:
                 json.dump(cb_data, f, indent=2)
             logger.warning(f"Circuit breaker triggered: {reason}")
         except Exception as e:
@@ -167,13 +162,15 @@ class CreditManager:
         pricing = {
             "kimi": 0.00001,  # $0.01 per 1k tokens
             "qwen": 0.000005,  # $0.005 per 1k tokens
-            "huggingface": 0.000002  # $0.002 per 1k tokens (free tier)
+            "huggingface": 0.000002,  # $0.002 per 1k tokens (free tier)
         }
 
         rate = pricing.get(model.lower(), 0.00001)
         return tokens * rate
 
-    def can_make_request(self, estimated_tokens: int, model: str = "kimi") -> Tuple[bool, str, Dict]:
+    def can_make_request(
+        self, estimated_tokens: int, model: str = "kimi"
+    ) -> tuple[bool, str, dict]:
         """
         Check if request can be made within all limits
         Returns: (allowed: bool, reason: str, usage_info: dict)
@@ -272,7 +269,7 @@ class CreditManager:
         elif daily_pct >= 75:
             logger.warning(f"⚠️ WARNING: Daily usage at {daily_pct:.1f}%")
 
-    def get_usage_summary(self) -> Dict:
+    def get_usage_summary(self) -> dict:
         """Get current usage summary"""
         daily_usage = self._load_usage(self.daily_file)
         hourly_usage = self._load_usage(self.hourly_file)
@@ -280,31 +277,28 @@ class CreditManager:
 
         return {
             "tier": self.tier,
-            "circuit_breaker": {
-                "active": breaker_active,
-                "reason": breaker_reason
-            },
+            "circuit_breaker": {"active": breaker_active, "reason": breaker_reason},
             "daily": {
                 "usage": daily_usage,
                 "limits": {
                     "requests": self.config["daily_max_requests"],
                     "tokens": self.config["daily_max_tokens"],
-                    "cost": self.config["daily_max_cost"]
+                    "cost": self.config["daily_max_cost"],
                 },
                 "percentages": {
                     "requests": (daily_usage["requests"] / self.config["daily_max_requests"]) * 100,
                     "tokens": (daily_usage["tokens"] / self.config["daily_max_tokens"]) * 100,
-                    "cost": (daily_usage["cost"] / self.config["daily_max_cost"]) * 100
-                }
+                    "cost": (daily_usage["cost"] / self.config["daily_max_cost"]) * 100,
+                },
             },
             "hourly": {
                 "usage": hourly_usage,
                 "limits": {
                     "requests": self.config["hourly_max_requests"],
                     "tokens": self.config["hourly_max_tokens"],
-                    "cost": self.config["hourly_max_cost"]
-                }
-            }
+                    "cost": self.config["hourly_max_cost"],
+                },
+            },
         }
 
     def reset_daily(self):
@@ -352,8 +346,12 @@ if __name__ == "__main__":
         manager.record_usage(500, "kimi")
 
     summary = manager.get_usage_summary()
-    print(f"Daily usage: {summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']} requests")
-    print(f"Daily cost: ${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']}")
+    print(
+        f"Daily usage: {summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']} requests"
+    )
+    print(
+        f"Daily cost: ${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']}"
+    )
     print(f"Cost percentage: {summary['daily']['percentages']['cost']:.1f}%")
 
     # Test 5: Try to make request near limit

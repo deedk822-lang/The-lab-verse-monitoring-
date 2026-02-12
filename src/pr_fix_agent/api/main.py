@@ -12,12 +12,20 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 import structlog
 
 from pr_fix_agent.core.config import get_settings
-from pr_fix_agent.observability.logging import configure_logging
-from pr_fix_agent.observability.metrics import initialize_metrics, http_requests_total, http_request_duration_seconds
-from pr_fix_agent.observability.tracing import initialize_tracing
-from pr_fix_agent.security.middleware import SecurityHeadersMiddleware, RequestIDMiddleware, AuditLoggingMiddleware
-from pr_fix_agent.security.redis_client import close_redis
 from pr_fix_agent.db.session import close_db
+from pr_fix_agent.observability.logging import configure_logging
+from pr_fix_agent.observability.metrics import (
+    http_request_duration_seconds,
+    http_requests_total,
+    initialize_metrics,
+)
+from pr_fix_agent.observability.tracing import initialize_tracing
+from pr_fix_agent.security.middleware import (
+    AuditLoggingMiddleware,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+)
+from pr_fix_agent.security.redis_client import close_redis
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -59,7 +67,7 @@ async def prometheus_middleware(request: Request, call_next):
 
 @app.get("/healthz", tags=["Health"])
 async def health_check():
-    return {"status":"healthy","version":settings.version}
+    return {"status": "healthy", "version": settings.version}
 
 
 @app.get("/metrics", tags=["Observability"])

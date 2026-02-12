@@ -10,7 +10,10 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from pr_fix_agent.core.config import Settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pr_fix_agent.core.config import Settings
 
 
 def initialize_tracing(settings: Settings) -> None:
@@ -20,11 +23,13 @@ def initialize_tracing(settings: Settings) -> None:
     if not settings.otel_enabled or not settings.otel_exporter_otlp_endpoint:
         return
 
-    resource = Resource.create({
-        "service.name": settings.otel_service_name,
-        "service.version": settings.version,
-        "deployment.environment": settings.environment,
-    })
+    resource = Resource.create(
+        {
+            "service.name": settings.otel_service_name,
+            "service.version": settings.version,
+            "deployment.environment": settings.environment,
+        }
+    )
 
     provider = TracerProvider(resource=resource)
 

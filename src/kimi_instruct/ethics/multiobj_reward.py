@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 
 class MultiObjReward:
@@ -13,7 +12,7 @@ class MultiObjReward:
         # Weights for the reward function.
         self.weights = {"success": 1.0, "risk": -2.0}  # Penalize risk
 
-    def score(self, metrics: Dict) -> float:
+    def score(self, metrics: dict) -> float:
         """
         Scores the execution metrics based on the weighted objectives.
         """

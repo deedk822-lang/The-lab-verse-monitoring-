@@ -4,12 +4,13 @@ VAAL AI Empire - Comprehensive Test Suite
 Proves that all components work correctly
 """
 
-import sys
 from pathlib import Path
+import sys
 
 # Test data directory
 TEST_DIR = "/tmp/vaal_test"
 Path(TEST_DIR).mkdir(parents=True, exist_ok=True)
+
 
 def print_header(text):
     """Print test header"""
@@ -17,12 +18,14 @@ def print_header(text):
     print(f"  {text}")
     print("=" * 70)
 
+
 def print_result(test_name, passed, details=""):
     """Print test result"""
     status = "✅ PASS" if passed else "❌ FAIL"
     print(f"{status} - {test_name}")
     if details:
         print(f"   {details}")
+
 
 def test_credit_manager():
     """Test credit manager functionality"""
@@ -57,8 +60,8 @@ def test_credit_manager():
     # Test 1.4: Get summary
     try:
         summary = manager.get_usage_summary()
-        requests = summary['daily']['usage']['requests']
-        cost = summary['daily']['usage']['cost']
+        requests = summary["daily"]["usage"]["requests"]
+        cost = summary["daily"]["usage"]["cost"]
         print_result("Get summary", True, f"Requests: {requests}, Cost: ${cost:.4f}")
     except Exception as e:
         print_result("Get summary", False, str(e))
@@ -86,6 +89,7 @@ def test_credit_manager():
         return False
 
     return True
+
 
 def test_limits():
     """Test that limits are actually enforced"""
@@ -147,6 +151,7 @@ def test_limits():
 
     return True
 
+
 def test_dashboard():
     """Test dashboard can display data"""
     print_header("TEST 3: Dashboard Display")
@@ -184,6 +189,7 @@ def test_dashboard():
         print_result("Dashboard execution", False, str(e))
         return False
 
+
 def test_cost_calculation():
     """Test cost calculation accuracy"""
     print_header("TEST 4: Cost Calculation")
@@ -207,6 +213,7 @@ def test_cost_calculation():
 
     return all_passed
 
+
 def test_tier_configs():
     """Test all tier configurations"""
     print_header("TEST 5: Tier Configurations")
@@ -223,13 +230,14 @@ def test_tier_configs():
             print_result(
                 f"{tier.capitalize()} tier",
                 True,
-                f"Daily: {config['daily_max_requests']} req, ${config['daily_max_cost']}"
+                f"Daily: {config['daily_max_requests']} req, ${config['daily_max_cost']}",
             )
         except Exception as e:
             print_result(f"{tier.capitalize()} tier", False, str(e))
             all_passed = False
 
     return all_passed
+
 
 def main():
     """Run all tests"""
@@ -241,11 +249,11 @@ def main():
     results = {}
 
     # Run tests
-    results['Credit Manager'] = test_credit_manager()
-    results['Limit Enforcement'] = test_limits()
-    results['Dashboard'] = test_dashboard()
-    results['Cost Calculation'] = test_cost_calculation()
-    results['Tier Configs'] = test_tier_configs()
+    results["Credit Manager"] = test_credit_manager()
+    results["Limit Enforcement"] = test_limits()
+    results["Dashboard"] = test_dashboard()
+    results["Cost Calculation"] = test_cost_calculation()
+    results["Tier Configs"] = test_tier_configs()
 
     # Summary
     print_header("TEST SUMMARY")
@@ -258,7 +266,7 @@ def main():
         print(f"{status} - {test}")
 
     print()
-    print(f"Total: {passed}/{total} tests passed ({(passed/total)*100:.1f}%)")
+    print(f"Total: {passed}/{total} tests passed ({(passed / total) * 100:.1f}%)")
     print()
 
     if passed == total:
@@ -274,6 +282,7 @@ def main():
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,10 +1,10 @@
+import concurrent.futures
 import logging
 import os
-import concurrent.futures
-from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class CohereAPI:
     """
@@ -15,11 +15,14 @@ class CohereAPI:
     - Passes messages array instead of single string
     - Handles v2 response format
     """
+
     def __init__(self):
         try:
             import cohere
         except ImportError:
-            raise ImportError("Cohere SDK not installed. Please install it with 'pip install cohere'")
+            raise ImportError(
+                "Cohere SDK not installed. Please install it with 'pip install cohere'"
+            )
 
         api_key = os.getenv("COHERE_API_KEY")
         if not api_key:
@@ -28,6 +31,7 @@ class CohereAPI:
         # ✅ FIX: Use SSRF-safe session
         try:
             from pr_fix_agent.security.secure_requests import create_ssrf_safe_session
+
             self.httpx_client = create_ssrf_safe_session()
         except ImportError:
             self.httpx_client = None
@@ -37,7 +41,9 @@ class CohereAPI:
         self.model = "command-r-plus"
         self.usage_log = []
 
-    def generate_content(self, prompt: str, max_tokens: int = 500, system_message: Optional[str] = None) -> Dict:
+    def generate_content(
+        self, prompt: str, max_tokens: int = 500, system_message: str | None = None
+    ) -> dict:
         """Generate content and track usage using v2 API"""
         try:
             # ✅ FIX: Build messages array for v2 API
@@ -48,49 +54,40 @@ class CohereAPI:
 
             # ✅ FIX: Call v2 chat API with messages array
             response = self.client.chat(
-                model=self.model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=0.7
+                model=self.model, messages=messages, max_tokens=max_tokens, temperature=0.7
             )
 
             # ✅ FIX: Parse v2 response format
             content = None
-            if hasattr(response, 'message') and hasattr(response.message, 'content'):
+            if hasattr(response, "message") and hasattr(response.message, "content"):
                 if isinstance(response.message.content, list) and len(response.message.content) > 0:
                     content = response.message.content[0].text
 
             if content is None:
-                content = getattr(response, 'text', "")
+                content = getattr(response, "text", "")
 
             # Extract token usage if available
             input_tokens = 0
             output_tokens = 0
-            if hasattr(response, 'usage'):
-                if hasattr(response.usage, 'tokens'):
+            if hasattr(response, "usage"):
+                if hasattr(response.usage, "tokens"):
                     input_tokens = response.usage.tokens.input_tokens or 0
                     output_tokens = response.usage.tokens.output_tokens or 0
 
-            usage = {
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "cost_usd": 0.0
-            }
+            usage = {"input_tokens": input_tokens, "output_tokens": output_tokens, "cost_usd": 0.0}
 
             self.usage_log.append(usage)
-            return {
-                "text": content,
-                "usage": usage
-            }
+            return {"text": content, "usage": usage}
         except Exception as e:
             logger.error(f"Cohere API error: {e}")
             raise e
 
-    def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
+    def generate_email_sequence(self, business_type: str, days: int = 7) -> list[dict]:
         """
         Generate email sequence for MailChimp.
         ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate emails in parallel.
         """
+
         def _generate_day(day):
             prompt = f"Write day {day} of a {days}-day email sequence for a {business_type} in South Africa. Include subject line."
             try:
@@ -98,17 +95,13 @@ class CohereAPI:
                 lines = result["text"].split("\n")
                 subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
                 body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
-                return {
-                    "day": day,
-                    "subject": subject,
-                    "body": body
-                }
+                return {"day": day, "subject": subject, "body": body}
             except Exception as e:
                 logger.error(f"Failed to generate email for day {day}: {e}")
                 return {
                     "day": day,
                     "subject": f"Day {day} - Update",
-                    "body": "Content currently unavailable."
+                    "body": "Content currently unavailable.",
                 }
 
         sequence = [None] * days
@@ -116,6 +109,6 @@ class CohereAPI:
             future_to_day = {executor.submit(_generate_day, day): day for day in range(1, days + 1)}
             for future in concurrent.futures.as_completed(future_to_day):
                 day = future_to_day[future]
-                sequence[day-1] = future.result()
+                sequence[day - 1] = future.result()
 
         return sequence

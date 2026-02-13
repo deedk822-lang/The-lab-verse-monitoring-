@@ -19,10 +19,9 @@ Revenue Model:
 - Cloud storage operations: $5
 """
 
+from datetime import datetime
 import json
 import os
-from datetime import datetime
-from typing import Dict
 
 
 class DepartmentRevenueTracker:
@@ -32,123 +31,135 @@ class DepartmentRevenueTracker:
                 "name": "Data Analytics Department",
                 "lead": "Lungelo Luda (lungeloluda)",
                 "tasks": [],
-                "revenue": 0.0
+                "revenue": 0.0,
             },
             "project_management": {
                 "name": "Project Management Department",
                 "lead": "Dimakatso Moleli (dimakatsomoleli@gmail.com)",
                 "tasks": [],
-                "revenue": 0.0
+                "revenue": 0.0,
             },
             "cloud_infrastructure": {
                 "name": "Cloud Infrastructure Department",
                 "lead": "System Operations",
                 "tasks": [],
-                "revenue": 0.0
+                "revenue": 0.0,
             },
             "integration_services": {
                 "name": "Integration Services Department",
                 "lead": "Automation Team",
                 "tasks": [],
-                "revenue": 0.0
-            }
+                "revenue": 0.0,
+            },
         }
 
     def add_kaggle_download(self, file_count: int):
         """Track Kaggle dataset downloads"""
         revenue = file_count * 50
-        self.departments["data_analytics"]["tasks"].append({
-            "task": f"Downloaded {file_count} Kaggle datasets",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["data_analytics"]["tasks"].append(
+            {
+                "task": f"Downloaded {file_count} Kaggle datasets",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["data_analytics"]["revenue"] += revenue
 
     def add_data_processing(self, rows_processed: int):
         """Track data processing operations"""
         revenue = (rows_processed / 1000) * 2
-        self.departments["data_analytics"]["tasks"].append({
-            "task": f"Processed {rows_processed:,} data rows",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["data_analytics"]["tasks"].append(
+            {
+                "task": f"Processed {rows_processed:,} data rows",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["data_analytics"]["revenue"] += revenue
 
     def add_jira_ticket(self, ticket_count: int = 1):
         """Track Jira ticket creation"""
         revenue = ticket_count * 25
-        self.departments["project_management"]["tasks"].append({
-            "task": f"Created {ticket_count} Jira ticket(s)",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["project_management"]["tasks"].append(
+            {
+                "task": f"Created {ticket_count} Jira ticket(s)",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["project_management"]["revenue"] += revenue
 
     def add_airtable_record(self, record_count: int = 1):
         """Track Airtable record creation"""
         revenue = record_count * 15
-        self.departments["integration_services"]["tasks"].append({
-            "task": f"Created {record_count} Airtable record(s)",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["integration_services"]["tasks"].append(
+            {
+                "task": f"Created {record_count} Airtable record(s)",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["integration_services"]["revenue"] += revenue
 
     def add_notion_update(self, update_count: int = 1):
         """Track Notion page updates"""
         revenue = update_count * 10
-        self.departments["cloud_infrastructure"]["tasks"].append({
-            "task": f"Updated {update_count} Notion page(s)",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["cloud_infrastructure"]["tasks"].append(
+            {
+                "task": f"Updated {update_count} Notion page(s)",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["cloud_infrastructure"]["revenue"] += revenue
 
     def add_cloud_storage(self, operation_count: int = 1):
         """Track cloud storage operations"""
         revenue = operation_count * 5
-        self.departments["cloud_infrastructure"]["tasks"].append({
-            "task": f"Executed {operation_count} storage operation(s)",
-            "revenue": revenue,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.departments["cloud_infrastructure"]["tasks"].append(
+            {
+                "task": f"Executed {operation_count} storage operation(s)",
+                "revenue": revenue,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.departments["cloud_infrastructure"]["revenue"] += revenue
 
     def get_total_revenue(self) -> float:
         """Calculate total revenue across all departments"""
         return sum(dept["revenue"] for dept in self.departments.values())
 
-    def generate_report(self) -> Dict:
+    def generate_report(self) -> dict:
         """Generate comprehensive revenue report"""
         total_revenue = self.get_total_revenue()
 
         report = {
             "report_date": datetime.now().strftime("%Y-%m-%d %H:%M SAST"),
             "total_revenue": round(total_revenue, 2),
-            "departments": []
+            "departments": [],
         }
 
         # Sort departments by revenue (highest first)
-        sorted_depts = sorted(
-            self.departments.items(),
-            key=lambda x: x[1]["revenue"],
-            reverse=True
-        )
+        sorted_depts = sorted(self.departments.items(), key=lambda x: x[1]["revenue"], reverse=True)
 
         for dept_id, dept_data in sorted_depts:
             dept_report = {
                 "department": dept_data["name"],
                 "lead": dept_data["lead"],
                 "revenue": round(dept_data["revenue"], 2),
-                "percentage": round((dept_data["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+                "percentage": (
+                    round((dept_data["revenue"] / total_revenue * 100), 1)
+                    if total_revenue > 0
+                    else 0
+                ),
                 "task_count": len(dept_data["tasks"]),
-                "tasks": dept_data["tasks"]
+                "tasks": dept_data["tasks"],
             }
             report["departments"].append(dept_report)
 
         return report
 
-    def generate_q1_2026_forecast(self) -> Dict:
+    def generate_q1_2026_forecast(self) -> dict:
         """Generate Q1 2026 revenue forecast by department"""
         # Project 13 weeks of operations (Q1 2026)
         weeks_in_q1 = 13
@@ -157,7 +168,7 @@ class DepartmentRevenueTracker:
         forecast = {
             "quarter": "Q1 2026",
             "forecast_date": datetime.now().isoformat(),
-            "departments": []
+            "departments": [],
         }
 
         for dept_id, dept_data in self.departments.items():
@@ -173,7 +184,7 @@ class DepartmentRevenueTracker:
                 "current_weekly_revenue": round(dept_data["revenue"], 2),
                 "q1_2026_projected_revenue": round(q1_revenue, 2),
                 "growth_rate": "+12.5% weekly",
-                "confidence": "87%"
+                "confidence": "87%",
             }
             forecast["departments"].append(dept_forecast)
 
@@ -250,7 +261,9 @@ def main():
         print(f"  {dept_forecast['department']}")
         print(f"  Current Weekly: ${dept_forecast['current_weekly_revenue']:,.2f}")
         print(f"  Q1 2026 Projection: ${dept_forecast['q1_2026_projected_revenue']:,.2f}")
-        print(f"  Growth: {dept_forecast['growth_rate']} (Confidence: {dept_forecast['confidence']})")
+        print(
+            f"  Growth: {dept_forecast['growth_rate']} (Confidence: {dept_forecast['confidence']})"
+        )
         print()
 
     # Save reports to JSON for Grafana integration
@@ -259,42 +272,35 @@ def main():
 
     # Save current report
     report_path = f"{output_dir}/department-revenue-current.json"
-    with open(report_path, 'w') as f:
+    with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
     print(f"✅ Current report saved: {report_path}")
 
     # Save forecast
     forecast_path = f"{output_dir}/department-revenue-q1-2026-forecast.json"
-    with open(forecast_path, 'w') as f:
+    with open(forecast_path, "w") as f:
         json.dump(forecast, f, indent=2)
     print(f"✅ Forecast saved: {forecast_path}")
 
     # Generate Grafana-ready metrics
     grafana_metrics = {
         "timestamp": datetime.now().isoformat(),
-        "metrics": [
-            {
-                "name": "total_revenue",
-                "value": report["total_revenue"],
-                "unit": "USD"
-            }
-        ]
+        "metrics": [{"name": "total_revenue", "value": report["total_revenue"], "unit": "USD"}],
     }
 
     for dept in report["departments"]:
         dept_name_snake = dept["department"].lower().replace(" ", "_")
-        grafana_metrics["metrics"].append({
-            "name": f"{dept_name_snake}_revenue",
-            "value": dept["revenue"],
-            "unit": "USD",
-            "tags": {
-                "department": dept["department"],
-                "lead": dept["lead"]
+        grafana_metrics["metrics"].append(
+            {
+                "name": f"{dept_name_snake}_revenue",
+                "value": dept["revenue"],
+                "unit": "USD",
+                "tags": {"department": dept["department"], "lead": dept["lead"]},
             }
-        })
+        )
 
     grafana_path = f"{output_dir}/grafana-metrics.json"
-    with open(grafana_path, 'w') as f:
+    with open(grafana_path, "w") as f:
         json.dump(grafana_metrics, f, indent=2)
     print(f"✅ Grafana metrics saved: {grafana_path}")
 

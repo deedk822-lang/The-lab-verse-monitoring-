@@ -5,12 +5,11 @@ Actually analyzes code and generates actionable improvements
 """
 
 import ast
-import json
-import re
 from dataclasses import dataclass
 from datetime import datetime
+import json
 from pathlib import Path
-from typing import Dict, List
+import re
 
 import requests
 
@@ -18,6 +17,7 @@ import requests
 @dataclass
 class CodeIssue:
     """Real code issue found"""
+
     file: str
     line: int
     severity: str  # critical, high, medium, low
@@ -30,12 +30,13 @@ class CodeIssue:
 @dataclass
 class Improvement:
     """Real improvement suggestion"""
+
     id: str
     priority: str
     category: str
     title: str
     description: str
-    affected_files: List[str]
+    affected_files: list[str]
     impact_score: float  # 0-1
     effort_score: float  # 0-1 (lower is easier)
     implementation: str
@@ -44,28 +45,30 @@ class Improvement:
 class StaticAnalyzer:
     """Real static code analysis"""
 
-    def analyze_python_file(self, file_path: Path) -> List[CodeIssue]:
+    def analyze_python_file(self, file_path: Path) -> list[CodeIssue]:
         """Analyze Python file for issues"""
         issues = []
 
         try:
             with open(file_path) as f:
                 content = f.read()
-                lines = content.split('\n')
+                lines = content.split("\n")
 
             # Parse AST
             try:
                 tree = ast.parse(content)
             except SyntaxError as e:
-                return [CodeIssue(
-                    file=str(file_path),
-                    line=e.lineno or 0,
-                    severity="critical",
-                    category="quality",
-                    issue="Syntax error",
-                    suggestion="Fix syntax error",
-                    code_snippet=lines[e.lineno-1] if e.lineno else ""
-                )]
+                return [
+                    CodeIssue(
+                        file=str(file_path),
+                        line=e.lineno or 0,
+                        severity="critical",
+                        category="quality",
+                        issue="Syntax error",
+                        suggestion="Fix syntax error",
+                        code_snippet=lines[e.lineno - 1] if e.lineno else "",
+                    )
+                ]
 
             # Check for common issues
             issues.extend(self._check_security(content, lines, file_path))
@@ -77,61 +80,73 @@ class StaticAnalyzer:
 
         return issues
 
-    def _check_security(self, content: str, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_security(self, content: str, lines: list[str], file_path: Path) -> list[CodeIssue]:
         """Check for security issues"""
         issues = []
 
         # Check for eval/exec
         for i, line in enumerate(lines, 1):
-            if re.search(r'\beval\s*\(', line):
-                issues.append(CodeIssue(
-                    file=str(file_path),
-                    line=i,
-                    severity="critical",
-                    category="security",
-                    issue="Use of eval() is dangerous",
-                    suggestion="Use ast.literal_eval() or safer alternatives",
-                    code_snippet=line.strip()
-                ))
+            if re.search(r"\beval\s*\(", line):
+                issues.append(
+                    CodeIssue(
+                        file=str(file_path),
+                        line=i,
+                        severity="critical",
+                        category="security",
+                        issue="Use of eval() is dangerous",
+                        suggestion="Use ast.literal_eval() or safer alternatives",
+                        code_snippet=line.strip(),
+                    )
+                )
 
-            if re.search(r'\bexec\s*\(', line):
-                issues.append(CodeIssue(
-                    file=str(file_path),
-                    line=i,
-                    severity="critical",
-                    category="security",
-                    issue="Use of exec() is dangerous",
-                    suggestion="Refactor to avoid dynamic code execution",
-                    code_snippet=line.strip()
-                ))
+            if re.search(r"\bexec\s*\(", line):
+                issues.append(
+                    CodeIssue(
+                        file=str(file_path),
+                        line=i,
+                        severity="critical",
+                        category="security",
+                        issue="Use of exec() is dangerous",
+                        suggestion="Refactor to avoid dynamic code execution",
+                        code_snippet=line.strip(),
+                    )
+                )
 
             # Check for shell=True
-            if 'shell=True' in line:
-                issues.append(CodeIssue(
-                    file=str(file_path),
-                    line=i,
-                    severity="high",
-                    category="security",
-                    issue="subprocess with shell=True is dangerous",
-                    suggestion="Use shell=False and pass args as list",
-                    code_snippet=line.strip()
-                ))
+            if "shell=True" in line:
+                issues.append(
+                    CodeIssue(
+                        file=str(file_path),
+                        line=i,
+                        severity="high",
+                        category="security",
+                        issue="subprocess with shell=True is dangerous",
+                        suggestion="Use shell=False and pass args as list",
+                        code_snippet=line.strip(),
+                    )
+                )
 
             # Check for hardcoded secrets
-            if re.search(r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']', line, re.IGNORECASE):
-                issues.append(CodeIssue(
-                    file=str(file_path),
-                    line=i,
-                    severity="high",
-                    category="security",
-                    issue="Possible hardcoded secret",
-                    suggestion="Use environment variables or secret management",
-                    code_snippet=line.strip()[:50] + "..."
-                ))
+            if re.search(
+                r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']', line, re.IGNORECASE
+            ):
+                issues.append(
+                    CodeIssue(
+                        file=str(file_path),
+                        line=i,
+                        severity="high",
+                        category="security",
+                        issue="Possible hardcoded secret",
+                        suggestion="Use environment variables or secret management",
+                        code_snippet=line.strip()[:50] + "...",
+                    )
+                )
 
         return issues
 
-    def _check_performance(self, tree: ast.AST, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_performance(
+        self, tree: ast.AST, lines: list[str], file_path: Path
+    ) -> list[CodeIssue]:
         """Check for performance issues"""
         issues = []
 
@@ -144,27 +159,33 @@ class StaticAnalyzer:
             def visit_For(self, node):
                 # Check for list concatenation in loop
                 if isinstance(node.iter, ast.Call):
-                    if isinstance(node.iter.func, ast.Name) and node.iter.func.id == 'range':
+                    if isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range":
                         # Look for list += in body
                         for stmt in ast.walk(node):
                             if isinstance(stmt, ast.AugAssign) and isinstance(stmt.op, ast.Add):
                                 if isinstance(stmt.target, ast.Name):
-                                    self.issues.append(CodeIssue(
-                                        file=str(self.file_path),
-                                        line=node.lineno,
-                                        severity="medium",
-                                        category="performance",
-                                        issue="List concatenation in loop is slow",
-                                        suggestion="Use list comprehension or append()",
-                                        code_snippet=self.lines[node.lineno-1].strip() if node.lineno <= len(self.lines) else ""
-                                    ))
+                                    self.issues.append(
+                                        CodeIssue(
+                                            file=str(self.file_path),
+                                            line=node.lineno,
+                                            severity="medium",
+                                            category="performance",
+                                            issue="List concatenation in loop is slow",
+                                            suggestion="Use list comprehension or append()",
+                                            code_snippet=(
+                                                self.lines[node.lineno - 1].strip()
+                                                if node.lineno <= len(self.lines)
+                                                else ""
+                                            ),
+                                        )
+                                    )
 
                 self.generic_visit(node)
 
             def visit_Call(self, node):
                 # Check for inefficient string formatting
                 if isinstance(node.func, ast.Attribute):
-                    if node.func.attr == 'format' and isinstance(node.func.value, ast.Str):
+                    if node.func.attr == "format" and isinstance(node.func.value, ast.Str):
                         # Old style string formatting
                         pass  # Could suggest f-strings
 
@@ -175,7 +196,9 @@ class StaticAnalyzer:
 
         return issues
 
-    def _check_code_quality(self, tree: ast.AST, lines: List[str], file_path: Path) -> List[CodeIssue]:
+    def _check_code_quality(
+        self, tree: ast.AST, lines: list[str], file_path: Path
+    ) -> list[CodeIssue]:
         """Check code quality issues"""
         issues = []
 
@@ -188,40 +211,58 @@ class StaticAnalyzer:
             def visit_FunctionDef(self, node):
                 # Check for missing docstring
                 docstring = ast.get_docstring(node)
-                if not docstring and not node.name.startswith('_'):
-                    self.issues.append(CodeIssue(
-                        file=str(self.file_path),
-                        line=node.lineno,
-                        severity="low",
-                        category="quality",
-                        issue=f"Function '{node.name}' missing docstring",
-                        suggestion="Add docstring to explain function purpose",
-                        code_snippet=self.lines[node.lineno-1].strip() if node.lineno <= len(self.lines) else ""
-                    ))
+                if not docstring and not node.name.startswith("_"):
+                    self.issues.append(
+                        CodeIssue(
+                            file=str(self.file_path),
+                            line=node.lineno,
+                            severity="low",
+                            category="quality",
+                            issue=f"Function '{node.name}' missing docstring",
+                            suggestion="Add docstring to explain function purpose",
+                            code_snippet=(
+                                self.lines[node.lineno - 1].strip()
+                                if node.lineno <= len(self.lines)
+                                else ""
+                            ),
+                        )
+                    )
 
                 # Check function length
                 if len(node.body) > 50:
-                    self.issues.append(CodeIssue(
-                        file=str(self.file_path),
-                        line=node.lineno,
-                        severity="medium",
-                        category="quality",
-                        issue=f"Function '{node.name}' is too long ({len(node.body)} lines)",
-                        suggestion="Consider breaking into smaller functions",
-                        code_snippet=self.lines[node.lineno-1].strip() if node.lineno <= len(self.lines) else ""
-                    ))
+                    self.issues.append(
+                        CodeIssue(
+                            file=str(self.file_path),
+                            line=node.lineno,
+                            severity="medium",
+                            category="quality",
+                            issue=f"Function '{node.name}' is too long ({len(node.body)} lines)",
+                            suggestion="Consider breaking into smaller functions",
+                            code_snippet=(
+                                self.lines[node.lineno - 1].strip()
+                                if node.lineno <= len(self.lines)
+                                else ""
+                            ),
+                        )
+                    )
 
                 # Check parameter count
                 if len(node.args.args) > 5:
-                    self.issues.append(CodeIssue(
-                        file=str(self.file_path),
-                        line=node.lineno,
-                        severity="low",
-                        category="quality",
-                        issue=f"Function '{node.name}' has too many parameters ({len(node.args.args)})",
-                        suggestion="Consider using a config object or kwargs",
-                        code_snippet=self.lines[node.lineno-1].strip() if node.lineno <= len(self.lines) else ""
-                    ))
+                    self.issues.append(
+                        CodeIssue(
+                            file=str(self.file_path),
+                            line=node.lineno,
+                            severity="low",
+                            category="quality",
+                            issue=f"Function '{node.name}' has too many parameters ({len(node.args.args)})",
+                            suggestion="Consider using a config object or kwargs",
+                            code_snippet=(
+                                self.lines[node.lineno - 1].strip()
+                                if node.lineno <= len(self.lines)
+                                else ""
+                            ),
+                        )
+                    )
 
                 self.generic_visit(node)
 
@@ -229,15 +270,21 @@ class StaticAnalyzer:
                 # Check for bare except
                 for handler in node.handlers:
                     if handler.type is None:
-                        self.issues.append(CodeIssue(
-                            file=str(self.file_path),
-                            line=handler.lineno,
-                            severity="medium",
-                            category="quality",
-                            issue="Bare except clause catches all exceptions",
-                            suggestion="Catch specific exceptions",
-                            code_snippet=self.lines[handler.lineno-1].strip() if handler.lineno <= len(self.lines) else ""
-                        ))
+                        self.issues.append(
+                            CodeIssue(
+                                file=str(self.file_path),
+                                line=handler.lineno,
+                                severity="medium",
+                                category="quality",
+                                issue="Bare except clause catches all exceptions",
+                                suggestion="Catch specific exceptions",
+                                code_snippet=(
+                                    self.lines[handler.lineno - 1].strip()
+                                    if handler.lineno <= len(self.lines)
+                                    else ""
+                                ),
+                            )
+                        )
 
                 self.generic_visit(node)
 
@@ -260,13 +307,8 @@ class ImprovementGenerator:
         try:
             response = requests.post(
                 self.api_url,
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "temperature": 0.3
-                },
-                timeout=60
+                json={"model": self.model, "prompt": prompt, "stream": False, "temperature": 0.3},
+                timeout=60,
             )
             response.raise_for_status()
             return response.json()["response"]
@@ -299,27 +341,17 @@ Be concise and specific."""
             affected_files=[issue.file],
             impact_score=self._calculate_impact(issue),
             effort_score=self._calculate_effort(issue),
-            implementation=response
+            implementation=response,
         )
 
     def _calculate_impact(self, issue: CodeIssue) -> float:
         """Calculate impact score"""
-        severity_map = {
-            "critical": 1.0,
-            "high": 0.8,
-            "medium": 0.5,
-            "low": 0.3
-        }
+        severity_map = {"critical": 1.0, "high": 0.8, "medium": 0.5, "low": 0.3}
         return severity_map.get(issue.severity, 0.5)
 
     def _calculate_effort(self, issue: CodeIssue) -> float:
         """Calculate effort score (lower is easier)"""
-        category_effort = {
-            "style": 0.2,
-            "quality": 0.4,
-            "performance": 0.6,
-            "security": 0.8
-        }
+        category_effort = {"style": 0.2, "quality": 0.4, "performance": 0.6, "security": 0.8}
         return category_effort.get(issue.category, 0.5)
 
 
@@ -331,7 +363,7 @@ class ContinuousImprover:
         self.analyzer = StaticAnalyzer()
         self.generator = ImprovementGenerator(ollama_url)
 
-    def analyze_codebase(self) -> List[CodeIssue]:
+    def analyze_codebase(self) -> list[CodeIssue]:
         """Analyze entire codebase"""
         print("\n🔍 Analyzing codebase...")
 
@@ -340,7 +372,7 @@ class ContinuousImprover:
 
         for py_file in py_files:
             # Skip test files and venv
-            if 'test' in str(py_file) or 'venv' in str(py_file) or '.venv' in str(py_file):
+            if "test" in str(py_file) or "venv" in str(py_file) or ".venv" in str(py_file):
                 continue
 
             print(f"  Analyzing {py_file.name}...", end=" ")
@@ -350,7 +382,9 @@ class ContinuousImprover:
 
         return issues
 
-    def generate_improvements(self, issues: List[CodeIssue], max_improvements: int = 10) -> List[Improvement]:
+    def generate_improvements(
+        self, issues: list[CodeIssue], max_improvements: int = 10
+    ) -> list[Improvement]:
         """Generate improvement suggestions"""
         print(f"\n💡 Generating improvements for top {max_improvements} issues...")
 
@@ -366,15 +400,16 @@ class ContinuousImprover:
 
         return improvements
 
-    def prioritize_improvements(self, improvements: List[Improvement]) -> List[Improvement]:
+    def prioritize_improvements(self, improvements: list[Improvement]) -> list[Improvement]:
         """Prioritize improvements by impact/effort ratio"""
+
         def priority_score(imp: Improvement) -> float:
             # Higher impact, lower effort = higher score
             return imp.impact_score / max(imp.effort_score, 0.1)
 
         return sorted(improvements, key=priority_score, reverse=True)
 
-    def generate_report(self, issues: List[CodeIssue], improvements: List[Improvement]) -> str:
+    def generate_report(self, issues: list[CodeIssue], improvements: list[Improvement]) -> str:
         """Generate improvement report"""
         report = f"""# Code Improvement Report
 Generated: {datetime.utcnow().isoformat()}
@@ -421,11 +456,11 @@ Generated: {datetime.utcnow().isoformat()}
 
         return report
 
-    def run_improvement_cycle(self) -> Dict:
+    def run_improvement_cycle(self) -> dict:
         """Run complete improvement cycle"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("CONTINUOUS IMPROVEMENT CYCLE")
-        print("="*70)
+        print("=" * 70)
 
         # Analyze
         issues = self.analyze_codebase()
@@ -442,11 +477,7 @@ Generated: {datetime.utcnow().isoformat()}
         # Generate report
         report = self.generate_report(issues, improvements)
 
-        return {
-            "issues": issues,
-            "improvements": improvements,
-            "report": report
-        }
+        return {"issues": issues, "improvements": improvements, "report": report}
 
 
 def main():
@@ -474,7 +505,7 @@ def main():
     results = improver.run_improvement_cycle()
 
     # Save report
-    with open(args.report, 'w') as f:
+    with open(args.report, "w") as f:
         f.write(results["report"])
 
     print(f"\n💾 Report saved to {args.report}")
@@ -489,7 +520,7 @@ def main():
                     "severity": i.severity,
                     "category": i.category,
                     "issue": i.issue,
-                    "suggestion": i.suggestion
+                    "suggestion": i.suggestion,
                 }
                 for i in results["issues"]
             ],
@@ -500,13 +531,13 @@ def main():
                     "category": imp.category,
                     "title": imp.title,
                     "impact_score": imp.impact_score,
-                    "effort_score": imp.effort_score
+                    "effort_score": imp.effort_score,
                 }
                 for imp in results["improvements"]
-            ]
+            ],
         }
 
-        with open(args.json, 'w') as f:
+        with open(args.json, "w") as f:
             json.dump(json_data, f, indent=2)
 
         print(f"💾 JSON saved to {args.json}")

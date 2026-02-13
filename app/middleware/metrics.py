@@ -1,123 +1,121 @@
-from prometheus_client import Counter, Histogram, Gauge, Info, generate_latest
-from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, multiprocess
-from prometheus_client import make_asgi_app
-from fastapi import Request, Response
+import os
+import time
+
+from fastapi import Request
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    make_asgi_app,
+    multiprocess,
+)
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import time
-import os
 
 # Create registry for multiprocess mode (if using gunicorn/uvicorn workers)
 registry = CollectorRegistry()
-if os.environ.get('PROMETHEUS_MULTIPROC_DIR'):
+if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
     multiprocess.MultiProcessCollector(registry)
 
 # Application info
-app_info = Info('fastapi_app', 'FastAPI application information', registry=registry)
-app_info.info({
-    'version': '1.0.0',
-    'python_version': '3.11',
-    'framework': 'fastapi'
-})
+app_info = Info("fastapi_app", "FastAPI application information", registry=registry)
+app_info.info({"version": "1.0.0", "python_version": "3.11", "framework": "fastapi"})
 
 # Request metrics
 http_requests_total = Counter(
-    'fastapi_http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status'],
-    registry=registry
+    "fastapi_http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+    registry=registry,
 )
 
 http_request_duration_seconds = Histogram(
-    'fastapi_http_request_duration_seconds',
-    'HTTP request duration in seconds',
-    ['method', 'endpoint'],
+    "fastapi_http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
     registry=registry,
-    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0)
+    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0),
 )
 
 http_requests_in_progress = Gauge(
-    'fastapi_http_requests_in_progress',
-    'HTTP requests currently in progress',
-    ['method', 'endpoint'],
-    registry=registry
+    "fastapi_http_requests_in_progress",
+    "HTTP requests currently in progress",
+    ["method", "endpoint"],
+    registry=registry,
 )
 
 # Business metrics
 llm_requests_total = Counter(
-    'fastapi_llm_requests_total',
-    'Total LLM requests',
-    ['backend', 'model', 'status'],
-    registry=registry
+    "fastapi_llm_requests_total",
+    "Total LLM requests",
+    ["backend", "model", "status"],
+    registry=registry,
 )
 
 llm_request_duration_seconds = Histogram(
-    'fastapi_llm_request_duration_seconds',
-    'LLM request duration in seconds',
-    ['backend', 'model'],
+    "fastapi_llm_request_duration_seconds",
+    "LLM request duration in seconds",
+    ["backend", "model"],
     registry=registry,
-    buckets=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0)
+    buckets=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0),
 )
 
 llm_tokens_total = Counter(
-    'fastapi_llm_tokens_total',
-    'Total tokens processed',
-    ['backend', 'model', 'type'],  # type: input/output
-    registry=registry
+    "fastapi_llm_tokens_total",
+    "Total tokens processed",
+    ["backend", "model", "type"],  # type: input/output
+    registry=registry,
 )
 
 # Database metrics
 db_connections_active = Gauge(
-    'fastapi_db_connections_active',
-    'Active database connections',
-    registry=registry
+    "fastapi_db_connections_active", "Active database connections", registry=registry
 )
 
 db_queries_total = Counter(
-    'fastapi_db_queries_total',
-    'Total database queries',
-    ['operation', 'table', 'status'],
-    registry=registry
+    "fastapi_db_queries_total",
+    "Total database queries",
+    ["operation", "table", "status"],
+    registry=registry,
 )
 
 db_query_duration_seconds = Histogram(
-    'fastapi_db_query_duration_seconds',
-    'Database query duration in seconds',
-    ['operation', 'table'],
+    "fastapi_db_query_duration_seconds",
+    "Database query duration in seconds",
+    ["operation", "table"],
     registry=registry,
-    buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0)
+    buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0),
 )
 
 # Redis metrics
 redis_operations_total = Counter(
-    'fastapi_redis_operations_total',
-    'Total Redis operations',
-    ['operation', 'status'],
-    registry=registry
+    "fastapi_redis_operations_total",
+    "Total Redis operations",
+    ["operation", "status"],
+    registry=registry,
 )
 
 redis_operation_duration_seconds = Histogram(
-    'fastapi_redis_operation_duration_seconds',
-    'Redis operation duration in seconds',
-    ['operation'],
+    "fastapi_redis_operation_duration_seconds",
+    "Redis operation duration in seconds",
+    ["operation"],
     registry=registry,
-    buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5)
+    buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5),
 )
 
 # Rate limiting metrics
 rate_limit_exceeded_total = Counter(
-    'fastapi_rate_limit_exceeded_total',
-    'Total rate limit exceeded events',
-    ['endpoint', 'client'],
-    registry=registry
+    "fastapi_rate_limit_exceeded_total",
+    "Total rate limit exceeded events",
+    ["endpoint", "client"],
+    registry=registry,
 )
 
 # Error metrics
 errors_total = Counter(
-    'fastapi_errors_total',
-    'Total errors',
-    ['type', 'endpoint'],
-    registry=registry
+    "fastapi_errors_total", "Total errors", ["type", "endpoint"], registry=registry
 )
 
 
@@ -143,26 +141,16 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             status = response.status_code
 
             # Record metrics
-            http_requests_total.labels(
-                method=method,
-                endpoint=endpoint,
-                status=status
-            ).inc()
+            http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
 
             duration = time.time() - start_time
-            http_request_duration_seconds.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(duration)
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
 
             return response
 
         except Exception as e:
             # Record error
-            errors_total.labels(
-                type=type(e).__name__,
-                endpoint=endpoint
-            ).inc()
+            errors_total.labels(type=type(e).__name__, endpoint=endpoint).inc()
             raise
 
         finally:

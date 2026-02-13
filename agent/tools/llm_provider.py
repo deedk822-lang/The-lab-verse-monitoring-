@@ -3,14 +3,14 @@ Multi-provider LLM abstraction layer with proper HuggingFace token handling.
 Fixed: HuggingFace now properly uses HF_TOKEN for authentication.
 """
 
+from abc import ABC, abstractmethod
 import asyncio
+from dataclasses import dataclass
+from enum import Enum
 import logging
 import os
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from vaal_ai_empire.api.sanitizers import sanitize_prompt
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class TaskType(Enum):
     """LLM task types for model selection."""
+
     CODE_GENERATION = "code_generation"
     TEXT_GENERATION = "text_generation"
     SUMMARIZATION = "summarization"
@@ -32,25 +33,27 @@ class TaskType(Enum):
 @dataclass
 class LLMResponse:
     """Standardized LLM response."""
+
     text: str
     model: str
     provider: str
-    tokens_used: Optional[int] = None
-    cost: Optional[float] = None
-    latency_ms: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
+    tokens_used: int | None = None
+    cost: float | None = None
+    latency_ms: float | None = None
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass
 class LLMConfig:
     """Base LLM configuration."""
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
+
+    api_key: str | None = None
+    base_url: str | None = None
     timeout: float = 60.0
     max_retries: int = 3
     retry_delay: float = 1.0
     # HuggingFace specific
-    model_path: Optional[str] = None
+    model_path: str | None = None
     device: str = "cpu"
     use_auth_token: bool = True  # Whether to use HF_TOKEN
 
@@ -60,7 +63,7 @@ class LLMProvider(ABC):
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self.provider_name = self.__class__.__name__.replace('Provider', '')
+        self.provider_name = self.__class__.__name__.replace("Provider", "")
 
     @abstractmethod
     async def generate(
@@ -69,7 +72,7 @@ class LLMProvider(ABC):
         task: TaskType = TaskType.TEXT_GENERATION,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Generate completion from prompt."""
         pass
@@ -77,19 +80,16 @@ class LLMProvider(ABC):
     @abstractmethod
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Chat completion with message history."""
         pass
 
     async def generate_with_retry(
-        self,
-        prompt: str,
-        task: TaskType = TaskType.TEXT_GENERATION,
-        **kwargs
+        self, prompt: str, task: TaskType = TaskType.TEXT_GENERATION, **kwargs
     ) -> LLMResponse:
         """Generate with automatic retry logic."""
         last_error = None
@@ -100,7 +100,7 @@ class LLMProvider(ABC):
             except Exception as e:
                 last_error = e
                 if attempt < self.config.max_retries - 1:
-                    delay = self.config.retry_delay * (2 ** attempt)
+                    delay = self.config.retry_delay * (2**attempt)
                     logger.warning(
                         f"LLM generation failed (attempt {attempt + 1}), "
                         f"retrying in {delay}s: {e}"
@@ -113,7 +113,7 @@ class LLMProvider(ABC):
 class HuggingFaceProvider(LLMProvider):
     """
     HuggingFace local model provider with proper token authentication.
-    
+
     Critical: Uses HF_TOKEN (api_key) for:
     - Downloading models from HuggingFace Hub
     - Accessing gated/private models
@@ -152,14 +152,14 @@ class HuggingFaceProvider(LLMProvider):
 
         # Set HuggingFace token in environment for transformers library
         if self.hf_token:
-            os.environ['HF_TOKEN'] = self.hf_token
-            os.environ['HUGGING_FACE_HUB_TOKEN'] = self.hf_token
+            os.environ["HF_TOKEN"] = self.hf_token
+            os.environ["HUGGING_FACE_HUB_TOKEN"] = self.hf_token
             logger.info("HuggingFace token configured for model access")
 
     def _ensure_model_loaded(self, model_name: str):
         """
         Lazy load model with proper HuggingFace token authentication.
-        
+
         The token is used for:
         - snapshot_download() to fetch model files
         - AutoTokenizer.from_pretrained() for tokenizer download
@@ -189,7 +189,7 @@ class HuggingFaceProvider(LLMProvider):
                     model_name,
                     cache_dir=self._model_path,
                     token=use_auth_token,
-                    trust_remote_code=False
+                    trust_remote_code=False,
                 )
 
                 # Load model with authentication
@@ -200,7 +200,7 @@ class HuggingFaceProvider(LLMProvider):
                     token=use_auth_token,
                     torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
                     low_cpu_mem_usage=True,
-                    trust_remote_code=False
+                    trust_remote_code=False,
                 )
 
                 # Move to device
@@ -250,9 +250,7 @@ class HuggingFaceProvider(LLMProvider):
                     ) from e
 
             except Exception as e:
-                raise RuntimeError(
-                    f"Unexpected error loading model {model_name}: {e}"
-                ) from e
+                raise RuntimeError(f"Unexpected error loading model {model_name}: {e}") from e
 
     async def generate(
         self,
@@ -260,7 +258,7 @@ class HuggingFaceProvider(LLMProvider):
         task: TaskType = TaskType.TEXT_GENERATION,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Generate using local HuggingFace model."""
         start_time = time.time()
@@ -277,10 +275,7 @@ class HuggingFaceProvider(LLMProvider):
         # Generate (synchronous call in executor)
         def _generate():
             inputs = self._tokenizer(
-                sanitized_prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=4096
+                sanitized_prompt, return_tensors="pt", truncation=True, max_length=4096
             )
 
             if self._device == "cuda":
@@ -292,7 +287,7 @@ class HuggingFaceProvider(LLMProvider):
                 temperature=temperature,
                 do_sample=temperature > 0,
                 pad_token_id=self._tokenizer.eos_token_id,
-                **kwargs
+                **kwargs,
             )
 
             return self._tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -306,33 +301,21 @@ class HuggingFaceProvider(LLMProvider):
             model=model_name,
             provider=self.provider_name,
             latency_ms=latency,
-            metadata={
-                "device": self._device,
-                "authenticated": bool(self.hf_token)
-            }
+            metadata={"device": self._device, "authenticated": bool(self.hf_token)},
         )
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Chat using local model."""
         # Convert messages to prompt
-        prompt = "\n".join([
-            f"{msg['role']}: {msg['content']}"
-            for msg in messages
-        ])
+        prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages])
 
-        return await self.generate(
-            prompt,
-            TaskType.CHAT,
-            max_tokens,
-            temperature,
-            **kwargs
-        )
+        return await self.generate(prompt, TaskType.CHAT, max_tokens, temperature, **kwargs)
 
 
 class OpenAIProvider(LLMProvider):
@@ -353,54 +336,45 @@ class OpenAIProvider(LLMProvider):
         task: TaskType = TaskType.TEXT_GENERATION,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Generate using OpenAI API."""
         return await self.chat(
-            [{"role": "user", "content": prompt}],
-            max_tokens,
-            temperature,
-            task=task,
-            **kwargs
+            [{"role": "user", "content": prompt}], max_tokens, temperature, task=task, **kwargs
         )
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7,
         task: TaskType = TaskType.CHAT,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """Chat using OpenAI API."""
         start_time = time.time()
 
         sanitized_messages = [
-            {
-                "role": msg["role"],
-                "content": sanitize_prompt(msg["content"], max_length=8000)
-            }
+            {"role": msg["role"], "content": sanitize_prompt(msg["content"], max_length=8000)}
             for msg in messages
         ]
 
         model = kwargs.pop("model", self.task_models.get(task, "gpt-4o-mini"))
 
-        async with create_ssrf_safe_async_session(
-            timeout=self.config.timeout
-        ) as client:
+        async with create_ssrf_safe_async_session(timeout=self.config.timeout) as client:
             response = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.config.api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
                     "model": model,
                     "messages": sanitized_messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature,
-                    **kwargs
-                }
+                    **kwargs,
+                },
             )
             response.raise_for_status()
             data = response.json()
@@ -413,10 +387,10 @@ class OpenAIProvider(LLMProvider):
             provider=self.provider_name,
             tokens_used=data.get("usage", {}).get("total_tokens"),
             cost=self._calculate_cost(model, data.get("usage", {})),
-            latency_ms=latency
+            latency_ms=latency,
         )
 
-    def _calculate_cost(self, model: str, usage: Dict) -> Optional[float]:
+    def _calculate_cost(self, model: str, usage: dict) -> float | None:
         """Calculate approximate cost for OpenAI models."""
         pricing = {
             "gpt-4o": (0.005, 0.015),
@@ -441,14 +415,14 @@ class LLMProviderFactory:
     def create(provider_type: str, config: LLMConfig) -> LLMProvider:
         """
         Create provider instance with proper configuration.
-        
+
         Args:
             provider_type: Type of provider (huggingface, openai)
             config: LLM configuration with all required parameters
-            
+
         Returns:
             Configured LLM provider instance
-            
+
         Raises:
             ValueError: If provider_type is unknown
             RuntimeError: If provider cannot be initialized
@@ -461,20 +435,17 @@ class LLMProviderFactory:
         provider_class = providers.get(provider_type.lower())
         if not provider_class:
             raise ValueError(
-                f"Unknown provider: {provider_type}. "
-                f"Available: {', '.join(providers.keys())}"
+                f"Unknown provider: {provider_type}. " f"Available: {', '.join(providers.keys())}"
             )
 
         try:
             return provider_class(config)
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to initialize {provider_type} provider: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to initialize {provider_type} provider: {e}") from e
 
 
 # Global provider instance
-_global_provider: Optional[LLMProvider] = None
+_global_provider: LLMProvider | None = None
 
 
 def set_global_provider(provider: LLMProvider):
@@ -496,30 +467,30 @@ def get_global_provider() -> LLMProvider:
 def initialize_from_env() -> LLMProvider:
     """
     Initialize provider from environment variables.
-    
+
     Environment Variables:
         LLM_PROVIDER: Provider type (huggingface, openai)
-        
+
         For HuggingFace:
             HF_TOKEN: HuggingFace API token (REQUIRED for most models)
             HF_MODEL_PATH: Model cache directory (optional)
             HF_DEVICE: Device to use (cpu, cuda) (optional)
-        
+
         For OpenAI:
             OPENAI_API_KEY: OpenAI API key (REQUIRED)
             OPENAI_BASE_URL: OpenAI base URL (optional)
-    
+
     Returns:
         Configured provider instance
-        
+
     Raises:
         RuntimeError: If required environment variables are missing
     """
-    provider_type = os.getenv('LLM_PROVIDER', 'openai')
+    provider_type = os.getenv("LLM_PROVIDER", "openai")
 
     # Build config based on provider type
-    if provider_type == 'huggingface':
-        hf_token = os.getenv('HF_TOKEN')
+    if provider_type == "huggingface":
+        hf_token = os.getenv("HF_TOKEN")
         if not hf_token:
             logger.warning(
                 "HF_TOKEN not set. HuggingFace provider will work but:\n"
@@ -531,20 +502,18 @@ def initialize_from_env() -> LLMProvider:
 
         config = LLMConfig(
             api_key=hf_token,
-            model_path=os.getenv('HF_MODEL_PATH', os.path.expanduser('~/.cache/huggingface')),
-            device=os.getenv('HF_DEVICE', 'cpu'),
-            use_auth_token=True
+            model_path=os.getenv("HF_MODEL_PATH", os.path.expanduser("~/.cache/huggingface")),
+            device=os.getenv("HF_DEVICE", "cpu"),
+            use_auth_token=True,
         )
-    elif provider_type == 'openai':
-        api_key = os.getenv('OPENAI_API_KEY')
+    elif provider_type == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY environment variable required for OpenAI provider"
-            )
+            raise RuntimeError("OPENAI_API_KEY environment variable required for OpenAI provider")
         config = LLMConfig(
             api_key=api_key,
-            base_url=os.getenv('OPENAI_BASE_URL'),
-            timeout=float(os.getenv('OPENAI_TIMEOUT', '60'))
+            base_url=os.getenv("OPENAI_BASE_URL"),
+            timeout=float(os.getenv("OPENAI_TIMEOUT", "60")),
         )
     else:
         raise RuntimeError(f"Unsupported provider type: {provider_type}")

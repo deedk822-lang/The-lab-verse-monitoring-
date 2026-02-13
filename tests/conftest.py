@@ -4,29 +4,34 @@ Test configuration and fixtures.
 Ensures tests import from correct source path.
 """
 
-import sys
-from pathlib import Path
- codex/add-initial-configuration-and-server-files
-
-
 import os
- codex/add-mypy-configuration-and-server-components
+from pathlib import Path
+import sys
+
 import pytest
 from pytest import fixture
 
-# FIX: Add src to path for tests
+# FIX: Add src and root to path for tests
 repo_root = Path(__file__).parent.parent
 src_path = repo_root / "src"
+
+# Add root first for app module
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+# Add src for other modules
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 # Verify imports work
 try:
     import pr_fix_agent
+
     print(f"✅ Successfully imported pr_fix_agent from: {pr_fix_agent.__file__}")
 except ImportError as e:
     print(f"❌ Failed to import pr_fix_agent: {e}")
     print(f"sys.path: {sys.path}")
+
 
 @fixture(scope="session")
 def repo_root_path():
@@ -35,14 +40,11 @@ def repo_root_path():
 
 
 @fixture(scope="session")
-def src_path():
+def src_path_fixture():
     """Return src directory path."""
     return repo_root / "src"
 
- codex/add-initial-configuration-and-server-files
 
-
- codex/add-mypy-configuration-and-server-components
 @pytest.fixture(scope="session", autouse=True)
 def configure_env():
     """Set required environment variables for tests."""
@@ -56,13 +58,12 @@ def configure_env():
 
     yield
 
- codex/add-initial-configuration-and-server-files
 
-
- codex/add-mypy-configuration-and-server-components
 @pytest.fixture
 def client():
     """Fixture to provide the test client"""
     from fastapi.testclient import TestClient
+
     from app.main import app
+
     return TestClient(app)

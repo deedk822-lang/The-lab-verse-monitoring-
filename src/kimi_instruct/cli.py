@@ -5,10 +5,10 @@ Command-line interface for managing Kimi tasks and project status
 
 import argparse
 import asyncio
-import json
-import sys
 from datetime import datetime
+import json
 from pathlib import Path
+import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -73,9 +73,7 @@ class KimiCLI:
         try:
             priority = TaskPriority(args.priority)
         except ValueError:
-            print(
-                f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical"
-            )
+            print(f"Error: Invalid priority '{args.priority}'. Use: low, medium, high, critical")
             return
 
         # Create task
@@ -187,9 +185,7 @@ class KimiCLI:
         # Get current status
         status = await self.kimi.get_status_report()
 
-        print(
-            f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%"
-        )
+        print(f"Current Progress: {status['task_summary']['completion_percentage']:.1f}%")
         print(f"Risk Level: {status['risk_level'].upper()}")
         print(f"Budget Remaining: ${status['project_context']['budget_remaining']:.2f}")
 
@@ -249,9 +245,7 @@ class KimiCLI:
         print("-" * 25)
         print(f"Current Risk Level: {status['risk_level'].upper()}")
         print(f"Risk Score: {context['metrics'].get('risk_score', 0):.2f}")
-        print(
-            f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}"
-        )
+        print(f"Human Interventions: {context['metrics'].get('human_intervention_count', 0)}")
 
         # Critical Issues
         if status["critical_issues"]:

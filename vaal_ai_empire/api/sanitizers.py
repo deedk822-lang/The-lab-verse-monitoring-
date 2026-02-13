@@ -7,8 +7,8 @@ import logging
 import re
 import threading
 import time
+from typing import Any
 import unicodedata
-from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ DANGEROUS_PATTERNS = [
 # Refined regex for prompt injection
 INJECTION_PATTERN = re.compile(
     r"(?i)(ignore|forget|disregard|reveal|reveal|delete|system|inst)\s+(?:.*?\s+)?(instructions|prompts|rules|everything|above|all|guidelines|secrets|message|start|end)",
-    re.UNICODE
+    re.UNICODE,
 )
 
 SYSTEM_MESSAGE_PATTERN = re.compile(r"<\|im_start\|>system|<\|im_end\|>")
@@ -37,15 +37,16 @@ SYSTEM_MESSAGE_PATTERN = re.compile(r"<\|im_start\|>system|<\|im_end\|>")
 
 class PromptInjectionDetected(ValueError):
     """Exception raised when a prompt injection attempt is detected."""
+
     pass
 
 
 def normalize_unicode(text: str) -> str:
     """Normalize unicode to NFKC to prevent obfuscation."""
-    return unicodedata.normalize('NFKC', text)
+    return unicodedata.normalize("NFKC", text)
 
 
-def detect_injection_patterns(text: str) -> List[str]:
+def detect_injection_patterns(text: str) -> list[str]:
     """Detect dangerous patterns in text."""
     normalized = normalize_unicode(text)
     matches = []
@@ -60,10 +61,7 @@ def detect_injection_patterns(text: str) -> List[str]:
 
 
 def sanitize_prompt(
-    prompt: str,
-    max_length: int = 10000,
-    strict: bool = True,
-    allow_system_messages: bool = True
+    prompt: str, max_length: int = 10000, strict: bool = True, allow_system_messages: bool = True
 ) -> str:
     """
     Sanitize user prompts to prevent injection attacks.
@@ -94,12 +92,12 @@ def sanitize_prompt(
             normalized = INJECTION_PATTERN.sub("[FILTERED]", normalized)
 
     # Remove null bytes
-    normalized = normalized.replace('\x00', '')
+    normalized = normalized.replace("\x00", "")
 
     return normalized.strip()
 
 
-def sanitize_context(context: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_context(context: dict[str, Any]) -> dict[str, Any]:
     """Recursively sanitize context dictionary."""
     sanitized = {}
     for key, value in context.items():
@@ -112,7 +110,7 @@ def sanitize_context(context: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 
-def sanitize_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_webhook_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """Sanitize webhook payload to prevent injection."""
     return sanitize_context(payload)
 
@@ -123,7 +121,7 @@ class RateLimiter:
     def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests: List[float] = []
+        self.requests: list[float] = []
         self._lock = threading.Lock()
 
     async def is_allowed(self, key: str) -> bool:
@@ -134,21 +132,16 @@ class RateLimiter:
         """Check if rate limit is exceeded."""
         now = time.time()
         with self._lock:
-            self.requests = [
-                req for req in self.requests
-                if now - req < self.window_seconds
-            ]
+            self.requests = [req for req in self.requests if now - req < self.window_seconds]
             if len(self.requests) >= self.max_requests:
                 return False
             self.requests.append(now)
             return True
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get stats."""
         with self._lock:
-            return {
-                "remaining": self.max_requests - len(self.requests)
-            }
+            return {"remaining": self.max_requests - len(self.requests)}
 
     def reset(self):
         """Reset."""
@@ -159,20 +152,20 @@ class RateLimiter:
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filenames to prevent directory traversal.
-    
+
     Args:
         filename: Input filename
-        
+
     Returns:
         Sanitized filename
     """
     # Remove path separators
-    filename = filename.replace('/', '').replace('\\', '')
+    filename = filename.replace("/", "").replace("\\", "")
 
     # Remove dangerous characters
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    filename = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
 
     # Remove leading dots
-    filename = filename.lstrip('.')
+    filename = filename.lstrip(".")
 
     return filename[:255]  # Max filename length

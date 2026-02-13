@@ -4,12 +4,11 @@ Security Middleware - S4: Comprehensive Security Headers
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import uuid
-from typing import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 import structlog
 
 logger = structlog.get_logger()
@@ -21,9 +20,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Response]
+        self, request: Request, call_next: Callable[[Request], Response]
     ) -> Response:
         response = await call_next(request)
 
@@ -45,9 +42,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
-        )
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
         return response
 
@@ -56,9 +51,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     """Add unique request ID for tracing."""
 
     async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Response]
+        self, request: Request, call_next: Callable[[Request], Response]
     ) -> Response:
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         request.state.request_id = request_id
@@ -73,9 +66,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Response]
+        self, request: Request, call_next: Callable[[Request], Response]
     ) -> Response:
         method = request.method
         path = request.url.path
@@ -106,6 +97,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
 
         if is_privileged:
             from pr_fix_agent.security.audit import get_audit_logger
+
             audit_logger = get_audit_logger()
             audit_logger.log_event(
                 event_type="api_access",

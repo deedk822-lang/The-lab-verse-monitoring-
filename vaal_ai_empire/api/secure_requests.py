@@ -6,7 +6,6 @@ Prevents Server-Side Request Forgery attacks.
 import ipaddress
 import logging
 import socket
-from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
 
 import httpx
@@ -15,32 +14,33 @@ logger = logging.getLogger(__name__)
 
 # Blocked IP ranges (private networks, localhost, etc.)
 BLOCKED_IP_RANGES = [
-    ipaddress.ip_network('0.0.0.0/8'),
-    ipaddress.ip_network('10.0.0.0/8'),
-    ipaddress.ip_network('127.0.0.0/8'),
-    ipaddress.ip_network('169.254.0.0/16'),
-    ipaddress.ip_network('172.16.0.0/12'),
-    ipaddress.ip_network('192.168.0.0/16'),
-    ipaddress.ip_network('224.0.0.0/4'),
-    ipaddress.ip_network('240.0.0.0/4'),
-    ipaddress.ip_network('::1/128'),
-    ipaddress.ip_network('fe80::/10'),
-    ipaddress.ip_network('fc00::/7'),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("240.0.0.0/4"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("fc00::/7"),
 ]
 
 
 class SSRFProtectionError(Exception):
     """Raised when an SSRF attempt is detected."""
+
     pass
 
 
 def is_safe_url(url: str) -> bool:
     """
     Check if URL is safe to request (not private/localhost).
-    
+
     Args:
         url: URL to check
-        
+
     Returns:
         True if safe, False otherwise
     """
@@ -53,7 +53,7 @@ def is_safe_url(url: str) -> bool:
             return False
 
         # Protocol check
-        if parsed.scheme not in ('http', 'https'):
+        if parsed.scheme not in ("http", "https"):
             logger.error(f"Blocked request with unsupported scheme: {parsed.scheme}")
             return False
 
@@ -84,29 +84,26 @@ def is_safe_url(url: str) -> bool:
         return False
 
 
-def create_ssrf_safe_session(
-    timeout: float = 30.0
-) -> httpx.Client:
+def create_ssrf_safe_session(timeout: float = 30.0) -> httpx.Client:
     """Create a synchronous SSRF-safe session."""
     return httpx.Client(timeout=timeout)
 
 
 def create_ssrf_safe_async_session(
-    timeout: float = 30.0,
-    follow_redirects: bool = False,
-    max_redirects: int = 0
+    timeout: float = 30.0, follow_redirects: bool = False, max_redirects: int = 0
 ) -> httpx.AsyncClient:
     """
     Create SSRF-safe async HTTP client.
-    
+
     Args:
         timeout: Request timeout in seconds
         follow_redirects: Whether to follow redirects
         max_redirects: Maximum number of redirects
-        
+
     Returns:
         Configured async HTTP client
     """
+
     # Custom transport that checks URLs before connecting
     class SSRFSafeTransport(httpx.AsyncHTTPTransport):
         async def handle_async_request(self, request):
@@ -119,5 +116,5 @@ def create_ssrf_safe_async_session(
         transport=SSRFSafeTransport(),
         timeout=timeout,
         follow_redirects=follow_redirects,
-        max_redirects=max_redirects
+        max_redirects=max_redirects,
     )

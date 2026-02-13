@@ -1,8 +1,8 @@
-import logging
 from datetime import datetime
-from typing import Dict, List
+import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RevenueAnomalyDetector:
     """Detect anomalies in revenue patterns"""
@@ -10,7 +10,7 @@ class RevenueAnomalyDetector:
     def __init__(self, db):
         self.db = db
 
-    def detect_anomalies(self) -> List[Dict]:
+    def detect_anomalies(self) -> list[dict]:
         """
         Detect anomalies such as sudden drops in revenue
         Returns a list of detected anomalies with descriptions
@@ -22,12 +22,14 @@ class RevenueAnomalyDetector:
         daily_avg_7d = self.db.get_revenue_summary(days=7)["total_revenue"] / 7
 
         if daily_now < daily_avg_7d * 0.5 and daily_avg_7d > 100:
-            anomalies.append({
-                "type": "revenue_drop",
-                "severity": "high",
-                "message": f"Sudden revenue drop detected: R{daily_now} today vs R{daily_avg_7d:.2f} avg.",
-                "timestamp": datetime.now().isoformat()
-            })
+            anomalies.append(
+                {
+                    "type": "revenue_drop",
+                    "severity": "high",
+                    "message": f"Sudden revenue drop detected: R{daily_now} today vs R{daily_avg_7d:.2f} avg.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # 2. Check for unusual client churn (no revenue from active clients)
         # This is a simplified check
@@ -35,12 +37,14 @@ class RevenueAnomalyDetector:
         clients_with_revenue = self.db.get_revenue_summary(days=7)["client_count"]
 
         if len(active_clients) > 0 and clients_with_revenue < len(active_clients) * 0.3:
-            anomalies.append({
-                "type": "low_engagement",
-                "severity": "medium",
-                "message": f"Low client engagement: Only {clients_with_revenue}/{len(active_clients)} active clients billed in 7 days.",
-                "timestamp": datetime.now().isoformat()
-            })
+            anomalies.append(
+                {
+                    "type": "low_engagement",
+                    "severity": "medium",
+                    "message": f"Low client engagement: Only {clients_with_revenue}/{len(active_clients)} active clients billed in 7 days.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         return anomalies
 

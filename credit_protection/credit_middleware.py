@@ -4,9 +4,9 @@ VAAL AI Empire - Credit Protection Middleware
 Real FastAPI middleware that protects LLM API calls
 """
 
+from collections.abc import Callable
 import re
 import time
-from typing import Callable
 
 from credit_manager import CreditManager
 from fastapi import HTTPException, Request, Response
@@ -26,13 +26,13 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
 
         # Patterns to detect LLM API endpoints
         self.llm_patterns = [
-            r'/api/v1/kimi',
-            r'/api/v1/qwen',
-            r'/api/v1/huggingface',
-            r'/api/v1/chat',
-            r'/api/v1/completion',
-            r'/generate',
-            r'/chat',
+            r"/api/v1/kimi",
+            r"/api/v1/qwen",
+            r"/api/v1/huggingface",
+            r"/api/v1/chat",
+            r"/api/v1/completion",
+            r"/generate",
+            r"/chat",
         ]
 
     def _is_llm_request(self, path: str) -> bool:
@@ -100,8 +100,8 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                 content={
                     "error": "Circuit breaker active",
                     "message": breaker_reason,
-                    "retry_after": 3600  # 1 hour
-                }
+                    "retry_after": 3600,  # 1 hour
+                },
             )
 
         # Get request body
@@ -132,9 +132,9 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
                         "requests": usage_info.get("requests", 0),
                         "max_requests": self.manager.config["daily_max_requests"],
                         "cost": f"${usage_info.get('cost', 0):.4f}",
-                        "max_cost": f"${self.manager.config['daily_max_cost']:.2f}"
-                    }
-                }
+                        "max_cost": f"${self.manager.config['daily_max_cost']:.2f}",
+                    },
+                },
             )
 
         # Allow request and time it
@@ -149,17 +149,24 @@ class CreditProtectionMiddleware(BaseHTTPMiddleware):
         # Add usage headers to response
         summary = self.manager.get_usage_summary()
         response.headers["X-Credit-Tier"] = self.manager.tier
-        response.headers["X-Daily-Requests"] = f"{summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']}"
-        response.headers["X-Daily-Cost"] = f"${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']:.2f}"
-        response.headers["X-Daily-Usage-Percent"] = f"{summary['daily']['percentages']['cost']:.1f}%"
+        response.headers["X-Daily-Requests"] = (
+            f"{summary['daily']['usage']['requests']}/{summary['daily']['limits']['requests']}"
+        )
+        response.headers["X-Daily-Cost"] = (
+            f"${summary['daily']['usage']['cost']:.4f}/${summary['daily']['limits']['cost']:.2f}"
+        )
+        response.headers["X-Daily-Usage-Percent"] = (
+            f"{summary['daily']['percentages']['cost']:.1f}%"
+        )
         response.headers["X-Request-Time"] = f"{elapsed_time:.2f}s"
 
         return response
 
+
 def protect_function(tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
     """
     Decorator to protect individual functions
-    
+
     Usage:
         @protect_function(tier="free")
         def my_llm_function(prompt: str):
@@ -184,10 +191,7 @@ def protect_function(tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
             # Check if allowed
             allowed, reason, _ = manager.can_make_request(estimated_tokens)
             if not allowed:
-                raise HTTPException(
-                    status_code=429,
-                    detail=f"Credit limit reached: {reason}"
-                )
+                raise HTTPException(status_code=429, detail=f"Credit limit reached: {reason}")
 
             # Call function
             result = func(*args, **kwargs)
@@ -196,8 +200,11 @@ def protect_function(tier: str = "free", data_dir: str = "/tmp/vaal_credits"):
             manager.record_usage(estimated_tokens)
 
             return result
+
         return wrapper
+
     return decorator
+
 
 if __name__ == "__main__":
     # Test the decorator
@@ -228,6 +235,7 @@ if __name__ == "__main__":
     # Test 3: Check usage
     print("\n=== Test 3: Check usage ===")
     from credit_manager import CreditManager
+
     manager = CreditManager(tier="free")
     summary = manager.get_usage_summary()
     print(f"Total requests: {summary['daily']['usage']['requests']}")

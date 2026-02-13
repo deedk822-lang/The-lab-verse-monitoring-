@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Tuple
 
 
 class PolicyGate:
@@ -13,7 +12,7 @@ class PolicyGate:
         # In a real system, policies would be loaded from a config file or database.
         self.policies = {"max_risk_score": 0.5}
 
-    def check(self, metrics: Dict) -> Tuple[bool, List[str]]:
+    def check(self, metrics: dict) -> tuple[bool, list[str]]:
         """
         Evaluates the metrics against the loaded policies.
         """

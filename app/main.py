@@ -3,72 +3,72 @@ Enhanced main application with security, monitoring, distributed state, and Atla
 Integrated with Prometheus and Grafana for observability.
 """
 
+from collections import OrderedDict
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 import hashlib
 import hmac
 import json
 import logging
 import os
 import time
-from collections import OrderedDict
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
-import httpx
-import redis.asyncio as redis
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+import httpx
 from pydantic import BaseModel
-from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
+import redis.asyncio as redis
 
 from agent.tools.llm_provider import TaskType, get_global_provider, initialize_from_env
+from app.middleware.metrics import (
+    llm_request_duration_seconds,
+    llm_requests_total,
+    llm_tokens_total,
+    setup_metrics,
+)
 from vaal_ai_empire.api.sanitizers import sanitize_webhook_payload
 from vaal_ai_empire.api.secure_requests import create_ssrf_safe_async_session
-
-from app.middleware.metrics import setup_metrics
-from app.middleware.metrics import (
-    llm_requests_total,
-    llm_request_duration_seconds,
-    llm_tokens_total,
-    db_connections_active,
-    db_queries_total,
-    redis_operations_total,
-)
+from vaal_ai_empire.api.shared_state import RedisDedupeCache, RedisRateLimiter
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 # Models with proper typing
 class RepositoryInfo(BaseModel):
     name: str
-    full_name: Optional[str] = None
-    url: Optional[str] = None
+    full_name: str | None = None
+    url: str | None = None
+
 
 class CommitInfo(BaseModel):
     hash: str
-    message: Optional[str] = None
-    author: Optional[Dict[str, Any]] = None
-    date: Optional[str] = None
+    message: str | None = None
+    author: dict[str, Any] | None = None
+    date: str | None = None
+
 
 class BitbucketWebhookPayload(BaseModel):
     repository: RepositoryInfo
     commit: CommitInfo
     build_status: str
-    event_type: Optional[str] = "build_status"
+    event_type: str | None = "build_status"
+
 
 class AtlassianWebhookPayload(BaseModel):
     event: str
     date: str
-    actor: Dict[str, Any]
+    actor: dict[str, Any]
     repository: RepositoryInfo
     commit: CommitInfo
-    build_status: Optional[Dict[str, Any]] = None
+    build_status: dict[str, Any] | None = None
+
 
 # Fallback in-memory state for non-distributed environments
 class InMemoryDedupeCache:
@@ -80,40 +80,48 @@ class InMemoryDedupeCache:
     def _cleanup(self):
         current_time = time.time()
         expired = [k for k, ts in self._cache.items() if current_time - ts > self.ttl_seconds]
-        for k in expired: del self._cache[k]
+        for k in expired:
+            del self._cache[k]
 
-    def generate_key(self, payload: Dict[str, Any]) -> str:
-        webhook_id = payload.get('webhookEvent', payload.get('id', ''))
-        timestamp = payload.get('timestamp', payload.get('created_at', ''))
+    def generate_key(self, payload: dict[str, Any]) -> str:
+        webhook_id = payload.get("webhookEvent", payload.get("id", ""))
+        timestamp = payload.get("timestamp", payload.get("created_at", ""))
         unique_str = f"{webhook_id}:{timestamp}:{str(payload)[:100]}"
         return hashlib.sha256(unique_str.encode()).hexdigest()
 
     async def is_duplicate(self, key: str) -> bool:
         self._cleanup()
-        if key in self._cache: return True
+        if key in self._cache:
+            return True
         self._cache[key] = time.time()
-        if len(self._cache) > self.max_size: self._cache.popitem(last=False)
+        if len(self._cache) > self.max_size:
+            self._cache.popitem(last=False)
         return False
+
 
 class InMemoryRateLimiter:
     def __init__(self, max_requests: int = 100, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self._requests: Dict[str, list] = {}
+        self._requests: dict[str, list] = {}
 
     async def is_allowed(self, key: str) -> bool:
         now = time.time()
-        if key not in self._requests: self._requests[key] = []
+        if key not in self._requests:
+            self._requests[key] = []
         cutoff = now - self.window_seconds
         self._requests[key] = [ts for ts in self._requests[key] if ts > cutoff]
-        if len(self._requests[key]) >= self.max_requests: return False
+        if len(self._requests[key]) >= self.max_requests:
+            return False
         self._requests[key].append(now)
         return True
 
+
 # Global state components (initialized in lifespan)
-dedupe_cache: Union[RedisDedupeCache, InMemoryDedupeCache] = InMemoryDedupeCache()
-rate_limiter: Union[RedisRateLimiter, InMemoryRateLimiter] = InMemoryRateLimiter()
-redis_client: Optional[redis.Redis] = None
+dedupe_cache: RedisDedupeCache | InMemoryDedupeCache = InMemoryDedupeCache()
+rate_limiter: RedisRateLimiter | InMemoryRateLimiter = InMemoryRateLimiter()
+redis_client: redis.Redis | None = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -123,26 +131,27 @@ async def lifespan(app: FastAPI):
     logger.info("Starting VAAL AI Empire application")
 
     # Initialize Redis if available
-    redis_url = os.getenv('REDIS_URL')
+    redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
             redis_client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
             await redis_client.ping()
 
             dedupe_cache = RedisDedupeCache(
-                redis_client,
-                ttl_seconds=int(os.getenv('WEBHOOK_DEDUPE_TTL', '300'))
+                redis_client, ttl_seconds=int(os.getenv("WEBHOOK_DEDUPE_TTL", "300"))
             )
             rate_limiter = RedisRateLimiter(
                 redis_client,
-                max_requests=int(os.getenv('RATE_LIMIT_REQUESTS_PER_MINUTE', '60')),
-                window_seconds=60
+                max_requests=int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60")),
+                window_seconds=60,
             )
             logger.info("Distributed state initialized via Redis")
         except Exception as e:
             logger.error(f"Failed to initialize Redis: {e}. Falling back to in-memory state.")
     else:
-        logger.info("REDIS_URL not set. Using in-memory state (not suitable for multiple replicas).")
+        logger.info(
+            "REDIS_URL not set. Using in-memory state (not suitable for multiple replicas)."
+        )
 
     # Initialize LLM provider
     try:
@@ -163,17 +172,17 @@ app = FastAPI(
     title="VAAL AI Empire",
     description="Multi-provider LLM system with security hardening and Atlassian integration",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS configuration
-cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=os.getenv('CORS_ALLOW_CREDENTIALS', 'true').lower() == 'true',
+    allow_credentials=os.getenv("CORS_ALLOW_CREDENTIALS", "true").lower() == "true",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -181,12 +190,11 @@ app.add_middleware(
 # Setup Prometheus metrics
 setup_metrics(app)
 
+
 # Security dependencies
-async def verify_self_healing_key(
-    x_self_healing_key: Optional[str] = Header(None)
-) -> bool:
+async def verify_self_healing_key(x_self_healing_key: str | None = Header(None)) -> bool:
     """Verify self-healing webhook authentication key."""
-    expected_key = os.getenv('SELF_HEALING_KEY')
+    expected_key = os.getenv("SELF_HEALING_KEY")
     if not expected_key:
         logger.warning("SELF_HEALING_KEY not configured - webhook auth disabled")
         return True
@@ -197,9 +205,10 @@ async def verify_self_healing_key(
 
     return True
 
+
 async def check_rate_limit(request: Request) -> bool:
     """Check rate limit for client."""
-    if os.getenv('RATE_LIMIT_ENABLED', 'true').lower() != 'true':
+    if os.getenv("RATE_LIMIT_ENABLED", "true").lower() != "true":
         return True
 
     client_ip = request.client.host
@@ -208,6 +217,7 @@ async def check_rate_limit(request: Request) -> bool:
 
     return True
 
+
 # Error handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -215,10 +225,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={
             "error": exc.detail,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "path": str(request.url)
-        }
+            "timestamp": datetime.now(UTC).isoformat(),
+            "path": str(request.url),
+        },
     )
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
@@ -227,21 +238,23 @@ async def general_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "error": "Internal server error",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "path": str(request.url)
-        }
+            "timestamp": datetime.now(UTC).isoformat(),
+            "path": str(request.url),
+        },
     )
+
 
 @app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "version": "2.0.0",
         "region": "ap-southeast-1",
         "enhanced_with_qwen": True,
-        "atlassian_integration": True
+        "atlassian_integration": True,
     }
+
 
 @app.get("/ready")
 async def readiness_check():
@@ -249,23 +262,25 @@ async def readiness_check():
     try:
         get_global_provider()
         checks["llm_provider"] = True
-    except: pass
+    except:
+        pass
 
     if redis_client:
         try:
             await redis_client.ping()
             checks["redis"] = True
-        except: pass
+        except:
+            pass
 
     all_ready = checks["llm_provider"]
     status_code = 200 if all_ready else 503
     return JSONResponse(status_code=status_code, content={"ready": all_ready, "checks": checks})
 
+
 @app.post("/webhook/bitbucket")
 async def handle_bitbucket_webhook(
-    request: Request,
-    rate_limited: bool = Depends(check_rate_limit)
-) -> Dict[str, Any]:
+    request: Request, rate_limited: bool = Depends(check_rate_limit)
+) -> dict[str, Any]:
     """Handle traditional Bitbucket webhook"""
     body = await request.body()
     secret = os.getenv("WEBHOOK_SECRET")
@@ -298,21 +313,22 @@ async def handle_bitbucket_webhook(
             "enhanced": True,
             "region": "ap-southeast-1",
             "source": "direct_bitbucket",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     return {
         "status": "handled",
         "region": "ap-southeast-1",
         "source": "direct_bitbucket",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat(),
     }
+
 
 @app.post("/webhooks/atlassian")
 async def atlassian_webhook(
     request: Request,
     authenticated: bool = Depends(verify_self_healing_key),
-    rate_limited: bool = Depends(check_rate_limit)
+    rate_limited: bool = Depends(check_rate_limit),
 ):
     try:
         raw_payload = await request.json()
@@ -326,70 +342,87 @@ async def atlassian_webhook(
         result = await forward_webhook(standard_payload)
 
         return {"status": "success", "message": "Webhook processed", "result": result}
-    except HTTPException: raise
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Webhook processing error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-def convert_atlassian_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-    event_type = payload.get('webhookEvent', 'unknown')
+
+def convert_atlassian_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    event_type = payload.get("webhookEvent", "unknown")
     standard = {
         "event_type": event_type,
-        "timestamp": payload.get('timestamp', datetime.now(timezone.utc).isoformat()),
+        "timestamp": payload.get("timestamp", datetime.now(UTC).isoformat()),
         "source": "atlassian",
-        "data": {}
+        "data": {},
     }
-    if 'issue' in payload:
-        standard['data']['issue'] = {
-            "key": payload['issue'].get('key'),
-            "summary": payload['issue'].get('fields', {}).get('summary'),
-            "status": payload['issue'].get('fields', {}).get('status', {}).get('name'),
-            "assignee": payload['issue'].get('fields', {}).get('assignee', {}).get('displayName'),
-            "description": payload['issue'].get('description', payload['issue'].get('fields', {}).get('description'))
+    if "issue" in payload:
+        standard["data"]["issue"] = {
+            "key": payload["issue"].get("key"),
+            "summary": payload["issue"].get("fields", {}).get("summary"),
+            "status": payload["issue"].get("fields", {}).get("status", {}).get("name"),
+            "assignee": payload["issue"].get("fields", {}).get("assignee", {}).get("displayName"),
+            "description": payload["issue"].get(
+                "description", payload["issue"].get("fields", {}).get("description")
+            ),
         }
-    if 'comment' in payload:
-        standard['data']['comment'] = {
-            "body": payload['comment'].get('body'),
-            "author": payload['comment'].get('author', {}).get('displayName')
+    if "comment" in payload:
+        standard["data"]["comment"] = {
+            "body": payload["comment"].get("body"),
+            "author": payload["comment"].get("author", {}).get("displayName"),
         }
-    if 'pullRequest' in payload:
-        standard['data']['pull_request'] = {
-            "id": payload['pullRequest'].get('id'),
-            "title": payload['pullRequest'].get('title'),
-            "state": payload['pullRequest'].get('state'),
-            "author": payload['pullRequest'].get('author', {}).get('displayName')
+    if "pullRequest" in payload:
+        standard["data"]["pull_request"] = {
+            "id": payload["pullRequest"].get("id"),
+            "title": payload["pullRequest"].get("title"),
+            "state": payload["pullRequest"].get("state"),
+            "author": payload["pullRequest"].get("author", {}).get("displayName"),
         }
     return standard
 
-async def forward_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
-    event_type = payload.get('event_type', '')
-    if 'jira' in event_type.lower() or 'issue' in payload.get('data', {}):
-        target_url = os.getenv('JIRA_BASE_URL')
-        auth = (os.getenv('JIRA_USER_EMAIL'), os.getenv('JIRA_API_TOKEN'))
-    elif 'bitbucket' in event_type.lower() or 'pull_request' in payload.get('data', {}):
-        target_url = os.getenv('BITBUCKET_BASE_URL')
-        auth = (os.getenv('BITBUCKET_USERNAME'), os.getenv('BITBUCKET_APP_PASSWORD'))
+
+async def forward_webhook(payload: dict[str, Any]) -> dict[str, Any]:
+    event_type = payload.get("event_type", "")
+    if "jira" in event_type.lower() or "issue" in payload.get("data", {}):
+        target_url = os.getenv("JIRA_BASE_URL")
+        auth = (os.getenv("JIRA_USER_EMAIL"), os.getenv("JIRA_API_TOKEN"))
+    elif "bitbucket" in event_type.lower() or "pull_request" in payload.get("data", {}):
+        target_url = os.getenv("BITBUCKET_BASE_URL")
+        auth = (os.getenv("BITBUCKET_USERNAME"), os.getenv("BITBUCKET_APP_PASSWORD"))
     else:
         return {"status": "skipped", "reason": "unknown_type"}
 
-    if not target_url: return {"status": "error", "reason": "missing_config"}
+    if not target_url:
+        return {"status": "error", "reason": "missing_config"}
 
     try:
-        async with create_ssrf_safe_async_session(timeout=float(os.getenv('WEBHOOK_TIMEOUT', '30'))) as client:
+        async with create_ssrf_safe_async_session(
+            timeout=float(os.getenv("WEBHOOK_TIMEOUT", "30"))
+        ) as client:
             response = await client.post(target_url, json=payload, auth=auth)
             response.raise_for_status()
-            return {"status": "forwarded", "status_code": response.status_code, "target": target_url}
+            return {
+                "status": "forwarded",
+                "status_code": response.status_code,
+                "target": target_url,
+            }
     except Exception as e:
         logger.error(f"Error forwarding webhook: {e}")
         return {"status": "error", "error": str(e)}
 
-async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPayload, AtlassianWebhookPayload], qwen_analysis: Dict[str, Any]) -> None:
+
+async def forward_to_jira(
+    webhook_url: str,
+    payload: BitbucketWebhookPayload | AtlassianWebhookPayload,
+    qwen_analysis: dict[str, Any],
+) -> None:
     """Forward enhanced analysis to Jira through Atlassian webhook"""
     try:
         enhanced_payload = {
-            "original_payload": payload.dict() if hasattr(payload, 'dict') else payload,
+            "original_payload": payload.dict() if hasattr(payload, "dict") else payload,
             "qwen_analysis": qwen_analysis,
-            "enhanced_timestamp": datetime.now(timezone.utc).isoformat()
+            "enhanced_timestamp": datetime.now(UTC).isoformat(),
         }
 
         async with httpx.AsyncClient() as client:
@@ -401,17 +434,19 @@ async def forward_to_jira(webhook_url: str, payload: Union[BitbucketWebhookPaylo
     except Exception as e:
         logger.error(f"An unexpected error occurred when forwarding to Jira: {e}")
 
-async def handle_build_failure(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+
+async def handle_build_failure(payload: BitbucketWebhookPayload) -> dict[str, Any]:
     """Original build failure handling logic"""
     return {
         "status": "failure_handled",
         "build_id": payload.commit.hash,
         "repository": payload.repository.name,
-        "timestamp": payload.commit.date or datetime.now(timezone.utc).isoformat(),
-        "processed_by": "lab-verse-monitoring-agent-singapore"
+        "timestamp": payload.commit.date or datetime.now(UTC).isoformat(),
+        "processed_by": "lab-verse-monitoring-agent-singapore",
     }
 
-async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str, Any]:
+
+async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> dict[str, Any]:
     """Enhanced analysis using Qwen 3 Plus"""
     try:
         # Simulate Qwen 3 Plus analysis
@@ -420,26 +455,26 @@ async def analyze_with_qwen_3_plus(payload: BitbucketWebhookPayload) -> Dict[str
             "fix_suggestions": [
                 "Review code changes in recent commits",
                 "Check dependency versions",
-                "Verify environment variables"
+                "Verify environment variables",
             ],
             "severity": "high",
             "confidence": 0.95,
             "region_optimized": "ap-southeast-1",
             "ai_insights": (
-                "Qwen 3 Plus detected potential configuration issues in the build "
-                "process"
+                "Qwen 3 Plus detected potential configuration issues in the build " "process"
             ),
             "jira_ready": True,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         return analysis
     except Exception as e:
-        logger.error(f"Qwen 3 Plus analysis failed: {str(e)}")
+        logger.error(f"Qwen 3 Plus analysis failed: {e!s}")
         return {"error": str(e), "fallback": "Original analysis used"}
 
+
 @app.get("/bitbucket/status")
-async def bitbucket_integration_status() -> Dict[str, Any]:
+async def bitbucket_integration_status() -> dict[str, Any]:
     """Bitbucket integration status"""
     return {
         "status": "connected",
@@ -448,11 +483,12 @@ async def bitbucket_integration_status() -> Dict[str, Any]:
         "webhook_configured": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "atlassian_webhook": "configured" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
         "last_sync": "recent",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
+
 @app.get("/jira/status")
-async def jira_integration_status() -> Dict[str, Any]:
+async def jira_integration_status() -> dict[str, Any]:
     """Jira integration status"""
     return {
         "status": "connected" if os.getenv("ATLAS_WEBHOOK_URL") else "not configured",
@@ -460,8 +496,9 @@ async def jira_integration_status() -> Dict[str, Any]:
         "webhook_active": os.getenv("ATLAS_WEBHOOK_URL") is not None,
         "enhanced_with_ai": True,
         "last_forwarded": "recent",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat(),
     }
+
 
 @app.post("/api/generate")
 async def generate_text(request: Request, rate_limited: bool = Depends(check_rate_limit)):
@@ -470,51 +507,43 @@ async def generate_text(request: Request, rate_limited: bool = Depends(check_rat
     provider_name = "unknown"
     try:
         data = await request.json()
-        prompt = data.get('prompt', '')
-        task = TaskType[data.get('task', 'TEXT_GENERATION')]
-        model = data.get('model', 'default')
+        prompt = data.get("prompt", "")
+        task = TaskType[data.get("task", "TEXT_GENERATION")]
+        model = data.get("model", "default")
         provider = get_global_provider()
         response = await provider.generate_with_retry(
-            prompt=prompt, task=task,
-            max_tokens=data.get('max_tokens', 1000),
-            temperature=data.get('temperature', 0.7)
+            prompt=prompt,
+            task=task,
+            max_tokens=data.get("max_tokens", 1000),
+            temperature=data.get("temperature", 0.7),
         )
         model = response.model
         provider_name = response.provider
 
         # Record metrics
-        llm_requests_total.labels(
-            backend=provider_name,
-            model=model,
-            status="success"
-        ).inc()
+        llm_requests_total.labels(backend=provider_name, model=model, status="success").inc()
 
         duration = time.time() - start_time
-        llm_request_duration_seconds.labels(
-            backend=provider_name,
-            model=model
-        ).observe(duration)
+        llm_request_duration_seconds.labels(backend=provider_name, model=model).observe(duration)
 
-        llm_tokens_total.labels(
-            backend=provider_name,
-            model=model,
-            type="output"
-        ).inc(response.tokens_used)
+        llm_tokens_total.labels(backend=provider_name, model=model, type="output").inc(
+            response.tokens_used
+        )
 
         return {
-            "text": response.text, "model": response.model,
-            "provider": response.provider, "tokens_used": response.tokens_used,
-            "latency_ms": response.latency_ms
+            "text": response.text,
+            "model": response.model,
+            "provider": response.provider,
+            "tokens_used": response.tokens_used,
+            "latency_ms": response.latency_ms,
         }
     except Exception as e:
-        llm_requests_total.labels(
-            backend=provider_name,
-            model=model,
-            status="error"
-        ).inc()
+        llm_requests_total.labels(backend=provider_name, model=model, status="error").inc()
         logger.error(f"Generation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv('PORT', '8000')))
+
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

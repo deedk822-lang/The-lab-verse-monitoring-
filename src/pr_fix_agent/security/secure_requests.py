@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import socket
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -32,14 +32,14 @@ class SSRFBlocker:
 
         # Private IP ranges to block
         self.blocked_networks = [
-            ipaddress.ip_network("10.0.0.0/8"),      # Private
-            ipaddress.ip_network("172.16.0.0/12"),   # Private
+            ipaddress.ip_network("10.0.0.0/8"),  # Private
+            ipaddress.ip_network("172.16.0.0/12"),  # Private
             ipaddress.ip_network("192.168.0.0/16"),  # Private
-            ipaddress.ip_network("127.0.0.0/8"),     # Localhost
+            ipaddress.ip_network("127.0.0.0/8"),  # Localhost
             ipaddress.ip_network("169.254.0.0/16"),  # Link-local
-            ipaddress.ip_network("::1/128"),         # IPv6 localhost
-            ipaddress.ip_network("fe80::/10"),       # IPv6 link-local
-            ipaddress.ip_network("fc00::/7"),        # IPv6 unique local
+            ipaddress.ip_network("::1/128"),  # IPv6 localhost
+            ipaddress.ip_network("fe80::/10"),  # IPv6 link-local
+            ipaddress.ip_network("fc00::/7"),  # IPv6 unique local
         ]
 
     def is_safe_url(self, url: str) -> tuple[bool, str]:
@@ -80,7 +80,7 @@ class SSRFBlocker:
         except Exception as e:
             return False, f"Error validating URL: {e}"
 
-    def validate_request(self, request: Union[httpx.Request, requests.PreparedRequest]) -> None:
+    def validate_request(self, request: httpx.Request | requests.PreparedRequest) -> None:
         """
         Validate request before sending.
 
@@ -98,6 +98,7 @@ class SSRFBlocker:
 
 
 # --- HTTPX Integration ---
+
 
 class SSRFBlockerTransport(httpx.HTTPTransport):
     """Custom transport that applies SSRF protection for HTTPX."""
@@ -123,19 +124,24 @@ class SSRFBlockerAsyncTransport(httpx.AsyncHTTPTransport):
         return await super().handle_async_request(request)
 
 
-def create_ssrf_safe_session(allowed_domains: set[str] | None = None, timeout: float = 30.0) -> httpx.Client:
+def create_ssrf_safe_session(
+    allowed_domains: set[str] | None = None, timeout: float = 30.0
+) -> httpx.Client:
     blocker = SSRFBlocker(allowed_domains=allowed_domains)
     transport = SSRFBlockerTransport(blocker=blocker)
     return httpx.Client(transport=transport, timeout=timeout)
 
 
-def create_ssrf_safe_async_session(allowed_domains: set[str] | None = None, timeout: float = 30.0) -> httpx.AsyncClient:
+def create_ssrf_safe_async_session(
+    allowed_domains: set[str] | None = None, timeout: float = 30.0
+) -> httpx.AsyncClient:
     blocker = SSRFBlocker(allowed_domains=allowed_domains)
     transport = SSRFBlockerAsyncTransport(blocker=blocker)
     return httpx.AsyncClient(transport=transport, timeout=timeout)
 
 
 # --- Requests Integration ---
+
 
 class SSRFSafeAdapter(HTTPAdapter):
     """Custom adapter that applies SSRF protection for Requests."""

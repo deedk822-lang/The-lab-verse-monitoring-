@@ -1,10 +1,9 @@
+from contextlib import asynccontextmanager
 import logging
 import os
-from contextlib import asynccontextmanager
-from typing import Optional
 
-import openlit
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+import openlit
 from pydantic import BaseModel, Field
 
 from rainmaker_orchestrator.orchestrator import RainmakerOrchestrator
@@ -19,14 +18,16 @@ logger: logging.Logger = logging.getLogger("api")
 
 class ExecuteTaskPayload(BaseModel):
     """Task execution request payload."""
+
     type: str = Field(..., description="Task type: authority_task or coding_task")
     context: str = Field(..., description="Task context and requirements")
-    model: Optional[str] = Field(None, description="Override default model selection")
-    output_filename: Optional[str] = Field(None, description="Output file for coding tasks")
+    model: str | None = Field(None, description="Override default model selection")
+    output_filename: str | None = Field(None, description="Output file for coding tasks")
 
 
 class HubSpotWebhookPayload(BaseModel):
     """HubSpot webhook event payload."""
+
     objectId: int = Field(..., description="HubSpot contact or deal ID")
     message_body: str = Field(..., description="Event message content")
 
@@ -35,17 +36,14 @@ class HubSpotWebhookPayload(BaseModel):
 async def lifespan(app: FastAPI) -> None:
     """
     Manage application startup and shutdown for the Authority Engine.
-    
+
     On startup, conditionally initialize OpenLIT telemetry (skipped when the environment variable CI is "true") using the OPENLIT_OTLP_ENDPOINT and ENVIRONMENT environment variables, instantiate a RainmakerOrchestrator, and attach it to app.state.orchestrator. On shutdown, close the orchestrator by calling its aclose() coroutine.
     """
     # Initialize OpenLIT only if not in CI environment
     if os.getenv("CI") != "true":
         try:
             openlit.init(
-                otlp_endpoint=os.getenv(
-                    "OPENLIT_OTLP_ENDPOINT",
-                    "https://otlp.datadoghq.com:4318"
-                ),
+                otlp_endpoint=os.getenv("OPENLIT_OTLP_ENDPOINT", "https://otlp.datadoghq.com:4318"),
                 application_name="rainmaker-orchestrator",
                 environment=os.getenv("ENVIRONMENT", "production"),
             )
@@ -75,7 +73,7 @@ app: FastAPI = FastAPI(
 async def health() -> dict:
     """
     Report application health status and available engine features.
-    
+
     Returns:
         dict: A status payload with keys:
             - "status" (str): overall connectivity state, e.g. "connected".
@@ -97,13 +95,13 @@ async def hubspot_webhook(
 ) -> dict:
     """
     Enqueues an authority flow run for an incoming HubSpot webhook event.
-    
+
     Parameters:
         payload (HubSpotWebhookPayload): HubSpot event payload containing `objectId` and `message_body`.
-    
+
     Returns:
         dict: A response with status and human-readable message, e.g. `{"status": "accepted", "message": "Authority Flow queued"}`.
-    
+
     Raises:
         HTTPException: Raised with status code 500 when webhook processing fails.
     """
@@ -116,7 +114,7 @@ async def hubspot_webhook(
         logger.info(f"HubSpot event queued: contact_id={payload.objectId}")
         return {"status": "accepted", "message": "Authority Flow queued"}
     except Exception as e:
-        logger.error(f"Webhook processing error: {str(e)}")
+        logger.error(f"Webhook processing error: {e!s}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
 
@@ -124,12 +122,12 @@ async def hubspot_webhook(
 async def execute(payload: ExecuteTaskPayload, request: Request) -> dict:
     """
     Execute a direct agent task using the application's orchestrator.
-    
+
     Calls the orchestrator attached to the FastAPI app state with the provided payload and returns the orchestrator's result.
-    
+
     Returns:
         dict: The task execution result dictionary (typically includes a 'status' key).
-    
+
     Raises:
         HTTPException: Raised with status 400 when payload validation fails, or status 500 for other execution errors.
     """
@@ -139,8 +137,8 @@ async def execute(payload: ExecuteTaskPayload, request: Request) -> dict:
         logger.info(f"Task executed: type={payload.type}, status={result.get('status')}")
         return result
     except ValueError as ve:
-        logger.warning(f"Validation error: {str(ve)}")
+        logger.warning(f"Validation error: {ve!s}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        logger.error(f"Execution failed: {str(e)}")
+        logger.error(f"Execution failed: {e!s}")
         raise HTTPException(status_code=500, detail="Task execution failed")

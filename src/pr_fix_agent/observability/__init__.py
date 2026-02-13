@@ -4,12 +4,13 @@ Observability module for PR Fix Agent.
 
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, timezone
 import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
 from typing import Any, Dict
 
 import structlog
+
 
 # Re-configure structured logging for consistent output
 def configure_structured_logging():
@@ -21,7 +22,7 @@ def configure_structured_logging():
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
         context_class=dict,
@@ -29,12 +30,15 @@ def configure_structured_logging():
         cache_logger_on_first_use=True,
     )
 
+
 configure_structured_logging()
 logger = structlog.get_logger()
+
 
 @dataclass
 class LLMCost:
     """Cost tracking for LLM API calls"""
+
     model: str
     prompt_tokens: int
     completion_tokens: int
@@ -48,6 +52,7 @@ class LLMCost:
 
 class BudgetExceededError(Exception):
     """Raised when LLM usage exceeds budget"""
+
     pass
 
 
@@ -74,12 +79,7 @@ class CostTracker:
         self.costs: list[LLMCost] = []
         self.total_spent = 0.0
 
-    def track(
-        self,
-        model: str,
-        prompt_tokens: int,
-        completion_tokens: int
-    ) -> LLMCost:
+    def track(self, model: str, prompt_tokens: int, completion_tokens: int) -> LLMCost:
         """Track cost of an LLM call"""
         total_tokens = prompt_tokens + completion_tokens
         cost_per_million = self.MODEL_COSTS.get(model, 0.0)
@@ -91,7 +91,7 @@ class CostTracker:
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             cost_usd=cost_usd,
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         self.costs.append(cost)
@@ -103,7 +103,7 @@ class CostTracker:
             tokens=total_tokens,
             cost_usd=cost_usd,
             total_spent=self.total_spent,
-            budget_remaining=self.budget_usd - self.total_spent
+            budget_remaining=self.budget_usd - self.total_spent,
         )
 
         if self.total_spent > self.budget_usd:
@@ -113,7 +113,7 @@ class CostTracker:
 
         return cost
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get cost summary"""
         return {
             "total_spent_usd": self.total_spent,
@@ -121,12 +121,12 @@ class CostTracker:
             "remaining_usd": self.budget_usd - self.total_spent,
             "calls": len(self.costs),
             "total_tokens": sum(c.total_tokens for c in self.costs),
-            "costs": [asdict(c) for c in self.costs]
+            "costs": [asdict(c) for c in self.costs],
         }
 
 
 __all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
+    "BudgetExceededError",
+    "CostTracker",
+    "LLMCost",
 ]

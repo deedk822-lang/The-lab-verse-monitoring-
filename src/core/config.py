@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -31,7 +30,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["*"]  # Should be restricted in production
+    BACKEND_CORS_ORIGINS: list[str] = ["*"]  # Should be restricted in production
 
     # Rate Limiting
     REQUESTS_PER_MINUTE: int = int(os.getenv("REQUESTS_PER_MINUTE", "60"))

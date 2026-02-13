@@ -3,9 +3,9 @@ Fixed Test File - No Duplication
 Issue Fixed: 82 lines of duplicate production code removed
 """
 
-import pytest
-from unittest.mock import Mock
 from pathlib import Path
+
+import pytest
 
 # ✅ FIX: Direct import, no fallback duplication
 from pr_fix_agent.analyzer import PRErrorFixer
@@ -32,11 +32,7 @@ class TestPRErrorFixerReal:
         from pr_fix_agent.security import SecurityValidator
 
         validator = SecurityValidator(tmp_path)
-        return PRErrorFixer(
-            agent=mock_agent,
-            repo_path=str(tmp_path),
-            validator=validator
-        )
+        return PRErrorFixer(agent=mock_agent, repo_path=str(tmp_path), validator=validator)
 
     def test_fix_missing_file_creates_file(self, fixer, tmp_path):
         """Test: Creates missing file"""

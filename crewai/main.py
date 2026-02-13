@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -29,40 +28,31 @@ search_tool = SerperDevTool()
 
 # Define the researcher agent
 researcher = Agent(
-  role='Researcher',
-  goal=f'Find and summarize the latest news on {topic}',
-  backstory="""You're a researcher at a large company.
+    role="Researcher",
+    goal=f"Find and summarize the latest news on {topic}",
+    backstory="""You're a researcher at a large company.
   You're responsible for analyzing data and providing insights
   to the business.""",
-  verbose=False,
-  tools=[search_tool]
+    verbose=False,
+    tools=[search_tool],
 )
 
 # Define the research task
 task = Task(
-  description=f'Find and summarize the latest news on {topic}',
-  expected_output=f'A bullet list summary of the top 5 most important news on {topic}',
-  agent=researcher
+    description=f"Find and summarize the latest news on {topic}",
+    expected_output=f"A bullet list summary of the top 5 most important news on {topic}",
+    agent=researcher,
 )
 
 # Create the crew
-crew = Crew(
-    agents=[researcher],
-    tasks=[task],
-    verbose=False
-)
+crew = Crew(agents=[researcher], tasks=[task], verbose=False)
 
 # Execute the crew and print the result in JSON format
 try:
     result = crew.kickoff()
-    output = {
-        "result": result,
-        "token_usage": crew.usage_metrics
-    }
+    output = {"result": result, "token_usage": crew.usage_metrics}
     print(json.dumps(output))
 except Exception as e:
-    error = {
-        "error": str(e)
-    }
+    error = {"error": str(e)}
     print(json.dumps(error))
     sys.exit(1)

@@ -1,23 +1,24 @@
 import logging
 import os
-from typing import Optional
 
 from openai import APIError, OpenAI
 
 logger = logging.getLogger(__name__)
 
+
 class KimiClient:
     """
     API wrapper for Kimi model, using an OpenAI-compatible client.
     """
-    def __init__(self, api_key=None):
+
+    def __init__(self, api_key: str | None = None) -> None:
         self.client = OpenAI(
             base_url=os.getenv("KIMI_API_BASE", "http://kimi-linear:8000/v1"),
-            api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY")
+            api_key=api_key or os.getenv("KIMI_API_KEY", "EMPTY"),
         )
         self.model = os.getenv("KIMI_MODEL", "moonshot-v1-8k")
 
-    def generate(self, prompt: str, mode: str = "general") -> Optional[str]:
+    def generate(self, prompt: str, mode: str = "general") -> str | None:
         """
         Generates content using the Kimi model.
 
@@ -37,11 +38,11 @@ class KimiClient:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.3 if mode == "hotfix" else 0.7,
                 max_tokens=1000,
-                timeout=30.0
+                timeout=30.0,
             )
 
             # Validate response structure

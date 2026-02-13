@@ -1,5 +1,6 @@
 import logging
 import os
+import concurrent.futures
 from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO)
@@ -86,19 +87,35 @@ class CohereAPI:
             raise e
 
     def generate_email_sequence(self, business_type: str, days: int = 7) -> List[Dict]:
-        """Generate email sequence for MailChimp"""
-        sequence = []
-        for day in range(1, days + 1):
+        """
+        Generate email sequence for MailChimp.
+        ⚡ Bolt Optimization: Uses ThreadPoolExecutor to generate emails in parallel.
+        """
+        def _generate_day(day):
             prompt = f"Write day {day} of a {days}-day email sequence for a {business_type} in South Africa. Include subject line."
-            result = self.generate_content(prompt, max_tokens=300)
+            try:
+                result = self.generate_content(prompt, max_tokens=300)
+                lines = result["text"].split("\n")
+                subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
+                body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
+                return {
+                    "day": day,
+                    "subject": subject,
+                    "body": body
+                }
+            except Exception as e:
+                logger.error(f"Failed to generate email for day {day}: {e}")
+                return {
+                    "day": day,
+                    "subject": f"Day {day} - Update",
+                    "body": "Content currently unavailable."
+                }
 
-            lines = result["text"].split("\n")
-            subject = lines[0] if lines else f"Day {day} - Your {business_type} Update"
-            body = "\n".join(lines[1:]) if len(lines) > 1 else result["text"]
+        sequence = [None] * days
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(days, 5)) as executor:
+            future_to_day = {executor.submit(_generate_day, day): day for day in range(1, days + 1)}
+            for future in concurrent.futures.as_completed(future_to_day):
+                day = future_to_day[future]
+                sequence[day-1] = future.result()
 
-            sequence.append({
-                "day": day,
-                "subject": subject,
-                "body": body
-            })
         return sequence

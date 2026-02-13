@@ -1,4 +1,5 @@
 import logging
+import concurrent.futures
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -94,6 +95,22 @@ def _get_cached_providers() -> Tuple[Dict[str, Any], Optional[Any]]:
 class ContentFactory:
     """Enhanced content generation with multiple provider support"""
 
+    # ⚡ Bolt Optimization: Move static context to class constants
+    LANGUAGE_INSTRUCTIONS = {
+        "afrikaans": "Write in Afrikaans (South African dialect)",
+        "english": "Write in English (South African style)",
+        "both": "Write 50% in Afrikaans, 50% in English"
+    }
+
+    BUSINESS_CONTEXTS = {
+        "butchery": "a local butchery in Vaal Triangle, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.",
+        "auto_repair": "an auto repair shop in Vaal Triangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.",
+        "cafe": "a coffee shop in Vaal Triangle, South Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.",
+        "restaurant": "a restaurant in Vaal Triangle, South Africa. Focus on delicious food, specials, events, and dining experience.",
+        "salon": "a hair and beauty salon in Vaal Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.",
+        "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals."
+    }
+
     def __init__(self, db=None):
         self.db = db
         # Unpack the cached providers and image generator
@@ -166,33 +183,70 @@ class ContentFactory:
 
     def generate_social_pack(self, business_type: str, language: str = "afrikaans",
                             num_posts: int = 10, num_images: int = 5) -> Dict:
-        """Generate complete social media pack with REAL content"""
+        """
+        Generate complete social media pack with REAL content.
+        ⚡ Bolt Optimization: Runs text and image generation in parallel.
+        """
 
         logger.info(f"Generating social pack for {business_type} ({language})")
 
         try:
             posts_prompt = self._build_posts_prompt(business_type, language, num_posts)
-            posts_result = self.generate_content(posts_prompt, max_tokens=2000)
-            posts = self._parse_posts(posts_result["text"], num_posts)
 
-            images = []
-            if self.image_generator:
-                try:
-                    image_results = self.image_generator.generate_for_business(business_type, count=num_images)
-                    images = image_results
-                    logger.info(f"✅ Generated {len(images)} images")
-                except Exception as e:
-                    logger.error(f"Image generation failed: {e}")
+            # Use ThreadPoolExecutor to run text and image generation concurrently
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                # 1. Start posts generation
+                posts_future = executor.submit(self.generate_content, posts_prompt, max_tokens=2000)
+
+                # 2. Start image generation (if available)
+                images_future = None
+                if self.image_generator:
+                    images_future = executor.submit(
+                        self.image_generator.generate_for_business,
+                        business_type,
+                        count=num_images
+                    )
+
+                # 3. Wait for posts result
+                posts_result = posts_future.result()
+                posts = self._parse_posts(posts_result["text"], num_posts)
+
+                # 4. Wait for images result
+                images = []
+                if images_future:
+                    try:
+                        images = images_future.result()
+                        logger.info(f"✅ Generated {len(images)} images")
+                    except Exception as e:
+                        logger.error(f"Image generation failed: {e}")
+                        images = self._create_placeholder_images(num_images)
+                else:
                     images = self._create_placeholder_images(num_images)
-            else:
-                images = self._create_placeholder_images(num_images)
 
             total_cost = posts_result.get("cost_usd", 0.0)
             total_cost += sum(img.get("cost_usd", 0.0) for img in images)
 
-            pack = {"posts": posts, "images": images, "metadata": {"business_type": business_type, "language": language, "generated_at": datetime.now().isoformat(), "provider": posts_result.get("provider"), "cost_usd": total_cost, "tokens_used": posts_result.get("tokens", 0)}}
+            pack = {
+                "posts": posts,
+                "images": images,
+                "metadata": {
+                    "business_type": business_type,
+                    "language": language,
+                    "generated_at": datetime.now().isoformat(),
+                    "provider": posts_result.get("provider"),
+                    "cost_usd": total_cost,
+                    "tokens_used": posts_result.get("tokens", 0)
+                }
+            }
+
             if self.db:
-                self.db.save_content_pack(client_id="system", pack_data=pack, posts_count=len(posts), images_count=len(images), cost_usd=total_cost)
+                self.db.save_content_pack(
+                    client_id="system",
+                    pack_data=pack,
+                    posts_count=len(posts),
+                    images_count=len(images),
+                    cost_usd=total_cost
+                )
 
             logger.info(f"✅ Generated {len(posts)} posts and {len(images)} images")
             return pack
@@ -201,10 +255,12 @@ class ContentFactory:
             raise e
 
     def _build_posts_prompt(self, business_type: str, language: str, num_posts: int) -> str:
-        language_instructions = {"afrikaans": "Write in Afrikaans (South African dialect)", "english": "Write in English (South African style)", "both": "Write 50% in Afrikaans, 50% in English"}
-        lang_instruction = language_instructions.get(language, language_instructions["afrikaans"])
-        business_contexts = {"butchery": "a local butchery in Vaal Triangle, South Africa. Focus on fresh meat, quality cuts, special offers, and traditional braai culture.", "auto_repair": "an auto repair shop in Vaal Triangle, South Africa. Focus on reliable service, quality parts, professional mechanics, and vehicle maintenance tips.", "cafe": "a coffee shop in Vaal Triangle, South Africa. Focus on fresh coffee, baked goods, cozy atmosphere, and community gathering.", "restaurant": "a restaurant in Vaal Triangle, South Africa. Focus on delicious food, specials, events, and dining experience.", "salon": "a hair and beauty salon in Vaal Triangle, South Africa. Focus on latest styles, professional service, beauty tips, and special treatments.", "retail": "a retail store in Vaal Triangle, South Africa. Focus on product quality, special offers, customer service, and new arrivals."}
-        context = business_contexts.get(business_type, f"a {business_type} business in Vaal Triangle, South Africa")
+        lang_instruction = self.LANGUAGE_INSTRUCTIONS.get(
+            language, self.LANGUAGE_INSTRUCTIONS["afrikaans"]
+        )
+        context = self.BUSINESS_CONTEXTS.get(
+            business_type, f"a {business_type} business in Vaal Triangle, South Africa"
+        )
         prompt = f"""Generate {num_posts} engaging social media posts for {context}
 
 REQUIREMENTS:

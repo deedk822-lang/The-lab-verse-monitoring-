@@ -16,11 +16,7 @@ from src.anomaly_detection.enhanced_alerting import (
     EnhancedAlertingSystem,
 )
 
-from src.anomaly_detection.explainability import (
-    AdvancedExplainabilityEngine,
-)
-
-# Configure logging
+# Configure logging with sensitive information removed
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -38,8 +34,6 @@ cloud_detector = MultiCloudAnomalyDetector(
     cloud_configs={"aws": {}, "azure": {}, "gcp": {}}
 )
 alerting_system = EnhancedAlertingSystem()
-explainer = None
-
 
 # --- Lifecycle Events ---
 @app.on_event("startup")

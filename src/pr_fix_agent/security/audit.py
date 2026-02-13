@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import logging
 from datetime import datetime
@@ -8,15 +9,13 @@ from pathlib import Path
 
 from pr_fix_agent.core.config import Settings, get_settings
 
-
 class AuditLogger:
     """
     Append-only audit logger for compliance (SOC 2, GDPR).
 
     FIXED:
-    - Prevents duplicate handlers
-    - Disables propagation to avoid root logger interference
-    - Thread-safe singleton pattern
+    - Disables propagation to prevent root logger interference
+    - Ensures only one handler is added if it doesn't exist
     """
 
     def __init__(self, log_path: Path):
@@ -51,9 +50,6 @@ class AuditLogger:
             handler.setFormatter(logging.Formatter('%(message)s'))
 
             self.logger.addHandler(handler)
-        else:
-            # Handler already exists, no need to add
-            pass
 
     def log_event(
         self,
@@ -112,3 +108,10 @@ def get_audit_logger() -> AuditLogger:
     """
     settings = get_settings()
     return AuditLogger(settings.audit_log_path)
+# Example of adding additional error handling
+
+try:
+    with self.logger.handlers[0] as handler:
+        handler.write(json.dumps(event))
+except IOError as e:
+    logging.error(f"Failed to write audit event: {e}")

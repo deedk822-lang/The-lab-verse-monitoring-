@@ -1,12 +1,15 @@
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.endpoints import autoglm
 from .core.config import settings
 
+# Initialize SQLAlchemy engine and sessionmaker here
+engine = create_engine(settings.SQLALCHEMY_DATABASE_URI)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -86,3 +89,10 @@ async def health_check():
         "version": settings.VERSION,
         "timestamp": time.time()
     }
+@app.get("/")
+async def root():
+    query = "SELECT * FROM users WHERE name = :name"
+    user = await session.execute(query, {"name": request.query_params.get("name")}).fetchone()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

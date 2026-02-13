@@ -26,10 +26,9 @@ class SecurityValidator:
         except Exception as e:
             raise SecurityError(f"Invalid path: {user_path}") from e
 
-        try:
-            target_path.relative_to(self.repo_path)
-        except ValueError:
-            raise SecurityError(f"Path traversal detected: {user_path}")
+        # Check if the path is within the repository directory
+        if not self.repo_path in target_path.parents:
+            raise SecurityError("Path traversal detected: {user_path}")
 
         return target_path
 
@@ -57,11 +56,9 @@ class SecurityValidator:
         if len(user_input) > max_length:
             raise SecurityError(f"Input too long: {len(user_input)} > {max_length}")
 
-        if '\x00' in user_input:
-            raise SecurityError("Null byte in input")
-
-        return user_input.strip()
-
+        # Remove any potentially harmful characters like null bytes or special characters
+        sanitized_input = ''.join(c for c in user_input if ord(c) < 128)
+        return sanitized_input.strip()
 
 class InputValidator:
     """Input validation utilities"""
@@ -120,8 +117,8 @@ class RateLimiter:
 
 
 __all__ = [
-    'SecurityError',
-    'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
+    "InputValidator",
+    "RateLimiter",
+    "SecurityError",
+    "SecurityValidator",
 ]

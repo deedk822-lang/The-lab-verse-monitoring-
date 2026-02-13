@@ -1,6 +1,4 @@
-import logging
-import time
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -13,7 +11,6 @@ from ...orchestrators.autoglm import create_autoglm_orchestrator
 
 router = APIRouter(prefix="/autoglm", tags=["autoglm"])
 logger = logging.getLogger(__name__)
-
 
 class GLMGenerateRequest(BaseModel):
     """Request model for GLM content generation"""
@@ -153,55 +150,5 @@ async def autoglm_secure_content(
             "tenant_id": current_user.tenant_id
         }
     except Exception as e:
-        logger.error(f"AutoGLM secure content generation failed: {str(e)}", exc_info=True)
+        logger.error(f"AutoGLM secure content generation failed: {e!s}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get("/health", summary="Health check for GLM and AutoGLM services")
-async def autoglm_health_check(current_user: User = Depends(get_current_user)):
-    """
-    Perform health checks for configured GLM and AutoGLM services and assemble an overall health status.
-    
-    Only services for which the current user has permission and for which required configuration is present are checked; unchecked services are reported as "not configured". The returned payload includes a POSIX timestamp and the requesting user's tenant identifier.
-    
-    Returns:
-        dict: A mapping containing:
-            - "status" (str): overall health status.
-            - "timestamp" (float): POSIX timestamp of the check.
-            - "tenant_id" (str): tenant identifier of the requesting user.
-            - "services" (dict): per-service health information (each entry contains at minimum a "status" and may include "response" or "error").
-    """
-    health_status = {
-        "status": "healthy",
-        "timestamp": time.time(),
-        "tenant_id": current_user.tenant_id,
-        "services": {
-            "glm": {"status": "not configured"},
-            "autoglm": {"status": "not configured"}
-        }
-    }
-
-    # Test GLM if configured and user has access
-    if current_user.has_permission("glm") and settings.ZHIPU_API_KEY:
-        try:
-            async with create_glm_integration() as glm:
-                test_response = await glm.generate_text("Hello, are you working?", {"max_tokens": 10})
-                health_status["services"]["glm"] = {
-                    "status": "operational",
-                    "response": test_response[:20] + "..."
-                }
-        except Exception as e:
-            health_status["services"]["glm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"GLM health check failed: {str(e)}", exc_info=True)
-
-    # Test AutoGLM if configured and user has access
-    if current_user.has_permission("autoglm") and settings.ZHIPU_API_KEY and settings.ALIBABA_CLOUD_ACCESS_KEY_ID:
-        try:
-            async with create_autoglm_orchestrator() as autoglm:
-                # Just test initialization - don't run full analysis for health check
-                health_status["services"]["autoglm"] = {"status": "operational"}
-        except Exception as e:
-            health_status["services"]["autoglm"] = {"status": "error", "error": "Internal server error"}
-            logger.error(f"AutoGLM health check failed: {str(e)}", exc_info=True)
-
-    return health_status

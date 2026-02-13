@@ -10,8 +10,8 @@ class ConfidenceEstimator:
         self.service = service
         self.log = logging.getLogger("ConfidenceEstimator")
 
-    async def score_plan(self, plan: Dict, context: Dict) -> float:
-        prompt = f"Rate confidence 0-1 for PLAN success given CONTEXT. Output JSON {{score: float}}.\nPlan: {json.dumps(plan)}\nContext: {json.dumps(context)}"
+    async def score_plan(self, plan: dict, context: dict) -> float:
+        prompt = f"Rate confidence 0-1 for PLAN success given CONTEXT. Output JSON {{score: float}}.\nPlan: {json.dumps(plan, separators=(",", ":"))}\nContext: {json.dumps(context, separators=(",", ":"))}"
         try:
             resp = await self.service._call_openrouter(
                 "tongyi/tongyi-deepresearch-30b", prompt

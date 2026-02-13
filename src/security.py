@@ -4,7 +4,7 @@ Proper library structure for reusable components
 """
 
 import re
-from pathlib import Path
+import time
 
 
 class SecurityError(Exception):
@@ -31,7 +31,7 @@ class SecurityValidator:
         Raises:
             SecurityError: If path is invalid or attempts traversal
         """
-        # Security: Basic checks before resolution
+        # Basic checks before resolution
         if len(user_path) > 1000:
             raise SecurityError(f"Path too long: {len(user_path)}")
 
@@ -156,7 +156,6 @@ class InputValidator:
         url_pattern = r'^https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(/.*)?$'
         return bool(re.match(url_pattern, url))
 
-
 class RateLimiter:
     """Simple rate limiter for API calls"""
 
@@ -186,3 +185,21 @@ class RateLimiter:
         # Record this request
         self.requests.append(now)
         return True
+
+
+# Usage example
+if __name__ == "__main__":
+    validator = SecurityValidator(Path("/path/to/repo"))
+    try:
+        validated_path = validator.validate_path("example.txt")
+        print(f"Validated path: {validated_path}")
+    except SecurityError as e:
+        print(e)
+
+    # Example usage of RateLimiter
+    limiter = RateLimiter(max_requests=10, window_seconds=3600)
+    while True:
+        if not limiter.check_rate_limit():
+            print("Rate limit exceeded. Please wait.")
+            continue
+        # Perform your API call here

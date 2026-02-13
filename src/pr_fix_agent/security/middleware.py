@@ -5,7 +5,7 @@ Security Middleware - S4: Comprehensive Security Headers
 from __future__ import annotations
 
 import uuid
-from typing import Callable
+import re
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -27,13 +27,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         response = await call_next(request)
 
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains; preload"
-        )
+        # Sanitize and validate Content-Security-Policy
+        csp = request.headers.get("Content-Security-Policy", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", csp):
+            logger.error(
+                "Invalid Content-Security-Policy header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
 
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            f"script-src '{csp}'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self'; "
@@ -41,10 +47,78 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none';"
         )
 
+        # Sanitize and validate Strict-Transport-Security
+        stss = request.headers.get("Strict-Transport-Security", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", stss):
+            logger.error(
+                "Invalid Strict-Transport-Security header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains; preload"
+        )
+
+        # Sanitize and validate X-Content-Type-Options
+        xcto = request.headers.get("X-Content-Type-Options", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", xcto):
+            logger.error(
+                "Invalid X-Content-Type-Options header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
         response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Sanitize and validate X-Frame-Options
+        xfo = request.headers.get("X-Frame-Options", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", xfo):
+            logger.error(
+                "Invalid X-Frame-Options header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
         response.headers["X-Frame-Options"] = "DENY"
+
+        # Sanitize and validate X-XSS-Protection
+        xxspp = request.headers.get("X-XSS-Protection", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", xxspp):
+            logger.error(
+                "Invalid X-XSS-Protection header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
         response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Sanitize and validate Referrer-Policy
+        rrp = request.headers.get("Referrer-Policy", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", rrp):
+            logger.error(
+                "Invalid Referrer-Policy header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Sanitize and validate Permissions-Policy
+        pp = request.headers.get("Permissions-Policy", "")
+        if not re.match(r"^[^;]+(?:;[^;]+)*$", pp):
+            logger.error(
+                "Invalid Permissions-Policy header",
+                request_id=request.state.request_id,
+                client_ip=request.client.host if request.client else "unknown",
+            )
+            return response
+
         response.headers["Permissions-Policy"] = (
             "geolocation=(), microphone=(), camera=()"
         )

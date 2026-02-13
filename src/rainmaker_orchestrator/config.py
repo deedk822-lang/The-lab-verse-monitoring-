@@ -4,19 +4,21 @@ from typing import Optional
 
 logger: logging.Logger = logging.getLogger("config")
 
-
 class ConfigManager:
     """Centralized configuration management with environment variable support."""
 
     def __init__(self, config_file: str = ".env") -> None:
         self.config_file: str = config_file
-        if os.path.exists(config_file):
-            try:
-                from dotenv import load_dotenv
-                load_dotenv(config_file)
-                logger.info("Configuration loaded from %s", config_file)
-            except ImportError:
-                logger.warning("python-dotenv not available, using environment variables only")
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"Configuration file {config_file} does not exist")
+
+        try:
+            from dotenv import load_dotenv
+
+            load_dotenv(config_file)
+            logger.info("Configuration loaded from %s", config_file)
+        except ImportError:
+            logger.warning("python-dotenv not available, using environment variables only")
 
     def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
         value: Optional[str] = os.getenv(key, default)
@@ -40,4 +42,5 @@ class ConfigManager:
             return True
         if value in ("false", "0", "no", "off"):
             return False
+        logger.warning("Invalid boolean config: %s=%s, using default=%s", key, value, default)
         return default

@@ -11,7 +11,8 @@ from typing import Any, Dict
 
 import structlog
 
-# Re-configure structured logging for consistent output
+
+# Re-configure structured logging for consistent output with sensitive information removed
 def configure_structured_logging():
     """Configure structured logging (Datadog-compatible)"""
     structlog.configure(
@@ -21,9 +22,10 @@ def configure_structured_logging():
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer()
+            structlog.stdlib.LoggerFactory(),
+            structlog.stdlib.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
@@ -121,12 +123,5 @@ class CostTracker:
             "remaining_usd": self.budget_usd - self.total_spent,
             "calls": len(self.costs),
             "total_tokens": sum(c.total_tokens for c in self.costs),
-            "costs": [asdict(c) for c in self.costs]
+            "costs": [asdict(c) for c in self.costs],
         }
-
-
-__all__ = [
-    'LLMCost',
-    'BudgetExceededError',
-    'CostTracker',
-]

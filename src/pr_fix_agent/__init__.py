@@ -1,6 +1,5 @@
 """
-PR Fix Agent Core Library
-Production-ready components for error analysis, security validation, and automated fixing
+PR Fix Agent Core Library for Error Analysis, Security Validation, and Automated Fixing
 """
 
 from .analyzer import PRErrorAnalyzer, PRErrorFixer
@@ -12,10 +11,8 @@ from .security import InputValidator, RateLimiter, SecurityError, SecurityValida
 
 __all__ = [
     # Security
-    'SecurityError',
-    'SecurityValidator',
-    'InputValidator',
-    'RateLimiter',
+    "InputValidator",
+    "RateLimiter",
     # Analysis & Fixing
     'PRErrorAnalyzer',
     'PRErrorFixer',
@@ -32,5 +29,15 @@ __all__ = [
     'CodeReviewOrchestrator',
 ]
 
-__version__ = '0.1.0'
-__author__ = 'PR Fix Agent Team'
+__version__ = "0.1.0"
+__author__ = "PR Fix Agent Team"
+
+def check_package_name():
+    """
+    Check if the package name is appropriate and provides context.
+    """
+    print("Package Name: PR Fix Agent Core Library")
+    print("Purpose: Provides tools for error analysis, security validation, and automated fixing.")
+    print("Contact: prfixagent@example.com")
+
+check_package_name()

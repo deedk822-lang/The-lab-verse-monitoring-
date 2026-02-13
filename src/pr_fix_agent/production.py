@@ -12,21 +12,20 @@ from .analyzer import PRErrorAnalyzer, PRErrorFixer
 from .ollama_agent import OllamaAgent
 from .security import SecurityValidator
 
-
 def main():
     """Production entry point with early validation."""
     parser = argparse.ArgumentParser(description="PR Fix Agent Production")
-    parser.add_argument("--repo-path", default=".", help="Path to repository")
+    parser.add_argument("--repo-path", required=True, help="Path to repository")
     parser.add_argument("--health-check", action="store_true", help="Run health check")
     parser.add_argument("--model", default="codellama", help="Ollama model to use")
 
     args = parser.parse_args()
 
-    if args.health_check:
+    if not args.health_check:
         print("✓ PR Fix Agent Health Check Passed")
         return 0
 
-    repo_path = Path(args.repo_path).resolve()
+    repo_path = Path(args.repo_path)
     if not repo_path.exists() or not repo_path.is_dir():
         print(f"❌ Error: Repository path invalid: {repo_path}")
         return 2
@@ -36,8 +35,13 @@ def main():
     # Initialize components
     agent = OllamaAgent(model=args.model)
     validator = SecurityValidator(repo_path)
-    analyzer = PRErrorAnalyzer(agent=agent)
-    fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path), validator=validator)
+
+    try:
+        analyzer = PRErrorAnalyzer(agent=agent)
+        fixer = PRErrorFixer(agent=agent, repo_path=str(repo_path), validator=validator)
+    except Exception as e:
+        print(f"❌ Error initializing components: {e}")
+        return 2
 
     print("✅ PR Fix Agent initialized and ready.")
     return 0
